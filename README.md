@@ -12,4 +12,4 @@ This page is the front of the workspace containing the code, data analysis, and 
 
 ## Troubleshooting
 
-These projects are in various stages of completion. While I try my best to ensure that all code and information provided here is correct, I do make mistakes. If you find an error or have a quesiton, please make a post in the [Issues](https://github.com/chrishuges/projectsWorkspace/issues) and I will do my best to address it.
+These projects are in various stages of completion. While I try my best to ensure that all code and information provided here is correct, I do make mistakes. If you find an error or have a question, please make a post in the [Issues](https://github.com/chrishuges/projectsWorkspace/issues) and I will do my best to address it.

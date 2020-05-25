@@ -1,0 +1,14 @@
+---
+title: "Analysis of published YBX1 PARCLIP data"
+output: html_notebook
+---
+
+This document describes exploration of some PARCLIP data from a published study (PMID: 31358969). The paper performed a few different analyses related to YBX1, but here we will focus on their PARCLIP data that was performed in duplicate. The raw data for the PARCLIP experiments were uploaded to GSE133671, but unfortunately, they only give basic peak call files that are lacking any sort of scores or information on how they were parsed.  
+
+<hr style="height:6pt; visibility:hidden;" />
+
+
+```{r}
+plot(cars)
+```
+
