@@ -7,7 +7,7 @@ To reprocess the raw sequencing data, I wrote a shell script that can be found b
 These data were processed on a CentOS Linux release 7.4.1708 system with dual Intel(R) Xeon(R) CPU E5-2690 processors (16 total cores, 32 total threads) and 125GB of ram. For software, this script makes use of:
 
 * BBTools [(version 38.61b)](https://sourceforge.net/projects/bbmap/files/)
-* Bowtie [(version 1.2.3)](https://sourceforge.net/projects/bowtie-bio/files/bowtie/1.2.3/)
+* Bowtie [(version 1.2.3)](https://sourceforge.net/projects/bowtie-bio/files/bowtie/1.2.3/) - I used the hg19 pre-built index provided by Bowtie
 * Samtools [(version 1.9)](https://sourceforge.net/projects/samtools/files/samtools/)
 * R language [(version 3.6.3)](https://www.r-project.org/)
 * R package 'bamsignals' (I used version 1.18.0)
@@ -60,7 +60,7 @@ done
 Some notes about the processing:
 
 * Although this sequencing was done in paired end format as stated in the manuscript, only the first read is provided in the data repository. According to the authors, only the first read was used in their analysis for the manuscript.
-* I had to be really strict in the trimming of the reads. Even after adapter removal, there was still these long polyA runs that didn't look real, so I trimmed them off for the most part. There were also many sequences where the adapter sequence was messed up, likely due to bad calls in those regions because of all the polyA, meaning I had to discard sequences where I couldn't detect the adapter. So, for a 150bp PE read set, these runs didn't yield a ton of sequencing data.
+* I had to be really strict in the trimming of the reads. Even after adapter removal, there was still these long polyA runs that didn't look real and really had a negative impact on the overall alignment, so I trimmed them off for the most part. There were also many sequences where the adapter sequence was messed up, likely due to bad calls in those regions because of all the polyA, meaning I had to discard sequences where I couldn't detect the adapter. So, for a 150bp PE read set, these runs didn't yield a ton of sequencing data.
 * Bowtie uses pretty standard parameters, allowing for 2 mismatches because of the expected T>C conversion due to the UV-crosslinking.
 * The samtools processing is a bit convoluted, but is necessary to remove non-mapped, non-unique reads as wavClusteR will throw an error if you don't.
 * In wavClusteR, I opted for a minimum coverage of 20 for T>C conversion sites. Because there was such a different depth of read coverage between the files, sometimes I could set this really high, and other times really low and be happy. However, I opted to set it somewhat low and to use replicates to filter out lower confidence sites (unfortunately they only had 2 replicates, but it is better than nothing).

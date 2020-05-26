@@ -1747,9 +1747,6 @@ summary {
 <div class="btn-group pull-right">
 <button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"><span>Code</span> <span class="caret"></span></button>
 <ul class="dropdown-menu" style="min-width: 50px;">
-<li><a id="rmd-show-all-code" href="#">Show All Code</a></li>
-<li><a id="rmd-hide-all-code" href="#">Hide All Code</a></li>
-<li role="separator" class="divider"></li>
 <li><a id="rmd-download-source" href="#">Download Rmd</a></li>
 </ul>
 </div>
@@ -1762,18 +1759,295 @@ summary {
 
 
 <!-- rnb-text-begin -->
-<p>This document describes exploration of some PARCLIP data from a published study (PMID: 31358969). The paper performed a few different analyses related to YBX1, but here we will focus on their PARCLIP data that was performed in duplicate. The raw data for the PARCLIP experiments were uploaded to GSE133671, but unfortunately, they only give basic peak call files that are lacking any sort of scores or information on how they were parsed.</p>
-<hr style="height:6pt; visibility:hidden;" />
+<p>This document describes exploration of some PARCLIP data from a published study (PMID: 31358969). The paper performed a few different analyses related to YBX1, but here we will focus on their PARCLIP data that was performed in duplicate. The raw data for the PARCLIP experiments were uploaded to GSE133671, but unfortunately, they only give basic peak call files that are lacking any sort of scores or information on how they were parsed. As a result, I reprocessed the raw sequencing data using the script found <a href="/rawSequencingDataProcessingShellScript.md">here</a>.</p>
+<div id="setting-up-the-environment" class="section level2">
+<h2>Setting up the environment</h2>
+<p>These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxucGxvdChjYXJzKVxuYGBgIn0= -->
-<pre class="r"><code>plot(cars)</code></pre>
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>I want to set a base directory that we can use as a link to the directory where we will do most of the work.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYmFzZVdvcmtzcGFjZSA9ICdDOi9Vc2Vycy9jaHJpcy9PbmVEcml2ZS9Eb2N1bWVudHMvYmNjcmMvcHJvamVjdHNXb3Jrc3BhY2Uvc29yZW5zZW5MYWIvcmVsYXRlZFRvWWJ4MSdcbmJhc2VSZXBvc2l0b3J5ID0gJ0M6L1VzZXJzL2NocmlzL09uZURyaXZlL0RvY3VtZW50cy9iY2NyYy9wcm9qZWN0c1JlcG9zaXRvcnkvc29yZW5zZW5MYWIvcmVsYXRlZFRvWWJ4MSdcbmBgYCJ9 -->
+<pre class="r"><code>baseWorkspace = &#39;C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1&#39;
+baseRepository = &#39;C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1&#39;</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
+<p>Lastly, we need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don’t push it to GitHub.</p>
 <!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc291cmNlKHBhc3RlKGJhc2VXb3Jrc3BhY2UsICcvMjAyMDA1MjVfZXhwbG9yYXRpb25ZYngxUGFyY2xpcFB1Ymxpc2hlZC91c2VyRGVmaW5lZEZ1bmN0aW9ucy5SJywgc2VwID0gJycpKVxuYGBgIn0= -->
+<pre class="r"><code>source(paste(baseWorkspace, &#39;/20200525_explorationYbx1ParclipPublished/userDefinedFunctions.R&#39;, sep = &#39;&#39;))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+</div>
+<div id="data-processing" class="section level2">
+<h2>Data processing</h2>
+<p>First we need to build a transcriptome index that we will use for gene assignment in one of the referenced functions. Use the help function for this to find a server that is close to you, it makes a big difference in the speed. Ensembl v99 is the last one for hg19 and this is what we used in the alignment for ease of comparing to other published studies.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxudHhkYkVuc2VtYmwgPSBtYWtlVHhEYkZyb21FbnNlbWJsKG9yZ2FuaXNtID0gJ0hvbW8gc2FwaWVucycsXG4gICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcmVsZWFzZSA9IDk5LFxuICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHNlcnZlciA9ICd1c2Vhc3RkYi5lbnNlbWJsLm9yZycpXG5gYGAifQ== -->
+<pre class="r"><code>txdbEnsembl = makeTxDbFromEnsembl(organism = &#39;Homo sapiens&#39;,
+                                  release = 99,
+                                  server = &#39;useastdb.ensembl.org&#39;)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiRmV0Y2ggdHJhbnNjcmlwdHMgYW5kIGdlbmVzIGZyb20gRW5zZW1ibCAuLi4gT0tcbkZldGNoIGV4b25zIGFuZCBDRFMgZnJvbSBFbnNlbWJsIC4uLiBPS1xuRmV0Y2ggY2hyb21vc29tZSBuYW1lcyBhbmQgbGVuZ3RocyBmcm9tIEVuc2VtYmwgLi4uT0tcbkdhdGhlciB0aGUgbWV0YWRhdGEgLi4uIE9LXG5NYWtlIHRoZSBUeERiIG9iamVjdCAuLi4gT0tcbiJ9 -->
+<pre><code>Fetch transcripts and genes from Ensembl ... OK
+Fetch exons and CDS from Ensembl ... OK
+Fetch chromosome names and lengths from Ensembl ...OK
+Gather the metadata ... OK
+Make the TxDb object ... OK</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuI25vdyBzYXZlIHRoZSB0eGRiIGZvciBsYXRlciB1c2VcbnNhdmVEYih0eGRiRW5zZW1ibCwgZmlsZSA9IHBhc3RlKGJhc2VSZXBvc2l0b3J5LCBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICcvMjAyMDA1MjVfZXhwbG9yYXRpb25ZYngxUGFyY2xpcFB1Ymxpc2hlZC9UeERiLkhzYXBpZW5zLkVOU0VNQkwuaGcxOS52OTkuc3FsaXRlJywgc2VwID0gJycpKVxuYGBgIn0= -->
+<pre class="r"><code>#now save the txdb for later use
+saveDb(txdbEnsembl, file = paste(baseRepository, 
+                                 &#39;/20200525_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg19.v99.sqlite&#39;, sep = &#39;&#39;))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiVHhEYiBvYmplY3Q6XG4jIERiIHR5cGU6IFR4RGJcbiMgU3VwcG9ydGluZyBwYWNrYWdlOiBHZW5vbWljRmVhdHVyZXNcbiMgRGF0YSBzb3VyY2U6IEVuc2VtYmxcbiMgT3JnYW5pc206IEhvbW8gc2FwaWVuc1xuIyBFbnNlbWJsIHJlbGVhc2U6IDk5XG4jIEVuc2VtYmwgZGF0YWJhc2U6IGhvbW9fc2FwaWVuc19jb3JlXzk5XzM4XG4jIE15U1FMIHNlcnZlcjogdXNlYXN0ZGIuZW5zZW1ibC5vcmdcbiMgdHJhbnNjcmlwdF9ucm93OiAyNTA2NDFcbiMgZXhvbl9ucm93OiA4MzIxMDhcbiMgY2RzX25yb3c6IDg1MjE1NFxuIyBEYiBjcmVhdGVkIGJ5OiBHZW5vbWljRmVhdHVyZXMgcGFja2FnZSBmcm9tIEJpb2NvbmR1Y3RvclxuIyBDcmVhdGlvbiB0aW1lOiAyMDIwLTA1LTI1IDE3OjQwOjEzIC0wNzAwIChNb24sIDI1IE1heSAyMDIwKVxuIyBHZW5vbWljRmVhdHVyZXMgdmVyc2lvbiBhdCBjcmVhdGlvbiB0aW1lOiAxLjM4LjJcbiMgUlNRTGl0ZSB2ZXJzaW9uIGF0IGNyZWF0aW9uIHRpbWU6IDIuMi4wXG4jIERCU0NIRU1BVkVSU0lPTjogMS4yXG4ifQ== -->
+<pre><code>TxDb object:
+# Db type: TxDb
+# Supporting package: GenomicFeatures
+# Data source: Ensembl
+# Organism: Homo sapiens
+# Ensembl release: 99
+# Ensembl database: homo_sapiens_core_99_38
+# MySQL server: useastdb.ensembl.org
+# transcript_nrow: 250641
+# exon_nrow: 832108
+# cds_nrow: 852154
+# Db created by: GenomicFeatures package from Bioconductor
+# Creation time: 2020-05-25 17:40:13 -0700 (Mon, 25 May 2020)
+# GenomicFeatures version at creation time: 1.38.2
+# RSQLite version at creation time: 2.2.0
+# DBSCHEMAVERSION: 1.2</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Annotate the YBX1 PARCLIP data that was obtained from wavClusteR using functions defined in the source file referenced above.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyNcbiMjZ2V0IHRoZSBkYXRhIGZvciB0aGUgdHdvIHJlcGxpY2F0ZXNcbnBhcmNsaXAxID0gcmVhZFJEUyhwYXN0ZShiYXNlUmVwb3NpdG9yeSwgJy8yMDIwMDUyNV9leHBsb3JhdGlvbllieDFQYXJjbGlwUHVibGlzaGVkL1NSUjk2MjM1MzEud2F2Q2x1c3RlcnMucmRzJywgc2VwID0gJycpKVxucGFyY2xpcDIgPSByZWFkUkRTKHBhc3RlKGJhc2VSZXBvc2l0b3J5LCAnLzIwMjAwNTI1X2V4cGxvcmF0aW9uWWJ4MVBhcmNsaXBQdWJsaXNoZWQvU1JSOTYyMzUzMi53YXZDbHVzdGVycy5yZHMnLCBzZXAgPSAnJykpXG5cbiMjb3ZlcmxhcCB0aGUgcmVwbGljYXRlcyB0byBvbmx5IHJldGFpbiByZWdpb25zIGlkZW50aWZpZWQgaW4gYm90aFxucGFyY2xpcEludGVyc2VjdCA9IEdlbm9taWNSYW5nZXM6OmludGVyc2VjdChwYXJjbGlwMSwgcGFyY2xpcDIpXG5cbiMjaW4gY2FzZSB5b3UgZG9uJ3QgaGF2ZSB0aGUgdHhkYiBsb2FkZWQgaW4gYWxyZWFkeVxudHhkYkVuc2VtYmwgPSBsb2FkRGIoZmlsZSA9IHBhc3RlKGJhc2VSZXBvc2l0b3J5LCBcbiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAnLzIwMjAwNTI1X2V4cGxvcmF0aW9uWWJ4MVBhcmNsaXBQdWJsaXNoZWQvVHhEYi5Ic2FwaWVucy5FTlNFTUJMLmhnMTkudjk5LnNxbGl0ZScsIHNlcCA9ICcnKSlcblxuIyNub3cgYW5ub3RhdGUgdGhpcyB3aXRoIG91ciB1c2VyLWRlZmluZWQgZnVuY3Rpb25cbnBhcmNsaXBBbm5vdGF0ZWQgPSB3YXZjbHVzdGVyUGVha0Fubm90YXRpb24oYXNfdGliYmxlKHBhcmNsaXBJbnRlcnNlY3QpLCB0eGRiRW5zZW1ibCwgcmVtb3ZlTWl0byA9IFRSVUUpXG5gYGAifQ== -->
+<pre class="r"><code>#########################################################################################
+##get the data for the two replicates
+parclip1 = readRDS(paste(baseRepository, &#39;/20200525_explorationYbx1ParclipPublished/SRR9623531.wavClusters.rds&#39;, sep = &#39;&#39;))
+parclip2 = readRDS(paste(baseRepository, &#39;/20200525_explorationYbx1ParclipPublished/SRR9623532.wavClusters.rds&#39;, sep = &#39;&#39;))
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIkFuYWx5c2lzIG9mIHB1Ymxpc2hlZCBZQlgxIFBBUkNMSVAgZGF0YSINCm91dHB1dDogaHRtbF9ub3RlYm9vaw0KLS0tDQoNClRoaXMgZG9jdW1lbnQgZGVzY3JpYmVzIGV4cGxvcmF0aW9uIG9mIHNvbWUgUEFSQ0xJUCBkYXRhIGZyb20gYSBwdWJsaXNoZWQgc3R1ZHkgKFBNSUQ6IDMxMzU4OTY5KS4gVGhlIHBhcGVyIHBlcmZvcm1lZCBhIGZldyBkaWZmZXJlbnQgYW5hbHlzZXMgcmVsYXRlZCB0byBZQlgxLCBidXQgaGVyZSB3ZSB3aWxsIGZvY3VzIG9uIHRoZWlyIFBBUkNMSVAgZGF0YSB0aGF0IHdhcyBwZXJmb3JtZWQgaW4gZHVwbGljYXRlLiBUaGUgcmF3IGRhdGEgZm9yIHRoZSBQQVJDTElQIGV4cGVyaW1lbnRzIHdlcmUgdXBsb2FkZWQgdG8gR1NFMTMzNjcxLCBidXQgdW5mb3J0dW5hdGVseSwgdGhleSBvbmx5IGdpdmUgYmFzaWMgcGVhayBjYWxsIGZpbGVzIHRoYXQgYXJlIGxhY2tpbmcgYW55IHNvcnQgb2Ygc2NvcmVzIG9yIGluZm9ybWF0aW9uIG9uIGhvdyB0aGV5IHdlcmUgcGFyc2VkLiAgDQoNCjxociBzdHlsZT0iaGVpZ2h0OjZwdDsgdmlzaWJpbGl0eTpoaWRkZW47IiAvPg0KDQoNCmBgYHtyfQ0KcGxvdChjYXJzKQ0KYGBgDQoNCg==</div>
+##overlap the replicates to only retain regions identified in both
+parclipIntersect = GenomicRanges::intersect(parclip1, parclip2)
+
+##in case you don&#39;t have the txdb loaded in already
+txdbEnsembl = loadDb(file = paste(baseRepository, 
+                                  &#39;/20200525_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg19.v99.sqlite&#39;, sep = &#39;&#39;))
+
+##now annotate this with our user-defined function
+parclipAnnotated = wavclusterPeakAnnotation(as_tibble(parclipIntersect), txdbEnsembl, removeMito = TRUE)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiUmVtb3ZpbmcgY2hyb21vc29tZSBNIGhpdHMuXG5Bbm5vdGF0aW5nIGZpdmVVVFIgaGl0c1xuUHJlcGFyaW5nIGEgZ29sZCBzdGFuZGFyZCBzZXQgb2YgUk5BIENEUyBJZHNcbkNvcmUgQ0RTIHNldCBhc3NlbWJsZWRcbk5vdyBzZXR0aW5nIHVwIHlvdXIgdHJhbnNjcmlwdG9tZSBkYXRhYmFzZSBvZiBpbnRlcmVzdFxuJ3NlbGVjdCgpJyByZXR1cm5lZCAxOjEgbWFwcGluZyBiZXR3ZWVuIGtleXMgYW5kIGNvbHVtbnNcbidzZWxlY3QoKScgcmV0dXJuZWQgMTptYW55IG1hcHBpbmcgYmV0d2VlbiBrZXlzIGFuZCBjb2x1bW5zXG5Kb2luaW5nLCBieSA9IFwiZW5zZW1ibHRyYW5zXCJcblByZXBhcmluZyBkYXRhIG91dHB1dFxuQW5ub3RhdGlvbiBpbmRleCBmb3IgZml2ZVVUUiBjcmVhdGVkXG5Bbm5vdGF0aW5nIGZpdmVVVFIgb3ZlcmxhcCBoaXRzXG5Bbm5vdGF0aW9uIGZvciBmaXZlVVRSIGNvbXBsZXRlXG5Bbm5vdGF0aW5nIENEUyBoaXRzXG5QcmVwYXJpbmcgYSBnb2xkIHN0YW5kYXJkIHNldCBvZiBSTkEgQ0RTIElkc1xuQ29yZSBDRFMgc2V0IGFzc2VtYmxlZFxuTm93IHNldHRpbmcgdXAgeW91ciB0cmFuc2NyaXB0b21lIGRhdGFiYXNlIG9mIGludGVyZXN0XG4nc2VsZWN0KCknIHJldHVybmVkIDE6MSBtYXBwaW5nIGJldHdlZW4ga2V5cyBhbmQgY29sdW1uc1xuJ3NlbGVjdCgpJyByZXR1cm5lZCAxOm1hbnkgbWFwcGluZyBiZXR3ZWVuIGtleXMgYW5kIGNvbHVtbnNcbkpvaW5pbmcsIGJ5ID0gXCJlbnNlbWJsdHJhbnNcIlxuUHJlcGFyaW5nIGRhdGEgb3V0cHV0XG5Bbm5vdGF0aW9uIGluZGV4IGZvciBDRFMgY3JlYXRlZFxuQW5ub3RhdGluZyBDRFMgb3ZlcmxhcCBoaXRzXG5Bbm5vdGF0aW9uIGZvciBDRFMgY29tcGxldGVcbkFubm90YXRpbmcgdGhyZWVVVFIgaGl0c1xuUHJlcGFyaW5nIGEgZ29sZCBzdGFuZGFyZCBzZXQgb2YgUk5BIENEUyBJZHNcbkNvcmUgQ0RTIHNldCBhc3NlbWJsZWRcbk5vdyBzZXR0aW5nIHVwIHlvdXIgdHJhbnNjcmlwdG9tZSBkYXRhYmFzZSBvZiBpbnRlcmVzdFxuJ3NlbGVjdCgpJyByZXR1cm5lZCAxOjEgbWFwcGluZyBiZXR3ZWVuIGtleXMgYW5kIGNvbHVtbnNcbidzZWxlY3QoKScgcmV0dXJuZWQgMTptYW55IG1hcHBpbmcgYmV0d2VlbiBrZXlzIGFuZCBjb2x1bW5zXG5Kb2luaW5nLCBieSA9IFwiZW5zZW1ibHRyYW5zXCJcblByZXBhcmluZyBkYXRhIG91dHB1dFxuQW5ub3RhdGlvbiBpbmRleCBmb3IgdGhyZWVVVFIgY3JlYXRlZFxuQW5ub3RhdGluZyB0aHJlZVVUUiBvdmVybGFwIGhpdHNcbkFubm90YXRpb24gZm9yIHRocmVlVVRSIGNvbXBsZXRlXG5Db21iaW5pbmcgdGhlIGRhdGEgc2V0cyBhbmQgcGVyZm9ybWluZyB0aGUgZmluYWwgY2FsY3VsYXRpb25zXG5Qcm9jZXNzaW5nIGNvbXBsZXRlXG4ifQ== -->
+<pre><code>Removing chromosome M hits.
+Annotating fiveUTR hits
+Preparing a gold standard set of RNA CDS Ids
+Core CDS set assembled
+Now setting up your transcriptome database of interest
+&#39;select()&#39; returned 1:1 mapping between keys and columns
+&#39;select()&#39; returned 1:many mapping between keys and columns
+Joining, by = &quot;ensembltrans&quot;
+Preparing data output
+Annotation index for fiveUTR created
+Annotating fiveUTR overlap hits
+Annotation for fiveUTR complete
+Annotating CDS hits
+Preparing a gold standard set of RNA CDS Ids
+Core CDS set assembled
+Now setting up your transcriptome database of interest
+&#39;select()&#39; returned 1:1 mapping between keys and columns
+&#39;select()&#39; returned 1:many mapping between keys and columns
+Joining, by = &quot;ensembltrans&quot;
+Preparing data output
+Annotation index for CDS created
+Annotating CDS overlap hits
+Annotation for CDS complete
+Annotating threeUTR hits
+Preparing a gold standard set of RNA CDS Ids
+Core CDS set assembled
+Now setting up your transcriptome database of interest
+&#39;select()&#39; returned 1:1 mapping between keys and columns
+&#39;select()&#39; returned 1:many mapping between keys and columns
+Joining, by = &quot;ensembltrans&quot;
+Preparing data output
+Annotation index for threeUTR created
+Annotating threeUTR overlap hits
+Annotation for threeUTR complete
+Combining the data sets and performing the final calculations
+Processing complete</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjI1xuYGBgIn0= -->
+<pre class="r"><code>############################################################################</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Remove clusters that are too small and add read counts based on the replicates.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjI1xuIyNyZW1vdmUgY2x1c3RlcnMgdGhhdCBhcmUgdG9vIHNtYWxsXG5wYXJjbGlwTGFyZ2VDbHVzdGVycyA9IHN1YnNldChwYXJjbGlwQW5ub3RhdGVkLCBwYXJjbGlwQW5ub3RhdGVkJHdpZHRoID49IDEyKVxuXG4jI3JlYWQgdGhlIHJhdyBiYW0gZmlsZXNcbmJhbXBhdGgxID0gcGFzdGUoYmFzZVJlcG9zaXRvcnksICcvMjAyMDA1MjVfZXhwbG9yYXRpb25ZYngxUGFyY2xpcFB1Ymxpc2hlZC9TUlI5NjIzNTMxLnRyaW1tZWQucnJuYS5ib3d0aWUubWFwcGVkLnNvcnRlZC5iYW0nLCBzZXAgPSAnJylcbmJhbXBhdGgyID0gcGFzdGUoYmFzZVJlcG9zaXRvcnksICcvMjAyMDA1MjVfZXhwbG9yYXRpb25ZYngxUGFyY2xpcFB1Ymxpc2hlZC9TUlI5NjIzNTMyLnRyaW1tZWQucnJuYS5ib3d0aWUubWFwcGVkLnNvcnRlZC5iYW0nLCBzZXAgPSAnJylcblxuIyNnZXQgdGhlIG1heCByZWFkIGNvdW50IGluIGEgcmVnaW9uLCByZXBsaWNhdGUgMVxuYmFtQ292ZXJhZ2UxID0gYmFtQ292ZXJhZ2UoYmFtcGF0aDEsIG1ha2VHUmFuZ2VzRnJvbURhdGFGcmFtZShwYXJjbGlwTGFyZ2VDbHVzdGVycyksIHZlcmJvc2U9RkFMU0UpXG5iYW1Db3VudHMxID0gdW5saXN0KGxhcHBseShhcy5saXN0KGJhbUNvdmVyYWdlMSksIG1heCkpXG5wYXJjbGlwTGFyZ2VDbHVzdGVycyRyZWFkQ291bnRSZXAxID0gYmFtQ291bnRzMVxuXG4jI2dldCB0aGUgbWF4IHJlYWQgY291bnQgaW4gYSByZWdpb24sIHJlcGxpY2F0ZSAyXG5iYW1Db3ZlcmFnZTIgPSBiYW1Db3ZlcmFnZShiYW1wYXRoMiwgbWFrZUdSYW5nZXNGcm9tRGF0YUZyYW1lKHBhcmNsaXBMYXJnZUNsdXN0ZXJzKSwgdmVyYm9zZT1GQUxTRSlcbmJhbUNvdW50czIgPSB1bmxpc3QobGFwcGx5KGFzLmxpc3QoYmFtQ292ZXJhZ2UyKSwgbWF4KSlcbnBhcmNsaXBMYXJnZUNsdXN0ZXJzJHJlYWRDb3VudFJlcDIgPSBiYW1Db3VudHMyXG5cbiMjY29tYmluZSB3aXRoIHRoZSBvcmlnaW5hbCBkYXRhIGFuZCB0YWtlIHRoZSBzdW0gb2YgdGhlIHJlcGxpY2F0ZXNcbnBhcmNsaXBMYXJnZUNsdXN0ZXJzJHJlYWRDb3VudFN1bSA9IGFzLmludGVnZXIocm93U3VtcyhwYXJjbGlwTGFyZ2VDbHVzdGVyc1ssYygncmVhZENvdW50UmVwMScsJ3JlYWRDb3VudFJlcDInKV0sIG5hLnJtID0gVFJVRSkpXG4jIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjXG5gYGAifQ== -->
+<pre class="r"><code>############################################################################
+##remove clusters that are too small
+parclipLargeClusters = subset(parclipAnnotated, parclipAnnotated$width &gt;= 12)
+
+##read the raw bam files
+bampath1 = paste(baseRepository, &#39;/20200525_explorationYbx1ParclipPublished/SRR9623531.trimmed.rrna.bowtie.mapped.sorted.bam&#39;, sep = &#39;&#39;)
+bampath2 = paste(baseRepository, &#39;/20200525_explorationYbx1ParclipPublished/SRR9623532.trimmed.rrna.bowtie.mapped.sorted.bam&#39;, sep = &#39;&#39;)
+
+##get the max read count in a region, replicate 1
+bamCoverage1 = bamCoverage(bampath1, makeGRangesFromDataFrame(parclipLargeClusters), verbose=FALSE)
+bamCounts1 = unlist(lapply(as.list(bamCoverage1), max))
+parclipLargeClusters$readCountRep1 = bamCounts1
+
+##get the max read count in a region, replicate 2
+bamCoverage2 = bamCoverage(bampath2, makeGRangesFromDataFrame(parclipLargeClusters), verbose=FALSE)
+bamCounts2 = unlist(lapply(as.list(bamCoverage2), max))
+parclipLargeClusters$readCountRep2 = bamCounts2
+
+##combine with the original data and take the sum of the replicates
+parclipLargeClusters$readCountSum = as.integer(rowSums(parclipLargeClusters[,c(&#39;readCountRep1&#39;,&#39;readCountRep2&#39;)], na.rm = TRUE))
+############################################################################</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Now annotate the location in the read peak where the maximum read count is observed, for each peak.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjI1xuIyMjZmluZCB0aGUgbWF4IGxvY2F0aW9uIGZvciBlYWNoIHBlYWtcbmJhbU1heDEgPSB1bmxpc3QobGFwcGx5KGFzLmxpc3QoYmFtQ292ZXJhZ2UxKSwgZnVuY3Rpb24oeCkgYXMuaW50ZWdlcihtZWFuKHdoaWNoKHggPT0gbWF4KHgpKSkpKSlcbmJhbU1heDIgPSB1bmxpc3QobGFwcGx5KGFzLmxpc3QoYmFtQ292ZXJhZ2UyKSwgZnVuY3Rpb24oeCkgYXMuaW50ZWdlcihtZWFuKHdoaWNoKHggPT0gbWF4KHgpKSkpKSlcbnBhcmNsaXBMYXJnZUNsdXN0ZXJzJHBlYWtNYXhSZXAxID0gcGFyY2xpcExhcmdlQ2x1c3RlcnMkc3RhcnQgKyBiYW1NYXgxXG5wYXJjbGlwTGFyZ2VDbHVzdGVycyRwZWFrTWF4UmVwMiA9IHBhcmNsaXBMYXJnZUNsdXN0ZXJzJHN0YXJ0ICsgYmFtTWF4MlxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjI1xuYGBgIn0= -->
+<pre class="r"><code>############################################################################
+###find the max location for each peak
+bamMax1 = unlist(lapply(as.list(bamCoverage1), function(x) as.integer(mean(which(x == max(x))))))
+bamMax2 = unlist(lapply(as.list(bamCoverage2), function(x) as.integer(mean(which(x == max(x))))))
+parclipLargeClusters$peakMaxRep1 = parclipLargeClusters$start + bamMax1
+parclipLargeClusters$peakMaxRep2 = parclipLargeClusters$start + bamMax2
+############################################################################</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Now annotate the purity for each gene. This is a bit rough, but for all the peaks in each gene, it basically calculates what proportion they contribute to the total signal of that gene. If a gene just has non-specific reads across it, I expect that the peaks will all have low proportion scores. If there are a couple of large peaks, then I expect these to rise above and have higher scores. It is not perfect, and I can envision a couple scenarios where it will fall down, but I think as long as I am not too strict in the filter level it should be ok.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjI1xuIyNmaW5kIHRoZSBwdXJpdHkgZm9yIGFsbCBwZWFrcyB3aXRoaW4gYSBnZW5lXG5nblNldCA9IHVuaXF1ZShwYXJjbGlwTGFyZ2VDbHVzdGVycyR0eGRiU3ltYm9sKVxucGFyY2xpcFB1cml0eSA9IHRpYmJsZSgpXG5mb3IgKGkgaW4gMTpsZW5ndGgoZ25TZXQpKXtcbiAgcHVyaXR5Q2FsY3VsYXRpb24gPSBwYXJjbGlwTGFyZ2VDbHVzdGVyc1twYXJjbGlwTGFyZ2VDbHVzdGVycyR0eGRiU3ltYm9sID09IGduU2V0W2ldLF0gJT4lXG4gICAgYXJyYW5nZShkZXNjKHJlYWRDb3VudFN1bSkpICU+JVxuICAgIG11dGF0ZShwZWFrUHVyaXR5ID0gcmVhZENvdW50U3VtIC8gc3VtKHJlYWRDb3VudFN1bSkpIFxuICBwYXJjbGlwUHVyaXR5ID0gcmJpbmQocGFyY2xpcFB1cml0eSwgcHVyaXR5Q2FsY3VsYXRpb24pXG59XG5cbiMjI21ha2UgYSBxdWljayBwbG90IG9mIHRoZSBwdXJpdHkgdmFsdWVzXG5nZ3Bsb3QocGFyY2xpcFB1cml0eSwgYWVzKHBlYWtQdXJpdHkpKSArXG4gIGdlb21fZGVuc2l0eShzaXplID0gMSkgK1xuICBzY2FsZV94X2NvbnRpbnVvdXMobGltaXRzID0gYygwLDEpLCBicmVha3MgPSBzZXEoMCwxLDAuMSkpICtcbiAgbGFicyh4ID0gJ3BlYWsgcHVyaXR5JywgeSA9ICdkZW5zaXR5JywgdGl0bGUgPSAncGVhayBwdXJpdHkgY2FsY3VsYXRpb24nKSArXG4gIGdlb21fdmxpbmUoeGludGVyY2VwdCA9IDAuMjUsIGxpbmV0eXBlID0gJ2Rhc2hlZCcsIGNvbG9yID0gYnJld2VyLnBhbCg5LCdTcGVjdHJhbCcpWzFdKSArXG4gIHRoZW1lX2NsYXNzaWMoKVxuZ2dzYXZlKHBhc3RlKGJhc2VXb3Jrc3BhY2UsICcvMjAyMDA1MjVfZXhwbG9yYXRpb25ZYngxUGFyY2xpcFB1Ymxpc2hlZC9kZW5zaXR5X3liMVBhcmNsaXBfcGVha1B1cml0eVNjb3Jlcy5wZGYnLCBzZXAgPSAnJyksXG4gICAgICAgdXNlRGluZ2JhdHMgPSBGQUxTRSxcbiAgICAgICB3aWR0aCA9IDQsXG4gICAgICAgaGVpZ2h0ID0gNClcbmBgYCJ9 -->
+<pre class="r"><code>############################################################################
+##find the purity for all peaks within a gene
+gnSet = unique(parclipLargeClusters$txdbSymbol)
+parclipPurity = tibble()
+for (i in 1:length(gnSet)){
+  purityCalculation = parclipLargeClusters[parclipLargeClusters$txdbSymbol == gnSet[i],] %&gt;%
+    arrange(desc(readCountSum)) %&gt;%
+    mutate(peakPurity = readCountSum / sum(readCountSum)) 
+  parclipPurity = rbind(parclipPurity, purityCalculation)
+}
+
+###make a quick plot of the purity values
+ggplot(parclipPurity, aes(peakPurity)) +
+  geom_density(size = 1) +
+  scale_x_continuous(limits = c(0,1), breaks = seq(0,1,0.1)) +
+  labs(x = &#39;peak purity&#39;, y = &#39;density&#39;, title = &#39;peak purity calculation&#39;) +
+  geom_vline(xintercept = 0.25, linetype = &#39;dashed&#39;, color = brewer.pal(9,&#39;Spectral&#39;)[1]) +
+  theme_classic()
+ggsave(paste(baseWorkspace, &#39;/20200525_explorationYbx1ParclipPublished/density_yb1Parclip_peakPurityScores.pdf&#39;, sep = &#39;&#39;),
+       useDingbats = FALSE,
+       width = 4,
+       height = 4)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-plot-begin eyJoZWlnaHQiOjQzMi42MzI5LCJ3aWR0aCI6NzAwLCJzaXplX2JlaGF2aW9yIjowLCJjb25kaXRpb25zIjpbXX0= -->
+<p><img src="data:image/png;base64,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" /></p>
+<!-- rnb-plot-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjI1xuYGBgIn0= -->
+<pre class="r"><code>############################################################################</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Now I can assign the peak rank. This is essentially just the rank of all peaks assigned to a single gene, based on their read counts.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjI1xuIyNub3cgYXNzaWduIHRoZSBwZWFrIHJhbmtcbnBhcmNsaXBQdXJpdHlGaWx0ZXJlZCA9IHBhcmNsaXBQdXJpdHkgJT4lIGZpbHRlcihwZWFrUHVyaXR5ID49IDAuMjUpXG5nblNldCA9IHVuaXF1ZShwYXJjbGlwUHVyaXR5RmlsdGVyZWQkdHhkYlN5bWJvbClcbnBhcmNsaXBQZWFrUmFuayA9IHRpYmJsZSgpXG5mb3IgKGkgaW4gMTpsZW5ndGgoZ25TZXQpKXtcbiAgcHVyaXR5RmlsdGVyID0gcGFyY2xpcFB1cml0eUZpbHRlcmVkW3BhcmNsaXBQdXJpdHlGaWx0ZXJlZCR0eGRiU3ltYm9sID09IGduU2V0W2ldLF0gJT4lXG4gICAgYXJyYW5nZShkZXNjKHJlYWRDb3VudFN1bSkpICU+JVxuICAgIG11dGF0ZShwZWFrUmFuayA9IHNlcSgxLGxlbmd0aChyZWFkQ291bnRTdW0pLDEpKVxuICBwYXJjbGlwUGVha1JhbmsgPSByYmluZChwYXJjbGlwUGVha1JhbmssIHB1cml0eUZpbHRlcilcbn1cblxuIyMjdGhpcyBpcyB0aGUgZmluYWwgZGF0YXNldCwgc2F2ZSBpdFxuc2F2ZVJEUyhwYXJjbGlwUGVha1JhbmssXG4gICAgICAgIHBhc3RlKGJhc2VSZXBvc2l0b3J5LCAnLzIwMjAwNTI1X2V4cGxvcmF0aW9uWWJ4MVBhcmNsaXBQdWJsaXNoZWQvZGF0YXNldF95YjFQYXJjbGlwQW5ub3RhdGVkUGVha1NldC5yZHMnLCBzZXAgPSAnJykpXG53cml0ZS50YWJsZShwYXJjbGlwUGVha1JhbmssXG4gICAgICAgIHBhc3RlKGJhc2VSZXBvc2l0b3J5LCAnLzIwMjAwNTI1X2V4cGxvcmF0aW9uWWJ4MVBhcmNsaXBQdWJsaXNoZWQvZGF0YXNldF95YjFQYXJjbGlwQW5ub3RhdGVkUGVha1NldC5jc3YnLCBzZXAgPSAnJyksXG4gICAgICAgIGNvbC5uYW1lcyA9IFRSVUUsIHJvdy5uYW1lcyA9IEZBTFNFLCBxdW90ZSA9IEZBTFNFLCBzZXAgPSAnLCcpXG4jIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjXG5gYGAifQ== -->
+<pre class="r"><code>############################################################################
+##now assign the peak rank
+parclipPurityFiltered = parclipPurity %&gt;% filter(peakPurity &gt;= 0.25)
+gnSet = unique(parclipPurityFiltered$txdbSymbol)
+parclipPeakRank = tibble()
+for (i in 1:length(gnSet)){
+  purityFilter = parclipPurityFiltered[parclipPurityFiltered$txdbSymbol == gnSet[i],] %&gt;%
+    arrange(desc(readCountSum)) %&gt;%
+    mutate(peakRank = seq(1,length(readCountSum),1))
+  parclipPeakRank = rbind(parclipPeakRank, purityFilter)
+}
+
+###this is the final dataset, save it
+saveRDS(parclipPeakRank,
+        paste(baseRepository, &#39;/20200525_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds&#39;, sep = &#39;&#39;))
+write.table(parclipPeakRank,
+        paste(baseRepository, &#39;/20200525_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.csv&#39;, sep = &#39;&#39;),
+        col.names = TRUE, row.names = FALSE, quote = FALSE, sep = &#39;,&#39;)
+############################################################################</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+</div>
+<div id="session-info" class="section level2">
+<h2>Session info</h2>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc2Vzc2lvbkluZm8oKVxuYGBgIn0= -->
+<pre class="r"><code>sessionInfo()</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiUiB2ZXJzaW9uIDMuNi4zICgyMDIwLTAyLTI5KVxuUGxhdGZvcm06IHg4Nl82NC13NjQtbWluZ3czMi94NjQgKDY0LWJpdClcblJ1bm5pbmcgdW5kZXI6IFdpbmRvd3MgMTAgeDY0IChidWlsZCAxODM2MylcblxuTWF0cml4IHByb2R1Y3RzOiBkZWZhdWx0XG5cbmxvY2FsZTpcblsxXSBMQ19DT0xMQVRFPUVuZ2xpc2hfQ2FuYWRhLjEyNTIgIExDX0NUWVBFPUVuZ2xpc2hfQ2FuYWRhLjEyNTIgICAgTENfTU9ORVRBUlk9RW5nbGlzaF9DYW5hZGEuMTI1MlxuWzRdIExDX05VTUVSSUM9QyAgICAgICAgICAgICAgICAgICAgTENfVElNRT1FbmdsaXNoX0NhbmFkYS4xMjUyICAgIFxuXG5hdHRhY2hlZCBiYXNlIHBhY2thZ2VzOlxuWzFdIHN0YXRzNCAgICBwYXJhbGxlbCAgc3RhdHMgICAgIGdyYXBoaWNzICBnckRldmljZXMgdXRpbHMgICAgIGRhdGFzZXRzICBtZXRob2RzICAgYmFzZSAgICAgXG5cbm90aGVyIGF0dGFjaGVkIHBhY2thZ2VzOlxuIFsxXSBiYW1zaWduYWxzXzEuMTguMCAgICAgIFJNYXJpYURCXzEuMC44ICAgICAgICAgb3JnLkhzLmVnLmRiXzMuMTAuMCAgICBSQ29sb3JCcmV3ZXJfMS4xLTIgICAgIEdlbm9taWNGZWF0dXJlc18xLjM4LjJcbiBbNl0gQW5ub3RhdGlvbkRiaV8xLjQ4LjAgICBCaW9iYXNlXzIuNDYuMCAgICAgICAgIEdlbm9taWNSYW5nZXNfMS4zOC4wICAgR2Vub21lSW5mb0RiXzEuMjIuMSAgICBJUmFuZ2VzXzIuMjAuMiAgICAgICAgXG5bMTFdIFM0VmVjdG9yc18wLjI0LjQgICAgICAgQmlvY0dlbmVyaWNzXzAuMzIuMCAgICBmb3JjYXRzXzAuNS4wICAgICAgICAgIHN0cmluZ3JfMS40LjAgICAgICAgICAgZHBseXJfMC44LjUgICAgICAgICAgIFxuWzE2XSBwdXJycl8wLjMuNCAgICAgICAgICAgIHJlYWRyXzEuMy4xICAgICAgICAgICAgdGlkeXJfMS4wLjMgICAgICAgICAgICB0aWJibGVfMy4wLjEgICAgICAgICAgIGdncGxvdDJfMy4zLjAgICAgICAgICBcblsyMV0gdGlkeXZlcnNlXzEuMy4wICAgICAgIFxuXG5sb2FkZWQgdmlhIGEgbmFtZXNwYWNlIChhbmQgbm90IGF0dGFjaGVkKTpcbiBbMV0gbmxtZV8zLjEtMTQ0ICAgICAgICAgICAgICAgIGJpdG9wc18xLjAtNiAgICAgICAgICAgICAgICBtYXRyaXhTdGF0c18wLjU2LjAgICAgICAgICAgZnNfMS40LjEgICAgICAgICAgICAgICAgICAgXG4gWzVdIGx1YnJpZGF0ZV8xLjcuOCAgICAgICAgICAgICBiaXQ2NF8wLjktNyAgICAgICAgICAgICAgICAgcHJvZ3Jlc3NfMS4yLjIgICAgICAgICAgICAgIGh0dHJfMS40LjEgICAgICAgICAgICAgICAgIFxuIFs5XSB0b29sc18zLjYuMyAgICAgICAgICAgICAgICAgYmFja3BvcnRzXzEuMS43ICAgICAgICAgICAgIHV0ZjhfMS4xLjQgICAgICAgICAgICAgICAgICBSNl8yLjQuMSAgICAgICAgICAgICAgICAgICBcblsxM10gREJJXzEuMS4wICAgICAgICAgICAgICAgICAgIGNvbG9yc3BhY2VfMS40LTEgICAgICAgICAgICB3aXRocl8yLjIuMCAgICAgICAgICAgICAgICAgdGlkeXNlbGVjdF8xLjEuMCAgICAgICAgICAgXG5bMTddIHByZXR0eXVuaXRzXzEuMS4xICAgICAgICAgICBiaXRfMS4xLTE1LjIgICAgICAgICAgICAgICAgY3VybF80LjMgICAgICAgICAgICAgICAgICAgIGNvbXBpbGVyXzMuNi4zICAgICAgICAgICAgIFxuWzIxXSBjbGlfMi4wLjIgICAgICAgICAgICAgICAgICAgcnZlc3RfMC4zLjUgICAgICAgICAgICAgICAgIHhtbDJfMS4zLjIgICAgICAgICAgICAgICAgICBEZWxheWVkQXJyYXlfMC4xMi4zICAgICAgICBcblsyNV0gbGFiZWxpbmdfMC4zICAgICAgICAgICAgICAgIHJ0cmFja2xheWVyXzEuNDYuMCAgICAgICAgICBzY2FsZXNfMS4xLjEgICAgICAgICAgICAgICAgYXNrcGFzc18xLjEgICAgICAgICAgICAgICAgXG5bMjldIHJhcHBkaXJzXzAuMy4xICAgICAgICAgICAgICBkaWdlc3RfMC42LjI1ICAgICAgICAgICAgICAgUnNhbXRvb2xzXzIuMi4zICAgICAgICAgICAgIHJtYXJrZG93bl8yLjEgICAgICAgICAgICAgIFxuWzMzXSBYVmVjdG9yXzAuMjYuMCAgICAgICAgICAgICAgYmFzZTY0ZW5jXzAuMS0zICAgICAgICAgICAgIGh0bWx0b29sc18wLjQuMCAgICAgICAgICAgICBwa2djb25maWdfMi4wLjMgICAgICAgICAgICBcblszN10gZGJwbHlyXzEuNC4zICAgICAgICAgICAgICAgIHJsYW5nXzAuNC42ICAgICAgICAgICAgICAgICByZWFkeGxfMS4zLjEgICAgICAgICAgICAgICAgcnN0dWRpb2FwaV8wLjExICAgICAgICAgICAgXG5bNDFdIFJTUUxpdGVfMi4yLjAgICAgICAgICAgICAgICBmYXJ2ZXJfMi4wLjMgICAgICAgICAgICAgICAgZ2VuZXJpY3NfMC4wLjIgICAgICAgICAgICAgIGpzb25saXRlXzEuNi4xICAgICAgICAgICAgIFxuWzQ1XSBCaW9jUGFyYWxsZWxfMS4yMC4xICAgICAgICAgUkN1cmxfMS45OC0xLjIgICAgICAgICAgICAgIG1hZ3JpdHRyXzEuNSAgICAgICAgICAgICAgICBHZW5vbWVJbmZvRGJEYXRhXzEuMi4yICAgICBcbls0OV0gTWF0cml4XzEuMi0xOCAgICAgICAgICAgICAgIFJjcHBfMS4wLjQuNiAgICAgICAgICAgICAgICBtdW5zZWxsXzAuNS4wICAgICAgICAgICAgICAgZmFuc2lfMC40LjEgICAgICAgICAgICAgICAgXG5bNTNdIGxpZmVjeWNsZV8wLjIuMCAgICAgICAgICAgICB5YW1sXzIuMi4xICAgICAgICAgICAgICAgICAgc3RyaW5naV8xLjQuNiAgICAgICAgICAgICAgIFN1bW1hcml6ZWRFeHBlcmltZW50XzEuMTYuMVxuWzU3XSB6bGliYmlvY18xLjMyLjAgICAgICAgICAgICAgQmlvY0ZpbGVDYWNoZV8xLjEwLjIgICAgICAgIGdyaWRfMy42LjMgICAgICAgICAgICAgICAgICBibG9iXzEuMi4xICAgICAgICAgICAgICAgICBcbls2MV0gY3JheW9uXzEuMy40ICAgICAgICAgICAgICAgIGxhdHRpY2VfMC4yMC0zOCAgICAgICAgICAgICBCaW9zdHJpbmdzXzIuNTQuMCAgICAgICAgICAgaGF2ZW5fMi4yLjAgICAgICAgICAgICAgICAgXG5bNjVdIGhtc18wLjUuMyAgICAgICAgICAgICAgICAgICBrbml0cl8xLjI4ICAgICAgICAgICAgICAgICAgcGlsbGFyXzEuNC40ICAgICAgICAgICAgICAgIGJpb21hUnRfMi40Mi4xICAgICAgICAgICAgIFxuWzY5XSByZXByZXhfMC4zLjAgICAgICAgICAgICAgICAgWE1MXzMuOTktMC4zICAgICAgICAgICAgICAgIGdsdWVfMS40LjEgICAgICAgICAgICAgICAgICBldmFsdWF0ZV8wLjE0ICAgICAgICAgICAgICBcbls3M10gbW9kZWxyXzAuMS44ICAgICAgICAgICAgICAgIHZjdHJzXzAuMy4wICAgICAgICAgICAgICAgICBjZWxscmFuZ2VyXzEuMS4wICAgICAgICAgICAgZ3RhYmxlXzAuMy4wICAgICAgICAgICAgICAgXG5bNzddIG9wZW5zc2xfMS40LjEgICAgICAgICAgICAgICBhc3NlcnR0aGF0XzAuMi4xICAgICAgICAgICAgeGZ1bl8wLjE0ICAgICAgICAgICAgICAgICAgIGJyb29tXzAuNS42ICAgICAgICAgICAgICAgIFxuWzgxXSBHZW5vbWljQWxpZ25tZW50c18xLjIyLjEgICAgbWVtb2lzZV8xLjEuMCAgICAgICAgICAgICAgIGVsbGlwc2lzXzAuMy4xICAgICAgICAgICAgIFxuIn0= -->
+<pre><code>R version 3.6.3 (2020-02-29)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 18363)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_Canada.1252  LC_CTYPE=English_Canada.1252    LC_MONETARY=English_Canada.1252
+[4] LC_NUMERIC=C                    LC_TIME=English_Canada.1252    
+
+attached base packages:
+[1] stats4    parallel  stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] bamsignals_1.18.0      RMariaDB_1.0.8         org.Hs.eg.db_3.10.0    RColorBrewer_1.1-2     GenomicFeatures_1.38.2
+ [6] AnnotationDbi_1.48.0   Biobase_2.46.0         GenomicRanges_1.38.0   GenomeInfoDb_1.22.1    IRanges_2.20.2        
+[11] S4Vectors_0.24.4       BiocGenerics_0.32.0    forcats_0.5.0          stringr_1.4.0          dplyr_0.8.5           
+[16] purrr_0.3.4            readr_1.3.1            tidyr_1.0.3            tibble_3.0.1           ggplot2_3.3.0         
+[21] tidyverse_1.3.0       
+
+loaded via a namespace (and not attached):
+ [1] nlme_3.1-144                bitops_1.0-6                matrixStats_0.56.0          fs_1.4.1                   
+ [5] lubridate_1.7.8             bit64_0.9-7                 progress_1.2.2              httr_1.4.1                 
+ [9] tools_3.6.3                 backports_1.1.7             utf8_1.1.4                  R6_2.4.1                   
+[13] DBI_1.1.0                   colorspace_1.4-1            withr_2.2.0                 tidyselect_1.1.0           
+[17] prettyunits_1.1.1           bit_1.1-15.2                curl_4.3                    compiler_3.6.3             
+[21] cli_2.0.2                   rvest_0.3.5                 xml2_1.3.2                  DelayedArray_0.12.3        
+[25] labeling_0.3                rtracklayer_1.46.0          scales_1.1.1                askpass_1.1                
+[29] rappdirs_0.3.1              digest_0.6.25               Rsamtools_2.2.3             rmarkdown_2.1              
+[33] XVector_0.26.0              base64enc_0.1-3             htmltools_0.4.0             pkgconfig_2.0.3            
+[37] dbplyr_1.4.3                rlang_0.4.6                 readxl_1.3.1                rstudioapi_0.11            
+[41] RSQLite_2.2.0               farver_2.0.3                generics_0.0.2              jsonlite_1.6.1             
+[45] BiocParallel_1.20.1         RCurl_1.98-1.2              magrittr_1.5                GenomeInfoDbData_1.2.2     
+[49] Matrix_1.2-18               Rcpp_1.0.4.6                munsell_0.5.0               fansi_0.4.1                
+[53] lifecycle_0.2.0             yaml_2.2.1                  stringi_1.4.6               SummarizedExperiment_1.16.1
+[57] zlibbioc_1.32.0             BiocFileCache_1.10.2        grid_3.6.3                  blob_1.2.1                 
+[61] crayon_1.3.4                lattice_0.20-38             Biostrings_2.54.0           haven_2.2.0                
+[65] hms_0.5.3                   knitr_1.28                  pillar_1.4.4                biomaRt_2.42.1             
+[69] reprex_0.3.0                XML_3.99-0.3                glue_1.4.1                  evaluate_0.14              
+[73] modelr_0.1.8                vctrs_0.3.0                 cellranger_1.1.0            gtable_0.3.0               
+[77] openssl_1.4.1               assertthat_0.2.1            xfun_0.14                   broom_0.5.6                
+[81] GenomicAlignments_1.22.1    memoise_1.1.0               ellipsis_0.3.1             </code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-chunk-end -->
+</div>
+
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIkFuYWx5c2lzIG9mIHB1Ymxpc2hlZCBZQlgxIFBBUkNMSVAgZGF0YSINCm91dHB1dDoNCiAgaHRtbF9ub3RlYm9vazoNCiAgICAgIGNvZGVfZm9sZGluZzogbm9uZQ0KLS0tDQoNClRoaXMgZG9jdW1lbnQgZGVzY3JpYmVzIGV4cGxvcmF0aW9uIG9mIHNvbWUgUEFSQ0xJUCBkYXRhIGZyb20gYSBwdWJsaXNoZWQgc3R1ZHkgKFBNSUQ6IDMxMzU4OTY5KS4gVGhlIHBhcGVyIHBlcmZvcm1lZCBhIGZldyBkaWZmZXJlbnQgYW5hbHlzZXMgcmVsYXRlZCB0byBZQlgxLCBidXQgaGVyZSB3ZSB3aWxsIGZvY3VzIG9uIHRoZWlyIFBBUkNMSVAgZGF0YSB0aGF0IHdhcyBwZXJmb3JtZWQgaW4gZHVwbGljYXRlLiBUaGUgcmF3IGRhdGEgZm9yIHRoZSBQQVJDTElQIGV4cGVyaW1lbnRzIHdlcmUgdXBsb2FkZWQgdG8gR1NFMTMzNjcxLCBidXQgdW5mb3J0dW5hdGVseSwgdGhleSBvbmx5IGdpdmUgYmFzaWMgcGVhayBjYWxsIGZpbGVzIHRoYXQgYXJlIGxhY2tpbmcgYW55IHNvcnQgb2Ygc2NvcmVzIG9yIGluZm9ybWF0aW9uIG9uIGhvdyB0aGV5IHdlcmUgcGFyc2VkLiBBcyBhIHJlc3VsdCwgSSByZXByb2Nlc3NlZCB0aGUgcmF3IHNlcXVlbmNpbmcgZGF0YSB1c2luZyB0aGUgc2NyaXB0IGZvdW5kIFtoZXJlXSgvcmF3U2VxdWVuY2luZ0RhdGFQcm9jZXNzaW5nU2hlbGxTY3JpcHQubWQpLg0KDQojIyBTZXR0aW5nIHVwIHRoZSBlbnZpcm9ubWVudA0KDQpUaGVzZSBhcmUgcGFja2FnZXMgeW91IHdpbGwgbmVlZCBmb3IgdGhpcyBub3RlYm9vay4gRm9yIGV4YWN0IHZlcnNpb25zIHVzZWQsIHBsZWFzZSByZWZlciB0byB0aGUgc2Vzc2lvbiBpbmZvIGF0IHRoZSBib3R0b20gb2YgdGhpcyBub3RlYm9vay4NCg0KYGBge3IsIG1lc3NhZ2UgPSBGQUxTRSwgZWNobyA9IEZBTFNFfQ0KbGlicmFyeSgndGlkeXZlcnNlJykNCmxpYnJhcnkoJ0dlbm9taWNGZWF0dXJlcycpDQpsaWJyYXJ5KCdnZ3Bsb3QyJykNCmxpYnJhcnkoJ1JDb2xvckJyZXdlcicpDQpsaWJyYXJ5KCdvcmcuSHMuZWcuZGInKQ0KbGlicmFyeSgnR2Vub21pY1JhbmdlcycpDQpsaWJyYXJ5KCdSTWFyaWFEQicpDQpsaWJyYXJ5KCdiYW1zaWduYWxzJykNCmBgYA0KDQpJIHdhbnQgdG8gc2V0IGEgYmFzZSBkaXJlY3RvcnkgdGhhdCB3ZSBjYW4gdXNlIGFzIGEgbGluayB0byB0aGUgZGlyZWN0b3J5IHdoZXJlIHdlIHdpbGwgZG8gbW9zdCBvZiB0aGUgd29yay4NCg0KYGBge3J9DQpiYXNlV29ya3NwYWNlID0gJ0M6L1VzZXJzL2NocmlzL09uZURyaXZlL0RvY3VtZW50cy9iY2NyYy9wcm9qZWN0c1dvcmtzcGFjZS9zb3JlbnNlbkxhYi9yZWxhdGVkVG9ZYngxJw0KYmFzZVJlcG9zaXRvcnkgPSAnQzovVXNlcnMvY2hyaXMvT25lRHJpdmUvRG9jdW1lbnRzL2JjY3JjL3Byb2plY3RzUmVwb3NpdG9yeS9zb3JlbnNlbkxhYi9yZWxhdGVkVG9ZYngxJw0KYGBgDQoNCkxhc3RseSwgd2UgbmVlZCB0byBjYWxsIGEgc291cmNlIGZpbGUgdGhhdCBoYXMgc29tZSBmdW5jdGlvbnMgd2Ugd2lsbCBuZWVkLiBGb3Igc2ltcGxpY2l0eSBhbmQgZWFzZSBvZiB0cmFja2luZywgSSBtYWtlIGEgY29weSBvZiB0aGlzIGZpbGUgaW4gZWFjaCBkaXJlY3RvcnkgdGhhdCBJIHdpbGwgd29yayBpbiBpbiBvcmRlciB0byBiZSBhYmxlIHRvIHRyYWNlIHRoZSBleGFjdCBvbmUgZnVuY3Rpb25zIHRoYXQgYXJlIHVzZWQsIGluIGNhc2UgSSBjaGFuZ2UgdGhlbSBhbmQgbWlzdGFrZW5seSBkb24ndCBwdXNoIGl0IHRvIEdpdEh1Yi4NCg0KYGBge3J9DQpzb3VyY2UocGFzdGUoYmFzZVdvcmtzcGFjZSwgJy8yMDIwMDUyNV9leHBsb3JhdGlvbllieDFQYXJjbGlwUHVibGlzaGVkL3VzZXJEZWZpbmVkRnVuY3Rpb25zLlInLCBzZXAgPSAnJykpDQpgYGANCg0KIyMgRGF0YSBwcm9jZXNzaW5nDQoNCkZpcnN0IHdlIG5lZWQgdG8gYnVpbGQgYSB0cmFuc2NyaXB0b21lIGluZGV4IHRoYXQgd2Ugd2lsbCB1c2UgZm9yIGdlbmUgYXNzaWdubWVudCBpbiBvbmUgb2YgdGhlIHJlZmVyZW5jZWQgZnVuY3Rpb25zLiBVc2UgdGhlIGhlbHAgZnVuY3Rpb24gZm9yIHRoaXMgdG8gZmluZCBhIHNlcnZlciB0aGF0IGlzIGNsb3NlIHRvIHlvdSwgaXQgbWFrZXMgYSBiaWcgZGlmZmVyZW5jZSBpbiB0aGUgc3BlZWQuIEVuc2VtYmwgdjk5IGlzIHRoZSBsYXN0IG9uZSBmb3IgaGcxOSBhbmQgdGhpcyBpcyB3aGF0IHdlIHVzZWQgaW4gdGhlIGFsaWdubWVudCBmb3IgZWFzZSBvZiBjb21wYXJpbmcgdG8gb3RoZXIgcHVibGlzaGVkIHN0dWRpZXMuDQoNCmBgYHtyfQ0KdHhkYkVuc2VtYmwgPSBtYWtlVHhEYkZyb21FbnNlbWJsKG9yZ2FuaXNtID0gJ0hvbW8gc2FwaWVucycsDQogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgcmVsZWFzZSA9IDk5LA0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHNlcnZlciA9ICd1c2Vhc3RkYi5lbnNlbWJsLm9yZycpDQojbm93IHNhdmUgdGhlIHR4ZGIgZm9yIGxhdGVyIHVzZQ0Kc2F2ZURiKHR4ZGJFbnNlbWJsLCBmaWxlID0gcGFzdGUoYmFzZVJlcG9zaXRvcnksIA0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgJy8yMDIwMDUyNV9leHBsb3JhdGlvbllieDFQYXJjbGlwUHVibGlzaGVkL1R4RGIuSHNhcGllbnMuRU5TRU1CTC5oZzE5LnY5OS5zcWxpdGUnLCBzZXAgPSAnJykpDQpgYGANCg0KQW5ub3RhdGUgdGhlIFlCWDEgUEFSQ0xJUCBkYXRhIHRoYXQgd2FzIG9idGFpbmVkIGZyb20gd2F2Q2x1c3RlUiB1c2luZyBmdW5jdGlvbnMgZGVmaW5lZCBpbiB0aGUgc291cmNlIGZpbGUgcmVmZXJlbmNlZCBhYm92ZS4NCg0KYGBge3J9DQojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIw0KIyNnZXQgdGhlIGRhdGEgZm9yIHRoZSB0d28gcmVwbGljYXRlcw0KcGFyY2xpcDEgPSByZWFkUkRTKHBhc3RlKGJhc2VSZXBvc2l0b3J5LCAnLzIwMjAwNTI1X2V4cGxvcmF0aW9uWWJ4MVBhcmNsaXBQdWJsaXNoZWQvU1JSOTYyMzUzMS53YXZDbHVzdGVycy5yZHMnLCBzZXAgPSAnJykpDQpwYXJjbGlwMiA9IHJlYWRSRFMocGFzdGUoYmFzZVJlcG9zaXRvcnksICcvMjAyMDA1MjVfZXhwbG9yYXRpb25ZYngxUGFyY2xpcFB1Ymxpc2hlZC9TUlI5NjIzNTMyLndhdkNsdXN0ZXJzLnJkcycsIHNlcCA9ICcnKSkNCg0KIyNvdmVybGFwIHRoZSByZXBsaWNhdGVzIHRvIG9ubHkgcmV0YWluIHJlZ2lvbnMgaWRlbnRpZmllZCBpbiBib3RoDQpwYXJjbGlwSW50ZXJzZWN0ID0gR2Vub21pY1Jhbmdlczo6aW50ZXJzZWN0KHBhcmNsaXAxLCBwYXJjbGlwMikNCg0KIyNpbiBjYXNlIHlvdSBkb24ndCBoYXZlIHRoZSB0eGRiIGxvYWRlZCBpbiBhbHJlYWR5DQp0eGRiRW5zZW1ibCA9IGxvYWREYihmaWxlID0gcGFzdGUoYmFzZVJlcG9zaXRvcnksIA0KICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICcvMjAyMDA1MjVfZXhwbG9yYXRpb25ZYngxUGFyY2xpcFB1Ymxpc2hlZC9UeERiLkhzYXBpZW5zLkVOU0VNQkwuaGcxOS52OTkuc3FsaXRlJywgc2VwID0gJycpKQ0KDQojI25vdyBhbm5vdGF0ZSB0aGlzIHdpdGggb3VyIHVzZXItZGVmaW5lZCBmdW5jdGlvbg0KcGFyY2xpcEFubm90YXRlZCA9IHdhdmNsdXN0ZXJQZWFrQW5ub3RhdGlvbihhc190aWJibGUocGFyY2xpcEludGVyc2VjdCksIHR4ZGJFbnNlbWJsLCByZW1vdmVNaXRvID0gVFJVRSkNCiMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMNCmBgYA0KDQpSZW1vdmUgY2x1c3RlcnMgdGhhdCBhcmUgdG9vIHNtYWxsIGFuZCBhZGQgcmVhZCBjb3VudHMgYmFzZWQgb24gdGhlIHJlcGxpY2F0ZXMuDQoNCmBgYHtyfQ0KIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIw0KIyNyZW1vdmUgY2x1c3RlcnMgdGhhdCBhcmUgdG9vIHNtYWxsDQpwYXJjbGlwTGFyZ2VDbHVzdGVycyA9IHN1YnNldChwYXJjbGlwQW5ub3RhdGVkLCBwYXJjbGlwQW5ub3RhdGVkJHdpZHRoID49IDEyKQ0KDQojI3JlYWQgdGhlIHJhdyBiYW0gZmlsZXMNCmJhbXBhdGgxID0gcGFzdGUoYmFzZVJlcG9zaXRvcnksICcvMjAyMDA1MjVfZXhwbG9yYXRpb25ZYngxUGFyY2xpcFB1Ymxpc2hlZC9TUlI5NjIzNTMxLnRyaW1tZWQucnJuYS5ib3d0aWUubWFwcGVkLnNvcnRlZC5iYW0nLCBzZXAgPSAnJykNCmJhbXBhdGgyID0gcGFzdGUoYmFzZVJlcG9zaXRvcnksICcvMjAyMDA1MjVfZXhwbG9yYXRpb25ZYngxUGFyY2xpcFB1Ymxpc2hlZC9TUlI5NjIzNTMyLnRyaW1tZWQucnJuYS5ib3d0aWUubWFwcGVkLnNvcnRlZC5iYW0nLCBzZXAgPSAnJykNCg0KIyNnZXQgdGhlIG1heCByZWFkIGNvdW50IGluIGEgcmVnaW9uLCByZXBsaWNhdGUgMQ0KYmFtQ292ZXJhZ2UxID0gYmFtQ292ZXJhZ2UoYmFtcGF0aDEsIG1ha2VHUmFuZ2VzRnJvbURhdGFGcmFtZShwYXJjbGlwTGFyZ2VDbHVzdGVycyksIHZlcmJvc2U9RkFMU0UpDQpiYW1Db3VudHMxID0gdW5saXN0KGxhcHBseShhcy5saXN0KGJhbUNvdmVyYWdlMSksIG1heCkpDQpwYXJjbGlwTGFyZ2VDbHVzdGVycyRyZWFkQ291bnRSZXAxID0gYmFtQ291bnRzMQ0KDQojI2dldCB0aGUgbWF4IHJlYWQgY291bnQgaW4gYSByZWdpb24sIHJlcGxpY2F0ZSAyDQpiYW1Db3ZlcmFnZTIgPSBiYW1Db3ZlcmFnZShiYW1wYXRoMiwgbWFrZUdSYW5nZXNGcm9tRGF0YUZyYW1lKHBhcmNsaXBMYXJnZUNsdXN0ZXJzKSwgdmVyYm9zZT1GQUxTRSkNCmJhbUNvdW50czIgPSB1bmxpc3QobGFwcGx5KGFzLmxpc3QoYmFtQ292ZXJhZ2UyKSwgbWF4KSkNCnBhcmNsaXBMYXJnZUNsdXN0ZXJzJHJlYWRDb3VudFJlcDIgPSBiYW1Db3VudHMyDQoNCiMjY29tYmluZSB3aXRoIHRoZSBvcmlnaW5hbCBkYXRhIGFuZCB0YWtlIHRoZSBzdW0gb2YgdGhlIHJlcGxpY2F0ZXMNCnBhcmNsaXBMYXJnZUNsdXN0ZXJzJHJlYWRDb3VudFN1bSA9IGFzLmludGVnZXIocm93U3VtcyhwYXJjbGlwTGFyZ2VDbHVzdGVyc1ssYygncmVhZENvdW50UmVwMScsJ3JlYWRDb3VudFJlcDInKV0sIG5hLnJtID0gVFJVRSkpDQojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjDQpgYGANCg0KTm93IGFubm90YXRlIHRoZSBsb2NhdGlvbiBpbiB0aGUgcmVhZCBwZWFrIHdoZXJlIHRoZSBtYXhpbXVtIHJlYWQgY291bnQgaXMgb2JzZXJ2ZWQsIGZvciBlYWNoIHBlYWsuDQoNCmBgYHtyfQ0KIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIw0KIyMjZmluZCB0aGUgbWF4IGxvY2F0aW9uIGZvciBlYWNoIHBlYWsNCmJhbU1heDEgPSB1bmxpc3QobGFwcGx5KGFzLmxpc3QoYmFtQ292ZXJhZ2UxKSwgZnVuY3Rpb24oeCkgYXMuaW50ZWdlcihtZWFuKHdoaWNoKHggPT0gbWF4KHgpKSkpKSkNCmJhbU1heDIgPSB1bmxpc3QobGFwcGx5KGFzLmxpc3QoYmFtQ292ZXJhZ2UyKSwgZnVuY3Rpb24oeCkgYXMuaW50ZWdlcihtZWFuKHdoaWNoKHggPT0gbWF4KHgpKSkpKSkNCnBhcmNsaXBMYXJnZUNsdXN0ZXJzJHBlYWtNYXhSZXAxID0gcGFyY2xpcExhcmdlQ2x1c3RlcnMkc3RhcnQgKyBiYW1NYXgxDQpwYXJjbGlwTGFyZ2VDbHVzdGVycyRwZWFrTWF4UmVwMiA9IHBhcmNsaXBMYXJnZUNsdXN0ZXJzJHN0YXJ0ICsgYmFtTWF4Mg0KIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIw0KYGBgDQoNCk5vdyBhbm5vdGF0ZSB0aGUgcHVyaXR5IGZvciBlYWNoIGdlbmUuIFRoaXMgaXMgYSBiaXQgcm91Z2gsIGJ1dCBmb3IgYWxsIHRoZSBwZWFrcyBpbiBlYWNoIGdlbmUsIGl0IGJhc2ljYWxseSBjYWxjdWxhdGVzIHdoYXQgcHJvcG9ydGlvbiB0aGV5IGNvbnRyaWJ1dGUgdG8gdGhlIHRvdGFsIHNpZ25hbCBvZiB0aGF0IGdlbmUuIElmIGEgZ2VuZSBqdXN0IGhhcyBub24tc3BlY2lmaWMgcmVhZHMgYWNyb3NzIGl0LCBJIGV4cGVjdCB0aGF0IHRoZSBwZWFrcyB3aWxsIGFsbCBoYXZlIGxvdyBwcm9wb3J0aW9uIHNjb3Jlcy4gSWYgdGhlcmUgYXJlIGEgY291cGxlIG9mIGxhcmdlIHBlYWtzLCB0aGVuIEkgZXhwZWN0IHRoZXNlIHRvIHJpc2UgYWJvdmUgYW5kIGhhdmUgaGlnaGVyIHNjb3Jlcy4gSXQgaXMgbm90IHBlcmZlY3QsIGFuZCBJIGNhbiBlbnZpc2lvbiBhIGNvdXBsZSBzY2VuYXJpb3Mgd2hlcmUgaXQgd2lsbCBmYWxsIGRvd24sIGJ1dCBJIHRoaW5rIGFzIGxvbmcgYXMgSSBhbSBub3QgdG9vIHN0cmljdCBpbiB0aGUgZmlsdGVyIGxldmVsIGl0IHNob3VsZCBiZSBvay4NCg0KYGBge3J9DQojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjDQojI2ZpbmQgdGhlIHB1cml0eSBmb3IgYWxsIHBlYWtzIHdpdGhpbiBhIGdlbmUNCmduU2V0ID0gdW5pcXVlKHBhcmNsaXBMYXJnZUNsdXN0ZXJzJHR4ZGJTeW1ib2wpDQpwYXJjbGlwUHVyaXR5ID0gdGliYmxlKCkNCmZvciAoaSBpbiAxOmxlbmd0aChnblNldCkpew0KICBwdXJpdHlDYWxjdWxhdGlvbiA9IHBhcmNsaXBMYXJnZUNsdXN0ZXJzW3BhcmNsaXBMYXJnZUNsdXN0ZXJzJHR4ZGJTeW1ib2wgPT0gZ25TZXRbaV0sXSAlPiUNCiAgICBhcnJhbmdlKGRlc2MocmVhZENvdW50U3VtKSkgJT4lDQogICAgbXV0YXRlKHBlYWtQdXJpdHkgPSByZWFkQ291bnRTdW0gLyBzdW0ocmVhZENvdW50U3VtKSkgDQogIHBhcmNsaXBQdXJpdHkgPSByYmluZChwYXJjbGlwUHVyaXR5LCBwdXJpdHlDYWxjdWxhdGlvbikNCn0NCg0KIyMjbWFrZSBhIHF1aWNrIHBsb3Qgb2YgdGhlIHB1cml0eSB2YWx1ZXMNCmdncGxvdChwYXJjbGlwUHVyaXR5LCBhZXMocGVha1B1cml0eSkpICsNCiAgZ2VvbV9kZW5zaXR5KHNpemUgPSAxKSArDQogIHNjYWxlX3hfY29udGludW91cyhsaW1pdHMgPSBjKDAsMSksIGJyZWFrcyA9IHNlcSgwLDEsMC4xKSkgKw0KICBsYWJzKHggPSAncGVhayBwdXJpdHknLCB5ID0gJ2RlbnNpdHknLCB0aXRsZSA9ICdwZWFrIHB1cml0eSBjYWxjdWxhdGlvbicpICsNCiAgZ2VvbV92bGluZSh4aW50ZXJjZXB0ID0gMC4yNSwgbGluZXR5cGUgPSAnZGFzaGVkJywgY29sb3IgPSBicmV3ZXIucGFsKDksJ1NwZWN0cmFsJylbMV0pICsNCiAgdGhlbWVfY2xhc3NpYygpDQpnZ3NhdmUocGFzdGUoYmFzZVdvcmtzcGFjZSwgJy8yMDIwMDUyNV9leHBsb3JhdGlvbllieDFQYXJjbGlwUHVibGlzaGVkL2RlbnNpdHlfeWIxUGFyY2xpcF9wZWFrUHVyaXR5U2NvcmVzLnBkZicsIHNlcCA9ICcnKSwNCiAgICAgICB1c2VEaW5nYmF0cyA9IEZBTFNFLA0KICAgICAgIHdpZHRoID0gNCwNCiAgICAgICBoZWlnaHQgPSA0KQ0KIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIw0KYGBgDQpOb3cgSSBjYW4gYXNzaWduIHRoZSBwZWFrIHJhbmsuIFRoaXMgaXMgZXNzZW50aWFsbHkganVzdCB0aGUgcmFuayBvZiBhbGwgcGVha3MgYXNzaWduZWQgdG8gYSBzaW5nbGUgZ2VuZSwgYmFzZWQgb24gdGhlaXIgcmVhZCBjb3VudHMuDQoNCmBgYHtyfQ0KIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIw0KIyNub3cgYXNzaWduIHRoZSBwZWFrIHJhbmsNCnBhcmNsaXBQdXJpdHlGaWx0ZXJlZCA9IHBhcmNsaXBQdXJpdHkgJT4lIGZpbHRlcihwZWFrUHVyaXR5ID49IDAuMjUpDQpnblNldCA9IHVuaXF1ZShwYXJjbGlwUHVyaXR5RmlsdGVyZWQkdHhkYlN5bWJvbCkNCnBhcmNsaXBQZWFrUmFuayA9IHRpYmJsZSgpDQpmb3IgKGkgaW4gMTpsZW5ndGgoZ25TZXQpKXsNCiAgcHVyaXR5RmlsdGVyID0gcGFyY2xpcFB1cml0eUZpbHRlcmVkW3BhcmNsaXBQdXJpdHlGaWx0ZXJlZCR0eGRiU3ltYm9sID09IGduU2V0W2ldLF0gJT4lDQogICAgYXJyYW5nZShkZXNjKHJlYWRDb3VudFN1bSkpICU+JQ0KICAgIG11dGF0ZShwZWFrUmFuayA9IHNlcSgxLGxlbmd0aChyZWFkQ291bnRTdW0pLDEpKQ0KICBwYXJjbGlwUGVha1JhbmsgPSByYmluZChwYXJjbGlwUGVha1JhbmssIHB1cml0eUZpbHRlcikNCn0NCg0KIyMjdGhpcyBpcyB0aGUgZmluYWwgZGF0YXNldCwgc2F2ZSBpdA0Kc2F2ZVJEUyhwYXJjbGlwUGVha1JhbmssDQogICAgICAgIHBhc3RlKGJhc2VSZXBvc2l0b3J5LCAnLzIwMjAwNTI1X2V4cGxvcmF0aW9uWWJ4MVBhcmNsaXBQdWJsaXNoZWQvZGF0YXNldF95YjFQYXJjbGlwQW5ub3RhdGVkUGVha1NldC5yZHMnLCBzZXAgPSAnJykpDQp3cml0ZS50YWJsZShwYXJjbGlwUGVha1JhbmssDQogICAgICAgIHBhc3RlKGJhc2VSZXBvc2l0b3J5LCAnLzIwMjAwNTI1X2V4cGxvcmF0aW9uWWJ4MVBhcmNsaXBQdWJsaXNoZWQvZGF0YXNldF95YjFQYXJjbGlwQW5ub3RhdGVkUGVha1NldC5jc3YnLCBzZXAgPSAnJyksDQogICAgICAgIGNvbC5uYW1lcyA9IFRSVUUsIHJvdy5uYW1lcyA9IEZBTFNFLCBxdW90ZSA9IEZBTFNFLCBzZXAgPSAnLCcpDQojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjDQpgYGANCg0KIyMgU2Vzc2lvbiBpbmZvDQoNCmBgYHtyfQ0Kc2Vzc2lvbkluZm8oKQ0KYGBg</div>
 
 
 
@@ -1821,7 +2095,6 @@ $(document).ready(function () {
 <script>
 $(document).ready(function () {
   window.initializeSourceEmbed("20200525_explorationYbx1ParclipPublished.Rmd");
-  window.initializeCodeFolding("show" === "show");
 });
 </script>
 
