@@ -11,7 +11,7 @@ This document describes exploration of some PARCLIP data from a published study 
 
 This file is a continuation of the work done in:
 
-* [20200526_explorationYbx1ParclipPublished](https://github.com/chrishuges/projectsWorkspace/tree/master/sorensenLab/relatedToYbx1/20200526_explorationYbx1ParclipPublished)
+* [20200525_explorationYbx1ParclipPublished](https://github.com/chrishuges/projectsWorkspace/tree/master/sorensenLab/relatedToYbx1/20200525_explorationYbx1ParclipPublished)
 
 ## Setting up the environment
 

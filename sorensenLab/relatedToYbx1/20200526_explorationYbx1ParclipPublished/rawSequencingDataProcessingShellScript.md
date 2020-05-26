@@ -27,10 +27,18 @@ $wget ftp://ftp.ensembl.org/pub/release-100/fasta/homo_sapiens/dna/Homo_sapiens.
 $gunzip *.gz
 ```
 
+After this, I had to change the way the chromosomes are named because wavClusteR makes use of the BSgenome package that is based on the UCSC way of annotating (chr1 vs 1). I then had to edit specifically the chrMT to be chrM.
+
+```
+$for i in *.fa; do sed 's/>/>chr/g' $i > ${i::-3}.edit.fa; done
+$sed 's/>chrMT/>chrM/g' Homo_sapiens.GRCh38.dna.chromosome.MT.edit.fa > Homo_sapiens.GRCh38.dna.chromosome.M.edit.fa
+$rm *[0-9,XYMT].fa
+```
+
 Then I built the Bowtie index:
 
 ```
-$/projects/ptx_analysis/chughes/software/bowtie-1.2.3-linux-x86_64/bowtie-build --threads 24 Homo_sapiens.GRCh38.dna.chromosome.1.fa,Homo_sapiens.GRCh38.dna.chromosome.2.fa,Homo_sapiens.GRCh38.dna.chromosome.3.fa,Homo_sapiens.GRCh38.dna.chromosome.4.fa,Homo_sapiens.GRCh38.dna.chromosome.5.fa,Homo_sapiens.GRCh38.dna.chromosome.6.fa,Homo_sapiens.GRCh38.dna.chromosome.7.fa,Homo_sapiens.GRCh38.dna.chromosome.8.fa,Homo_sapiens.GRCh38.dna.chromosome.9.fa,Homo_sapiens.GRCh38.dna.chromosome.10.fa,Homo_sapiens.GRCh38.dna.chromosome.11.fa,Homo_sapiens.GRCh38.dna.chromosome.12.fa,Homo_sapiens.GRCh38.dna.chromosome.13.fa,Homo_sapiens.GRCh38.dna.chromosome.14.fa,Homo_sapiens.GRCh38.dna.chromosome.15.fa,Homo_sapiens.GRCh38.dna.chromosome.16.fa,Homo_sapiens.GRCh38.dna.chromosome.17.fa,Homo_sapiens.GRCh38.dna.chromosome.18.fa,Homo_sapiens.GRCh38.dna.chromosome.19.fa,Homo_sapiens.GRCh38.dna.chromosome.20.fa,Homo_sapiens.GRCh38.dna.chromosome.21.fa,Homo_sapiens.GRCh38.dna.chromosome.22.fa,Homo_sapiens.GRCh38.dna.chromosome.X.fa,Homo_sapiens.GRCh38.dna.chromosome.Y.fa,Homo_sapiens.GRCh38.dna.chromosome.MT.fa ./homoSapiensEnsemblGRCh38_rel100
+$/projects/ptx_analysis/chughes/software/bowtie-1.2.3-linux-x86_64/bowtie-build --threads 24 Homo_sapiens.GRCh38.dna.chromosome.1.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.2.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.3.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.4.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.5.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.6.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.7.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.8.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.9.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.10.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.11.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.12.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.13.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.14.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.15.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.16.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.17.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.18.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.19.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.20.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.21.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.22.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.X.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.Y.edit.fa,Homo_sapiens.GRCh38.dna.chromosome.M.edit.fa ./homoSapiensEnsemblGRCh38Release100
 ```
 
 Then I copied the created index files over to the Bowtie index directory to finish the install:
