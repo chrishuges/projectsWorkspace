@@ -7,6 +7,10 @@ output:
 
 This document describes exploration of some PARCLIP data from a published study (PMID: 31358969). The paper performed a few different analyses related to YBX1, but here we will focus on their PARCLIP data that was performed in duplicate. The raw data for the PARCLIP experiments were uploaded to GSE133671, but unfortunately, they only give basic peak call files that are lacking any sort of scores or information on how they were parsed. As a result, I reprocessed the raw sequencing data using the script found [here](/rawSequencingDataProcessingShellScript.md).
 
+## Linked analysis
+
+No links.
+
 ## Setting up the environment
 
 These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
@@ -40,9 +44,8 @@ source(paste(baseWorkspace, '/20200525_explorationYbx1ParclipPublished/userDefin
 First we need to build a transcriptome index that we will use for gene assignment in one of the referenced functions. Use the help function for this to find a server that is close to you, it makes a big difference in the speed. Ensembl v99 is the last one for hg19 and this is what we used in the alignment for ease of comparing to other published studies.
 
 ```{r}
-txdbEnsembl = makeTxDbFromEnsembl(organism = 'Homo sapiens',
-                                  release = 99,
-                                  server = 'useastdb.ensembl.org')
+txdbEnsembl = makeTxDbFromBiomart(dataset = 'hsapiens_gene_ensembl',
+                                  host = 'uswest.ensembl.org')
 #now save the txdb for later use
 saveDb(txdbEnsembl, file = paste(baseRepository, 
                                  '/20200525_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg19.v99.sqlite', sep = ''))
@@ -60,12 +63,11 @@ parclip2 = readRDS(paste(baseRepository, '/20200525_explorationYbx1ParclipPublis
 parclipIntersect = GenomicRanges::intersect(parclip1, parclip2)
 
 ##in case you don't have the txdb loaded in already
-txdbEnsembl = loadDb(file = paste(baseRepository, 
-                                  '/20200525_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg19.v99.sqlite', sep = ''))
-
+#txdbEnsembl = loadDb(file = paste(baseRepository, 
+#                                  '/20200525_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg19.v99.sqlite', sep = ''))
+txdbEnsembl = loadDb(file = 'C:/Users/chris/OneDrive/Documents/bccrc/databases/txdb/TxDb.Hsapiens.ENSEMBL.hg19.v99.sqlite')
 ##now annotate this with our user-defined function
 parclipAnnotated = wavclusterPeakAnnotation(as_tibble(parclipIntersect), txdbEnsembl, removeMito = TRUE)
-############################################################################
 ```
 
 Remove clusters that are too small and add read counts based on the replicates.
@@ -91,7 +93,6 @@ parclipLargeClusters$readCountRep2 = bamCounts2
 
 ##combine with the original data and take the sum of the replicates
 parclipLargeClusters$readCountSum = as.integer(rowSums(parclipLargeClusters[,c('readCountRep1','readCountRep2')], na.rm = TRUE))
-############################################################################
 ```
 
 Now annotate the location in the read peak where the maximum read count is observed, for each peak.
@@ -103,7 +104,6 @@ bamMax1 = unlist(lapply(as.list(bamCoverage1), function(x) as.integer(mean(which
 bamMax2 = unlist(lapply(as.list(bamCoverage2), function(x) as.integer(mean(which(x == max(x))))))
 parclipLargeClusters$peakMaxRep1 = parclipLargeClusters$start + bamMax1
 parclipLargeClusters$peakMaxRep2 = parclipLargeClusters$start + bamMax2
-############################################################################
 ```
 
 Now annotate the purity for each gene. This is a bit rough, but for all the peaks in each gene, it basically calculates what proportion they contribute to the total signal of that gene. If a gene just has non-specific reads across it, I expect that the peaks will all have low proportion scores. If there are a couple of large peaks, then I expect these to rise above and have higher scores. It is not perfect, and I can envision a couple scenarios where it will fall down, but I think as long as I am not too strict in the filter level it should be ok.
@@ -131,7 +131,6 @@ ggsave(paste(baseWorkspace, '/20200525_explorationYbx1ParclipPublished/density_y
        useDingbats = FALSE,
        width = 4,
        height = 4)
-############################################################################
 ```
 Now I can assign the peak rank. This is essentially just the rank of all peaks assigned to a single gene, based on their read counts.
 
@@ -154,7 +153,6 @@ saveRDS(parclipPeakRank,
 write.table(parclipPeakRank,
         paste(baseRepository, '/20200525_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.csv', sep = ''),
         col.names = TRUE, row.names = FALSE, quote = FALSE, sep = ',')
-############################################################################
 ```
 
 ## Session info
