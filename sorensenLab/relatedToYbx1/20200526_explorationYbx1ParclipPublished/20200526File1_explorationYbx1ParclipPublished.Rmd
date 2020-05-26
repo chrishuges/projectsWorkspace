@@ -5,7 +5,7 @@ output:
       code_folding: none
 ---
 
-This document describes exploration of some PARCLIP data from a published study (PMID: 31358969). The paper performed a few different analyses related to YBX1, but here we will focus on their PARCLIP data that was performed in duplicate. The raw data for the PARCLIP experiments were uploaded to GSE133671, but unfortunately, they only give basic peak call files that are lacking any sort of scores or information on how they were parsed. As a result, I reprocessed the raw sequencing data using the script found [here](/rawSequencingDataProcessingShellScript.md).
+This document describes exploration of some PARCLIP data from a published study (PMID: 31358969). The paper performed a few different analyses related to YBX1, but here we will focus on their PARCLIP data that was performed in duplicate. The raw data for the PARCLIP experiments were uploaded to GSE133671, but unfortunately, they only give basic peak call files that are lacking any sort of scores or information on how they were parsed. As a result, I reprocessed the raw sequencing data using the script found [here](https://github.com/chrishuges/projectsWorkspace/blob/master/sorensenLab/relatedToYbx1/20200526_explorationYbx1ParclipPublished/rawSequencingDataProcessingShellScript.md).
 
 ## Linked analysis
 
