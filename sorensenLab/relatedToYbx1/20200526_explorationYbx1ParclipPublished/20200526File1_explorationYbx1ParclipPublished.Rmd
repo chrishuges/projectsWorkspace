@@ -28,7 +28,7 @@ library('RMariaDB')
 library('bamsignals')
 ```
 
-I want to set a base directory that we can use as a link to the directory where we will do most of the work.
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
 
 ```{r}
 baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
@@ -43,7 +43,7 @@ source(paste(baseWorkspace, '/20200526_explorationYbx1ParclipPublished/userDefin
 
 ## Data processing
 
-First we need to build a transcriptome index that we will use for gene assignment in one of the referenced functions. Use the help function for this to find a server that is close to you, it makes a big difference in the speed. Ensembl v99 is the last one for hg19 and this is what we used in the alignment for ease of comparing to other published studies.
+First we need to build a transcriptome index that we will use for gene assignment in one of the referenced functions. Use the help function for this to find a server that is close to you, it makes a big difference in the speed. I decided to go back and redo the alignment for these data against hg38 because I suspected there was some funny stuff happening with the annotation index that I used in the wavclusterPeakAnnotation function below. I have also rewritten this function to ensure it is operating correctly.
 
 ```{r}
 txdbEnsembl = makeTxDbFromBiomart(dataset = 'hsapiens_gene_ensembl',
@@ -134,6 +134,7 @@ ggsave(paste(baseWorkspace, '/20200526_explorationYbx1ParclipPublished/density_y
        width = 4,
        height = 4)
 ```
+
 Now I can assign the peak rank. This is essentially just the rank of all peaks assigned to a single gene, based on their read counts.
 
 ```{r}

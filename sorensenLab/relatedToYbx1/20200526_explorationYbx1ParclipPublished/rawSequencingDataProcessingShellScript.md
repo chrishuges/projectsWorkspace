@@ -69,7 +69,7 @@ eval /projects/ptx_analysis/chughes/software/BBTools/bbmap/bbduk.sh in=${i}.fast
 
 eval /projects/ptx_analysis/chughes/software/BBTools/bbmap/bbduk.sh in=${i}.trimmed.fastq.gz out=${i}.trimmed.rrna.fastq.gz stats=${i}.rRNA_stats.txt k=18 ordered=t ref=/projects/ptx_analysis/chughes/databases/genbank_rRNA/genbank_aug2019_rRNA.fasta forcetrimleft=3 forcetrimright=28
 
-eval /projects/ptx_analysis/chughes/software/bowtie-1.2.3-linux-x86_64/bowtie homoSapiensEnsemblGRCh38_rel100 -S -q -v 2 -m 10 --no-unal --best --strata /projects/ptx_results/Sequencing/published-studies/201908_Chen_NatCellBiol_PMID31358969/parclip/${i}.trimmed.rrna.fastq.gz /projects/ptx_results/Sequencing/published-studies/201908_Chen_NatCellBiol_PMID31358969/parclip/${i}.trimmed.rrna.bowtie.sam
+eval /projects/ptx_analysis/chughes/software/bowtie-1.2.3-linux-x86_64/bowtie homoSapiensEnsemblGRCh38Release100 -S -q -v 2 -m 10 --no-unal --best --strata /projects/ptx_results/Sequencing/published-studies/201908_Chen_NatCellBiol_PMID31358969/parclip/${i}.trimmed.rrna.fastq.gz /projects/ptx_results/Sequencing/published-studies/201908_Chen_NatCellBiol_PMID31358969/parclip/${i}.trimmed.rrna.bowtie.sam
 
 eval /projects/ptx_analysis/chughes/software/samtools-1.9/samtools view -S -b /projects/ptx_results/Sequencing/published-studies/201908_Chen_NatCellBiol_PMID31358969/parclip/${i}.trimmed.rrna.bowtie.sam > /projects/ptx_results/Sequencing/published-studies/201908_Chen_NatCellBiol_PMID31358969/parclip/${i}.trimmed.rrna.bowtie.bam
 

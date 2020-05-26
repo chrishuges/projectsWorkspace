@@ -3,6 +3,7 @@
 ##this function is a support function that performs mapping
 ##of parsed regions to the genes and ID's they belong to. It supports
 ## the wavclusterPeakAnnotation function
+#######################################################################
 prepTxDb = function(txdbInput, txdbRaw, ...){
   
   ########first we will prefilter our txdb for the longest mRNA
@@ -46,6 +47,7 @@ prepTxDb = function(txdbInput, txdbRaw, ...){
 ##this function takes an output file from wavClusteR (wavClusters.rds)
 ##and will perform annotation of the peaks based on the Human ENSEMBL
 ##transcriptome database.
+#######################################################################
 wavclusterPeakAnnotation = function(queryDataset, userTxdb, removeMito = FALSE, ...){
   
   ####change the chromosome annotation and remove chrM if desired
