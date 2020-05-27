@@ -1,0 +1,247 @@
+---
+title: "Analysis of published YBX1 PARCLIP data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document describes exploration of some PARCLIP data from a published study (PMID: 31358969). I previously processed the data into a set of annotated peaks and here I will investigate the parsed data.
+
+## Linked analysis
+
+This file is a continuation of the work done in:
+
+* [20200527_explorationYbx1ParclipPublished](https://github.com/chrishuges/projectsWorkspace/tree/master/sorensenLab/relatedToYbx1/20200527_explorationYbx1ParclipPublished)
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('GenomicFeatures')
+library('ggplot2')
+library('RColorBrewer')
+library('org.Hs.eg.db')
+library('GenomicRanges')
+library('bamsignals')
+library('ggrepel')
+library('BSgenome.Hsapiens.UCSC.hg38')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+Lastly, we need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+First I want to look at the distribution of where the binding sites are in a consensus mRNA. Sometimes this is referred to as a metagene plot. We already have the region data as well as a 'regionLocation' value that we can use for this.
+
+```{r}
+##########################################################################################
+parclip = readRDS(paste(baseRepository, '/20200527_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+#make the plot
+ggplot(parclip, aes(regionLocationAdjusted, fill = region)) +
+  geom_histogram(bins = 100, color = 'white', size = 0.1) +
+  geom_vline(xintercept = c(1.05,2.15), linetype = 'dashed', size = 1, color = brewer.pal(9,'Reds')[7]) +
+  scale_fill_manual(values = brewer.pal(9,'Greys')[c(4:6)]) +
+  scale_x_continuous(limits = c(0,3.5), breaks = seq(0,3.5,0.5)) +
+  scale_y_continuous(limits = c(0,300), breaks = seq(0,500,50)) +
+  labs(x = 'Region', y = 'Binding cluster count', title = 'YB-1 RNA binding - T24 cells') +
+  theme_classic() +
+  theme(legend.position = 'none') 
+#write the plot to a file
+ggsave(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/histogram_bindingSitesMetatranscript.pdf', sep = ''),
+       useDingbats = FALSE,
+       width = 4,
+       height = 4)
+```
+
+I am also interested in the absolute number of peaks in each of the regions, regardless of their location within that region.
+
+```{r}
+#######################################################################################
+parclip = readRDS(paste(baseRepository, '/20200527_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+##calculate the counts of individual clusters by gene in each region
+##total gives the total number of individual genes, so it won't equal the sum of the individual regions
+peakCounts = parclip %>%
+  dplyr::select(txdbSymbol, readCountSum, region)
+peakCountsSummary = tibble('region' = c('total','fiveUTR','CDS','threeUTR'),
+                           'genes' = c(length(unique(peakCounts$txdbSymbol)),
+                                            nrow(unique(peakCounts[peakCounts$region == 'fiveUTR', 'txdbSymbol'])),
+                                            nrow(unique(peakCounts[peakCounts$region == 'CDS', 'txdbSymbol'])),
+                                            nrow(unique(peakCounts[peakCounts$region == 'threeUTR', 'txdbSymbol']))))
+peakCountsSummary$region = factor(peakCountsSummary$region, levels = c('total','fiveUTR','CDS','threeUTR'))
+####make the plot
+ggplot(peakCountsSummary, aes(region, genes)) +
+  geom_point(size = 4, color = c(brewer.pal(9,'Reds')[7], brewer.pal(9,'Greys')[c(4:6)])) +
+  labs(x = 'Region', y = 'Number of clusters by gene', title = 'YB-1 RNA cluster counts') +
+  scale_y_continuous(limits = c(0,4500), breaks = seq(0,5000,500)) +
+  theme_classic()
+###write plot to a file
+ggsave(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/scatterplot_bindingSiteAbsoluteCounts.pdf', sep = ''),
+       useDingbats = FALSE,
+       width = 4,
+       height = 4)
+```
+
+Now I would like to see how well the clusters agree between the two replicates from the study. I already filtered the data previously such that a cluster region had to be present in both replicates (if regions were different sizes between the replicates, they were filtered to the consensus region). For this I will use the readCounts data.
+
+```{r}
+#######################################################################################
+parclip = readRDS(paste(baseRepository, '/20200527_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+#for the read counts, I just log transform and then Z-score the values to make them somewhat comparable
+#the read depth between the runs was quite different, so normalization here is a bit more challenging
+#I am not sure if a TPM calculation is appropriate here
+parclip$rep1Scaled = scale(log2(parclip$readCountRep1))
+parclip$rep2Scaled = scale(log2(parclip$readCountRep2))
+parclip$repScaledMean = rowMeans(parclip[,c('rep1Scaled','rep2Scaled')], na.rm = TRUE)
+parclip$repDiff = parclip$rep1Scaled - parclip$rep2Scaled
+#these are just some genes that I am interested in that I want to label
+goi = c('PABPC1','JUN', 'HIF1A',
+        'CTNNB1','ATF4','MKI67',
+        'HDGF','EIF4A1','GLO1')
+####set some colors and labels for the plot
+cor(parclip$rep1Scaled, parclip$rep2Scaled, 
+    use = 'pairwise.complete.obs', 
+    method = 'pearson')
+parclip$pColors = ifelse(parclip$repScaledMean >= 2 & abs(parclip$repDiff) <= 4, 
+                         brewer.pal(9,'Reds')[7], 
+                         brewer.pal(9,'Greys')[4])
+parclip$pText = ifelse(parclip$txdbSymbol %in% goi & parclip$repScaledMean >= 2, 
+                       parclip$txdbSymbol, 
+                       '')
+#make the plot
+ggplot(parclip, aes(rep1Scaled, rep2Scaled)) +
+  geom_point(size = 2, color = parclip$pColors, alpha = 0.5) +
+  geom_text_repel(label = parclip$pText, size = 3, segment.size = 0.2, nudge_x = 2, nudge_y = -1) +
+  labs(x = 'Z-scored read count, replicate 1', y = 'Z-scored read count, replicate 2', title = 'YB-1 PARCLIP cluster reproducibility') +
+  scale_y_continuous(limits = c(-1,7), breaks = seq(0,18,2)) +
+  scale_x_continuous(limits = c(-1,7), breaks = seq(0,18,2)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+###write plot
+ggsave(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/scatterplot_bindingSiteReplication.pdf', sep = ''),
+       useDingbats = FALSE,
+       width = 4,
+       height = 4)
+```
+
+For the genes of interest I show above that all appear to be pretty reproducible and highly-bound hits, I want to show metatranscript plots.
+
+```{r}
+####################################################################################
+parclip = readRDS(paste(baseRepository, '/20200527_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+##genes of interest
+goi = c('PABPC1','JUN','YBX1',
+        'CTNNB1','ATF4','MKI67',
+        'HDGF','EIF4A1','GLO1')
+parclipSub = parclip[parclip$txdbSymbol %in% goi,]
+parclipSub$txdbSymbol = factor(parclipSub$txdbSymbol, levels = c('YBX1','PABPC1','JUN',
+                                                               'CTNNB1','MKI67','ATF4',
+                                                               'EIF4A1','HDGF','GLO1'))
+##normalize the values so that they are relative to the max peak
+parclipNorm = tibble()
+for (i in 1:length(goi)){
+  gnSubset = parclipSub[parclipSub$txdbSymbol == goi[i],]
+  gnSubset$normPeak = gnSubset$readCountSum / max(gnSubset$readCountSum, na.rm = TRUE)
+  parclipNorm = rbind(parclipNorm, gnSubset)
+}
+
+##make a plot 
+ggplot(parclipNorm, aes(regionLocationAdjusted, normPeak)) +
+  geom_segment(aes(x = regionLocationAdjusted, y = 0, xend = regionLocationAdjusted, yend = normPeak), color = brewer.pal(9,'Greys')[4], size = 1.5) +
+  geom_point(size = 2, color = brewer.pal(9,'Greys')[6]) +
+  geom_vline(xintercept = c(1.05,2.15), linetype = 'dashed', color = brewer.pal(9,'Reds')[7]) +
+  scale_y_continuous(limits = c(0,1.1), breaks = seq(0,2,0.25)) +
+  scale_x_continuous(limits = c(0,3.5), breaks = seq(0,3.5,0.5)) +
+  labs(x = 'Region', y = 'Normalized read count', title = 'Reprensentative YB-1 bound RNA') +
+  theme_classic() +
+  theme(legend.position = 'none') +
+  facet_wrap(~txdbSymbol, nrow = 1)
+##write plot to a file
+ggsave(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/lollipop_candidateBoundRNAs.pdf', sep = ''),
+       useDingbats = FALSE,
+       width = 12,
+       height = 4)
+```
+
+The last two things I want to do are to get the lengths of the different regions where YBX1 has bound (e.g. if YB-1 is bound to a 5'UTR, is it a short or long one?). The other is to look at the GC content of the regions. For both of these I will need supplementary functions.
+
+```{r}
+########################################################################################
+parclip = readRDS(paste(baseRepository, '/20200527_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+##in our previous analysis we made a txdb
+txdbEnsembl = loadDb(file = paste(baseRepository, 
+                                 '/20200526_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg38.v100.sqlite', sep = ''))
+#####
+gnLengths = geneLengthAnalysis(parclip, 1, txdbEnsembl)
+##output the raw data counts
+table(gnLengths$status, gnLengths$region)
+####make the plot, all regions
+ggplot(gnLengths, aes(log2(medianWidth), fill = status, color = status)) +
+  geom_density(aes(y=..scaled..), alpha = 0.55, size = 0.5) +
+  scale_fill_manual(values = c(brewer.pal(9,'Greys')[6], brewer.pal(9,'Reds')[7])) +
+  scale_color_manual(values = c(brewer.pal(9,'Greys')[6], brewer.pal(9,'Reds')[7])) +
+  scale_x_continuous(limits = c(0,15), breaks = seq(0,15,3)) +
+  labs(x = 'log2(Region length)', y = 'Scaled density', title = 'Bound region length') +
+  theme_classic() +
+  theme(legend.position = 'none') +
+  #theme(strip.background = element_blank(), strip.text = element_blank()) +
+  facet_wrap(~region)
+####save the plot
+ggsave(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/density_boundRegionLengths.pdf', sep = ''),
+       useDingbats = FALSE,
+       width = 4,
+       height = 4)
+########################################################################################
+```
+
+So, it seems like YBX1 binds long 5' and 3' UTR regions preferentially, but not real preference for CDS is shown. And now GC content for bound regions. 
+
+```{r}
+##########################################################################################
+parclip = readRDS(paste(baseRepository, '/20200527_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+##in our previous analysis we made a txdb
+txdbEnsembl = loadDb(file = paste(baseRepository, 
+                                 '/20200526_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg38.v100.sqlite', sep = ''))
+##run the function
+gnGcContent = gcContentAnalysis(parclip, 1, txdbEnsembl)
+##output the raw data counts
+table(gnGcContent$region, gnGcContent$status)
+####make the plot, all regions
+ggplot(gnGcContent, aes(gcContent, fill = status, color = status)) +
+  geom_density(aes(y=..scaled..), alpha = 0.55, size = 0.5) +
+  scale_fill_manual(values = c(brewer.pal(9,'Greys')[6], brewer.pal(9,'Reds')[7])) +
+  scale_color_manual(values = c(brewer.pal(9,'Greys')[6], brewer.pal(9,'Reds')[7])) +
+  scale_x_continuous(limits = c(0,1), breaks = seq(0,1,0.2)) +
+  labs(x = 'GC content', y = 'Scaled density', title = 'Bound region GC content') +
+  theme_classic() +
+  theme(legend.position = 'none') +
+  facet_wrap(~region)
+####save the plot
+ggsave(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/density_boundRegionGcContent.pdf', sep = ''),
+       useDingbats = FALSE,
+       width = 4,
+       height = 4)
+########################################################################################
+```
+
+So it seems to lean towards lower GC content, but this is pretty minimal drift. I am sure if I did a significance test here it would give me a nice p-value, but the effect size is too small for me to be interested.
+
+In any case, we have a nice set of YBX1 bound RNAs now that we can use as a cross-reference set when parsing through expression or interaction data.
+
+## Session info
+
+```{r}
+sessionInfo()
+```

@@ -142,12 +142,12 @@ wavclusterPeakAnnotation = function(queryDataset, userTxdb, removeMito = FALSE, 
   gnSet$regionLocation = ifelse(grepl('-',gnSet$strand), 1 - gnSet$regionLocation, gnSet$regionLocation)
   gnSet$regionLocationAdjusted = ifelse(gnSet$region == 'CDS', gnSet$regionLocation + 1.1,
                                         ifelse(gnSet$region == 'threeUTR', gnSet$regionLocation + 2.2, gnSet$regionLocation))
-  #gnSetSub1 = subset(gnSet, !(gnSet$clusterMedian <= gnSet$txdbStart) & !(gnSet$clusterMedian >= gnSet$txdbEnd))
+  gnSetSub1 = subset(gnSet, !(gnSet$clusterMedian <= gnSet$txdbStart) & !(gnSet$clusterMedian >= gnSet$txdbEnd))
   #revert the chromosomes to their original format
-  gnSet$seqnames = paste('chr', gnSet$seqnames, sep = '')
-  gnSetSub1 = subset(gnSet, !is.na(gnSet$txdbSymbol))
+  gnSetSub1$seqnames = paste('chr', gnSetSub1$seqnames, sep = '')
+  gnSetSub2 = subset(gnSetSub1, !is.na(gnSetSub1$txdbSymbol))
   message('Processing complete')
-  return(gnSetSub1)
+  return(gnSetSub2)
 }
 #######################################################################
 #######################################################################
