@@ -46,11 +46,12 @@ source(paste(baseWorkspace, '/20200526_explorationYbx1ParclipPublished/userDefin
 First we need to build a transcriptome index that we will use for gene assignment in one of the referenced functions. Use the help function for this to find a server that is close to you, it makes a big difference in the speed. I decided to go back and redo the alignment for these data against hg38 because I suspected there was some funny stuff happening with the annotation index that I used in the wavclusterPeakAnnotation function below. I have also rewritten this function to ensure it is operating correctly.
 
 ```{r}
-txdbEnsembl = makeTxDbFromBiomart(dataset = 'hsapiens_gene_ensembl',
-                                  host = 'uswest.ensembl.org')
+txdbEnsembl = makeTxDbFromEnsembl(organism = 'Homo sapiens',
+                                  release = 100,
+                                  server = 'useastdb.ensembl.org')
 #now save the txdb for later use
 saveDb(txdbEnsembl, file = paste(baseRepository, 
-                                 '/20200526_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg19.v99.sqlite', sep = ''))
+                                 '/20200526_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg38.v100.sqlite', sep = ''))
 ```
 
 Annotate the YBX1 PARCLIP data that was obtained from wavClusteR using functions defined in the source file referenced above.
@@ -65,9 +66,8 @@ parclip2 = readRDS(paste(baseRepository, '/20200526_explorationYbx1ParclipPublis
 parclipIntersect = GenomicRanges::intersect(parclip1, parclip2)
 
 ##in case you don't have the txdb loaded in already
-#txdbEnsembl = loadDb(file = paste(baseRepository, 
-#                                  '/20200526_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg19.v99.sqlite', sep = ''))
-txdbEnsembl = loadDb(file = 'C:/Users/chris/OneDrive/Documents/bccrc/databases/txdb/TxDb.Hsapiens.ENSEMBL.hg19.v99.sqlite')
+txdbEnsembl = loadDb(file = paste(baseRepository, 
+                                 '/20200526_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg38.v100.sqlite', sep = ''))
 ##now annotate this with our user-defined function
 parclipAnnotated = wavclusterPeakAnnotation(as_tibble(parclipIntersect), txdbEnsembl, removeMito = TRUE)
 ```
