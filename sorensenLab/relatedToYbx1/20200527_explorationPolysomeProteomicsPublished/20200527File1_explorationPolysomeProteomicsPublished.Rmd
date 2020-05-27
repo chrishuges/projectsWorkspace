@@ -75,6 +75,7 @@ riboSet
 saveRDS(riboSet, paste(generalDatasets, '/corumComplexes/ribosomalComplexesParsed.rds', sep = ''))
 ```
 
+Now we can parse and annotate our data using the pre-defined function found in the userDefinedFunctions.R file in this repository.
 
 ```{r}
 ##########################################################################################
