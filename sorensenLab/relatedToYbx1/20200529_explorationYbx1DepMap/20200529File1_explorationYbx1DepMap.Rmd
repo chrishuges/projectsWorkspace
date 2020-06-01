@@ -1,0 +1,99 @@
+---
+title: "Analysis of DepMap data for YB-1"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document describes exploration of some of the DepMap cell line expression data to look at trends in YB-1 expression or dependency.
+
+## Linked analysis
+
+This file is a continuation of the work done in:
+
+* no links
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('vroom')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+Lastly, we need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/20200529_explorationYbx1DepMap/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+First I need to read in the dependency data.
+
+```{r}
+##########################################################################################
+crispr = vroom(paste(generalDatasets, '/depmap20Q1/Achilles_gene_effect.csv', sep = ''))
+colnames(crispr)[1] = 'DepMap_ID'
+```
+
+Data read looks good. Now I will get the cell line annotation details.
+
+```{r}
+##########################################################################################
+anno = read_csv(paste(generalDatasets, '/depmap20Q1/sample_info.csv', sep = ''))
+```
+
+Now we can select the values for dependency for YB-1 across all of the different cancers.
+
+```{r}
+##########################################################################################
+#the column name is YBX1 (4904)
+crisprYbx1 = crispr %>%
+  dplyr::select(DepMap_ID, `YBX1 (4904)`) %>%
+  left_join(anno)
+keep = names(which(table(crisprYbx1$lineage) > 5))
+crisprYbx1Lineage = crisprYbx1[crisprYbx1$lineage %in% keep, ]
+```
+Now we can make the plot.
+
+```{r}
+##########################################################################################
+box_colors = setNames(c(rep('grey50', length(unique(crisprYbx1Lineage$lineage)) - 1), brewer.pal(9,'Spectral')[1]),
+                      c(unique(crisprYbx1Lineage$lineage)[!unique(crisprYbx1Lineage$lineage) %in% 'bone'], 'bone'))
+#
+ggplot(crispr_yb1_lineage, aes(reorder(lineage, `YBX1 (4904)`, FUN = median), `YBX1 (4904)`, group = lineage, color = lineage)) +
+  geom_boxplot(outlier.shape = NA, width = 0.5, size = 0.5) +
+  geom_point(size = 0.5) +
+  scale_color_manual(values = box_colors) +
+  scale_y_continuous(limits = c(-1.75,0.5), breaks = seq(-2,1,0.5)) +
+  geom_hline(yintercept = -1, linetype = 'dashed') +
+  labs(x = '', y = 'CERES Dependency Score', title = 'DepMap YBX1 Dependency Scores') +
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = 'none', axis.text.y = element_text(size = 3))
+##write the plot to a file
+ggsave(paste(baseWorkspace, '/20200529_explorationYbx1DepMap/scatterplot_ybx1CeresScoresLineages.pdf', sep = ''),
+       useDingbats = FALSE,
+       height = 4, 
+       width = 4)
+```
+
+## Session info
+
+```{r}
+sessionInfo()
+```
+
+

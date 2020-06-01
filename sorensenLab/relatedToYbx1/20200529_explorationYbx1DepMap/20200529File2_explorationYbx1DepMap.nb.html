@@ -11,7 +11,7 @@
 
 
 
-<title>Analysis of published YBX1 PARCLIP data</title>
+<title>Analysis of DepMap data for Osteosarcoma</title>
 
 <script>// Pandoc 2.9 adds attributes on both header and div. We remove the former (to
 // be compatible with the behavior of Pandoc < 2.8).
@@ -1753,18 +1753,18 @@ summary {
 
 
 
-<h1 class="title toc-ignore">Analysis of published YBX1 PARCLIP data</h1>
+<h1 class="title toc-ignore">Analysis of DepMap data for Osteosarcoma</h1>
 
 </div>
 
 
 <!-- rnb-text-begin -->
-<p>This document is the second in the analysis of the polysome proteomics data from PMID: 30220558. Here, I will investigate candidates I am interested in to see how they behave in the data.</p>
+<p>This document describes exploration of some of the DepMap cell line expression data to look at trends in osteosarcoma dependency.</p>
 <div id="linked-analysis" class="section level2">
 <h2>Linked analysis</h2>
 <p>This file is a continuation of the work done in:</p>
 <ul>
-<li>(20200527File1_explorationPolysomeProteomicsPublished)[<a href="https://github.com/chrishuges/projectsWorkspace/tree/master/sorensenLab/relatedToYbx1/20200527_explorationPolysomeProteomicsPublished" class="uri">https://github.com/chrishuges/projectsWorkspace/tree/master/sorensenLab/relatedToYbx1/20200527_explorationPolysomeProteomicsPublished</a>]</li>
+<li>no links</li>
 </ul>
 </div>
 <div id="setting-up-the-environment" class="section level2">
@@ -1787,42 +1787,146 @@ baseRepository = &#39;C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository
 <p>Lastly, we need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don’t push it to GitHub.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc291cmNlKHBhc3RlKGJhc2VXb3Jrc3BhY2UsICcvMjAyMDA1MjdfZXhwbG9yYXRpb25Qb2x5c29tZVByb3Rlb21pY3NQdWJsaXNoZWQvdXNlckRlZmluZWRGdW5jdGlvbnMuUicsIHNlcCA9ICcnKSlcbmBgYCJ9 -->
-<pre class="r"><code>source(paste(baseWorkspace, &#39;/20200527_explorationPolysomeProteomicsPublished/userDefinedFunctions.R&#39;, sep = &#39;&#39;))</code></pre>
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuc291cmNlKHBhc3RlKGJhc2VXb3Jrc3BhY2UsICcvMjAyMDA1MjlfZXhwbG9yYXRpb25ZYngxRGVwTWFwL3VzZXJEZWZpbmVkRnVuY3Rpb25zLlInLCBzZXAgPSAnJykpXG5gYGAifQ== -->
+<pre class="r"><code>source(paste(baseWorkspace, &#39;/20200529_explorationYbx1DepMap/userDefinedFunctions.R&#39;, sep = &#39;&#39;))</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
 <div id="data-processing" class="section level2">
 <h2>Data processing</h2>
-<p>First, because I am interested in YBX1, I just want to see where YBX1 protein is found.</p>
+<p>First I need to read in the dependency data.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
-<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjXG5wb2x5RGF0YSA9IHJlYWRSRFMocGFzdGUoYmFzZVJlcG9zaXRvcnksICcvMjAyMDA1MjdfZXhwbG9yYXRpb25Qb2x5c29tZVByb3Rlb21pY3NQdWJsaXNoZWQvZGF0YXNldF9zaWxhY1JhdGlvc1BvbHlzb21lUGFyc2VkLnJkcycsIHNlcCA9ICcnKSlcbmdlbmVPZkludGVyZXN0ID0gYygnWUJYMScsJ1lCWDMnLCdFSUY0QTEnLCdHM0JQMScsJ0FMWVJFRicsJ1BBQlBDMScsJ0VMQVZMMScsJ0dMTzEnLCdQQUJQQzQnLCdTVEFVMScsJ0lHRjJCUDEnLCdSUFMyNCcsJ1NQUDEnKVxucmlib09ubHkgPSBwb2x5RGF0YSAlPiUgZmlsdGVyKCFpcy5uYShjb21wbGV4SWQpKVxuIyNtYWtlIHBsb3RzIGZvciBhbGwgb2YgdGhlIGdlbmVzIG9mIGludGVyZXN0XG5cbmZvciAoaSBpbiAxOmxlbmd0aChnZW5lT2ZJbnRlcmVzdCkpe1xuICB0YXJnZXRPbmx5ID0gcG9seURhdGEgJT4lIGZpbHRlcihnZW5lICVpbiUgZ2VuZU9mSW50ZXJlc3RbaV0pXG4gIGdncGxvdCh0YXJnZXRPbmx5LCBhZXMoZnJhY3Rpb24sIHNpbGFjUmF0aW8sIGdyb3VwID0gZ2VuZSkpICtcbiAgICBnZW9tX2xpbmUoZGF0YSA9IHJpYm9Pbmx5LCBhZXMoZnJhY3Rpb24sIHNpbGFjUmF0aW8sIGdyb3VwID0gZ2VuZSksIGNvbG9yID0gYnJld2VyLnBhbCg4LCdHcmV5cycpWzNdLCBzaXplID0gMC41KSArXG4gICAgZ2VvbV9saW5lKHNpemUgPSAxLCBjb2xvciA9IGJyZXdlci5wYWwoOCwnUmRCdScpWzJdKSArIFxuICAgIHNjYWxlX3lfY29udGludW91cyhsaW1pdHMgPSBjKDAsMy41KSwgYnJlYWtzID0gc2VxKDAsNSwxKSkgK1xuICAgIGxhYnMoeCA9ICdTdWNyb3NlIGdyYWRpZW50IGZyYWN0aW9uJywgeSA9ICdTSUxBQyByYXRpbyB0byBHRlAgY29udHJvbCcsIHRpdGxlID0gcGFzdGUoZ2VuZU9mSW50ZXJlc3RbaV0sICcgcHJvdGVpbiBhYnVuZGFuY2UnLCBzZXAgPSAnJykpICtcbiAgICB0aGVtZV9jbGFzc2ljKCkgK1xuICAgIHRoZW1lKGxlZ2VuZC5wb3NpdGlvbiA9ICdub25lJywgYXhpcy50ZXh0LnggPSBlbGVtZW50X3RleHQoc2l6ZSA9IDYpKSArXG4gICAgZmFjZXRfZ3JpZCh+cmVwbGljYXRlKVxuICAjI3NhdmUgdGhlIHBsb3QgdG8gYSBmaWxlXG4gIGdnc2F2ZShwYXN0ZShiYXNlV29ya3NwYWNlLCAnLzIwMjAwNTI3X2V4cGxvcmF0aW9uUG9seXNvbWVQcm90ZW9taWNzUHVibGlzaGVkL2xpbmVwbG90XycsIGdlbmVPZkludGVyZXN0W2ldLCAnQWJ1bmRhbmNlUmVwbGljYXRlcy5wZGYnLCBzZXAgPSAnJyksXG4gICAgICAgICB1c2VEaW5nYmF0cyA9IEZBTFNFLFxuICAgICAgICAgaGVpZ2h0ID0gNCxcbiAgICAgICAgIHdpZHRoID0gNClcbiAgbWVzc2FnZShwYXN0ZSgnUGxvdCBjb21wbGV0ZWQgZm9yICcsIGdlbmVPZkludGVyZXN0W2ldLCBzZXAgPSAnJykpXG59XG5gYGAifQ== -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjXG5jcmlzcHIgPSB2cm9vbShwYXN0ZShnZW5lcmFsRGF0YXNldHMsICcvZGVwbWFwMjBRMS9BY2hpbGxlc19nZW5lX2VmZmVjdC5jc3YnLCBzZXAgPSAnJykpXG5gYGAifQ== -->
 <pre class="r"><code>##########################################################################################
-polyData = readRDS(paste(baseRepository, &#39;/20200527_explorationPolysomeProteomicsPublished/dataset_silacRatiosPolysomeParsed.rds&#39;, sep = &#39;&#39;))
-geneOfInterest = c(&#39;YBX1&#39;,&#39;YBX3&#39;,&#39;EIF4A1&#39;,&#39;G3BP1&#39;,&#39;ALYREF&#39;,&#39;PABPC1&#39;,&#39;ELAVL1&#39;,&#39;GLO1&#39;,&#39;PABPC4&#39;,&#39;STAU1&#39;,&#39;IGF2BP1&#39;,&#39;RPS24&#39;,&#39;SPP1&#39;)
-riboOnly = polyData %&gt;% filter(!is.na(complexId))
-##make plots for all of the genes of interest
-
-for (i in 1:length(geneOfInterest)){
-  targetOnly = polyData %&gt;% filter(gene %in% geneOfInterest[i])
-  ggplot(targetOnly, aes(fraction, silacRatio, group = gene)) +
-    geom_line(data = riboOnly, aes(fraction, silacRatio, group = gene), color = brewer.pal(8,&#39;Greys&#39;)[3], size = 0.5) +
-    geom_line(size = 1, color = brewer.pal(8,&#39;RdBu&#39;)[2]) + 
-    scale_y_continuous(limits = c(0,3.5), breaks = seq(0,5,1)) +
-    labs(x = &#39;Sucrose gradient fraction&#39;, y = &#39;SILAC ratio to GFP control&#39;, title = paste(geneOfInterest[i], &#39; protein abundance&#39;, sep = &#39;&#39;)) +
-    theme_classic() +
-    theme(legend.position = &#39;none&#39;, axis.text.x = element_text(size = 6)) +
-    facet_grid(~replicate)
-  ##save the plot to a file
-  ggsave(paste(baseWorkspace, &#39;/20200527_explorationPolysomeProteomicsPublished/lineplot_&#39;, geneOfInterest[i], &#39;AbundanceReplicates.pdf&#39;, sep = &#39;&#39;),
-         useDingbats = FALSE,
-         height = 4,
-         width = 4)
-  message(paste(&#39;Plot completed for &#39;, geneOfInterest[i], sep = &#39;&#39;))
-}</code></pre>
+crispr = vroom(paste(generalDatasets, &#39;/depmap20Q1/Achilles_gene_effect.csv&#39;, sep = &#39;&#39;))</code></pre>
 <!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiTmV3IG5hbWVzOlxuKiBgYCAtPiAuLi4xXG5Sb3dzOiA3MzlcbkNvbHVtbnM6IDE4LDMzNFxuRGVsaW1pdGVyOiBcIixcIlxuY2hyIFsgICAgMV06IFxuZGJsIFsxODMzM106IEExQkcgKDEpLCBBMUNGICgyOTk3NCksIEEyTSAoMiksIEEyTUwxICgxNDQ1NjgpLCBBM0dBTFQyICgxMjc1NTApLCBBNEdBTFQgKDUzOTQ3KSwgQTRHTlQgKDUxMTQ2KSwgQUFBUyAoODA4NiksIEFBQ1MgKDY1OTg1KSwgQUFEQUMgKDEzKSwgQUFEQUNMMiAoMzQ0NzUuLi5cblxuVXNlIGBzcGVjKClgIHRvIHJldHJpZXZlIHRoZSBndWVzc2VkIGNvbHVtbiBzcGVjaWZpY2F0aW9uXG5QYXNzIGEgc3BlY2lmaWNhdGlvbiB0byB0aGUgYGNvbF90eXBlc2AgYXJndW1lbnQgdG8gcXVpZXQgdGhpcyBtZXNzYWdlXG4ifQ== -->
+<pre><code>New names:
+* `` -&gt; ...1
+Rows: 739
+Columns: 18,334
+Delimiter: &quot;,&quot;
+chr [    1]: 
+dbl [18333]: A1BG (1), A1CF (29974), A2M (2), A2ML1 (144568), A3GALT2 (127550), A4GALT (53947), A4GNT (51146), AAAS (8086), AACS (65985), AADAC (13), AADACL2 (34475...
+
+Use `spec()` to retrieve the guessed column specification
+Pass a specification to the `col_types` argument to quiet this message</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY29sbmFtZXMoY3Jpc3ByKVsxXSA9ICdEZXBNYXBfSUQnXG5gYGAifQ== -->
+<pre class="r"><code>colnames(crispr)[1] = &#39;DepMap_ID&#39;</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Data read looks good. Now I will get the cell line annotation details.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjXG5hbm5vID0gcmVhZF9jc3YocGFzdGUoZ2VuZXJhbERhdGFzZXRzLCAnL2RlcG1hcDIwUTEvc2FtcGxlX2luZm8uY3N2Jywgc2VwID0gJycpKVxuYGBgIn0= -->
+<pre class="r"><code>##########################################################################################
+anno = read_csv(paste(generalDatasets, &#39;/depmap20Q1/sample_info.csv&#39;, sep = &#39;&#39;))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiUGFyc2VkIHdpdGggY29sdW1uIHNwZWNpZmljYXRpb246XG5jb2xzKFxuICAuZGVmYXVsdCA9IGNvbF9jaGFyYWN0ZXIoKSxcbiAgQ09TTUlDX0lEID0gY29sX2RvdWJsZSgpLFxuICBBY2hpbGxlc19uX3JlcGxpY2F0ZXMgPSBjb2xfZG91YmxlKCksXG4gIGNlbGxfbGluZV9OTk1EID0gY29sX2RvdWJsZSgpLFxuICBhZ2UgPSBjb2xfZG91YmxlKCksXG4gIGFkZGl0aW9uYWxfaW5mbyA9IGNvbF9sb2dpY2FsKClcbilcblNlZSBzcGVjKC4uLikgZm9yIGZ1bGwgY29sdW1uIHNwZWNpZmljYXRpb25zLlxuMTAgcGFyc2luZyBmYWlsdXJlcy5cbiByb3cgICAgICAgICAgICAgY29sICAgICAgICAgICBleHBlY3RlZCAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICBhY3R1YWwgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgZmlsZVxuMTEwNSBhZGRpdGlvbmFsX2luZm8gMS8wL1QvRi9UUlVFL0ZBTFNFIEFkaGVyZW50IHZlcnNpb24gb2YgQ0NMRlBFRFMwMDAxVCAgICAgICAgICAnQzovVXNlcnMvY2hyaXMvT25lRHJpdmUvRG9jdW1lbnRzL2JjY3JjL3Byb2plY3RzUmVwb3NpdG9yeS9nZW5lcmFsRGF0YXNldHMvZGVwbWFwMjBRMS9zYW1wbGVfaW5mby5jc3YnXG4xMTY0IGFkZGl0aW9uYWxfaW5mbyAxLzAvVC9GL1RSVUUvRkFMU0UgU1Y0MCtURVJUIGltbW9ydGFsaXplZCBraWRuZXkgY2VsbCBsaW5lICAgICdDOi9Vc2Vycy9jaHJpcy9PbmVEcml2ZS9Eb2N1bWVudHMvYmNjcmMvcHJvamVjdHNSZXBvc2l0b3J5L2dlbmVyYWxEYXRhc2V0cy9kZXBtYXAyMFExL3NhbXBsZV9pbmZvLmNzdidcbjE0MzkgYWRkaXRpb25hbF9pbmZvIDEvMC9UL0YvVFJVRS9GQUxTRSBEcnVnIHJlc2lzdGFuY2U6IERhYnJhZmVuaWIgYW5kIFRyYW1ldGluaWIgJ0M6L1VzZXJzL2NocmlzL09uZURyaXZlL0RvY3VtZW50cy9iY2NyYy9wcm9qZWN0c1JlcG9zaXRvcnkvZ2VuZXJhbERhdGFzZXRzL2RlcG1hcDIwUTEvc2FtcGxlX2luZm8uY3N2J1xuMTQ0MCBhZGRpdGlvbmFsX2luZm8gMS8wL1QvRi9UUlVFL0ZBTFNFIERydWcgcmVzaXN0YW5jZTogU0NINzcyOTg0ICAgICAgICAgICAgICAgICAnQzovVXNlcnMvY2hyaXMvT25lRHJpdmUvRG9jdW1lbnRzL2JjY3JjL3Byb2plY3RzUmVwb3NpdG9yeS9nZW5lcmFsRGF0YXNldHMvZGVwbWFwMjBRMS9zYW1wbGVfaW5mby5jc3YnXG4xNDQxIGFkZGl0aW9uYWxfaW5mbyAxLzAvVC9GL1RSVUUvRkFMU0UgRHJ1ZyByZXNpc3RhbmNlOiBEYWJyYWZlbmliIGFuZCBUcmFtZXRpbmliICdDOi9Vc2Vycy9jaHJpcy9PbmVEcml2ZS9Eb2N1bWVudHMvYmNjcmMvcHJvamVjdHNSZXBvc2l0b3J5L2dlbmVyYWxEYXRhc2V0cy9kZXBtYXAyMFExL3NhbXBsZV9pbmZvLmNzdidcbi4uLi4gLi4uLi4uLi4uLi4uLi4uIC4uLi4uLi4uLi4uLi4uLi4uLiAuLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4gLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLi4uLlxuU2VlIHByb2JsZW1zKC4uLikgZm9yIG1vcmUgZGV0YWlscy5cbiJ9 -->
+<pre><code>Parsed with column specification:
+cols(
+  .default = col_character(),
+  COSMIC_ID = col_double(),
+  Achilles_n_replicates = col_double(),
+  cell_line_NNMD = col_double(),
+  age = col_double(),
+  additional_info = col_logical()
+)
+See spec(...) for full column specifications.
+10 parsing failures.
+ row             col           expected                                     actual                                                                                                    file
+1105 additional_info 1/0/T/F/TRUE/FALSE Adherent version of CCLFPEDS0001T          &#39;C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets/depmap20Q1/sample_info.csv&#39;
+1164 additional_info 1/0/T/F/TRUE/FALSE SV40+TERT immortalized kidney cell line    &#39;C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets/depmap20Q1/sample_info.csv&#39;
+1439 additional_info 1/0/T/F/TRUE/FALSE Drug resistance: Dabrafenib and Trametinib &#39;C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets/depmap20Q1/sample_info.csv&#39;
+1440 additional_info 1/0/T/F/TRUE/FALSE Drug resistance: SCH772984                 &#39;C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets/depmap20Q1/sample_info.csv&#39;
+1441 additional_info 1/0/T/F/TRUE/FALSE Drug resistance: Dabrafenib and Trametinib &#39;C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets/depmap20Q1/sample_info.csv&#39;
+.... ............... .................. .......................................... .......................................................................................................
+See problems(...) for more details.</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxub3NTZXQgPSBhbm5vW2dyZXBsKCdvc3Rlb3NhcmNvbWEnLGFubm8kbGluZWFnZV9zdWJ0eXBlKSwgJ0RlcE1hcF9JRCddXG5gYGAifQ== -->
+<pre class="r"><code>osSet = anno[grepl(&#39;osteosarcoma&#39;,anno$lineage_subtype), &#39;DepMap_ID&#39;]</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Now we can select the values for dependency for osteosarcoma across all of the different cancers.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjXG4jdGhlIGNvbHVtbiBuYW1lIGlzIFlCWDEgKDQ5MDQpXG5jcmlzcHJPUyA9IGNyaXNwciAlPiVcbiAgZmlsdGVyKERlcE1hcF9JRCAlaW4lIG9zU2V0JERlcE1hcF9JRCkgJT4lXG4gIHBpdm90X2xvbmdlcihjb2xzID0gYEExQkcgKDEpYDpgWlpaMyAoMjYwMDkpYCwgbmFtZXNfdG8gPSAnZ2VuZScsIHZhbHVlc190byA9ICdybmFFeHAnKSAlPiVcbiAgcGl2b3Rfd2lkZXIoaWRfY29scyA9IGdlbmUsIG5hbWVzX2Zyb20gPSBEZXBNYXBfSUQsIHZhbHVlc19mcm9tID0gcm5hRXhwKVxuY3Jpc3ByT1MkbWVkRGVwID0gYXBwbHkoY3Jpc3ByT1NbLDI6bmNvbChjcmlzcHJPUyldLCAxLCBmdW5jdGlvbih4KSBtZWRpYW4oeCwgbmEucm0gPSBUUlVFKSlcbmNyaXNwck9TJHNkRGVwID0gYXBwbHkoY3Jpc3ByT1NbLDI6bmNvbChjcmlzcHJPUyldLCAxLCBmdW5jdGlvbih4KSBzZCh4LCBuYS5ybSA9IFRSVUUpKVxuY3Jpc3ByT1MkYWRqdXN0ZWREZXAgPSBjcmlzcHJPUyRtZWREZXAgLyBjcmlzcHJPUyRzZERlcFxuY3Jpc3ByVG9wID0gY3Jpc3ByT1MgJT4lXG4gIGFycmFuZ2UoYWRqdXN0ZWREZXApICU+JVxuICBtdXRhdGUoJ3N5bWJvbCcgPSBzdWIoJyguKikgXFxcXChbMC05XStcXFxcKS4qJCcsICdcXFxcMScsIGdlbmUpKSAlPiVcbiAgZHBseXI6OnNlbGVjdChzeW1ib2wsIG1lZERlcCwgc2REZXAsIGFkanVzdGVkRGVwKVxuYGBgIn0= -->
+<pre class="r"><code>##########################################################################################
+#the column name is YBX1 (4904)
+crisprOS = crispr %&gt;%
+  filter(DepMap_ID %in% osSet$DepMap_ID) %&gt;%
+  pivot_longer(cols = `A1BG (1)`:`ZZZ3 (26009)`, names_to = &#39;gene&#39;, values_to = &#39;rnaExp&#39;) %&gt;%
+  pivot_wider(id_cols = gene, names_from = DepMap_ID, values_from = rnaExp)
+crisprOS$medDep = apply(crisprOS[,2:ncol(crisprOS)], 1, function(x) median(x, na.rm = TRUE))
+crisprOS$sdDep = apply(crisprOS[,2:ncol(crisprOS)], 1, function(x) sd(x, na.rm = TRUE))
+crisprOS$adjustedDep = crisprOS$medDep / crisprOS$sdDep
+crisprTop = crisprOS %&gt;%
+  arrange(adjustedDep) %&gt;%
+  mutate(&#39;symbol&#39; = sub(&#39;(.*) \\([0-9]+\\).*$&#39;, &#39;\\1&#39;, gene)) %&gt;%
+  dplyr::select(symbol, medDep, sdDep, adjustedDep)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Now I think I want to rank these using some sort of RNA expression metric. For this we will use the RNA expression data from DepMap. First we will read the data.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjXG5ybmEgPSB2cm9vbShwYXN0ZShnZW5lcmFsRGF0YXNldHMsICcvZGVwbWFwMjBRMS9DQ0xFX2V4cHJlc3Npb24uY3N2Jywgc2VwID0gJycpKVxuYGBgIn0= -->
+<pre class="r"><code>##########################################################################################
+rna = vroom(paste(generalDatasets, &#39;/depmap20Q1/CCLE_expression.csv&#39;, sep = &#39;&#39;))</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiTmV3IG5hbWVzOlxuKiBgYCAtPiAuLi4xXG5Sb3dzOiAxLDI3MFxuQ29sdW1uczogMTksMTQ1XG5EZWxpbWl0ZXI6IFwiLFwiXG5jaHIgWyAgICAxXTogXG5kYmwgWzE5MTQ0XTogVFNQQU42ICg3MTA1KSwgVE5NRCAoNjQxMDIpLCBEUE0xICg4ODEzKSwgU0NZTDMgKDU3MTQ3KSwgQzFvcmYxMTIgKDU1NzMyKSwgRkdSICgyMjY4KSwgQ0ZIICgzMDc1KSwgRlVDQTIgKDI1MTkpLCBHQ0xDICgyNzI5KSwgTkZZQSAoNDgwMCksIFNUUEcxICg5MDUyOSkuLi5cblxuVXNlIGBzcGVjKClgIHRvIHJldHJpZXZlIHRoZSBndWVzc2VkIGNvbHVtbiBzcGVjaWZpY2F0aW9uXG5QYXNzIGEgc3BlY2lmaWNhdGlvbiB0byB0aGUgYGNvbF90eXBlc2AgYXJndW1lbnQgdG8gcXVpZXQgdGhpcyBtZXNzYWdlXG4ifQ== -->
+<pre><code>New names:
+* `` -&gt; ...1
+Rows: 1,270
+Columns: 19,145
+Delimiter: &quot;,&quot;
+chr [    1]: 
+dbl [19144]: TSPAN6 (7105), TNMD (64102), DPM1 (8813), SCYL3 (57147), C1orf112 (55732), FGR (2268), CFH (3075), FUCA2 (2519), GCLC (2729), NFYA (4800), STPG1 (90529)...
+
+Use `spec()` to retrieve the guessed column specification
+Pass a specification to the `col_types` argument to quiet this message</code></pre>
+<!-- rnb-output-end -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuY29sbmFtZXMocm5hKVsxXSA9ICdEZXBNYXBfSUQnXG5gYGAifQ== -->
+<pre class="r"><code>colnames(rna)[1] = &#39;DepMap_ID&#39;</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>We can reshape the data the same way we did for the CRISPR dataset.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjXG5ybmFPUyA9IHJuYSAlPiVcbiAgZmlsdGVyKERlcE1hcF9JRCAlaW4lIG9zU2V0JERlcE1hcF9JRCkgJT4lXG4gIHBpdm90X2xvbmdlcihjb2xzID0gYFRTUEFONiAoNzEwNSlgOmBPT1NQMyAoMTEyNTc3NDYxKWAsIG5hbWVzX3RvID0gJ2dlbmUnLCB2YWx1ZXNfdG8gPSAncm5hRXhwJykgJT4lXG4gIHBpdm90X3dpZGVyKGlkX2NvbHMgPSBnZW5lLCBuYW1lc19mcm9tID0gRGVwTWFwX0lELCB2YWx1ZXNfZnJvbSA9IHJuYUV4cClcbnJuYU9TJG1lZEV4cHJzID0gYXBwbHkocm5hT1NbLDI6bmNvbChybmFPUyldLCAxLCBmdW5jdGlvbih4KSBtZWRpYW4oeCwgbmEucm0gPSBUUlVFKSlcbnJuYU9TJHNkRXhwcnMgPSBhcHBseShybmFPU1ssMjpuY29sKHJuYU9TKV0sIDEsIGZ1bmN0aW9uKHgpIHNkKHgsIG5hLnJtID0gVFJVRSkpXG5ybmFPUyRhZGp1c3RlZEV4cHJzID0gcm5hT1MkbWVkRXhwcnMgLyBybmFPUyRzZEV4cHJzXG5ybmFUb3AgPSBybmFPUyAlPiVcbiAgbXV0YXRlKCdzeW1ib2wnID0gc3ViKCcoLiopIFxcXFwoWzAtOV0rXFxcXCkuKiQnLCAnXFxcXDEnLCBnZW5lKSkgJT4lXG4gIGRwbHlyOjpzZWxlY3Qoc3ltYm9sLCBtZWRFeHBycywgc2RFeHBycywgYWRqdXN0ZWRFeHBycylcbmBgYCJ9 -->
+<pre class="r"><code>##########################################################################################
+rnaOS = rna %&gt;%
+  filter(DepMap_ID %in% osSet$DepMap_ID) %&gt;%
+  pivot_longer(cols = `TSPAN6 (7105)`:`OOSP3 (112577461)`, names_to = &#39;gene&#39;, values_to = &#39;rnaExp&#39;) %&gt;%
+  pivot_wider(id_cols = gene, names_from = DepMap_ID, values_from = rnaExp)
+rnaOS$medExprs = apply(rnaOS[,2:ncol(rnaOS)], 1, function(x) median(x, na.rm = TRUE))
+rnaOS$sdExprs = apply(rnaOS[,2:ncol(rnaOS)], 1, function(x) sd(x, na.rm = TRUE))
+rnaOS$adjustedExprs = rnaOS$medExprs / rnaOS$sdExprs
+rnaTop = rnaOS %&gt;%
+  mutate(&#39;symbol&#39; = sub(&#39;(.*) \\([0-9]+\\).*$&#39;, &#39;\\1&#39;, gene)) %&gt;%
+  dplyr::select(symbol, medExprs, sdExprs, adjustedExprs)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<p>Now join the two datasets.</p>
+<!-- rnb-text-end -->
+<!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjXG5kZXBTZXQgPSBjcmlzcHJUb3AgJT4lXG4gIGxlZnRfam9pbihybmFUb3ApICU+JVxuICBtdXRhdGUoZGVwU2NvcmUgPSBhZGp1c3RlZERlcCAqIGFkanVzdGVkRXhwcnMpICU+JVxuICBhcnJhbmdlKGRlcFNjb3JlKVxuYGBgIn0= -->
+<pre class="r"><code>##########################################################################################
+depSet = crisprTop %&gt;%
+  left_join(rnaTop) %&gt;%
+  mutate(depScore = adjustedDep * adjustedExprs) %&gt;%
+  arrange(depScore)</code></pre>
+<!-- rnb-source-end -->
+<!-- rnb-output-begin eyJkYXRhIjoiSm9pbmluZywgYnkgPSBcInN5bWJvbFwiXG4ifQ== -->
+<pre><code>Joining, by = &quot;symbol&quot;</code></pre>
+<!-- rnb-output-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 </div>
@@ -1834,9 +1938,11 @@ for (i in 1:length(geneOfInterest)){
 <pre class="r"><code>sessionInfo()</code></pre>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
+<!-- rnb-text-begin -->
+<!-- rnb-text-end -->
 </div>
 
-<div id="rmd-source-code">LS0tDQp0aXRsZTogIkFuYWx5c2lzIG9mIHB1Ymxpc2hlZCBZQlgxIFBBUkNMSVAgZGF0YSINCm91dHB1dDoNCiAgaHRtbF9ub3RlYm9vazoNCiAgICAgIGNvZGVfZm9sZGluZzogbm9uZQ0KLS0tDQoNClRoaXMgZG9jdW1lbnQgaXMgdGhlIHNlY29uZCBpbiB0aGUgYW5hbHlzaXMgb2YgdGhlIHBvbHlzb21lIHByb3Rlb21pY3MgZGF0YSBmcm9tIFBNSUQ6IDMwMjIwNTU4LiBIZXJlLCBJIHdpbGwgaW52ZXN0aWdhdGUgY2FuZGlkYXRlcyBJIGFtIGludGVyZXN0ZWQgaW4gdG8gc2VlIGhvdyB0aGV5IGJlaGF2ZSBpbiB0aGUgZGF0YS4NCg0KIyMgTGlua2VkIGFuYWx5c2lzDQoNClRoaXMgZmlsZSBpcyBhIGNvbnRpbnVhdGlvbiBvZiB0aGUgd29yayBkb25lIGluOg0KDQoqICgyMDIwMDUyN0ZpbGUxX2V4cGxvcmF0aW9uUG9seXNvbWVQcm90ZW9taWNzUHVibGlzaGVkKVtodHRwczovL2dpdGh1Yi5jb20vY2hyaXNodWdlcy9wcm9qZWN0c1dvcmtzcGFjZS90cmVlL21hc3Rlci9zb3JlbnNlbkxhYi9yZWxhdGVkVG9ZYngxLzIwMjAwNTI3X2V4cGxvcmF0aW9uUG9seXNvbWVQcm90ZW9taWNzUHVibGlzaGVkXQ0KDQojIyBTZXR0aW5nIHVwIHRoZSBlbnZpcm9ubWVudA0KDQpUaGVzZSBhcmUgcGFja2FnZXMgeW91IHdpbGwgbmVlZCBmb3IgdGhpcyBub3RlYm9vay4gRm9yIGV4YWN0IHZlcnNpb25zIHVzZWQsIHBsZWFzZSByZWZlciB0byB0aGUgc2Vzc2lvbiBpbmZvIGF0IHRoZSBib3R0b20gb2YgdGhpcyBub3RlYm9vay4NCg0KYGBge3IsIG1lc3NhZ2UgPSBGQUxTRSwgZWNobyA9IEZBTFNFfQ0KbGlicmFyeSgndGlkeXZlcnNlJykNCmxpYnJhcnkoJ2dncGxvdDInKQ0KbGlicmFyeSgnUkNvbG9yQnJld2VyJykNCmBgYA0KDQpJIHdhbnQgdG8gc2V0IGEgYmFzZSBkaXJlY3RvcnkgdGhhdCB3ZSBjYW4gdXNlIGFzIGEgbGluayB0byB0aGUgZGlyZWN0b3J5IHdoZXJlIHdlIHdpbGwgZG8gbW9zdCBvZiB0aGUgd29yay4gSSB1c2UgdHdvIGRpcmVjdG9yaWVzIGhlcmUgYmVjYXVzZSB0aGUgV29ya3NwYWNlIGlzIHdoYXQgaXMgcHVzaGVkIHRvIEdpdEh1YiBhbmQgY29udGFpbnMgc2NyaXB0cyBhbmQgcGxvdCBmaWxlcywgYnV0IHRoZSBSZXBvc2l0b3J5IGlzIHdoZXJlIG1vcmUgb2YgdGhlIGJpZyBkYXRhIGlzIHN0b3JlZCB0aGF0IGRvZXMgbm90IGdldCBwdXNoZWQuDQoNCmBgYHtyfQ0KZ2VuZXJhbERhdGFzZXRzID0gJ0M6L1VzZXJzL2NocmlzL09uZURyaXZlL0RvY3VtZW50cy9iY2NyYy9wcm9qZWN0c1JlcG9zaXRvcnkvZ2VuZXJhbERhdGFzZXRzJw0KYmFzZVdvcmtzcGFjZSA9ICdDOi9Vc2Vycy9jaHJpcy9PbmVEcml2ZS9Eb2N1bWVudHMvYmNjcmMvcHJvamVjdHNXb3Jrc3BhY2Uvc29yZW5zZW5MYWIvcmVsYXRlZFRvWWJ4MScNCmJhc2VSZXBvc2l0b3J5ID0gJ0M6L1VzZXJzL2NocmlzL09uZURyaXZlL0RvY3VtZW50cy9iY2NyYy9wcm9qZWN0c1JlcG9zaXRvcnkvc29yZW5zZW5MYWIvcmVsYXRlZFRvWWJ4MScNCmBgYA0KDQpMYXN0bHksIHdlIG5lZWQgdG8gY2FsbCBhIHNvdXJjZSBmaWxlIHRoYXQgaGFzIHNvbWUgZnVuY3Rpb25zIHdlIHdpbGwgbmVlZC4gRm9yIHNpbXBsaWNpdHkgYW5kIGVhc2Ugb2YgdHJhY2tpbmcsIEkgbWFrZSBhIGNvcHkgb2YgdGhpcyBmaWxlIGluIGVhY2ggZGlyZWN0b3J5IHRoYXQgSSB3aWxsIHdvcmsgaW4gaW4gb3JkZXIgdG8gYmUgYWJsZSB0byB0cmFjZSB0aGUgZXhhY3Qgb25lIGZ1bmN0aW9ucyB0aGF0IGFyZSB1c2VkLCBpbiBjYXNlIEkgY2hhbmdlIHRoZW0gYW5kIG1pc3Rha2VubHkgZG9uJ3QgcHVzaCBpdCB0byBHaXRIdWIuDQoNCmBgYHtyfQ0Kc291cmNlKHBhc3RlKGJhc2VXb3Jrc3BhY2UsICcvMjAyMDA1MjdfZXhwbG9yYXRpb25Qb2x5c29tZVByb3Rlb21pY3NQdWJsaXNoZWQvdXNlckRlZmluZWRGdW5jdGlvbnMuUicsIHNlcCA9ICcnKSkNCmBgYA0KDQojIyBEYXRhIHByb2Nlc3NpbmcNCg0KRmlyc3QsIGJlY2F1c2UgSSBhbSBpbnRlcmVzdGVkIGluIFlCWDEsIEkganVzdCB3YW50IHRvIHNlZSB3aGVyZSBZQlgxIHByb3RlaW4gaXMgZm91bmQuDQoNCmBgYHtyfQ0KIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjDQpwb2x5RGF0YSA9IHJlYWRSRFMocGFzdGUoYmFzZVJlcG9zaXRvcnksICcvMjAyMDA1MjdfZXhwbG9yYXRpb25Qb2x5c29tZVByb3Rlb21pY3NQdWJsaXNoZWQvZGF0YXNldF9zaWxhY1JhdGlvc1BvbHlzb21lUGFyc2VkLnJkcycsIHNlcCA9ICcnKSkNCmdlbmVPZkludGVyZXN0ID0gYygnWUJYMScsJ1lCWDMnLCdFSUY0QTEnLCdHM0JQMScsJ0FMWVJFRicsJ1BBQlBDMScsJ0VMQVZMMScsJ0dMTzEnLCdQQUJQQzQnLCdTVEFVMScsJ0lHRjJCUDEnLCdSUFMyNCcsJ1NQUDEnKQ0Kcmlib09ubHkgPSBwb2x5RGF0YSAlPiUgZmlsdGVyKCFpcy5uYShjb21wbGV4SWQpKQ0KIyNtYWtlIHBsb3RzIGZvciBhbGwgb2YgdGhlIGdlbmVzIG9mIGludGVyZXN0DQoNCmZvciAoaSBpbiAxOmxlbmd0aChnZW5lT2ZJbnRlcmVzdCkpew0KICB0YXJnZXRPbmx5ID0gcG9seURhdGEgJT4lIGZpbHRlcihnZW5lICVpbiUgZ2VuZU9mSW50ZXJlc3RbaV0pDQogIGdncGxvdCh0YXJnZXRPbmx5LCBhZXMoZnJhY3Rpb24sIHNpbGFjUmF0aW8sIGdyb3VwID0gZ2VuZSkpICsNCiAgICBnZW9tX2xpbmUoZGF0YSA9IHJpYm9Pbmx5LCBhZXMoZnJhY3Rpb24sIHNpbGFjUmF0aW8sIGdyb3VwID0gZ2VuZSksIGNvbG9yID0gYnJld2VyLnBhbCg4LCdHcmV5cycpWzNdLCBzaXplID0gMC41KSArDQogICAgZ2VvbV9saW5lKHNpemUgPSAxLCBjb2xvciA9IGJyZXdlci5wYWwoOCwnUmRCdScpWzJdKSArIA0KICAgIHNjYWxlX3lfY29udGludW91cyhsaW1pdHMgPSBjKDAsMy41KSwgYnJlYWtzID0gc2VxKDAsNSwxKSkgKw0KICAgIGxhYnMoeCA9ICdTdWNyb3NlIGdyYWRpZW50IGZyYWN0aW9uJywgeSA9ICdTSUxBQyByYXRpbyB0byBHRlAgY29udHJvbCcsIHRpdGxlID0gcGFzdGUoZ2VuZU9mSW50ZXJlc3RbaV0sICcgcHJvdGVpbiBhYnVuZGFuY2UnLCBzZXAgPSAnJykpICsNCiAgICB0aGVtZV9jbGFzc2ljKCkgKw0KICAgIHRoZW1lKGxlZ2VuZC5wb3NpdGlvbiA9ICdub25lJywgYXhpcy50ZXh0LnggPSBlbGVtZW50X3RleHQoc2l6ZSA9IDYpKSArDQogICAgZmFjZXRfZ3JpZCh+cmVwbGljYXRlKQ0KICAjI3NhdmUgdGhlIHBsb3QgdG8gYSBmaWxlDQogIGdnc2F2ZShwYXN0ZShiYXNlV29ya3NwYWNlLCAnLzIwMjAwNTI3X2V4cGxvcmF0aW9uUG9seXNvbWVQcm90ZW9taWNzUHVibGlzaGVkL2xpbmVwbG90XycsIGdlbmVPZkludGVyZXN0W2ldLCAnQWJ1bmRhbmNlUmVwbGljYXRlcy5wZGYnLCBzZXAgPSAnJyksDQogICAgICAgICB1c2VEaW5nYmF0cyA9IEZBTFNFLA0KICAgICAgICAgaGVpZ2h0ID0gNCwNCiAgICAgICAgIHdpZHRoID0gNCkNCiAgbWVzc2FnZShwYXN0ZSgnUGxvdCBjb21wbGV0ZWQgZm9yICcsIGdlbmVPZkludGVyZXN0W2ldLCBzZXAgPSAnJykpDQp9DQpgYGANCg0KDQoNCg0KDQoNCiMjIFNlc3Npb24gaW5mbw0KDQpgYGB7cn0NCnNlc3Npb25JbmZvKCkNCmBgYA0K</div>
+<div id="rmd-source-code">LS0tDQp0aXRsZTogIkFuYWx5c2lzIG9mIERlcE1hcCBkYXRhIGZvciBPc3Rlb3NhcmNvbWEiDQpvdXRwdXQ6DQogIGh0bWxfbm90ZWJvb2s6DQogICAgICBjb2RlX2ZvbGRpbmc6IG5vbmUNCi0tLQ0KDQpUaGlzIGRvY3VtZW50IGRlc2NyaWJlcyBleHBsb3JhdGlvbiBvZiBzb21lIG9mIHRoZSBEZXBNYXAgY2VsbCBsaW5lIGV4cHJlc3Npb24gZGF0YSB0byBsb29rIGF0IHRyZW5kcyBpbiBvc3Rlb3NhcmNvbWEgZGVwZW5kZW5jeS4NCg0KIyMgTGlua2VkIGFuYWx5c2lzDQoNClRoaXMgZmlsZSBpcyBhIGNvbnRpbnVhdGlvbiBvZiB0aGUgd29yayBkb25lIGluOg0KDQoqIG5vIGxpbmtzDQoNCiMjIFNldHRpbmcgdXAgdGhlIGVudmlyb25tZW50DQoNClRoZXNlIGFyZSBwYWNrYWdlcyB5b3Ugd2lsbCBuZWVkIGZvciB0aGlzIG5vdGVib29rLiBGb3IgZXhhY3QgdmVyc2lvbnMgdXNlZCwgcGxlYXNlIHJlZmVyIHRvIHRoZSBzZXNzaW9uIGluZm8gYXQgdGhlIGJvdHRvbSBvZiB0aGlzIG5vdGVib29rLg0KDQpgYGB7ciwgbWVzc2FnZSA9IEZBTFNFLCBlY2hvID0gRkFMU0V9DQpsaWJyYXJ5KCd0aWR5dmVyc2UnKQ0KbGlicmFyeSgnZ2dwbG90MicpDQpsaWJyYXJ5KCdSQ29sb3JCcmV3ZXInKQ0KbGlicmFyeSgndnJvb20nKQ0KYGBgDQoNCkkgd2FudCB0byBzZXQgYSBiYXNlIGRpcmVjdG9yeSB0aGF0IHdlIGNhbiB1c2UgYXMgYSBsaW5rIHRvIHRoZSBkaXJlY3Rvcnkgd2hlcmUgd2Ugd2lsbCBkbyBtb3N0IG9mIHRoZSB3b3JrLiBJIHVzZSB0d28gZGlyZWN0b3JpZXMgaGVyZSBiZWNhdXNlIHRoZSBXb3Jrc3BhY2UgaXMgd2hhdCBpcyBwdXNoZWQgdG8gR2l0SHViIGFuZCBjb250YWlucyBzY3JpcHRzIGFuZCBwbG90IGZpbGVzLCBidXQgdGhlIFJlcG9zaXRvcnkgaXMgd2hlcmUgbW9yZSBvZiB0aGUgYmlnIGRhdGEgaXMgc3RvcmVkIHRoYXQgZG9lcyBub3QgZ2V0IHB1c2hlZC4NCg0KYGBge3J9DQpnZW5lcmFsRGF0YXNldHMgPSAnQzovVXNlcnMvY2hyaXMvT25lRHJpdmUvRG9jdW1lbnRzL2JjY3JjL3Byb2plY3RzUmVwb3NpdG9yeS9nZW5lcmFsRGF0YXNldHMnDQpiYXNlV29ya3NwYWNlID0gJ0M6L1VzZXJzL2NocmlzL09uZURyaXZlL0RvY3VtZW50cy9iY2NyYy9wcm9qZWN0c1dvcmtzcGFjZS9zb3JlbnNlbkxhYi9yZWxhdGVkVG9ZYngxJw0KYmFzZVJlcG9zaXRvcnkgPSAnQzovVXNlcnMvY2hyaXMvT25lRHJpdmUvRG9jdW1lbnRzL2JjY3JjL3Byb2plY3RzUmVwb3NpdG9yeS9zb3JlbnNlbkxhYi9yZWxhdGVkVG9ZYngxJw0KYGBgDQoNCkxhc3RseSwgd2UgbmVlZCB0byBjYWxsIGEgc291cmNlIGZpbGUgdGhhdCBoYXMgc29tZSBmdW5jdGlvbnMgd2Ugd2lsbCBuZWVkLiBGb3Igc2ltcGxpY2l0eSBhbmQgZWFzZSBvZiB0cmFja2luZywgSSBtYWtlIGEgY29weSBvZiB0aGlzIGZpbGUgaW4gZWFjaCBkaXJlY3RvcnkgdGhhdCBJIHdpbGwgd29yayBpbiBpbiBvcmRlciB0byBiZSBhYmxlIHRvIHRyYWNlIHRoZSBleGFjdCBvbmUgZnVuY3Rpb25zIHRoYXQgYXJlIHVzZWQsIGluIGNhc2UgSSBjaGFuZ2UgdGhlbSBhbmQgbWlzdGFrZW5seSBkb24ndCBwdXNoIGl0IHRvIEdpdEh1Yi4NCg0KYGBge3J9DQpzb3VyY2UocGFzdGUoYmFzZVdvcmtzcGFjZSwgJy8yMDIwMDUyOV9leHBsb3JhdGlvbllieDFEZXBNYXAvdXNlckRlZmluZWRGdW5jdGlvbnMuUicsIHNlcCA9ICcnKSkNCmBgYA0KDQojIyBEYXRhIHByb2Nlc3NpbmcNCg0KRmlyc3QgSSBuZWVkIHRvIHJlYWQgaW4gdGhlIGRlcGVuZGVuY3kgZGF0YS4NCg0KYGBge3J9DQojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMNCmNyaXNwciA9IHZyb29tKHBhc3RlKGdlbmVyYWxEYXRhc2V0cywgJy9kZXBtYXAyMFExL0FjaGlsbGVzX2dlbmVfZWZmZWN0LmNzdicsIHNlcCA9ICcnKSkNCmNvbG5hbWVzKGNyaXNwcilbMV0gPSAnRGVwTWFwX0lEJw0KYGBgDQoNCkRhdGEgcmVhZCBsb29rcyBnb29kLiBOb3cgSSB3aWxsIGdldCB0aGUgY2VsbCBsaW5lIGFubm90YXRpb24gZGV0YWlscy4NCg0KYGBge3J9DQojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMNCmFubm8gPSByZWFkX2NzdihwYXN0ZShnZW5lcmFsRGF0YXNldHMsICcvZGVwbWFwMjBRMS9zYW1wbGVfaW5mby5jc3YnLCBzZXAgPSAnJykpDQpvc1NldCA9IGFubm9bZ3JlcGwoJ29zdGVvc2FyY29tYScsYW5ubyRsaW5lYWdlX3N1YnR5cGUpLCAnRGVwTWFwX0lEJ10NCmBgYA0KDQpOb3cgd2UgY2FuIHNlbGVjdCB0aGUgdmFsdWVzIGZvciBkZXBlbmRlbmN5IGZvciBvc3Rlb3NhcmNvbWEgYWNyb3NzIGFsbCBvZiB0aGUgZGlmZmVyZW50IGNhbmNlcnMuDQoNCmBgYHtyfQ0KIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjDQojdGhlIGNvbHVtbiBuYW1lIGlzIFlCWDEgKDQ5MDQpDQpjcmlzcHJPUyA9IGNyaXNwciAlPiUNCiAgZmlsdGVyKERlcE1hcF9JRCAlaW4lIG9zU2V0JERlcE1hcF9JRCkgJT4lDQogIHBpdm90X2xvbmdlcihjb2xzID0gYEExQkcgKDEpYDpgWlpaMyAoMjYwMDkpYCwgbmFtZXNfdG8gPSAnZ2VuZScsIHZhbHVlc190byA9ICdybmFFeHAnKSAlPiUNCiAgcGl2b3Rfd2lkZXIoaWRfY29scyA9IGdlbmUsIG5hbWVzX2Zyb20gPSBEZXBNYXBfSUQsIHZhbHVlc19mcm9tID0gcm5hRXhwKQ0KY3Jpc3ByT1MkbWVkRGVwID0gYXBwbHkoY3Jpc3ByT1NbLDI6bmNvbChjcmlzcHJPUyldLCAxLCBmdW5jdGlvbih4KSBtZWRpYW4oeCwgbmEucm0gPSBUUlVFKSkNCmNyaXNwck9TJHNkRGVwID0gYXBwbHkoY3Jpc3ByT1NbLDI6bmNvbChjcmlzcHJPUyldLCAxLCBmdW5jdGlvbih4KSBzZCh4LCBuYS5ybSA9IFRSVUUpKQ0KY3Jpc3ByT1MkYWRqdXN0ZWREZXAgPSBjcmlzcHJPUyRtZWREZXAgLyBjcmlzcHJPUyRzZERlcA0KY3Jpc3ByVG9wID0gY3Jpc3ByT1MgJT4lDQogIGFycmFuZ2UoYWRqdXN0ZWREZXApICU+JQ0KICBtdXRhdGUoJ3N5bWJvbCcgPSBzdWIoJyguKikgXFwoWzAtOV0rXFwpLiokJywgJ1xcMScsIGdlbmUpKSAlPiUNCiAgZHBseXI6OnNlbGVjdChzeW1ib2wsIG1lZERlcCwgc2REZXAsIGFkanVzdGVkRGVwKQ0KYGBgDQoNCk5vdyBJIHRoaW5rIEkgd2FudCB0byByYW5rIHRoZXNlIHVzaW5nIHNvbWUgc29ydCBvZiBSTkEgZXhwcmVzc2lvbiBtZXRyaWMuIEZvciB0aGlzIHdlIHdpbGwgdXNlIHRoZSBSTkEgZXhwcmVzc2lvbiBkYXRhIGZyb20gRGVwTWFwLiBGaXJzdCB3ZSB3aWxsIHJlYWQgdGhlIGRhdGEuDQoNCmBgYHtyfQ0KIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjDQpybmEgPSB2cm9vbShwYXN0ZShnZW5lcmFsRGF0YXNldHMsICcvZGVwbWFwMjBRMS9DQ0xFX2V4cHJlc3Npb24uY3N2Jywgc2VwID0gJycpKQ0KY29sbmFtZXMocm5hKVsxXSA9ICdEZXBNYXBfSUQnDQpgYGANCg0KV2UgY2FuIHJlc2hhcGUgdGhlIGRhdGEgdGhlIHNhbWUgd2F5IHdlIGRpZCBmb3IgdGhlIENSSVNQUiBkYXRhc2V0Lg0KDQpgYGB7cn0NCiMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIw0Kcm5hT1MgPSBybmEgJT4lDQogIGZpbHRlcihEZXBNYXBfSUQgJWluJSBvc1NldCREZXBNYXBfSUQpICU+JQ0KICBwaXZvdF9sb25nZXIoY29scyA9IGBUU1BBTjYgKDcxMDUpYDpgT09TUDMgKDExMjU3NzQ2MSlgLCBuYW1lc190byA9ICdnZW5lJywgdmFsdWVzX3RvID0gJ3JuYUV4cCcpICU+JQ0KICBwaXZvdF93aWRlcihpZF9jb2xzID0gZ2VuZSwgbmFtZXNfZnJvbSA9IERlcE1hcF9JRCwgdmFsdWVzX2Zyb20gPSBybmFFeHApDQpybmFPUyRtZWRFeHBycyA9IGFwcGx5KHJuYU9TWywyOm5jb2wocm5hT1MpXSwgMSwgZnVuY3Rpb24oeCkgbWVkaWFuKHgsIG5hLnJtID0gVFJVRSkpDQpybmFPUyRzZEV4cHJzID0gYXBwbHkocm5hT1NbLDI6bmNvbChybmFPUyldLCAxLCBmdW5jdGlvbih4KSBzZCh4LCBuYS5ybSA9IFRSVUUpKQ0Kcm5hT1MkYWRqdXN0ZWRFeHBycyA9IHJuYU9TJG1lZEV4cHJzIC8gcm5hT1Mkc2RFeHBycw0Kcm5hVG9wID0gcm5hT1MgJT4lDQogIG11dGF0ZSgnc3ltYm9sJyA9IHN1YignKC4qKSBcXChbMC05XStcXCkuKiQnLCAnXFwxJywgZ2VuZSkpICU+JQ0KICBkcGx5cjo6c2VsZWN0KHN5bWJvbCwgbWVkRXhwcnMsIHNkRXhwcnMsIGFkanVzdGVkRXhwcnMpDQpgYGANCg0KTm93IGpvaW4gdGhlIHR3byBkYXRhc2V0cy4NCg0KYGBge3J9DQojIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMNCmRlcFNldCA9IGNyaXNwclRvcCAlPiUNCiAgbGVmdF9qb2luKHJuYVRvcCkgJT4lDQogIG11dGF0ZShkZXBTY29yZSA9IGFkanVzdGVkRGVwICogYWRqdXN0ZWRFeHBycykgJT4lDQogIGFycmFuZ2UoZGVwU2NvcmUpDQoNCmBgYA0KDQoNCg0KDQojIyBTZXNzaW9uIGluZm8NCg0KYGBge3J9DQpzZXNzaW9uSW5mbygpDQpgYGANCg0KDQo=</div>
 
 
 
@@ -1883,7 +1989,7 @@ $(document).ready(function () {
 <!-- code folding -->
 <script>
 $(document).ready(function () {
-  window.initializeSourceEmbed("20200527File2_explorationPolysomeProteomicsPublished.Rmd");
+  window.initializeSourceEmbed("20200529File2_explorationYbx1DepMap.Rmd");
 });
 </script>
 
