@@ -7,12 +7,6 @@ output:
 
 This document describes exploration of some PARCLIP data from a published study (PMID: 31358969). I previously processed the data into a set of annotated peaks and here I will investigate the parsed data.
 
-## Linked analysis
-
-This file is a continuation of the work done in:
-
-* [20200527_explorationYbx1ParclipPublished](https://github.com/chrishuges/projectsWorkspace/tree/master/sorensenLab/relatedToYbx1/20200527_explorationYbx1ParclipPublished)
-
 ## Setting up the environment
 
 These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
@@ -39,7 +33,7 @@ baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sor
 Lastly, we need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
 
 ```{r}
-source(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/userDefinedFunctions.R', sep = ''))
+source(paste(baseWorkspace, '/sequencing20200527_ybx1ParclipChen/userDefinedFunctions.R', sep = ''))
 ```
 
 ## Data processing
@@ -48,7 +42,7 @@ First I want to look at the distribution of where the binding sites are in a con
 
 ```{r}
 ##########################################################################################
-parclip = readRDS(paste(baseRepository, '/20200527_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+parclip = readRDS(paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
 #make the plot
 ggplot(parclip, aes(regionLocationAdjusted, fill = region)) +
   geom_histogram(bins = 100, color = 'white', size = 0.1) +
@@ -60,7 +54,7 @@ ggplot(parclip, aes(regionLocationAdjusted, fill = region)) +
   theme_classic() +
   theme(legend.position = 'none') 
 #write the plot to a file
-ggsave(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/histogram_bindingSitesMetatranscript.pdf', sep = ''),
+ggsave(paste(baseWorkspace, '/sequencing20200527_ybx1ParclipChen/histogram_bindingSitesMetatranscript.pdf', sep = ''),
        useDingbats = FALSE,
        width = 4,
        height = 4)
@@ -70,7 +64,7 @@ I am also interested in the absolute number of peaks in each of the regions, reg
 
 ```{r}
 #######################################################################################
-parclip = readRDS(paste(baseRepository, '/20200527_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+parclip = readRDS(paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
 ##calculate the counts of individual clusters by gene in each region
 ##total gives the total number of individual genes, so it won't equal the sum of the individual regions
 peakCounts = parclip %>%
@@ -88,7 +82,7 @@ ggplot(peakCountsSummary, aes(region, genes)) +
   scale_y_continuous(limits = c(0,4500), breaks = seq(0,5000,500)) +
   theme_classic()
 ###write plot to a file
-ggsave(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/scatterplot_bindingSiteAbsoluteCounts.pdf', sep = ''),
+ggsave(paste(baseWorkspace, '/sequencing20200527_ybx1ParclipChen/scatterplot_bindingSiteAbsoluteCounts.pdf', sep = ''),
        useDingbats = FALSE,
        width = 4,
        height = 4)
@@ -98,7 +92,7 @@ Now I would like to see how well the clusters agree between the two replicates f
 
 ```{r}
 #######################################################################################
-parclip = readRDS(paste(baseRepository, '/20200527_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+parclip = readRDS(paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
 #for the read counts, I just log transform and then Z-score the values to make them somewhat comparable
 #the read depth between the runs was quite different, so normalization here is a bit more challenging
 #I am not sure if a TPM calculation is appropriate here
@@ -130,7 +124,7 @@ ggplot(parclip, aes(rep1Scaled, rep2Scaled)) +
   theme_classic() +
   theme(legend.position = 'none')
 ###write plot
-ggsave(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/scatterplot_bindingSiteReplication.pdf', sep = ''),
+ggsave(paste(baseWorkspace, '/sequencing20200527_ybx1ParclipChen/scatterplot_bindingSiteReplication.pdf', sep = ''),
        useDingbats = FALSE,
        width = 4,
        height = 4)
@@ -138,9 +132,9 @@ ggsave(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/scatterpl
 
 For the genes of interest I show above that all appear to be pretty reproducible and highly-bound hits, I want to show metatranscript plots.
 
-```{r}
+```{r, warning = FALSE}
 ####################################################################################
-parclip = readRDS(paste(baseRepository, '/20200527_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+parclip = readRDS(paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
 ##genes of interest
 goi = c('PABPC1','JUN','YBX1',
         'CTNNB1','ATF4','MKI67',
@@ -169,7 +163,7 @@ ggplot(parclipNorm, aes(regionLocationAdjusted, normPeak)) +
   theme(legend.position = 'none') +
   facet_wrap(~txdbSymbol, nrow = 1)
 ##write plot to a file
-ggsave(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/lollipop_candidateBoundRNAs.pdf', sep = ''),
+ggsave(paste(baseWorkspace, '/sequencing20200527_ybx1ParclipChen/lollipop_candidateBoundRNAs.pdf', sep = ''),
        useDingbats = FALSE,
        width = 12,
        height = 4)
@@ -179,10 +173,10 @@ The last two things I want to do are to get the lengths of the different regions
 
 ```{r}
 ########################################################################################
-parclip = readRDS(paste(baseRepository, '/20200527_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+parclip = readRDS(paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
 ##in our previous analysis we made a txdb
 txdbEnsembl = loadDb(file = paste(baseRepository, 
-                                 '/20200526_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg38.v100.sqlite', sep = ''))
+                                 '/sequencing20200527_ybx1ParclipChen/TxDb.Hsapiens.ENSEMBL.hg38.v100.sqlite', sep = ''))
 #####
 gnLengths = geneLengthAnalysis(parclip, 1, txdbEnsembl)
 ##output the raw data counts
@@ -199,7 +193,7 @@ ggplot(gnLengths, aes(log2(medianWidth), fill = status, color = status)) +
   #theme(strip.background = element_blank(), strip.text = element_blank()) +
   facet_wrap(~region)
 ####save the plot
-ggsave(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/density_boundRegionLengths.pdf', sep = ''),
+ggsave(paste(baseWorkspace, '/sequencing20200527_ybx1ParclipChen/density_boundRegionLengths.pdf', sep = ''),
        useDingbats = FALSE,
        width = 4,
        height = 4)
@@ -210,10 +204,10 @@ So, it seems like YBX1 binds long 5' and 3' UTR regions preferentially, but not 
 
 ```{r}
 ##########################################################################################
-parclip = readRDS(paste(baseRepository, '/20200527_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+parclip = readRDS(paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
 ##in our previous analysis we made a txdb
 txdbEnsembl = loadDb(file = paste(baseRepository, 
-                                 '/20200526_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg38.v100.sqlite', sep = ''))
+                                 '/sequencing20200527_ybx1ParclipChen/TxDb.Hsapiens.ENSEMBL.hg38.v100.sqlite', sep = ''))
 ##run the function
 gnGcContent = gcContentAnalysis(parclip, 1, txdbEnsembl)
 ##output the raw data counts
@@ -229,7 +223,7 @@ ggplot(gnGcContent, aes(gcContent, fill = status, color = status)) +
   theme(legend.position = 'none') +
   facet_wrap(~region)
 ####save the plot
-ggsave(paste(baseWorkspace, '/20200527_explorationYbx1ParclipPublished/density_boundRegionGcContent.pdf', sep = ''),
+ggsave(paste(baseWorkspace, '/sequencing20200527_ybx1ParclipChen/density_boundRegionGcContent.pdf', sep = ''),
        useDingbats = FALSE,
        width = 4,
        height = 4)

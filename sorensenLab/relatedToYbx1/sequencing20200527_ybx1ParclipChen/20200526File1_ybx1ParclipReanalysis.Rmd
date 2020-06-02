@@ -5,13 +5,7 @@ output:
       code_folding: none
 ---
 
-This document describes exploration of some PARCLIP data from a published study (PMID: 31358969). The paper performed a few different analyses related to YBX1, but here we will focus on their PARCLIP data that was performed in duplicate. The raw data for the PARCLIP experiments were uploaded to GSE133671, but unfortunately, they only give basic peak call files that are lacking any sort of scores or information on how they were parsed. As a result, I reprocessed the raw sequencing data using the script found [here](https://github.com/chrishuges/projectsWorkspace/blob/master/sorensenLab/relatedToYbx1/20200526_explorationYbx1ParclipPublished/rawSequencingDataProcessingShellScript.md).
-
-## Linked analysis
-
-This file is a continuation of the work done in:
-
-* [20200525_explorationYbx1ParclipPublished](https://github.com/chrishuges/projectsWorkspace/tree/master/sorensenLab/relatedToYbx1/20200525_explorationYbx1ParclipPublished)
+This document describes exploration of some PARCLIP data from a published study (PMID: 31358969). The paper performed a few different analyses related to YBX1, but here we will focus on their PARCLIP data that was performed in duplicate. The raw data for the PARCLIP experiments were uploaded to GSE133671, but unfortunately, they only give basic peak call files that are lacking any sort of scores or information on how they were parsed. As a result, I reprocessed the raw sequencing data using the pipeline detailed in the 'rawSequencingDataProcessingShellScript' file contained in this directory.
 
 ## Setting up the environment
 
@@ -38,7 +32,7 @@ baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sor
 Lastly, we need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
 
 ```{r}
-source(paste(baseWorkspace, '/20200526_explorationYbx1ParclipPublished/userDefinedFunctions.R', sep = ''))
+source(paste(baseWorkspace, '/sequencing20200527_ybx1ParclipChen/userDefinedFunctions.R', sep = ''))
 ```
 
 ## Data processing
@@ -51,7 +45,7 @@ txdbEnsembl = makeTxDbFromEnsembl(organism = 'Homo sapiens',
                                   server = 'useastdb.ensembl.org')
 #now save the txdb for later use
 saveDb(txdbEnsembl, file = paste(baseRepository, 
-                                 '/20200526_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg38.v100.sqlite', sep = ''))
+                                 '/sequencing20200527_ybx1ParclipChen/TxDb.Hsapiens.ENSEMBL.hg38.v100.sqlite', sep = ''))
 ```
 
 Annotate the YBX1 PARCLIP data that was obtained from wavClusteR using functions defined in the source file referenced above.
@@ -59,15 +53,15 @@ Annotate the YBX1 PARCLIP data that was obtained from wavClusteR using functions
 ```{r}
 #########################################################################################
 ##get the data for the two replicates
-parclip1 = readRDS(paste(baseRepository, '/20200526_explorationYbx1ParclipPublished/SRR9623531.wavClusters.rds', sep = ''))
-parclip2 = readRDS(paste(baseRepository, '/20200526_explorationYbx1ParclipPublished/SRR9623532.wavClusters.rds', sep = ''))
+parclip1 = readRDS(paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/SRR9623531.wavClusters.rds', sep = ''))
+parclip2 = readRDS(paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/SRR9623532.wavClusters.rds', sep = ''))
 
 ##overlap the replicates to only retain regions identified in both
 parclipIntersect = GenomicRanges::intersect(parclip1, parclip2)
 
 ##in case you don't have the txdb loaded in already
 txdbEnsembl = loadDb(file = paste(baseRepository, 
-                                 '/20200526_explorationYbx1ParclipPublished/TxDb.Hsapiens.ENSEMBL.hg38.v100.sqlite', sep = ''))
+                                 '/sequencing20200527_ybx1ParclipChen/TxDb.Hsapiens.ENSEMBL.hg38.v100.sqlite', sep = ''))
 ##now annotate this with our user-defined function
 parclipAnnotated = wavclusterPeakAnnotation(as_tibble(parclipIntersect), txdbEnsembl, removeMito = TRUE)
 ```
@@ -80,8 +74,8 @@ Remove clusters that are too small and add read counts based on the replicates.
 parclipLargeClusters = subset(parclipAnnotated, parclipAnnotated$width >= 12)
 
 ##read the raw bam files
-bampath1 = paste(baseRepository, '/20200526_explorationYbx1ParclipPublished/SRR9623531.trimmed.rrna.bowtie.mapped.sorted.bam', sep = '')
-bampath2 = paste(baseRepository, '/20200526_explorationYbx1ParclipPublished/SRR9623532.trimmed.rrna.bowtie.mapped.sorted.bam', sep = '')
+bampath1 = paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/SRR9623531.trimmed.rrna.bowtie.mapped.sorted.bam', sep = '')
+bampath2 = paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/SRR9623532.trimmed.rrna.bowtie.mapped.sorted.bam', sep = '')
 
 ##get the max read count in a region, replicate 1
 bamCoverage1 = bamCoverage(bampath1, makeGRangesFromDataFrame(parclipLargeClusters), verbose=FALSE)
@@ -129,7 +123,7 @@ ggplot(parclipPurity, aes(peakPurity)) +
   labs(x = 'peak purity', y = 'density', title = 'peak purity calculation') +
   geom_vline(xintercept = 0.25, linetype = 'dashed', color = brewer.pal(9,'Spectral')[1]) +
   theme_classic()
-ggsave(paste(baseWorkspace, '/20200526_explorationYbx1ParclipPublished/density_yb1Parclip_peakPurityScores.pdf', sep = ''),
+ggsave(paste(baseWorkspace, '/sequencing20200527_ybx1ParclipChen/density_yb1Parclip_peakPurityScores.pdf', sep = ''),
        useDingbats = FALSE,
        width = 4,
        height = 4)
@@ -152,9 +146,9 @@ for (i in 1:length(gnSet)){
 
 ###this is the final dataset, save it
 saveRDS(parclipPeakRank,
-        paste(baseRepository, '/20200526_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+        paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
 write.table(parclipPeakRank,
-        paste(baseRepository, '/20200526_explorationYbx1ParclipPublished/dataset_yb1ParclipAnnotatedPeakSet.csv', sep = ''),
+        paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/dataset_yb1ParclipAnnotatedPeakSet.csv', sep = ''),
         col.names = TRUE, row.names = FALSE, quote = FALSE, sep = ',')
 ```
 

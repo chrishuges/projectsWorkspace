@@ -4,7 +4,7 @@ This document contains information about constructs that will be used for intera
 
 ## Individual constructs
 
-All of these constructs have been codon optimized using the (IDT tool)[https://www.idtdna.com/CodonOpt] so they can be built as gBlocks. All constructs here have start and stop codons, so you will need to remove them depending on what type of fusion you want.
+All of these constructs have been codon optimized using the [IDT tool](https://www.idtdna.com/CodonOpt) so they can be built as gBlocks. All constructs here have start and stop codons, so you will need to remove them depending on what type of fusion you want.
 
 piggyBAC start
 

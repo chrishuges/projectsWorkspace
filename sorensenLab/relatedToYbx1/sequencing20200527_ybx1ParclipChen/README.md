@@ -1,7 +1,15 @@
-# 20200527_explorationYbx1ParclipPublished
+# Outline of analyses in this folder
 
-Please refer to the html files on this page for specific analyses related to this project. These are RNotebook files that will detail the exploratory data analysis used to generate the plots contained here (pdf files). Files are provided in order denoted by the 'file#' naming convention. The html files need to be downloaded to be viewed properly. Simply click the link to the file and hit the 'Raw' button in the top right after the file loads. Right click on the new page and hit 'Save As...' to save the html file to your computer. It should now be viewable as a notebook in any browser.
+Below you will find descriptions of the individual files contained in this directory.
 
-## Analysis specific details
+## rawSequencingDataProcessingShellScript
 
-None.
+This file details the pipeline used to re-process the raw data from SRA.
+
+## 20200526File1_ybx1ParclipReanalysis
+
+This file details the annotation and basic processing of the output from the sequencing data re-analysis pipeline described in the file above.
+
+## 20200527File2_ybx1ParclipReanalysis
+
+This file continues the analysis of the annotated peak data prepared above. It looks into basic properties such as cluster distribution in metagenes, region lengths, and GC content.
