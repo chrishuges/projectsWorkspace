@@ -1,0 +1,68 @@
+---
+title: "Analysis of published YBX1 PARCLIP data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document is the second in the analysis of the polysome proteomics data from PMID: 30220558. Here, I will investigate candidates I am interested in to see how they behave in the data.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+Lastly, we need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/proteomics20200527_polysomeImami/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+First, because I am interested in YBX1, I just want to see where YBX1 protein is found.
+
+```{r}
+##########################################################################################
+polyData = readRDS(paste(baseRepository, '/proteomics20200527_polysomeImami/dataset_silacRatiosPolysomeParsed.rds', sep = ''))
+geneOfInterest = c('YBX1','YBX3','EIF4A1','G3BP1','ALYREF','PABPC1','ELAVL1','GLO1','PABPC4','STAU1','IGF2BP1','RPS24','SPP1')
+riboOnly = polyData %>% filter(!is.na(complexId))
+##make plots for all of the genes of interest
+
+for (i in 1:length(geneOfInterest)){
+  targetOnly = polyData %>% filter(gene %in% geneOfInterest[i])
+  ggplot(targetOnly, aes(fraction, silacRatio, group = gene)) +
+    geom_line(data = riboOnly, aes(fraction, silacRatio, group = gene), color = brewer.pal(8,'Greys')[3], size = 0.5) +
+    geom_line(size = 1, color = brewer.pal(8,'RdBu')[2]) + 
+    scale_y_continuous(limits = c(0,3.5), breaks = seq(0,5,1)) +
+    labs(x = 'Sucrose gradient fraction', y = 'SILAC ratio to GFP control', title = paste(geneOfInterest[i], ' protein abundance', sep = '')) +
+    theme_classic() +
+    theme(legend.position = 'none', axis.text.x = element_text(size = 6)) +
+    facet_grid(~replicate)
+  ##save the plot to a file
+  ggsave(paste(baseWorkspace, '/proteomics20200527_polysomeImami/lineplot_', geneOfInterest[i], 'AbundanceReplicates.pdf', sep = ''),
+         useDingbats = FALSE,
+         height = 4,
+         width = 4)
+  message(paste('Plot completed for ', geneOfInterest[i], sep = ''))
+}
+```
+
+## Session info
+
+```{r}
+sessionInfo()
+```

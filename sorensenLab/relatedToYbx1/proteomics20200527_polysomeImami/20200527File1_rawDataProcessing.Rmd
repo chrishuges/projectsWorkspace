@@ -1,0 +1,114 @@
+---
+title: "Analysis of published YBX1 PARCLIP data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document describes exploration of some proteomics data look at polysomes from a published study (PMID: 30220558). For this work I am having to use the maxquant output provided on the ProteomeXchange site (PXD009292). I was hoping to reprocess the original raw data, but some of the files in the repository were corrupt. I contacted the authors, but they were unable to find the original raw files for one of the sets (Velos), so I cannot redo the analysis from raw. The maxquant file contains information for all of their samples, so we will need to parse it down.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+Lastly, we need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/proteomics20200527_polysomeImami/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+First I need to parse these data down to a more manageable set that contains only the data we are interested in (in this case, the HEK293 stuff).
+
+```{r}
+##########################################################################################
+mqData = read_tsv(paste(baseRepository, '/proteomics20200527_polysomeImami/MaxQuantOutput/proteinGroups.txt', sep = ''))
+problems(mqData)
+```
+So, some errors when we read it in, but it seems it is specifically in the reverse database hits where there is a '+' value. We can ignore this because we were going to discard these entries anyway. Now we can parse out the specific columns we want. The way the experiment is set up is that there is a light and a heavy, and the medium is an internal standard spike. It is not clear to me exactly which data they used for the paper, so we will start with the ratios and see if we can reproduce their data.
+
+```{r}
+##########################################################################################
+mqDataSub1 = mqData[,c(1,7,which(grepl('Ratio [HM]\\/[ML] HEK_fr', colnames(mqData))))]
+mqDataSub2 = mqDataSub1[,c(which(!grepl('Ratio [H]\\/[L] HEK_fr', colnames(mqDataSub1))))]
+colnames(mqDataSub2)
+```
+
+This looks good. So, I want to split this into the replicates. We need to flip the M/L ratio to be L/M, and just generally rework the data into a more usable format. First though, this function has an annotation option that we want to include, so we will build our annotation object.
+
+```{r}
+##########################################################################################
+corum = read_tsv(paste(generalDatasets, '/corumComplexes/coreComplexes.txt', sep = ''))
+##we are interested in the large and small ribosome subunits from human, 40S ribosome is complexID 338, 60S is 308
+riboSmall = corum %>%
+  filter(Organism == 'Human' & ComplexID == 338)
+riboSmallIds = tibble('gene' = str_split(riboSmall$`subunits(Gene name)`,';')[[1]]) %>%
+  mutate('complexId' = 'riboSmall')
+riboLarge = corum %>%
+  filter(Organism == 'Human' & ComplexID == 308)
+riboLargeIds = tibble('gene' = str_split(riboLarge$`subunits(Gene name)`,';')[[1]]) %>%
+  mutate('complexId' = 'riboLarge')
+riboSet = rbind(riboSmallIds, riboLargeIds)
+riboSet
+##save the data in case we want it at some later point
+saveRDS(riboSet, paste(generalDatasets, '/corumComplexes/ribosomalComplexesParsed.rds', sep = ''))
+```
+
+Now we can parse and annotate our data using the pre-defined function found in the userDefinedFunctions.R file in this repository.
+
+```{r}
+##########################################################################################
+riboSet = readRDS(paste(generalDatasets, '/corumComplexes/ribosomalComplexesParsed.rds', sep = ''))
+mqDataParsed = parsingPolysomeMqData(mqDataSub2, fractionFilter = 3, addAnnotation = TRUE, annotationIndex = riboSet)
+##how does the data look?
+mqDataParsed
+##do we get any complex hits?
+table(mqDataParsed$complexId)
+##save the data
+saveRDS(mqDataParsed, paste(baseRepository, '/proteomics20200527_polysomeImami/dataset_silacRatiosPolysomeParsed.rds', sep = ''))
+```
+
+Now we can make a plot to see how similar it looks to their own data. Specifically, I want to see if I can reproduce figure 1d from their manuscript.
+
+```{r, warning = FALSE}
+##########################################################################################
+polyData = readRDS(paste(baseRepository, '/proteomics20200527_polysomeImami/dataset_silacRatiosPolysomeParsed.rds', sep = ''))
+riboOnly = polyData %>% filter(!is.na(complexId))
+##make a plot
+ggplot(riboOnly, aes(fraction, silacRatio, group = gene, color = complexId)) +
+  geom_line(size = 0.5) + 
+  scale_y_continuous(limits = c(0,3.5), breaks = seq(0,5,1)) +
+  labs(x = 'Fraction', y = 'SILAC ratio to GFP control', title = 'Ribosome subunit abundance') +
+  scale_color_manual(values = c(brewer.pal(8,'RdBu')[c(2,7)])) +
+  theme_classic() +
+  theme(legend.position = 'none', axis.text.x = element_text(size = 6)) +
+  facet_grid(~replicate)
+##save the plot to a file
+ggsave(paste(baseWorkspace, '/proteomics20200527_polysomeImami/lineplot_ribosomeSubunitAbundanceReplicates.pdf', sep = ''),
+       useDingbats = FALSE,
+       height = 4,
+       width = 4)
+```
+
+I think this looks pretty close to their plot from the manuscript, so I am pretty confident that we have managed the data correctly. Now we can investigate some other things within it.
+
+## Session info
+
+```{r}
+sessionInfo()
+```
