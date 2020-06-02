@@ -11,7 +11,7 @@ This document describes exploration of some osteosarcoma expression data from th
 
 This file is a continuation of the work done in:
 
-* (20200529_explorationYbx1DepMap)[https://github.com/chrishuges/projectsWorkspace/tree/master/sorensenLab/relatedToYbx1/20200529_explorationYbx1DepMap]
+* [20200529_explorationYbx1DepMap](https://github.com/chrishuges/projectsWorkspace/tree/master/sorensenLab/relatedToYbx1/20200529_explorationYbx1DepMap)
 
 ## Setting up the environment
 
@@ -43,7 +43,7 @@ source(paste(baseWorkspace, '/20200601_explorationYbx1SurvivalOsTarget/userDefin
 
 ## Data processing
 
-Althought I don't end up processing the data this way (because I discovered this after), there is some great info (here)[https://www.bioconductor.org/packages/devel/bioc/vignettes/TCGAbiolinks/inst/doc/download_prepare.html] about getting data programmatically from R. Also some good info (here)[https://www.biostars.org/p/204092/].
+Althought I don't end up processing the data this way (because I discovered this after), there is some great info [here](https://www.bioconductor.org/packages/devel/bioc/vignettes/TCGAbiolinks/inst/doc/download_prepare.html) about getting data programmatically from R. Also some good info [here](https://www.biostars.org/p/204092/].
 
 First I need to get the location of the expression data and get set up to read it.
 
@@ -53,7 +53,7 @@ osDirs = list.dirs(paste(baseRepository, '/20200601_explorationYbx1SurvivalOsTar
 osDirsSub = osDirs[grepl('explorationYbx1SurvivalOsTarget\\/', osDirs)]
 ```
 
-I also need to get the annotation data correct to line it up with the clincal data. This took a bit of searching, but I ended up following the directions posted (here)[https://www.biostars.org/p/284708/], specifically by the user Kevin. You need to download a json file of your cases specifically from the Repository section.
+I also need to get the annotation data correct to line it up with the clincal data. This took a bit of searching, but I ended up following the directions posted [here](https://www.biostars.org/p/284708/), specifically by the user Kevin. You need to download a json file of your cases specifically from the Repository section.
 
 ```{r}
 ######################################################################################
@@ -94,7 +94,7 @@ osDE = DESeqDataSetFromHTSeqCount(sampleTable = sampleTable,
                                    design= ~ condition)
 ```
 
-Process the data for differential expression using DESeq2 as described (here)[http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html].
+Process the data for differential expression using DESeq2 as described [here](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html).
 
 ```{r}
 ######################################################################################
