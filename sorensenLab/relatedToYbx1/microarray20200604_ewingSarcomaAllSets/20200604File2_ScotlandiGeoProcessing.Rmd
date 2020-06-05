@@ -1,0 +1,90 @@
+---
+title: "Analysis of survival data for Ewing sarcoma"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+I again want to look at survival data for Ewing sarcoma, but instead of just going set by set, I am going to combine all the sets I can find into one object and go from there. The details for each set will be presented as we go through.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('GEOquery')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/microarray20200604_ewingSarcomaAllSets/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+The first set is Scotlandi et al. from GSE12102 that was published in PMID: 19307502. First we will get the data.
+
+```{r}
+##########################################################################################
+esArrayData = getGEO('GSE12102',
+             destdir = paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/', sep = ''),
+             GSEMatrix = TRUE)
+esData = esArrayData[[1]]
+```
+
+We now have an expression set and we can look at some of the features to see that we have all the information we need.
+
+```{r}
+##################################################################################
+head(pData(esData))
+head(exprs(esData))
+head(fData(esData))
+```
+
+So this dataset is actually missing the clinical data that we need. It doesn't have patient specific details. In the online manuscript they provide summarized information, but not patient-by-patient. I have contacted the authors to see if I can get it, but we will have to wait and see. For now, I will just reshape the expression data to the appropriate format.
+
+```{r}
+##################################################################################
+esExpression = as_tibble(exprs(esData)) %>%
+  mutate(ID = row.names(exprs(esData)))
+esExpressionAnnotated = as_tibble(fData(esData)) %>%
+  mutate(symbol = sapply(strsplit(`Gene Symbol`, ' '), '[', 1)) %>%
+  dplyr::select(ID, GB_ACC, symbol) %>%
+  left_join(esExpression)
+```
+
+These data seem much lower overall than the other sets, so I may need to scale them later on. Now I want to look at the phenotype data. We are missing a bunch of info, but at least we can reshape what we have until we can see if we get more info from the authors.
+
+```{r}
+##################################################################################
+esPhenotype = as_tibble(pData(esData)) %>%
+  dplyr::select(geo_accession, characteristics_ch1)
+esPhenotype$type = ifelse(grepl('primary', esPhenotype$characteristics_ch1), 'Primary', 'Metastatic')
+esPhenotype = esPhenotype[,c(1,3)]
+```
+
+Now we can save the two datasets.
+
+```{r}
+##################################################################################
+saveRDS(esExpressionAnnotated, paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_scotlandiExpression.rds', sep = ''))
+saveRDS(esPhenotype, paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_scotlandiPhenotype.rds', sep = ''))
+```
+
+## Session info
+
+```{r}
+sessionInfo()
+```

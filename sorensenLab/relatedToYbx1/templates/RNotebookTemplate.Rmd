@@ -1,0 +1,48 @@
+---
+title: "Analysis of published YBX1 PARCLIP data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+Put some description of the intended analysis here. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/project'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/project'
+```
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/directory/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+Describe the data processing as you go through.
+
+```{r}
+##################################################################################
+
+```
+
+
+## Session info
+
+```{r}
+sessionInfo()
+```

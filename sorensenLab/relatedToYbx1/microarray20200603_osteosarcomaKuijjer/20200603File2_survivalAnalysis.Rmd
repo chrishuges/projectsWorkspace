@@ -1,0 +1,116 @@
+---
+title: "Analysis of published osteosarcoma microarray data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document describes some analysis of some published microarray data from the study PMID: 21372215. The data have already been downloaded and processed, and now we want to do a survival analysis.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('survival')
+library('survminer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/microarray20200603_osteosarcomaKuijjer/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+The first thing to do is to get our previously compiled expression and phenotype data.
+
+```{r}
+##################################################################################
+osExpression = readRDS(paste(baseRepository, '/microarray20200603_osteosarcomaKuijjer/dataset_osteoExpressionData.rds', sep = ''))
+osPhenotype = readRDS(paste(baseRepository, '/microarray20200603_osteosarcomaKuijjer/dataset_osteoPhenotypeData.rds', sep = ''))
+```
+
+So, we need to separate the patients based on their YBX1 expression. We can start doing this into low, medium, high based on quartiles.
+
+```{r}
+##################################################################################
+osYbx1 = osExpression %>%
+  filter(symbol == 'YBX1') %>%
+  pivot_longer(cols = GSM530667:GSM531352, names_to = 'patientID', values_to = 'geneExpression') %>%
+  dplyr::select(patientID, geneExpression)
+osYbx1$geneLevel = ifelse(osYbx1$geneExpression <= quantile(osYbx1$geneExpression)[2], 'low',
+                       ifelse(osYbx1$geneExpression >= quantile(osYbx1$geneExpression)[4], 'high', 'medium'))
+colnames(osYbx1)[1] = 'geo_accession'
+```
+
+Now we want to rework the phenotype data a bit just to make it a bit nicer for the survival analysis.
+
+```{r}
+##################################################################################
+osSurvival = osPhenotype %>%
+  mutate(age = sub('age\\: (.*) months$', '\\1', characteristics_ch1)) %>%
+  mutate(gender = sub('gender\\: (.*)$', '\\1', characteristics_ch1.1)) %>%
+  mutate(grade = sub('huvos grade\\: (.*)$', '\\1', characteristics_ch1.4)) %>%
+  dplyr::select(geo_accession, age, gender, grade, characteristics_ch1.5, characteristics_ch1.6)
+##make a column for mets events
+osSurvival$mets = ifelse(grepl('No metastasis', osSurvival$characteristics_ch1.5), NA, 
+                         ifelse(grepl('Metastases present', osSurvival$characteristics_ch1.5), 0,
+                                as.numeric(sub('.*at (.*) months after diagnosis of the primary tumor', '\\1', osSurvival$characteristics_ch1.5))))
+##make a column for survival status
+osSurvival$time = ifelse(grepl('Deceased after', osSurvival$characteristics_ch1.6), 
+                         as.numeric(sub('.*after (.*) months\\.', '\\1', osSurvival$characteristics_ch1.6)), 
+                         ifelse(grepl('Alive', osSurvival$characteristics_ch1.6), 
+                                as.numeric(sub('.*at (.*) months after diagnosis of the primary tumor', '\\1', osSurvival$characteristics_ch1.6)),
+                                as.numeric(sub('.*at (.*) months after diagnosis of the primary tumor', '\\1', osSurvival$characteristics_ch1.6))))
+##lastly a column just for alive dead status
+osSurvival$status = ifelse(grepl('Deceased', osSurvival$characteristics_ch1.6), 2, 1)
+osSurvivalFinal = osSurvival %>%
+  select(geo_accession, age, gender, grade, mets, time, status) %>%
+  left_join(osYbx1)
+```
+
+Now we can do the survival analysis.
+
+```{r}
+##################################################################################
+fit = survfit(Surv(time, status) ~ geneLevel, data = osSurvivalFinal)
+print(fit)
+##extract the data
+survivalData = data.frame(time = fit$time,
+                  n.risk = fit$n.risk,
+                  n.event = fit$n.event,
+                  n.censor = fit$n.censor,
+                  surv = fit$surv,
+                  upper = fit$upper,
+                  lower = fit$lower
+                  )
+##make a plot
+ggsurvplot(fit, pval = TRUE, conf.int = FALSE,
+          linetype = "strata", # Change line type by groups
+          surv.median.line = "hv", # Specify median survival
+          ggtheme = theme_classic(), # Change ggplot2 theme
+          palette = c("#E7B800", "#2E9FDF", 'red'))
+```
+
+
+So this actually indicates the opposite of what I would expect, YBX1 expression generally correlating with improved survival. But, this could be an artifact of when follow up was done. Some cases are alive after 25 months, but maybe they are dead after 30 but no follow-up was done. The other problem is it is such a small size different between 'low' and 'high' YBX1 expression...it doesn't feel right. This is a fairly small cohort as well. I should try to find a different cohort to see if I can repeat this.
+
+## Session info
+
+```{r}
+sessionInfo()
+```
+

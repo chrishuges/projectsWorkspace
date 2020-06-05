@@ -1,0 +1,157 @@
+---
+title: "Analysis of survival data for Ewing sarcoma"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+I again want to look at survival data for Ewing sarcoma, but instead of just going set by set, I am going to combine all the sets I can find into one object and go from there. The details for each set will be presented as we go through.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('GEOquery')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/microarray20200604_ewingSarcomaAllSets/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+This set is from Volchenboum et al. from GSE63157 that was published in PMID: 26052443. Upon further examination, there are actually two different cohorts here that we will process separately. They are under GSE63155 and GSE63156. First we will get the data.
+
+```{r}
+##########################################################################################
+esArrayData = getGEO('GSE63155',
+             destdir = paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/', sep = ''),
+             GSEMatrix = TRUE)
+esData = esArrayData[[1]]
+```
+
+We now have an expression set and we can look at some of the features to see that we have all the information we need.
+
+```{r}
+##################################################################################
+head(pData(esData))
+head(exprs(esData))
+head(fData(esData))
+```
+
+This dataset appears to have all the clinical data we need. The expression data appear to be a bit different and the feature assignment isn't as nice as it is for other datasets, so we will need to be a little more careful making the probe assignments. Below, I will try to create the expression object as for the other datasets.
+
+```{r}
+##################################################################################
+esExpression = as_tibble(exprs(esData)) %>%
+  mutate(ID = row.names(exprs(esData)))
+#I am just going to take the first annotation as the assignment here. It may not be perfect, but should be sufficient.
+esExpressionAnnotated = as_tibble(fData(esData)) %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(GB_ACC = sapply(strsplit(GB_LIST, ','), '[', 1)) %>%
+  mutate(symbol = sapply(strsplit(gene_assignment, ' // '), '[', 2)) %>%
+  dplyr::select(ID, GB_ACC, symbol) %>%
+  left_join(esExpression)
+```
+
+Now I want to look at the phenotype data. All of the info we want appears to be there, we just need to parse it out.
+
+```{r}
+##################################################################################
+esPhenotype = as_tibble(pData(esData)) %>%
+  dplyr::select(geo_accession, source_name_ch1:characteristics_ch1.8) %>%
+  mutate(type = 'Primary') %>%
+  mutate(age =  as.character(round(as.double(sub('.*\\: (.*)$', '\\1', characteristics_ch1.3)) / 365))) %>%
+  mutate(sex = sub('.*\\: ([MF])[a-z]+$', '\\1', characteristics_ch1.2)) %>%
+  mutate(efs = as.double(sub('.*\\: (.*)$', '\\1', characteristics_ch1.6)) / 30) %>%
+  mutate(ovs = as.double(sub('.*\\: (.*)$', '\\1', characteristics_ch1.8)) / 30) %>%
+  dplyr::select(geo_accession, type, age, sex, efs, ovs, characteristics_ch1.7)
+esPhenotype$status = ifelse(grepl('Alive', esPhenotype$characteristics_ch1.7), 1, 2)
+esPhenotype = esPhenotype[,c(1:6,8)]
+```
+
+Make sure all the cases are represented in the expression data, and save it.
+
+```{r}
+##################################################################################
+saveRDS(esExpressionAnnotated, paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumExpressionSetA.rds', sep = ''))
+saveRDS(esPhenotype, paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumPhenotypeSetA.rds', sep = ''))
+```
+
+Now we can move on and do the exact same thing for the other set.
+
+```{r}
+##########################################################################################
+esArrayData = getGEO('GSE63156',
+             destdir = paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/', sep = ''),
+             GSEMatrix = TRUE)
+esData = esArrayData[[1]]
+```
+
+We now have an expression set and we can look at some of the features to see that we have all the information we need.
+
+```{r}
+##################################################################################
+head(pData(esData))
+head(exprs(esData))
+head(fData(esData))
+```
+
+The format is identical to before in terms of expression, so process just as we did previously.
+
+```{r}
+##################################################################################
+esExpression = as_tibble(exprs(esData)) %>%
+  mutate(ID = row.names(exprs(esData)))
+#I am just going to take the first annotation as the assignment here. It may not be perfect, but should be sufficient.
+esExpressionAnnotated = as_tibble(fData(esData)) %>%
+  mutate(ID = as.character(ID)) %>%
+  mutate(GB_ACC = sapply(strsplit(GB_LIST, ','), '[', 1)) %>%
+  mutate(symbol = sapply(strsplit(gene_assignment, ' // '), '[', 2)) %>%
+  dplyr::select(ID, GB_ACC, symbol) %>%
+  left_join(esExpression)
+```
+
+The phenotype data are a bit different, so we will modify the processing for this a bit. One problem here is that they defined sex as 1,2, but didn't provide a legend for what this means and I can't figure it out from their manuscript. So, I am going to assume it is 1=Male, 2=Female, but I have no real basis for this. We don't use the sex information in the end anyway, so if I am wrong, it is ok.
+
+```{r}
+##################################################################################
+esPhenotype = as_tibble(pData(esData)) %>%
+  dplyr::select(geo_accession, source_name_ch1:characteristics_ch1.7) %>%
+  mutate(type = 'Primary') %>%
+  mutate(age =  as.character(round(as.double(sub('.*\\: (.*)$', '\\1', characteristics_ch1.3))))) %>%
+  mutate(efs = as.double(sub('.*\\: (.*)$', '\\1', characteristics_ch1.6)) / 30) %>%
+  mutate(ovs = as.double(sub('.*\\: (.*)$', '\\1', characteristics_ch1.7)) / 30) %>%
+  dplyr::select(geo_accession, type, age, efs, ovs, characteristics_ch1.2, characteristics_ch1.5)
+esPhenotype$status = ifelse(grepl('\\: 0', esPhenotype$characteristics_ch1.5), 1, 2)
+esPhenotype$sex = ifelse(grepl('1', esPhenotype$characteristics_ch1.2), 'M', 'F')
+esPhenotype = esPhenotype[,c(1:3,9,4:5,8)]
+```
+
+Make sure all the cases are represented in the expression data, and save it.
+
+```{r}
+##################################################################################
+saveRDS(esExpressionAnnotated, paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumExpressionSetB.rds', sep = ''))
+saveRDS(esPhenotype, paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumPhenotypeSetB.rds', sep = ''))
+```
+
+## Session info
+
+```{r}
+sessionInfo()
+```

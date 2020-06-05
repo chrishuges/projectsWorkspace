@@ -1,0 +1,161 @@
+---
+title: "Analysis of survival data for Ewing sarcoma"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the survival analysis of Ewing sarcoma patient data from the study PMID: 22084725. The data are deposited at GEO: GSE17618, with the surival data also hosted here as a supplementary file.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('GEOquery')
+library('survival')
+library('survminer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/microarray20200604_ewingSarcomaSavola/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+First I need to read in the dependency data.
+
+```{r}
+##########################################################################################
+esArrayData = getGEO('GSE17618',
+             destdir = paste(baseRepository, '/microarray20200604_ewingSarcomaSavola/', sep = ''),
+             GSEMatrix = TRUE)
+esData = esArrayData[[1]]
+```
+
+We now have an expression set and we can look at some of the features to see that we have all the information we need.
+
+```{r}
+##################################################################################
+head(pData(esData))
+head(exprs(esData))
+head(fData(esData))
+```
+
+First I just want to annotate the expression data a bit to include gene symbols, as these are what I will use for the survival analysis downstream. We can use the feature data to get this annotation.
+
+```{r}
+##################################################################################
+esExpression = as_tibble(exprs(esData)) %>%
+  mutate(ID = row.names(exprs(esData)))
+esAnnotated = as_tibble(fData(esData)) %>%
+  mutate(symbol = sapply(strsplit(`Gene Symbol`, ' '), '[', 1)) %>%
+  dplyr::select(ID, GB_ACC, symbol) %>%
+  left_join(esExpression)
+```
+
+Now we need to get the survival data into better shape.
+
+```{r}
+##################################################################################
+esEwing = as_tibble(pData(esData)) %>%
+  dplyr::select(geo_accession, characteristics_ch1.1:characteristics_ch1.8) %>%
+  filter(grepl('Ewing', characteristics_ch1.1)) %>%
+  mutate(type = sub('state\\: (.*)$', '\\1', characteristics_ch1.3)) %>%
+  mutate(age = sub('age\\: (.*)$', '\\1', characteristics_ch1.4)) %>%
+  mutate(sex = sub('sex\\: (.*)$', '\\1', characteristics_ch1.5)) %>%
+  mutate(efs = as.double(sub('efs \\(months\\)\\: (.*)$', '\\1', characteristics_ch1.6))) %>%
+  mutate(ovs = as.double(sub('ovs \\(months\\)\\: (.*)$', '\\1', characteristics_ch1.7))) %>%
+  mutate(status = sub('status\\: (.*)$', '\\1', characteristics_ch1.8)) %>%
+  dplyr::select(geo_accession, type:status)
+esEwing$status = ifelse(esEwing$status == 'Dead', 2, 1)
+##
+esOthers = as_tibble(pData(esData)) %>%
+  dplyr::select(geo_accession, characteristics_ch1.1:characteristics_ch1.8) %>%
+  filter(!grepl('Ewing', characteristics_ch1.1)) %>%
+  filter(grepl('diagnosis', characteristics_ch1.1)) %>%
+  mutate(type = sub('state\\: (.*)$', '\\1', characteristics_ch1.2)) %>%
+  mutate(age = sub('age\\: (.*)$', '\\1', characteristics_ch1.3)) %>%
+  mutate(sex = sub('sex\\: (.*)$', '\\1', characteristics_ch1.4)) %>%
+  mutate(efs = as.double(sub('efs \\(months\\)\\: (.*)$', '\\1', characteristics_ch1.5))) %>%
+  mutate(ovs = as.double(sub('ovs \\(months\\)\\: (.*)$', '\\1', characteristics_ch1.6))) %>%
+  mutate(status = sub('status\\: (.*)$', '\\1', characteristics_ch1.7)) %>%
+  dplyr::select(geo_accession, type:status)
+esOthers$status = ifelse(esOthers$status == 'Dead', 2, 1)
+esPhenotype = rbind(esEwing, esOthers)
+```
+
+At this point we are ready to move ahead with calculating the survival scores. I think this is probably best done with a function.
+
+
+
+```{r}
+##################################################################################
+esDep = readRDS(paste(baseRepository, '/database20200604_depmapYbx1Ewing/dataset_ewingRnaExprsCrisprDep.rds', sep = ''))
+esDepSubset = subset(esDep, esDep$medDep <= -1 & esDep$medExprs >= 4)
+
+
+expressionData = esAnnotated
+phenotypeData = esPhenotype
+goi = esDep$symbol
+
+zcox = vector()
+for (i in 1:nrow(expressionData)){
+  geneOfInterestExprs = expressionData[i,]
+  geneLong = geneOfInterestExprs %>%
+    pivot_longer(cols = GSM439886:GSM439940, names_to = 'geo_accession', values_to = 'rnaExprs') %>%
+    arrange(desc(rnaExprs))
+  geneLong$geneLevel = 'medium'
+  geneLong[1:round(nrow(geneLong) * 0.25), 'geneLevel'] = 'high'
+  geneLong[round(nrow(geneLong) * 0.75):nrow(geneLong), 'geneLevel'] = 'low'
+  geneLong$geneLevel = factor(geneLong$geneLevel, levels = c('low','medium','high'))
+  geneSurvivalInput = phenotypeData %>%
+    left_join(geneLong)
+  survivalFit = survfit(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+  coxStats = coxph(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+  coxZScore = coef(coxStats)/sqrt(diag(vcov(coxStats)))
+  zcox = c(zcox, coxZScore)
+}
+```  
+  
+  
+  
+  
+  
+```{r}  
+fit = survfit(Surv(time, status) ~ geneLevel, data = osSurvivalFinal)
+print(fit)
+##extract the data
+survivalData = data.frame(time = fit$time,
+                  n.risk = fit$n.risk,
+                  n.event = fit$n.event,
+                  n.censor = fit$n.censor,
+                  surv = fit$surv,
+                  upper = fit$upper,
+                  lower = fit$lower
+                  )
+
+```
+
+
+
+
+
+## Session info
+
+```{r}
+sessionInfo()
+```

@@ -1,0 +1,136 @@
+---
+title: "Analysis of depmap data for Ewing sarcoma"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+After looking at the osteosarcoma data, I think it makes more sense to instead target Ewing sarcoma. It seems to be more sensitive, and there is some drug sensitivity data for it that I am interested in. This document goes over investigation of genes that are essential for Ewing sarcoma based on DepMap data. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('vroom')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/database20200604_depmapYbx1Ewing/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+First I need to read in the dependency data.
+
+```{r}
+##########################################################################################
+crispr = vroom(paste(generalDatasets, '/depmap20Q2/Achilles_gene_effect.csv', sep = ''))
+colnames(crispr)[1] = 'DepMap_ID'
+```
+
+Data read looks good. Now I will get the cell line annotation details and create a list of just the Ewing sarcoma cell lines.
+
+```{r}
+##########################################################################################
+anno = read_csv(paste(generalDatasets, '/depmap20Q2/sample_info.csv', sep = ''))
+esSet = anno[grepl('Ewing',anno$lineage_subtype),]
+```
+
+So there are 39 lines associated with Ewing sarcoma. The table also contains some information about whether they are EWS-FLI or EWS-ERG, which might be useful later on. Now lets find out which genes are the most essential for this lineage subtype.
+
+```{r}
+##########################################################################################
+crisprEs = crispr %>%
+  filter(DepMap_ID %in% esSet$DepMap_ID) %>%
+  pivot_longer(cols = `A1BG (1)`:`ZZZ3 (26009)`, names_to = 'gene', values_to = 'rnaExp') %>%
+  pivot_wider(id_cols = gene, names_from = DepMap_ID, values_from = rnaExp)
+crisprEs$medDep = apply(crisprEs[,2:ncol(crisprEs)], 1, function(x) median(x, na.rm = TRUE))
+crisprTop = crisprEs %>%
+  arrange(medDep) %>%
+  mutate('symbol' = sub('(.*) \\([0-9]+\\).*$', '\\1', gene)) %>%
+  dplyr::select(symbol, medDep)
+```
+
+So now we have our ranked list of genes based on their dependency scores in Ewing sarcoma cell lines. I would like to add expression data for these using the RNAseq data from Depmap.First, grab the RNA data.
+
+```{r}
+##########################################################################################
+rna = vroom(paste(generalDatasets, '/depmap20Q2/CCLE_expression.csv', sep = ''))
+colnames(rna)[1] = 'DepMap_ID'
+```
+
+Now reshape it to be similar to the crispr output from above.
+
+```{r}
+##########################################################################################
+rnaEs = rna %>%
+  filter(DepMap_ID %in% esSet$DepMap_ID) %>%
+  pivot_longer(cols = `TSPAN6 (7105)`:`OOSP3 (112577461)`, names_to = 'gene', values_to = 'rnaExp') %>%
+  pivot_wider(id_cols = gene, names_from = DepMap_ID, values_from = rnaExp)
+rnaEs$medExprs = apply(rnaEs[,2:ncol(rnaEs)], 1, function(x) median(x, na.rm = TRUE))
+rnaTop = rnaEs %>%
+  mutate('symbol' = sub('(.*) \\([0-9]+\\).*$', '\\1', gene)) %>%
+  dplyr::select(symbol, medExprs)
+```
+
+Now join the two datasets and export to a file for later use.
+
+```{r}
+##########################################################################################
+depSet = crisprTop %>%
+  left_join(rnaTop) %>%
+  mutate(depScore = medDep * medExprs) %>%
+  arrange(depScore)
+saveRDS(depSet, paste(baseRepository, '/database20200604_depmapYbx1Ewing/dataset_ewingRnaExprsCrisprDep.rds', sep = ''))
+```
+
+Ok, this looks good. Keep in mind that many of these genes are classified as 'essential', and are things like ribosome components and we aren't necessarily as interested in these. We can filter them later on if we would like. Actually, lets label these and resave the data.
+
+```{r}
+##########################################################################################
+essentials = read_csv(paste(generalDatasets, '/depmap20Q2/Achilles_common_essentials.csv', sep = '')) %>%
+  mutate(symbol = sub('(.*) \\([0-9]+\\).*$', '\\1', gene)) %>%
+  mutate(isEssential = 'TRUE') %>%
+  dplyr::select(symbol, isEssential)
+depSetAnnotated = depSet %>%
+  left_join(essentials)
+saveRDS(depSet, paste(baseRepository, '/database20200604_depmapYbx1Ewing/dataset_ewingRnaExprsCrisprDep.rds', sep = ''))
+```
+Alright, now we have all these data just in case we want them later. Now we can make a quick plot for genes that we will carry forward to the survival analysis.
+
+```{r}
+##########################################################################################
+depSetAnnotated$pColors = ifelse(depSetAnnotated$medDep <= -1 & depSetAnnotated$medExprs >= 4,
+                                 brewer.pal(8,'Spectral')[1], brewer.pal(8,'Greys')[4])
+table(depSetAnnotated$pColors)
+ggplot(depSetAnnotated, aes(medExprs, medDep)) +
+  geom_point(size = 1, color = depSetAnnotated$pColors) +
+  labs(x = 'log2(TPM + 1)', y = 'CERES Score', title = 'Ewing sarcoma gene dependency') +
+  scale_x_continuous(limits = c(0,14.5), breaks = seq(0,20,2)) +
+  scale_y_continuous(limits = c(-2.5,1), breaks = seq(-3,3,1)) +
+  geom_hline(yintercept = -1, linetype = 'dashed') +
+  geom_vline(xintercept = 4, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseWorkspace, '/database20200604_depmapYbx1Ewing/scatter_rnaExprsDependentEwing.pdf', sep = ''), 
+       width = 4, height = 4, useDingbats = FALSE)
+```
+
+## Session info
+
+```{r}
+sessionInfo()
+```

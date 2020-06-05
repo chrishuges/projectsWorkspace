@@ -1,0 +1,62 @@
+---
+title: "Analysis of survival data for Ewing sarcoma"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+I again want to look at survival data for Ewing sarcoma, but instead of just going set by set, I am going to combine all the sets I can find into one object and go from there. The details for each set will be presented as we go through.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('GEOquery')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/microarray20200604_ewingSarcomaAllSets/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+This set is from Svoboda et al. from GSE68776 that was published in PMID: 25625846 First we will get the data.
+
+```{r}
+##########################################################################################
+esArrayData = getGEO('GSE68776',
+             destdir = paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/', sep = ''),
+             GSEMatrix = TRUE)
+esData = esArrayData[[1]]
+```
+
+We now have an expression set and we can look at some of the features to see that we have all the information we need.
+
+```{r}
+##################################################################################
+head(pData(esData))
+head(exprs(esData))
+head(fData(esData))
+```
+
+So I don't think survival data for these samples actually exists, as they don't mention it at all in the manuscript. But, this is a nice dataset to have for differentially expression between Ewing sarcoma and different types of normals.
+
+## Session info
+
+```{r}
+sessionInfo()
+```
