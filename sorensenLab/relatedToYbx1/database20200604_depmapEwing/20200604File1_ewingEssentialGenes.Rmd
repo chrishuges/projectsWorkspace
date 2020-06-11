@@ -29,7 +29,7 @@ baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sor
 We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
 
 ```{r}
-source(paste(baseWorkspace, '/database20200604_depmapYbx1Ewing/userDefinedFunctions.R', sep = ''))
+source(paste(baseWorkspace, '/database20200604_depmapEwing/userDefinedFunctions.R', sep = ''))
 ```
 
 ## Data processing
@@ -95,7 +95,7 @@ depSet = crisprTop %>%
   left_join(rnaTop) %>%
   mutate(depScore = medDep * medExprs) %>%
   arrange(depScore)
-saveRDS(depSet, paste(baseRepository, '/database20200604_depmapYbx1Ewing/dataset_ewingRnaExprsCrisprDep.rds', sep = ''))
+saveRDS(depSet, paste(baseRepository, '/database20200604_depmapEwing/dataset_ewingRnaExprsCrisprDep.rds', sep = ''))
 ```
 
 Ok, this looks good. Keep in mind that many of these genes are classified as 'essential', and are things like ribosome components and we aren't necessarily as interested in these. We can filter them later on if we would like. Actually, lets label these and resave the data.
@@ -108,7 +108,7 @@ essentials = read_csv(paste(generalDatasets, '/depmap20Q2/Achilles_common_essent
   dplyr::select(symbol, isEssential)
 depSetAnnotated = depSet %>%
   left_join(essentials)
-saveRDS(depSet, paste(baseRepository, '/database20200604_depmapYbx1Ewing/dataset_ewingRnaExprsCrisprDep.rds', sep = ''))
+saveRDS(depSet, paste(baseRepository, '/database20200604_depmapEwing/dataset_ewingRnaExprsCrisprDep.rds', sep = ''))
 ```
 Alright, now we have all these data just in case we want them later. Now we can make a quick plot for genes that we will carry forward to the survival analysis.
 
@@ -125,7 +125,7 @@ ggplot(depSetAnnotated, aes(medExprs, medDep)) +
   geom_hline(yintercept = -1, linetype = 'dashed') +
   geom_vline(xintercept = 4, linetype = 'dashed') +
   theme_classic()
-ggsave(paste(baseWorkspace, '/database20200604_depmapYbx1Ewing/scatter_rnaExprsDependentEwing.pdf', sep = ''), 
+ggsave(paste(baseRepository, '/database20200604_depmapEwing/scatter_rnaExprsDependentEwing.pdf', sep = ''), 
        width = 4, height = 4, useDingbats = FALSE)
 ```
 

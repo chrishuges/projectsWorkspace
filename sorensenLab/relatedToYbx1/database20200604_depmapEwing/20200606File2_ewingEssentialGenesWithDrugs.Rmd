@@ -1,0 +1,205 @@
+---
+title: "Analysis of depmap data for Ewing sarcoma"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+The Ewing depmap sensitivity data looks really interesting. One nice thing is that there is a lot of drug sensitivity data in depmap. In this notebook I will look into the drug sensitivity data for MS275, specifically in Ewing sarcoma. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('vroom')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/database20200604_depmapEwing/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+First I need to read in the drug sensitivity data and annotate it. It is a bit different in the annotation compared to the other depmap data sets. I am using the CTD2 data set because it looks like it has the widest range of concentrations and replication, although other screens are available. The compound ID for MS275 (entinostat) is 60218. First get the data.
+
+```{r}
+##########################################################################################
+depDrug = read_tsv(paste(generalDatasets, '/depmap20Q2/v20.data.curves_post_qc.txt', sep = '')) %>%
+  dplyr::select(experiment_id, master_cpd_id, area_under_curve) %>%
+  filter(master_cpd_id == 60218)
+colnames(depDrug)[1] = 'master_ccl_id'
+```
+<div style="margin-bottom:50px;"></div>
+
+In this data frame, the experiment_id corresponds to the cell line. In order to select only Ewing lines, we need to get some more annotation details.
+
+```{r}
+##########################################################################################
+depCell = read_tsv(paste(generalDatasets, '/depmap20Q2/v20.meta.per_cell_line.txt', sep = '')) %>%
+  right_join(depDrug) %>%
+  filter(!is.na(ccl_name))
+colnames(depCell)[2] = 'stripped_cell_line_name'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Get the dependency data for all the different subtypes.
+
+```{r}
+##########################################################################################
+crispr = vroom(paste(generalDatasets, '/depmap20Q2/Achilles_gene_effect.csv', sep = ''))
+colnames(crispr)[1] = 'DepMap_ID'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now get the annotation details.
+
+```{r}
+##########################################################################################
+anno = read_csv(paste(generalDatasets, '/depmap20Q2/sample_info.csv', sep = '')) %>%
+  left_join(depCell) %>%
+  filter(!is.na(area_under_curve))
+anno$lineage2 = ifelse(grepl('fibroblast', anno$lineage), sub('fibroblast_(.*)$', '\\1', anno$lineage_subtype), anno$lineage)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+The first thing I want to do is to see if sensitivity to YB1 tracks with sensitivity to MS275 across all lineages. We need to bring the CRISPR YB1 scores in if we want to do this.
+
+```{r}
+##########################################################################################
+crisprEs = crispr %>%
+  left_join(anno) %>%
+  dplyr::select(DepMap_ID, stripped_cell_line_name, lineage, lineage2, master_cpd_id, area_under_curve, `YBX1 (4904)`) %>%
+  filter(!is.na(area_under_curve)) %>%
+  group_by(lineage2) %>%
+  summarize(AUC = median(area_under_curve, na.rm = TRUE), CERES = median(`YBX1 (4904)`, na.rm = TRUE))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can make a plot of these data.
+
+```{r}
+##########################################################################################
+crisprEsSubset = subset(crisprEs, (crisprEs$lineage2 %in% c('bone','breast','ovary','lung','colorectal','skin','urinary_tract','pancreas',
+                                                            'plasma_cell','gastric')))
+cor(crisprEsSubset$AUC, crisprEsSubset$CERES, use = 'pairwise.complete.obs')
+ggplot(crisprEsSubset, aes(AUC, CERES)) +
+  geom_point() +
+  geom_text_repel(label = crisprEsSubset$lineage2, size = 3) +
+  geom_smooth(method = 'lm')
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This seems to track relatively well, depending on the lineage. The problem is that many lineages respond differently to YB-1. Realistically, we are only interested in bone here as we know it is sensitive to changes in YB-1 based on our previous analyses.
+
+
+```{r}
+##########################################################################################
+crisprBone = crispr %>%
+  left_join(anno) %>%
+  dplyr::select(DepMap_ID, stripped_cell_line_name, lineage, lineage2, master_cpd_id, area_under_curve, `YBX1 (4904)`) %>%
+  filter(!is.na(area_under_curve) & grepl('bone', lineage2))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can make a plot of just bone cancers.
+
+```{r}
+##########################################################################################
+cor(crisprBone$area_under_curve, crisprBone$`YBX1 (4904)`, use = 'pairwise.complete.obs')
+ggplot(crisprBone, aes(area_under_curve, `YBX1 (4904)`)) +
+  geom_point(size = 2) +
+  labs(x = 'AUC', y = 'CERES Dependency Score', title = 'Entinostat YBX1 relationship') +
+  geom_smooth(method = 'lm') +
+  geom_text(aes(x = 13, y = -1.5), label = paste('r2 = ', round(cor(crisprBone$area_under_curve, crisprBone$`YBX1 (4904)`, use = 'pairwise.complete.obs'),3))) +
+  theme_classic()
+ggsave(paste(baseRepository, '/database20200604_depmapEwing/scatter_ms275Ybx1RelationshipBoneDepmap.pdf', sep = ''),
+       height = 4,
+       width = 4,
+       useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+What about for all of the genes we previously looked at in the context of dependency? First get the genes of interest.
+
+```{r}
+##########################################################################################
+esHits = readRDS(paste(baseRepository, '/database20200604_depmapEwing/dataset_ewingRnaExprsCrisprDep.rds', sep = ''))
+#esHitsGenes = esHits[esHits$medDep <= -1 & esHits$medExprs >= 4, 'symbol']
+esHitsGenes = esHits[1:250,]
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now run a function to calculate the correlation between the drug and dependency data.
+
+```{r, message = FALSE}
+##########################################################################################
+geneOfInterest = as.list(esHitsGenes$symbol)
+entinostatCorr = lapply(geneOfInterest, 
+                        getDrugSensitivity, 
+                        crisprData = crispr,
+                        annotationData = anno,
+                        lineage = 'bone')
+esHitsGenes$drug = unlist(entinostatCorr)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can make a plot for these scores.
+
+```{r}
+##########################################################################################
+esHitsPlot = esHitsGenes %>%
+  arrange(drug) %>%
+  mutate(index = seq(1,nrow(esHitsGenes),1))
+esHitsPlot$pText = ifelse(esHitsPlot$symbol == 'YBX1', esHitsPlot$symbol, '')
+esHitsPlot$pSize = ifelse(esHitsPlot$symbol == 'YBX1', 3, 1)
+esHitsPlot$pColors = ifelse(esHitsPlot$symbol == 'YBX1', brewer.pal(8,'Spectral')[1], brewer.pal(8,'Greys')[5])
+#esHitsPlot$pText = ifelse(esHitsPlot$drug >= 0.7, esHitsPlot$symbol, '')
+##
+ggplot(esHitsPlot, aes(drug, index)) +
+  geom_point(size = esHitsPlot$pSize, color = esHitsPlot$pColors) +
+  geom_text_repel(label = esHitsPlot$pText, size = 3, segment.size = 0.25) +
+  scale_x_continuous(limits = c(-1,1), breaks = seq(-1,1,0.5)) +
+  labs(x = 'AUC and drug dependency correlation', y = 'Gene index', title = 'Entinostat sensitivity') +
+  theme_classic()
+ggsave(paste(baseRepository, '/database20200604_depmapEwing/scatter_entinostatSensitivityTop250.pdf', sep = ''), 
+       width = 3, height = 4, useDingbats = FALSE)
+```
+
+
+
+
+
+## Session info
+
+```{r}
+sessionInfo()
+```
