@@ -1,0 +1,107 @@
+---
+title: "Analysis of ICGC data for Ewing sarcoma"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+ICGC has some RNA expression data for Ewing sarcoma cases. The nice thing here is that they have really nice survival data as well as metastasis information. I want to see if we can use this to get anything of interest out, specifically related to YB-1.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('vroom')
+library('DESeq2')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/database20200610_icgcEwing/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+First I will read in the annotation details because it will shape how we do things later on with the expression details.
+
+```{r}
+##########################################################################################
+esAnnotation = vroom(paste(generalDatasets, '/icgcJune2020/icgcEwing/donor.tsv', sep = '')) %>%
+  dplyr::select(icgc_donor_id, donor_sex, donor_vital_status, donor_age_at_diagnosis, 
+                donor_tumour_stage_at_diagnosis, donor_relapse_type, donor_relapse_interval, donor_survival_time)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now I can read in the expression data. This is provided as a table already, so we shouldn't need to do much here. But, this is a massive file (about 4.5 gigs on my machine). There is likely some information that we should filter out immediately to size this object down. It looks like they have everything in 'long' format and many raw_read_counts are 0. We will eliminate these.
+
+```{r}
+##########################################################################################
+esExpression = vroom(paste(generalDatasets, '/icgcJune2020/icgcEwing/exp_seq.tsv', sep = '')) %>%
+  dplyr::select(icgc_donor_id, gene_id, raw_read_count) %>%
+  filter(raw_read_count >= 10 & !is.na(raw_read_count)) %>%
+  pivot_wider(id_cols = gene_id, names_from = icgc_donor_id, values_from = raw_read_count)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We need to re-order the columns to make sure they are the same as the annotation data. I think they are already the same, but just to be safe. This is a requirement for DESeq.
+
+```{r}
+##########################################################################################
+esExpressionDds = as.data.frame(esExpression[,esAnnotation$icgc_donor_id])
+row.names(esExpressionDds) = esExpression$gene_id
+esExpressionDds[is.na(esExpressionDds)] = 0
+esDds = DESeqDataSetFromMatrix(countData = esExpressionDds,
+                               colData = esAnnotation,
+                               design = ~donor_vital_status)
+keep = rowSums(counts(esDds)) >= 10
+esDds = esDds[keep,]
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Process the data for differential expression using DESeq2 as described [here](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html).
+
+```{r}
+######################################################################################
+esDdsResult = DESeq(esDds)
+esDiffResult = results(esDdsResult)
+summary(esDiffResult)
+##the condition here is deceased vs alive
+esDiffResultOrdered = esDiffResult[order(esDiffResult$pvalue),]
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Export the data.
+
+```{r}
+######################################################################################
+write.csv(as.data.frame(esDiffResultOrdered), 
+          file = paste(baseRepository, '/database20200610_icgcEwing/dataset_deseqDeadvAliveOutput.csv', sep = ''))
+```
+
+
+## Session info
+
+```{r}
+sessionInfo()
+```
