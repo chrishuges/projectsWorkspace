@@ -95,7 +95,7 @@ if [ ! -f "uniprotHuman$uniprotVersion.fasta.annotated.rds" ]; then
   printf "Annotation index for $targetId does not exist, so it will be created. This can be slow but will only happen once per index.\n\n"
   rAnnotationIndex="Rscript /projects/ptx_analysis/chughes/projectsWorkspace/globalScripts/annotateUniprotDatabase.R ${PWD}/uniprotHuman$uniprotVersion.fasta"
   eval $rAnnotationIndex
-  scp "scp ${PWD}/uniprotHuman$uniprotVersion.fasta.annotated.rds /projects/ptx_analysis/chughes/databases/uniprot/"
+  eval "scp ${PWD}/uniprotHuman$uniprotVersion.fasta.annotated.rds /projects/ptx_analysis/chughes/databases/uniprot/"
 fi
 
 
