@@ -138,14 +138,14 @@ fixedModifications='"Carbamidomethylation of C, TMT 11-plex of peptide N-term"'
 variableModifications='"Oxidation of M, TMT 11-plex of K"'
 
 #####call the parameters file creation
-callingParameters='java -cp "$searchGuiLocation" eu.isas.searchgui.cmd.IdentificationParametersCLI -out ./OT-MS1_CID-IT-MS2_HCD-OT-MS3_human-trypsin_stdMods-TMT11plex_"$uniprotVersion".par -db ./uniprotHumanCrap_"$uniprotVersion""$databaseExtension".fasta -prec_tol 20 -frag_tol 0.5 -db_pi ./uniprotHumanCrap_"$uniprotVersion""$databaseExtension".fasta -fixed_mods "$fixedModifications" -variable_mods "$variableModifications" -msgf_instrument 0 -msgf_protocol 4 -msgf_fragmentation 1'
+callingParameters='java -cp "$searchGuiLocation" eu.isas.searchgui.cmd.IdentificationParametersCLI -out ./databaseSearchParameters.par -db ./uniprotHumanCrap"$databaseExtension""$uniprotVersion".fasta -prec_tol 20 -frag_tol 0.5 -db_pi ./uniprotHumanCrap"$databaseExtension""$uniprotVersion".fasta -fixed_mods "$fixedModifications" -variable_mods "$variableModifications" -msgf_instrument 0 -msgf_protocol 4 -msgf_fragmentation 1'
 
 ####call the command
-if [ ! -f "./OT-MS1_CID-IT-MS2_HCD-OT-MS3_human-trypsin_stdMods-TMT11plex$uniprotVersion.par" ]; then
+if [ ! -f "./databaseSearchParameters.par" ]; then
   printf "\nParameters file does not exist. Creating it.\n\n"
   eval "$callingParameters"
 else
-  printf "Parameters file exists: OT-MS1_CID-IT-MS2_HCD-OT-MS3_human-trypsin_stdMods-TMT11plex$uniprotVersion.par.\n\n"
+  printf "Parameters file exists: databaseSearchParameters.par.\n\n"
 fi
 
 
@@ -185,7 +185,7 @@ for i in "${fileList[@]}"; do
     targetId=$(basename "$i" ".zip")
     printf "Search output for $targetId already exists, skipping file.\n\n"
   else
-    searchGuiExecution="java -Xmx120g -cp $searchGuiLocation eu.isas.searchgui.cmd.SearchCLI -spectrum_files $i -output_folder $PWD -id_params ./OT-MS1_CID-IT-MS2_HCD-OT-MS3_human-trypsin_stdMods-TMT11plex$uniprotVersion.par -output_option 1 -xtandem 1 -msgf 1 -comet 1"
+    searchGuiExecution="java -Xmx120g -cp $searchGuiLocation eu.isas.searchgui.cmd.SearchCLI -spectrum_files $i -output_folder $PWD -id_params ./databaseSearchParameters.par -output_option 1 -xtandem 1 -msgf 1 -comet 1"
     eval $searchGuiExecution
   fi
 done
@@ -204,7 +204,7 @@ fi
 while ! [ -f "n_${sampleTag}_1_Default_PSM_Report.txt" ]; do
   printf "\nNo peptide shaker reports output exists, so it will be created.\n"
   #peptide shaker execution
-  peptideshakerExecution="java -Xmx600g -cp $peptideshakerLocation eu.isas.peptideshaker.cmd.PeptideShakerCLI -experiment n -sample $sampleTag -replicate 1 -identification_files $PWD -spectrum_files $PWD -id_params ./OT-MS1_CID-IT-MS2_HCD-OT-MS3_human-trypsin_stdMods-TMT11plex$uniprotVersion.par -out $PWD/$sampleTag.out.cpsx"
+  peptideshakerExecution="java -Xmx600g -cp $peptideshakerLocation eu.isas.peptideshaker.cmd.PeptideShakerCLI -experiment n -sample $sampleTag -replicate 1 -identification_files $PWD -spectrum_files $PWD -id_params ./databaseSearchParameters.par -out $PWD/$sampleTag.out.cpsx"
   eval $peptideshakerExecution
   #reports output
   reportsExecution="java -Xmx120g -cp $peptideshakerLocation eu.isas.peptideshaker.cmd.ReportCLI -in $sampleTag.out.cpsx -out_reports $PWD -reports 0,3"
@@ -217,6 +217,7 @@ printf "\nFinished all exporting reports for $sampleTag data set.\n\n"
 eval "rm *.html"
 eval "mv ${startingDirectory}/dataProcessing.txt $PWD"
 printf "\n\nFinished processing a total of ${#fileList[@]} files!\n\n"
+
 ```
 
 ## R script for database annotation

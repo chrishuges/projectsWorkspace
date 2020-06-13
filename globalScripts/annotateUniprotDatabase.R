@@ -25,7 +25,7 @@ fastaIndexFinal = dplyr::select(fastaIndex, accession, gene, species, length)
 trypticPeptides = vector()
 detectableLength = vector()
 for (i in 1:length(fastaDb)){
-  aaSeq = as.character(fasta_db[[i]])
+  aaSeq = as.character(fastaDb[[i]])
   seqDigest = OrgMassSpecR::Digest(aaSeq, enzyme = 'trypsin', missed = 0, custom = list(code = c('X','U','Z','B'), mass = c(50, 60, 70, 80)))
   seqDigest$pepLength = (seqDigest$stop - seqDigest$start) + 1
   seqDigestSub = subset(seqDigest, (seqDigest$pepLength > 5) & (seqDigest$pepLength < 31))
@@ -39,4 +39,4 @@ fastaIndexFinal$detectablePeptides = trypticPeptides
 fastaIndexFinal$detectableLength = detectableLength
 
 ##save the index
-saveRDS(fastaIndexFinal, paste(command_line_inputs[1],'.annotated.rds',sep = ''))
+saveRDS(fastaIndexFinal, paste(commandLineInputs[1],'.annotated.rds',sep = ''))
