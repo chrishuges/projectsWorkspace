@@ -1,0 +1,77 @@
+---
+title: "Analysis of SP3 PRD DNA and RNA binding"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document is simply for making a plot of the bioanalyzer results from the RNA yields after SP3 processing. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToSp3Prd'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToSp3Prd'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Just need a representative plot for each method. The samples are:
+
+* Sample1 = Qiagen replicate 1
+* Sample2 = Qiagen replicate 2
+* Sample3 = Qiagen replicate 3
+* Sample4 = SP3 replicate 1
+* Sample5 = SP3 replicate 2
+* Sample6 = SP3 replicate 3
+
+Samples 7 - 12 are just a repeat of these previous six samples, in the same order.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+bioanalyzerFiles = list.files(paste(baseRepository, '/purification20200624_Sp3DnaRnaPurificationYields/', sep = ''), 
+                              pattern = 'Sample[0-9]+\\.csv', full.names = TRUE)
+##
+bioanalyzerData = lapply(bioanalyzerFiles, read_csv, skip = 17)
+names(bioanalyzerData) = sub('.*44_(.*)\\.csv$', '\\1', bioanalyzerFiles)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+There is a parsing error here, but it is just because there is stuff at the end of the file that gets clipped. The actual data is read in fine. Now we can just plot the data. 
+
+```{r}
+##########################################################################################
+for (i in 1:length(bioanalyzerData)){
+  ggplot(bioanalyzerData[[i]], aes(Time, Value)) +
+    geom_line(size = 0.5, color = brewer.pal(8,'Greys')[4]) +
+    labs(x = 'Time (s)', y = 'Signal intensity', title = names(bioanalyzerData)[i]) +
+    scale_y_continuous(limits = c(-1,40), breaks = seq(0,60,10)) +
+    theme_classic()
+  ggsave(paste(baseRepository, '/purification20200624_Sp3DnaRnaPurificationYields/line_qiaSp3RnaQuality_', names(bioanalyzerData)[i], '.pdf', sep = ''),
+       height = 2,
+       width = 4,
+       useDingbats = FALSE)
+}
+```
+
+## Session info
+
+```{r}
+sessionInfo()
+```

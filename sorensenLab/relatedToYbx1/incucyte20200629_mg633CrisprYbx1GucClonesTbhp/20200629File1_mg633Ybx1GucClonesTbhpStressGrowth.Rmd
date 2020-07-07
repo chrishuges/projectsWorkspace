@@ -1,0 +1,180 @@
+---
+title: "Analysis of YBX1 GUC Crispr clone growth"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document is to investigate the incucyte data for the YBX1 GUC crispr clones in MG633. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First we can grab the data from the instrument.
+
+```{r}
+##########################################################################################
+incucyteFiles = list.files(paste(baseRepository, '/incucyte20200629_mg633CrisprYbx1GucClonesTbhp/', sep = ''),
+                           pattern = 'noGroups.txt', full.names = TRUE)
+##
+incucyteData = lapply(incucyteFiles, read_tsv, skip = 6)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I first want to plot the base growth rates of the individual lines, no stress.
+
+```{r}
+##########################################################################################
+mgPar = incucyteData[[1]] %>%
+  dplyr::select(Elapsed, A1:H1) %>%
+  filter(Elapsed == 0 | Elapsed == 72) %>%
+  pivot_longer(cols = A1:H1, names_to = 'well', values_to = 'confluence') %>%
+  pivot_wider(names_from = Elapsed, values_from = confluence) %>%
+  mutate(difference = `72` - `0`) %>%
+  mutate(cells = 'parental') %>%
+  dplyr::select(cells, well, difference)
+##
+mgKo4 = incucyteData[[2]] %>%
+  dplyr::select(Elapsed, A1:H1) %>%
+  filter(Elapsed == 0 | Elapsed == 72) %>%
+  pivot_longer(cols = A1:H1, names_to = 'well', values_to = 'confluence') %>%
+  pivot_wider(names_from = Elapsed, values_from = confluence) %>%
+  mutate(difference = `72` - `0`) %>%
+  mutate(cells = 'ko4') %>%
+  dplyr::select(cells, well, difference)
+##
+mgKo6 = incucyteData[[3]] %>%
+  dplyr::select(Elapsed, A1:H1) %>%
+  filter(Elapsed == 0 | Elapsed == 72) %>%
+  pivot_longer(cols = A1:H1, names_to = 'well', values_to = 'confluence') %>%
+  pivot_wider(names_from = Elapsed, values_from = confluence) %>%
+  mutate(difference = `72` - `0`) %>%
+  mutate(cells = 'ko6') %>%
+  dplyr::select(cells, well, difference)
+##
+mgData = rbind(mgPar, mgKo4, mgKo6)
+mgData$cells = factor(mgData$cells, levels = c('parental', 'ko4', 'ko6'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we are ready to make the plot.
+
+```{r}
+##########################################################################################
+ggplot(mgData, aes(cells, difference, color = cells)) +
+  geom_point(size = 4, position = position_jitterdodge(jitter.width = 0.50)) +
+  labs(x = 'Cell line', y = 'Confluence difference in 72h', title = 'YBX1 GUC clone growth') +
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0,100,10)) +
+  scale_color_manual(values = c(brewer.pal(8,'Greys')[4], rep(brewer.pal(8,'RdBu')[1],2))) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/incucyte20200629_mg633CrisprYbx1GucClonesTbhp/scatter_mg633Ybx1GucGrowthDifference.pdf', sep = ''),
+       height = 4,
+       width = 3,
+       useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Calculate some p-values.
+
+```{r}
+##########################################################################################
+t.test(difference ~ cells, data = mgData[!grepl('ko6',mgData$cells),])
+t.test(difference ~ cells, data = mgData[!grepl('ko4',mgData$cells),])
+```
+
+<div style="margin-bottom:50px;"></div>
+
+What if I do this over again, but for stressed cells.
+
+```{r}
+##########################################################################################
+mgPar = incucyteData[[1]] %>%
+  dplyr::select(Elapsed, A7:H7) %>%
+  filter(Elapsed == 0 | Elapsed == 72) %>%
+  pivot_longer(cols = A7:H7, names_to = 'well', values_to = 'confluence') %>%
+  pivot_wider(names_from = Elapsed, values_from = confluence) %>%
+  mutate(difference = `72` - `0`) %>%
+  mutate(cells = 'parental') %>%
+  dplyr::select(cells, well, difference)
+##
+mgKo4 = incucyteData[[2]] %>%
+  dplyr::select(Elapsed, A7:H7) %>%
+  filter(Elapsed == 0 | Elapsed == 72) %>%
+  pivot_longer(cols = A7:H7, names_to = 'well', values_to = 'confluence') %>%
+  pivot_wider(names_from = Elapsed, values_from = confluence) %>%
+  mutate(difference = `72` - `0`) %>%
+  mutate(cells = 'ko4') %>%
+  dplyr::select(cells, well, difference)
+##
+mgKo6 = incucyteData[[3]] %>%
+  dplyr::select(Elapsed, A7:H7) %>%
+  filter(Elapsed == 0 | Elapsed == 72) %>%
+  pivot_longer(cols = A7:H7, names_to = 'well', values_to = 'confluence') %>%
+  pivot_wider(names_from = Elapsed, values_from = confluence) %>%
+  mutate(difference = `72` - `0`) %>%
+  mutate(cells = 'ko6') %>%
+  dplyr::select(cells, well, difference)
+##
+mgData = rbind(mgPar, mgKo4, mgKo6)
+mgData$cells = factor(mgData$cells, levels = c('parental', 'ko4', 'ko6'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we are ready to make the plot.
+
+```{r}
+##########################################################################################
+ggplot(mgData, aes(cells, difference, color = cells)) +
+  geom_point(size = 4, position = position_jitterdodge(jitter.width = 0.50)) +
+  labs(x = 'Cell line', y = 'Confluence difference in 72h', title = 'YBX1 GUC clone growth - tBHP') +
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0,100,10)) +
+  scale_color_manual(values = c(brewer.pal(8,'Greys')[4], rep(brewer.pal(8,'RdBu')[1],2))) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/incucyte20200629_mg633CrisprYbx1GucClonesTbhp/scatter_mg633Ybx1GucGrowthDifferenceTbhp18uM.pdf', sep = ''),
+       height = 4,
+       width = 3,
+       useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Calculate some p-values.
+
+```{r}
+##########################################################################################
+t.test(difference ~ cells, data = mgData[!grepl('ko6',mgData$cells),])
+t.test(difference ~ cells, data = mgData[!grepl('ko4',mgData$cells),])
+```
+
+## Session info
+
+```{r}
+sessionInfo()
+```

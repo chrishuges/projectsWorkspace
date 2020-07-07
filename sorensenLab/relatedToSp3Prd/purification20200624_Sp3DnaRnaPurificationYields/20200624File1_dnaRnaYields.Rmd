@@ -1,0 +1,128 @@
+---
+title: "Analysis of SP3 PRD DNA and RNA binding"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document is simply for making a plot of the Qubit results from the DNA and RNA yields after SP3 processing. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToSp3Prd'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToSp3Prd'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+I have the data recorded in my lab book, so we will just input them manually here.
+
+```{r}
+##########################################################################################
+qiaDnaQuant = tibble('molecule' = 'dna',
+                     'method' = 'qia',
+                     'yield' = c(44.8, 52.0, 45.6))
+##
+sp3DnaQuant = tibble('molecule' = 'dna',
+                     'method' = 'sp3',
+                     'yield' = c(46.7, 51.0, 53.0))
+##
+dnaQuant = rbind(qiaDnaQuant, sp3DnaQuant)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot of the DNA data.
+
+```{r}
+##########################################################################################
+ggplot(dnaQuant, aes(method, yield, color = method)) +
+  #geom_bar(position = 'dodge', stat = 'summary', fun = 'mean', width = 0.25) + 
+  geom_point(size = 4, position = position_jitterdodge(jitter.width = 0.25)) +
+  labs(x = 'Method', y = 'Qubit measurement (ng/uL)', title = 'DNA yield with SP3') +
+  scale_y_continuous(limits = c(0, 60), breaks = seq(0,100,10)) +
+  scale_color_manual(values = c(brewer.pal(8,'Greys')[4], brewer.pal(8,'RdBu')[1])) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/purification20200624_Sp3DnaRnaPurificationYields/scatter_qiaSp3DnaYields.pdf', sep = ''),
+       height = 4,
+       width = 2,
+       useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Calculate a p-value for the plot.
+
+```{r}
+##########################################################################################
+t.test(yield ~ method, data = dnaQuant)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now for RNA. 
+
+```{r}
+##########################################################################################
+qiaRnaQuant = tibble('molecule' = 'rna',
+                     'method' = 'qia',
+                     'yield' = c(68.0, 76.0, 77.0))
+##
+sp3RnaQuant = tibble('molecule' = 'rna',
+                     'method' = 'sp3',
+                     'yield' = c(59.0, 76.0, 70.0))
+##
+rnaQuant = rbind(qiaRnaQuant, sp3RnaQuant)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot of the DNA data.
+
+```{r}
+##########################################################################################
+ggplot(rnaQuant, aes(method, yield, color = method)) +
+  #geom_bar(position = 'dodge', stat = 'summary', fun = 'mean', width = 0.25) + 
+  geom_point(size = 4, position = position_jitterdodge(jitter.width = 0.25)) +
+  labs(x = 'Method', y = 'Qubit measurement (ng/uL)', title = 'RNA yield with SP3') +
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0,100,10)) +
+  scale_color_manual(values = c(brewer.pal(8,'Greys')[4], brewer.pal(8,'RdBu')[1])) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/purification20200624_Sp3DnaRnaPurificationYields/scatter_qiaSp3RnaYields.pdf', sep = ''),
+       height = 4,
+       width = 2,
+       useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Calculate a p-value for the plot.
+
+```{r}
+##########################################################################################
+t.test(yield ~ method, data = rnaQuant)
+```
+
+## Session info
+
+```{r}
+sessionInfo()
+```

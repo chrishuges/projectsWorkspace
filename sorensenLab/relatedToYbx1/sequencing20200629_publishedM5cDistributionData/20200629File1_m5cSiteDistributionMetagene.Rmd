@@ -1,0 +1,186 @@
+---
+title: "Analysis of published m5C data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document will map data from m5C sites found in published data. The studies are detailed in the code below.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('GenomicAlignments')
+library('TxDb.Hsapiens.UCSC.hg19.knownGene')
+library('rtracklayer')
+library('org.Hs.eg.db')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/sequencing20200629_publishedM5cDistributionData/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+This data comes from multiple studies. We will compile the data from all of them below. I decided to convert all the results to hg38 in the end. I retrieved the chain file from [here](ftp://ftp.ensembl.org/pub/assembly_mapping/homo_sapiens/) or [here](http://hgdownload.cse.ucsc.edu/goldenPath/hg19/liftOver/).
+
+```{r}
+#######################################################################################
+###m5c site library preparation
+###first we need to compile our set of m5c sites
+####this first data set is from PMID: 32293435
+m5c = read_csv(paste(baseRepository, '/sequencing20200629_publishedM5cDistributionData/m5c_HeLa_Schumann_hg38.csv', sep = ''))
+m5cGrangePrep = m5c %>%
+  mutate('chromosome' = Chrom) %>%
+  filter(TranscriptType == 'protein_coding') %>%
+  dplyr::select(chromosome, Start, End, Strand) %>%
+  filter(!is.na(chromosome))
+m5cSet1 = as_tibble(m5cGrange) %>%
+  mutate('chromosome' = seqnames) %>%
+  mutate('m5cSite' = end) %>%
+  mutate('cells' = 'hela') %>%
+  mutate('dataset' = 'schumann') %>%
+  mutate('confidence' = 1) %>%
+  dplyr::select(chromosome, strand, m5cSite, cells, dataset, confidence)
+
+
+####next set is from T24 bladder cancer cells, PMID: 31358969 
+###from the paper: The m5C sites were called using meRanCall from meRanTK (false discovery rate < 0.01). Only sites with a coverage #depth ≥ 30, methylation #level ≥ 0.1 and methylated cytosine depth ≥ 5 were considered credible.
+chain = import.chain('C:/Users/chris/OneDrive/Documents/bccrc/databases/HumanGenome_GTCh38.97/hg19ToHg38.over.chain')
+m5c = read_csv(paste(baseRepository, '/sequencing20200629_publishedM5cDistributionData/m5c_T24_Chen_hg19.csv', sep = ''))
+m5cGRangePrep = m5c %>%
+  filter(`m5C Level` >= 0.1) %>%
+  filter(Coverage >= 30) %>%
+  filter(C_count >= 5)
+m5cGrange = makeGRangesFromDataFrame(m5cGrangePrep)
+m5cGrangeHg19 = unlist(liftOver(m5cGrange, chain), use.names = TRUE)
+m5cSet2 = as_tibble(m5cGrangeHg19) %>%
+  mutate('chromosome' = seqnames) %>%
+  mutate('m5cSite' = end) %>%
+  mutate('cells' = 't24') %>%
+  mutate('dataset' = 'chen') %>%
+  mutate('confidence' = 1) %>%
+  dplyr::select(chromosome, strand, m5cSite, cells, dataset, confidence)
+  
+
+
+#####the next dataset is from HeLa cells, PMID: 28418038 
+m5c = read_csv(paste(baseRepository, '/sequencing20200629_publishedM5cDistributionData/m5c_HeLa_Yang_hg19.csv', sep = ''))
+m5cGrangePrep = m5c %>%
+  filter(`Gene Type` == 'mRNA') %>%
+  filter(`Overall m5C Level` >= 0.1) %>%
+  mutate(start = Position) %>%
+  mutate(end = Position)
+m5cGrange = makeGRangesFromDataFrame(m5cGrangePrep)
+m5cGrangeHg19 = unlist(liftOver(m5cGrange, chain), use.names = TRUE)
+m5cSet3 = as_tibble(m5cGrangeHg19) %>%
+  mutate('chromosome' = seqnames) %>%
+  mutate('m5cSite' = end) %>%
+  mutate('cells' = 'hela') %>%
+  mutate('dataset' = 'yang') %>%
+  mutate('confidence' = 1) %>%
+  dplyr::select(chromosome, strand, m5cSite, cells, dataset, confidence)
+
+
+#####the next dataset is from HEK293T cells, PMID: 31061524
+m5c = read_csv(paste(baseRepository, '/sequencing20200629_publishedM5cDistributionData/m5c_HEK293T_Huang_hg19.csv', sep = ''))
+m5cGrangePrep = m5c %>%
+  filter(`if m5C site` == TRUE) %>%
+  filter(`m5C level` >= 0.1) %>%
+  filter(Coverage >= 30) %>%
+  filter(!grepl('GL', Chromosome)) %>%
+  mutate(start = Position) %>%
+  mutate(end = Position) %>%
+  mutate(chromosome = paste('chr',Chromosome, sep = '')) %>%
+  dplyr::select(chromosome, start, end, Strand)
+m5cGrange = makeGRangesFromDataFrame(m5cGrangePrep)
+m5cGrangeHg19 = unlist(liftOver(m5cGrange, chain), use.names = TRUE)
+m5cSet4 = as_tibble(m5cGrangeHg19) %>%
+  mutate('chromosome' = seqnames) %>%
+  mutate('m5cSite' = end) %>%
+  mutate('cells' = 'hek') %>%
+  mutate('dataset' = 'huang') %>%
+  mutate('confidence' = 1) %>%
+  dplyr::select(chromosome, strand, m5cSite, cells, dataset, confidence)
+
+
+######now combine the data
+m5cData = rbind(m5cSet1, m5cSet2, m5cSet3, m5cSet4) %>%
+  group_by(chromosome, strand, m5cSite) %>%
+  summarize('numberOfIds' = sum(confidence))
+
+####save the data
+saveRDS(m5cData,
+        paste(baseRepository, '/sequencing20200629_publishedM5cDistributionData/dataset_m5cSitesAllStudies.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to find the location of all of these sites. We will need an external function for this. First I need to make a txdb for annotation.
+
+
+```{r}
+#######################################################################################
+txdbEnsembl = makeTxDbFromEnsembl(organism = 'homo_sapiens',
+                                  release = 100,
+                                  server = 'useastdb.ensembl.org')
+#now save the txdb for later use
+saveDb(txdbEnsembl, file = paste(baseRepository, 
+                                 '/sequencing20200629_publishedM5cDistributionData/TxDb.Hsapiens.ENSEMBL.hg38.v100.sqlite', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now prep the data for input to our function.
+
+```{r}
+#######################################################################################
+m5cGrangePrep = m5cData %>%
+  mutate(start = m5cSite) %>%
+  mutate(end = m5cSite + 1) %>%
+  dplyr::select(chromosome, strand, start, end)
+##
+m5cGrange = makeGRangesFromDataFrame(m5cGrangePrep)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can run the function.
+
+```{r}
+#######################################################################################
+m5cAnnotated = wavclusterPeakAnnotation(as_tibble(m5cGrange), txdbEnsembl, removeMito = TRUE)
+
+ggplot(m5cAnnotated, aes(regionLocationAdjusted, fill = region)) +
+  geom_histogram(bins = 100, color = 'white', size = 0.1)
+
+```
+
+
+
+
+## Session info
+
+```{r}
+sessionInfo()
+```

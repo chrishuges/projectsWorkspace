@@ -46,13 +46,15 @@ volchenExpressionA = readRDS(paste(baseRepository, '/microarray20200604_ewingSar
 volchenPhenotypeA = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumPhenotypeSetA.rds', sep = ''))
 volchenExpressionB = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumExpressionSetB.rds', sep = ''))
 volchenPhenotypeB = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumPhenotypeSetB.rds', sep = ''))
+postelExpression = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_postelVinayExpression.rds', sep = ''))
+postelPhenotype = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_postelVinayPhenotype.rds', sep = ''))
 ```
 
 Read in the crispr and rna expression data we created previously.
 
 ```{r}
 ##########################################################################################
-esHits = readRDS(paste(baseRepository, '/database20200604_depmapYbx1Ewing/dataset_ewingRnaExprsCrisprDep.rds', sep = ''))
+esHits = readRDS(paste(baseRepository, '/database20200604_depmapEwing/dataset_ewingRnaExprsCrisprDep.rds', sep = ''))
 #esHitsGenes = esHits[esHits$medDep <= -1 & esHits$medExprs >= 4, 'symbol']
 esHitsGenes = esHits[1:250,]
 ```
@@ -64,7 +66,11 @@ Do a test survival analysis for genes against the savola data.
 expressionData = savolaExpression
 phenotypeData = savolaPhenotype
 geneOfInterest = as.list(esHitsGenes$symbol)
-coxZScores = lapply(geneOfInterest, survivalAnalysis, expressionData = expressionData, phenotypeData = phenotypeData, plot = FALSE)
+coxZScores = lapply(geneOfInterest, survivalAnalysis, 
+                    expressionData = expressionData, 
+                    phenotypeData = phenotypeData, 
+                    survivalPlot = FALSE,
+                    survivalData = FALSE)
 esHitsGenes$coxz = unlist(coxZScores)
 ```
 
@@ -96,17 +102,29 @@ Now we can make a nice plot for YB-1 survival.
 expressionData = savolaExpression
 phenotypeData = savolaPhenotype
 geneOfInterest = 'YBX1'
-survivalAnalysis(geneOfInterest, expressionData, phenotypeData, survivalPlot = TRUE, survivalData = TRUE)
+coxZScores = lapply(geneOfInterest, survivalAnalysis, 
+                    expressionData = expressionData, 
+                    phenotypeData = phenotypeData, 
+                    survivalPlot = TRUE,
+                    survivalData = TRUE,
+                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets')
 ```
 
 Ignore other data sets for now until we see if we can get that really large cohort from Delattre. 
 
-```{r, message = FALSE, warning = FALSE}
+Ok, now we have the data from Delattre, so we can try it out!
+
+```{r, message = FALSE}
 ##########################################################################################
-expressionData = volchenExpressionB
-phenotypeData = volchenPhenotypeB
+expressionData = postelExpression
+phenotypeData = postelPhenotype
 geneOfInterest = as.list(esHitsGenes$symbol)
-coxZScores = lapply(geneOfInterest, survivalAnalysis, expressionData = expressionData, phenotypeData = phenotypeData, plot = FALSE)
+coxZScores = lapply(geneOfInterest, survivalAnalysis, 
+                    expressionData = expressionData, 
+                    phenotypeData = phenotypeData, 
+                    survivalPlot = FALSE,
+                    survivalData = FALSE,
+                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets')
 esHitsGenes$coxz = unlist(coxZScores)
 ```
 
@@ -117,20 +135,33 @@ Now we can make a plot for these scores.
 esHitsPlot = esHitsGenes %>%
   arrange(coxz) %>%
   mutate(index = seq(1,nrow(esHitsGenes),1))
-#esHitsPlot$pText = ifelse(esHitsPlot$symbol == 'YBX1', esHitsPlot$symbol, '')
-esHitsPlot$pText = ifelse(esHitsPlot$coxz >= 1, esHitsPlot$symbol, '')
+esHitsPlot$pText = ifelse(esHitsPlot$symbol == 'YBX1', esHitsPlot$symbol, '')
+esHitsPlot$pSize = ifelse(esHitsPlot$symbol == 'YBX1', 3, 1)
+esHitsPlot$pColors = ifelse(esHitsPlot$symbol == 'YBX1', brewer.pal(8,'Spectral')[1], brewer.pal(8,'Greys')[5])
+#esHitsPlot$pText = ifelse(esHitsPlot$coxz >= 2.5, esHitsPlot$symbol, '')
 ##
 ggplot(esHitsPlot, aes(coxz, index)) +
-  geom_point(size = 1) +
+  geom_point(size = esHitsPlot$pSize, color = esHitsPlot$pColors) +
   geom_text_repel(label = esHitsPlot$pText, size = 3, segment.size = 0.25) +
-  labs(x = 'Cox univariate Z score', y = 'Gene index', title = 'Overall survival') +
+  labs(x = 'Cox Univariate Z Score', y = 'Gene index', title = 'Overall survival') +
   theme_classic()
-ggsave(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/scatter_volchenboumOverallSurvivalTop250.pdf', sep = ''), 
-       width = 4, height = 4, useDingbats = FALSE)
+ggsave(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/scatter_postelVinayOverallSurvivalTop250.pdf', sep = ''), 
+       width = 3, height = 4, useDingbats = FALSE)
 ```
+Now we can make a nice plot for YB-1 survival.
 
-
-
+```{r}
+##########################################################################################
+expressionData = postelExpression
+phenotypeData = postelPhenotype
+geneOfInterest = 'YBX1'
+coxZScores = lapply(geneOfInterest, survivalAnalysis, 
+                    expressionData = expressionData, 
+                    phenotypeData = phenotypeData, 
+                    survivalPlot = TRUE,
+                    survivalData = TRUE,
+                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets')
+```
 
 
 ## Session info
