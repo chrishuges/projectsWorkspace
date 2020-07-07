@@ -1,0 +1,265 @@
+---
+title: "Analysis of MG63.3 YBX1 GUC clones by proteomics"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to compare MG63.3 clones created with the GUC guide targeting YBX1. The raw MS data were compiled to peptide identifications using SearchGUI and PeptideShaker as detailed elsewhere in this folder.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('vroom')
+library('DEqMS')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/proteomics20200705_mg633CrisprYbx1GucClones/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+I want to process the data using DEqMS. I am following their guide as detailed [here](https://www.bioconductor.org/packages/release/bioc/vignettes/DEqMS/inst/doc/DEqMS-package-vignette.html#quick-start). For this, I think we should add the gene annotation. We have the annotated fasta index, so we can use that.
+
+```{r}
+##########################################################################################
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/uniprotHumanJul2020.fasta.annotated.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now I will read in the peptide search results.
+
+```{r}
+##########################################################################################
+psm = vroom(paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/n_ch_20200704_Mg633-Ybx1GucKo_TMT9_HpH_1_Default_PSM_Report.txt', sep = '')) %>%
+  dplyr::select(`Protein(s)`, Sequence, `Modified Sequence`, `Spectrum File`, `Spectrum Scan Number`) %>%
+  mutate(fraction = sub('.*HpH_(.*)\\.raw\\.mgf$', '\\1', `Spectrum File`)) %>%
+  mutate(accession = `Protein(s)`) %>%
+  mutate(scan = `Spectrum Scan Number`) %>%
+  mutate(sequence = Sequence) %>%
+  mutate(modSequence = `Modified Sequence`) %>%
+  left_join(proteinAnnotation) %>%
+  dplyr::select(fraction, scan, accession, gene, detectablePeptides, sequence, modSequence)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we need the quantification data. These are hosted in individual files in the same directory as the above data.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+quantFiles = as.list(list.files(paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/quantFiles/', sep = ''),
+           pattern = '_Matrix.txt', full.names = TRUE))
+##
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now combine the quant data into a single data frame and with the previously processed PSM data.
+
+```{r}
+##########################################################################################
+allQuantData = do.call('rbind', quantDataSet)
+psmQuant = psm %>%
+  left_join(allQuantData)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we will filter the expression data to discard any entries where the signal is just too low to be confident in the data. I generally will use a cutoff of a minimum signal of 10 per TMT channel. In this case we have 9 channels, so we will use a sum signal of 90 as a cutoff. Here we also filter out genes that have no assigned gene name as this will cause problems with DEqMS later on. If you don't want to do this, I suggest using 'accession' instead of 'gene' in the DEqMS analysis below.
+
+Our sample layout is:
+
+* 126 - Guc4.1
+* 127N - Guc6.1
+* 127C - Guc4.2
+* 128N - Guc6.2
+* 128C - Guc4.3
+* 129N - Guc6.3
+* 129C - empty
+* 130N - empty
+* 130C - Parent.1
+* 131N - Parent.2
+* 131C - Parent.3
+
+```{r}
+##########################################################################################
+psmQuant$sampleSignal = rowSums(psmQuant[,c(8:13,16:18)])
+psmQuantFiltered = subset(psmQuant, psmQuant$sampleSignal >= 90 & !is.na(psmQuant$gene) & !grepl('-', psmQuant$gene))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We will also normalize the data to deal with any gross loading differences. We save both the non-normalized data here as well and check the normalization with a plot.
+
+```{r}
+##########################################################################################
+quantInput = psmQuantFiltered[,c(1:18)]
+saveRDS(quantInput, paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/dataset_peptideQuantDataPreDEqMS.rds', sep = ''))
+quantInputLog = quantInput[,c(7,4,8:13,16:18)]
+quantInputLog[,3:11][quantInputLog[,3:11] == 0] = NA
+quantInputLog[,3:11] = log2(quantInputLog[,3:11])
+quantInputNormalized = medianSweeping(quantInputLog, group_col = 2)
+boxplot(quantInputNormalized, las = 2, ylab = 'log2 ratio', main = 'normalized TMT data')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+All of the data look tight. Good. Lets continue with the DEqMS analysis. We need to build our sample table.
+
+```{r}
+##########################################################################################
+cond = as.factor(c('guc4','guc6','guc4','guc6','guc4','guc6','parent','parent','parent'))
+design = model.matrix(~0+cond) 
+colnames(design) = gsub("cond","",colnames(design))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can build the Limma model.
+
+```{r}
+##########################################################################################
+geneMatrix = as.matrix(quantInputNormalized)
+limmaFit1 = lmFit(geneMatrix, design)
+limmaContrasts = c('guc4-parent','guc6-parent','guc4-guc6')
+limmaContrastDesign =  makeContrasts(contrasts = limmaContrasts, levels = design)
+limmaFit2 = eBayes(contrasts.fit(limmaFit1, contrasts = limmaContrastDesign))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now for the actual DEqMS work. We will first
+
+```{r}
+##########################################################################################
+psmCountTable = as.data.frame(table(quantInput$gene))
+rownames(psmCountTable) = psmCountTable$Var1
+limmaFit2$count = psmCountTable[rownames(limmaFit2$coefficients),2]
+limmaFit3 = spectraCounteBayes(limmaFit2)
+head(limmaFit3$coefficients)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 1) 
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/dataset_deqmsGuc4-Parent.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 2) 
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/dataset_deqmsGuc6-Parent.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 3) 
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/dataset_deqmsGuc4-Guc6.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Generate the variance plot to see the DEqMS model for the data.
+
+```{r}
+##########################################################################################
+VarianceBoxplot(limmaFit3, n=20, xlab = 'PSM count', main = 'DEqMS analysis of TMT data')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This looks as it should. Now let us make a volcano plot to show the data.
+
+```{r}
+##########################################################################################
+deqmsResults = outputResult(limmaFit3, coef_col = 1)
+deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
+                                     brewer.pal(8,'Greys')[6]))
+##
+ggplot(deqmsResults, aes(logFC, plotPValue)) +
+  geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
+  labs(x = 'log2(Guc4 to parental)', y = '-log10(P-value)', title = 'Guc4 versus parental protein abundance') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = 3, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/scatter_deqmsGuc4-Parental.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+And the volcano for the other clone.
+
+```{r}
+##########################################################################################
+deqmsResults = outputResult(limmaFit3, coef_col = 2)
+deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
+                                     brewer.pal(8,'Greys')[6]))
+##
+ggplot(deqmsResults, aes(logFC, plotPValue)) +
+  geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
+  labs(x = 'log2(Guc6 to parental)', y = '-log10(P-value)', title = 'Guc6 versus parental protein abundance') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = 3, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/scatter_deqmsGuc6-Parental.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now overlay the two clones to look at shared changes.
+
+```{r}
+##########################################################################################
+guc4Results = outputResult(limmaFit3, coef_col = 1)
+colnames(guc4Results)[1] = 'guc4Exp'
+guc6Results = outputResult(limmaFit3, coef_col = 2)
+colnames(guc6Results)[1] = 'guc6Exp'
+gucSet = as_tibble(guc4Results) %>%
+  dplyr::select(gene, guc4Exp) %>%
+  left_join(guc6Results) %>%
+  dplyr::select(gene, guc4Exp, guc6Exp)
+##
+ggplot(gucSet, aes(guc4Exp, guc6Exp)) +
+  geom_point(size = 1, color = brewer.pal(8,'Greys')[6]) +
+  #scale_x_continuous(limits = c(-3.5,0), breaks = seq(-10,10,2)) +
+  #scale_y_continuous(limits = c(-5.5,0), breaks = seq(-10,10,2)) +
+  geom_vline(xintercept = 0, linetype = 'dashed') +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  theme_classic()
+
+#cor(gucSet$guc4Exp, gucSet$guc6Exp, use='pairwise.complete.obs', method = 'pearson')
+```
+
+## Session info
+
+```{r}
+sessionInfo()
+```
