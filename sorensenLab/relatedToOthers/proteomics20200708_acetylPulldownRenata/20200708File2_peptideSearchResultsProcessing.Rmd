@@ -1,0 +1,158 @@
+---
+title: "Analysis of anti-acetyl pulldown data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to investigate proteins affinity purified with an anti-acetyl lysine antibody. The raw MS data were compiled to peptide identifications using SearchGUI and PeptideShaker as detailed in the rawMsDataProcessing.md file also found in this directory.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('vroom')
+library('DEqMS')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains script files, but the Repository is where more of the big data and plots are stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/proteomics20200708_acetylPulldownRenata/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+As part of the raw data processing, I created an annotated fasta index that I can use to map to gene identifiers downstream. I will read this in now.
+
+```{r}
+##########################################################################################
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20200708_acetylPulldownRenata/uniprotHumanJul2020.fasta.annotated.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now I will read in the peptide search results and do some basic parsing of the data.
+
+```{r}
+##########################################################################################
+psm = vroom(paste(baseRepository, '/proteomics20200708_acetylPulldownRenata/n_20200705_Renata_AcIP_SILAC-TMT6_1_Default_PSM_Report.txt', sep = '')) %>%
+  dplyr::select(`Protein(s)`, Sequence, `Modified Sequence`, `Variable Modifications`, `Spectrum File`, `Spectrum Scan Number`) %>%
+  mutate(accession = sapply(str_split(`Protein(s)`, ','), '[', 1)) %>%
+  mutate(scan = `Spectrum Scan Number`) %>%
+  mutate(sequence = Sequence) %>%
+  mutate(modSequence = `Modified Sequence`) %>%
+  mutate(mods = `Variable Modifications`) %>%
+  left_join(proteinAnnotation) %>%
+  dplyr::select(scan, accession, gene, detectablePeptides, sequence, modSequence, mods)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I need to add the modification status of the peptides because it is important for the replicates. In this data set, they are SILAC labeled where 'light' and 'heavy' are replicates of one another. The code below assigns a replicate based on whether it is light or heavy.
+
+```{r}
+##########################################################################################
+psm$replicate = as.character(ifelse(grepl('K\\+8', psm$mods) | grepl('13C', psm$mods), 2, 1))
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+These samples were also TMT labeled in order to muliplex all of them into a single MS run, so now we need the quantification data. These are hosted in individual files in the same directory as the above data. I use a function defined in the userDefinedFunction.R file to process these files into a more usable object.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+quantFiles = as.list(list.files(paste(baseRepository, '/proteomics20200708_acetylPulldownRenata/quantFiles/', sep = ''),
+           pattern = '_Matrix.txt', full.names = TRUE))
+##
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now combine the quant data into a single data frame and with the previously processed PSM data.
+
+```{r}
+##########################################################################################
+allQuantData = do.call('rbind', quantDataSet)
+psmQuant = psm %>%
+  left_join(allQuantData)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we will filter the expression data to discard any entries where the signal is just too low to be confident in the data. I generally will use a cutoff of a minimum signal of 10 per TMT channel. In this case we have 4 channels, so we will use a sum signal of 40 as a cutoff. I also remove unassigned genes.
+
+Our sample layout is:
+
+* 126 - IgG
+* 127N - empty
+* 127C - empty
+* 128N - empty
+* 128C - empty
+* 129N - empty
+* 129C - IP replicate 1
+* 130N - empty
+* 130C - IP replicate 2
+* 131N - empty
+* 131C - IP replicate 3
+
+```{r}
+##########################################################################################
+psmQuant$sampleSignal = rowSums(psmQuant[,c(9,15,17,19)])
+psmQuantFiltered = subset(psmQuant, psmQuant$sampleSignal >= 40 & !is.na(psmQuant$gene) & !grepl('-', psmQuant$gene))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now I will reshape the data a bit to get the replicates as individual columns. I also summarize the data here to a single entry per replicate (e.g. all peptides for a single protein are summed into a single entry).
+
+```{r}
+##########################################################################################
+psmQuantReshape = psmQuantFiltered %>%
+  dplyr::select(scan, accession, gene, detectablePeptides, replicate, tmt10plex_126, tmt10plex_129C, tmt10plex_130C, tmt10plex_131C) %>%
+  mutate(igg = tmt10plex_126, ip1 = tmt10plex_129C, ip2 = tmt10plex_130C, ip3 = tmt10plex_131C) %>%
+  dplyr::select(scan, accession, gene, detectablePeptides, replicate, igg, ip1, ip2, ip3) %>%
+  pivot_longer(cols = igg:ip3, names_to = 'sample', values_to = 'signal') %>%
+  mutate(sampleId = paste(sample, '_', replicate, sep = '')) %>%
+  dplyr::select(scan, accession, gene, sampleId, signal) %>%
+  pivot_wider(names_from = sampleId, values_from = signal) %>%
+  dplyr::select(accession, gene, igg_1:ip3_2) %>%
+  group_by(accession, gene) %>%
+  summarise_all(sum, na.rm = TRUE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Lastly, we will export the data.
+
+```{r}
+##########################################################################################
+write_csv(psmQuantReshape,
+          paste(baseRepository, '/proteomics20200708_acetylPulldownRenata/dataset_acetylProteinDataByReplicate.csv', sep = ''))
+
+```
+
+
+## Session info
+
+```{r}
+sessionInfo()
+```
