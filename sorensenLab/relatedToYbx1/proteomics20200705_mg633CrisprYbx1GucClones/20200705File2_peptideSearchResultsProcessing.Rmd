@@ -217,15 +217,15 @@ And the volcano for the other clone.
 ##########################################################################################
 deqmsResults = outputResult(limmaFit3, coef_col = 2)
 deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
-deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
-                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -1 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
+                              ifelse(deqmsResults$logFC >= 1 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
                                      brewer.pal(8,'Greys')[6]))
 ##
 ggplot(deqmsResults, aes(logFC, plotPValue)) +
   geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
   labs(x = 'log2(Guc6 to parental)', y = '-log10(P-value)', title = 'Guc6 versus parental protein abundance') +
-  scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
-  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  #scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
   geom_hline(yintercept = 3, linetype = 'dashed') +
   theme_classic()
 ggsave(paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/scatter_deqmsGuc6-Parental.pdf', sep = ''),

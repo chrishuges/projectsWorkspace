@@ -1,0 +1,161 @@
+---
+title: "Comparison of candidate genes with other data sets"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the comparison of candidates identified as regulated by YB1 to other data sets I have on hand, such as survival and PARCLIP.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('vroom')
+library('survival')
+library('survminer')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/proteomics20200705_mg633CrisprYbx1GucClones/userDefinedFunctions.R', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First I need to read in the processed differential expression data.
+
+```{r}
+##########################################################################################
+pro = read_csv(paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/dataset_deqmsGuc6-Parent.csv', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+As a first set, we will look at things that are downregulated when YBX1 is also down.
+
+```{r}
+##########################################################################################
+dnSet = pro %>%
+  filter(sca.adj.pval <= 0.001 & logFC <= -1 & count > 1)
+#there are 33 genes in this set
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now run these against our surival data.
+
+```{r, message = FALSE}
+##########################################################################################
+postelExpression = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_postelVinayExpression.rds', sep = ''))
+postelPhenotype = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_postelVinayPhenotype.rds', sep = ''))
+expressionData = postelExpression
+phenotypeData = postelPhenotype
+geneOfInterest = as.list(dnSet$gene)
+coxZScores = lapply(geneOfInterest, survivalAnalysisV2, 
+                    expressionData = expressionData, 
+                    phenotypeData = phenotypeData, 
+                    survivalPlot = FALSE,
+                    survivalData = FALSE,
+                    writeDirectory = '/proteomics20200705_mg633CrisprYbx1GucClones',
+                    printData = FALSE)
+dnSet$coxz = unlist(coxZScores)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can make a plot for these scores.
+
+```{r}
+##########################################################################################
+dnSetPlot = dnSet %>%
+  arrange(coxz) %>%
+  mutate(index = seq(1,nrow(dnSet),1))
+dnSetPlot$pText = ifelse(dnSetPlot$coxz >= 2, dnSetPlot$gene, '')
+dnSetPlot$pSize = ifelse(dnSetPlot$coxz >= 2, 3, 1)
+dnSetPlot$pColors = ifelse(dnSetPlot$coxz >= 2, brewer.pal(8,'Spectral')[1], brewer.pal(8,'Greys')[5])
+#esHitsPlot$pText = ifelse(esHitsPlot$coxz >= 2.5, esHitsPlot$symbol, '')
+##
+ggplot(dnSetPlot, aes(coxz, index)) +
+  geom_point(size = dnSetPlot$pSize, color = dnSetPlot$pColors) +
+  geom_text_repel(label = dnSetPlot$pText, size = 2, segment.size = 0.2, nudge_x = -1) +
+  labs(x = 'Cox Univariate Z Score', y = 'Gene index', title = 'Overall survival') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/scatter_postelVinayOvsYbx1Guc6Down.pdf', sep = ''), 
+       width = 3, height = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Plot some candidates from the Chen PARCLIP data we processed previously.
+
+```{r}
+##########################################################################################
+parclip = readRDS(paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/dataset_yb1ParclipAnnotatedPeakSet.rds', sep = ''))
+##genes of interest
+goi = c('STK26','TPD52')
+parclipSub = parclip[parclip$txdbSymbol %in% goi,]
+parclipSub$txdbSymbol = factor(parclipSub$txdbSymbol, levels =c('STK26','TPD52'))
+##normalize the values so that they are relative to the max peak
+parclipNorm = tibble()
+for (i in 1:length(goi)){
+  gnSubset = parclipSub[parclipSub$txdbSymbol == goi[i],]
+  gnSubset$normPeak = gnSubset$readCountSum / max(gnSubset$readCountSum, na.rm = TRUE)
+  parclipNorm = rbind(parclipNorm, gnSubset)
+}
+
+##make a plot 
+ggplot(parclipNorm, aes(regionLocationAdjusted, normPeak)) +
+  geom_segment(aes(x = regionLocationAdjusted, y = 0, xend = regionLocationAdjusted, yend = normPeak), color = brewer.pal(9,'Greys')[4], size = 1.5) +
+  geom_point(size = 2, color = brewer.pal(9,'Greys')[6]) +
+  geom_vline(xintercept = c(1.05,2.15), linetype = 'dashed', color = brewer.pal(9,'Reds')[7]) +
+  scale_y_continuous(limits = c(0,1.1), breaks = seq(0,2,0.25)) +
+  scale_x_continuous(limits = c(0,3.5), breaks = seq(0,3.5,0.5)) +
+  labs(x = 'Region', y = 'Normalized read count', title = 'Reprensentative YB-1 bound RNA') +
+  theme_classic() +
+  theme(legend.position = 'none') +
+  facet_wrap(~txdbSymbol, nrow = 1)
+##write plot to a file
+ggsave(paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/lollipop_candidateBoundRNAs.pdf', sep = ''),
+       useDingbats = FALSE,
+       width = 3,
+       height = 4)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+## Session info
+
+```{r}
+sessionInfo()
+```

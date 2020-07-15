@@ -34,6 +34,8 @@ We need to call a source file that has some functions we will need. For simplici
 source(paste(baseWorkspace, '/microarray20200604_ewingSarcomaAllSets/userDefinedFunctions.R', sep = ''))
 ```
 
+<div style="margin-bottom:50px;"></div>
+
 ## Data processing
 
 First we will read in all the data sets.
@@ -50,6 +52,8 @@ postelExpression = readRDS(paste(baseRepository, '/microarray20200604_ewingSarco
 postelPhenotype = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_postelVinayPhenotype.rds', sep = ''))
 ```
 
+<div style="margin-bottom:50px;"></div>
+
 Read in the crispr and rna expression data we created previously.
 
 ```{r}
@@ -58,6 +62,8 @@ esHits = readRDS(paste(baseRepository, '/database20200604_depmapEwing/dataset_ew
 #esHitsGenes = esHits[esHits$medDep <= -1 & esHits$medExprs >= 4, 'symbol']
 esHitsGenes = esHits[1:250,]
 ```
+
+<div style="margin-bottom:50px;"></div>
 
 Do a test survival analysis for genes against the savola data.
 
@@ -70,9 +76,12 @@ coxZScores = lapply(geneOfInterest, survivalAnalysis,
                     expressionData = expressionData, 
                     phenotypeData = phenotypeData, 
                     survivalPlot = FALSE,
-                    survivalData = FALSE)
+                    survivalData = FALSE,
+                    printData = FALSE)
 esHitsGenes$coxz = unlist(coxZScores)
 ```
+
+<div style="margin-bottom:50px;"></div>
 
 Now we can make a plot for these scores.
 
@@ -95,6 +104,8 @@ ggsave(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/scatter_sa
        width = 3, height = 4, useDingbats = FALSE)
 ```
 
+<div style="margin-bottom:50px;"></div>
+
 Now we can make a nice plot for YB-1 survival.
 
 ```{r}
@@ -107,26 +118,32 @@ coxZScores = lapply(geneOfInterest, survivalAnalysis,
                     phenotypeData = phenotypeData, 
                     survivalPlot = TRUE,
                     survivalData = TRUE,
-                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets')
+                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets',
+                    printData = TRUE)
 ```
+
+<div style="margin-bottom:50px;"></div>
 
 Ignore other data sets for now until we see if we can get that really large cohort from Delattre. 
 
-Ok, now we have the data from Delattre, so we can try it out!
+Ok, now we have the data from Delattre, so we can try it out! This is version 2 of the script with a modeled cut off.
 
 ```{r, message = FALSE}
 ##########################################################################################
 expressionData = postelExpression
 phenotypeData = postelPhenotype
 geneOfInterest = as.list(esHitsGenes$symbol)
-coxZScores = lapply(geneOfInterest, survivalAnalysis, 
+coxZScores = lapply(geneOfInterest, survivalAnalysisV2, 
                     expressionData = expressionData, 
                     phenotypeData = phenotypeData, 
                     survivalPlot = FALSE,
                     survivalData = FALSE,
-                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets')
+                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets',
+                    printData = FALSE)
 esHitsGenes$coxz = unlist(coxZScores)
 ```
+
+<div style="margin-bottom:50px;"></div>
 
 Now we can make a plot for these scores.
 
@@ -148,7 +165,70 @@ ggplot(esHitsPlot, aes(coxz, index)) +
 ggsave(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/scatter_postelVinayOverallSurvivalTop250.pdf', sep = ''), 
        width = 3, height = 4, useDingbats = FALSE)
 ```
-Now we can make a nice plot for YB-1 survival.
+
+<div style="margin-bottom:50px;"></div>
+
+Extract the YB-1 data.
+
+```{r}
+##########################################################################################
+expressionData = postelExpression
+phenotypeData = postelPhenotype
+geneOfInterest = 'YBX1'
+coxZScores = lapply(geneOfInterest, survivalAnalysisV2, 
+                    expressionData = expressionData, 
+                    phenotypeData = phenotypeData, 
+                    survivalPlot = TRUE,
+                    survivalData = TRUE,
+                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets',
+                    printData = TRUE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This is the original version of the script where we just use quantiles for the cutoff.
+
+```{r, message = FALSE}
+##########################################################################################
+expressionData = postelExpression
+phenotypeData = postelPhenotype
+geneOfInterest = as.list(esHitsGenes$symbol)
+coxZScores = lapply(geneOfInterest, survivalAnalysis, 
+                    expressionData = expressionData, 
+                    phenotypeData = phenotypeData, 
+                    survivalPlot = FALSE,
+                    survivalData = FALSE,
+                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets',
+                    printData = FALSE)
+esHitsGenes$coxz = unlist(coxZScores)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can make a plot for these scores.
+
+```{r}
+##########################################################################################
+esHitsPlot = esHitsGenes %>%
+  arrange(coxz) %>%
+  mutate(index = seq(1,nrow(esHitsGenes),1))
+esHitsPlot$pText = ifelse(esHitsPlot$symbol == 'YBX1', esHitsPlot$symbol, '')
+esHitsPlot$pSize = ifelse(esHitsPlot$symbol == 'YBX1', 3, 1)
+esHitsPlot$pColors = ifelse(esHitsPlot$symbol == 'YBX1', brewer.pal(8,'Spectral')[1], brewer.pal(8,'Greys')[5])
+#esHitsPlot$pText = ifelse(esHitsPlot$coxz >= 2.5, esHitsPlot$symbol, '')
+##
+ggplot(esHitsPlot, aes(coxz, index)) +
+  geom_point(size = esHitsPlot$pSize, color = esHitsPlot$pColors) +
+  geom_text_repel(label = esHitsPlot$pText, size = 3, segment.size = 0.25) +
+  labs(x = 'Cox Univariate Z Score', y = 'Gene index', title = 'Overall survival') +
+  theme_classic()
+ggsave(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/scatter_postelVinayOverallSurvivalTop250Version1.pdf', sep = ''), 
+       width = 3, height = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Extract the YB-1 data.
 
 ```{r}
 ##########################################################################################
@@ -160,9 +240,9 @@ coxZScores = lapply(geneOfInterest, survivalAnalysis,
                     phenotypeData = phenotypeData, 
                     survivalPlot = TRUE,
                     survivalData = TRUE,
-                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets')
+                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets',
+                    printData = TRUE)
 ```
-
 
 ## Session info
 

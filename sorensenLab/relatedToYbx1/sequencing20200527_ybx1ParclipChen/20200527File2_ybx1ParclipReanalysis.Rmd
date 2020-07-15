@@ -103,7 +103,8 @@ parclip$repDiff = parclip$rep1Scaled - parclip$rep2Scaled
 #these are just some genes that I am interested in that I want to label
 goi = c('PABPC1','JUN', 'HIF1A',
         'CTNNB1','ATF4','MKI67',
-        'HDGF','EIF4A1','GLO1')
+        'HDGF','EIF4A1','GLO1',
+        'TPD52','STK26')
 ####set some colors and labels for the plot
 cor(parclip$rep1Scaled, parclip$rep2Scaled, 
     use = 'pairwise.complete.obs', 

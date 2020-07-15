@@ -16,7 +16,10 @@ library('tidyverse')
 library('ggplot2')
 library('RColorBrewer')
 library('GEOquery')
+library('org.Hs.eg.db')
 ```
+
+<div style="margin-bottom:50px;"></div>
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
 
@@ -26,11 +29,15 @@ baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/soren
 baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
 ```
 
+<div style="margin-bottom:50px;"></div>
+
 We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
 
 ```{r}
 source(paste(baseWorkspace, '/microarray20200604_ewingSarcomaAllSets/userDefinedFunctions.R', sep = ''))
 ```
+
+<div style="margin-bottom:50px;"></div>
 
 ## Data processing
 
@@ -44,6 +51,8 @@ esArrayData = getGEO('GSE17679',
 esData = esArrayData[[1]]
 ```
 
+<div style="margin-bottom:50px;"></div>
+
 We now have an expression set and we can look at some of the features to see that we have all the information we need.
 
 ```{r}
@@ -53,6 +62,8 @@ head(exprs(esData))
 head(fData(esData))
 ```
 
+<div style="margin-bottom:50px;"></div>
+
 First I just want to annotate the expression data a bit to include gene symbols, as these are what I will use for the survival analysis downstream. We can use the feature data to get this annotation.
 
 ```{r}
@@ -60,10 +71,29 @@ First I just want to annotate the expression data a bit to include gene symbols,
 esExpression = as_tibble(exprs(esData)) %>%
   mutate(ID = row.names(exprs(esData)))
 esExpressionAnnotated = as_tibble(fData(esData)) %>%
-  mutate(symbol = sapply(strsplit(`Gene Symbol`, ' '), '[', 1)) %>%
-  dplyr::select(ID, GB_ACC, symbol) %>%
+  mutate(arraySymbolOne = sapply(strsplit(`Gene Symbol`, ' '), '[', 1)) %>%
+  mutate(arraySymbolTwo = sapply(strsplit(`Gene Symbol`, ' '), '[', 3)) %>%
+  mutate(arrayGenbank = sapply(strsplit(`RefSeq Transcript ID`, ' '), '[', 1)) %>%
+  dplyr::select(ID, GB_ACC, arraySymbolOne, arraySymbolTwo, arrayGenbank) %>%
+  filter(!is.na(arrayGenbank)) %>%
   left_join(esExpression)
 ```
+
+<div style="margin-bottom:50px;"></div>
+
+Convert the genbank ID's into gene symbols for use later on.
+
+```{r}
+##################################################################################
+txdb = org.Hs.eg.db
+geneKeys = unique(esExpressionAnnotated$arrayGenbank)
+mappedGenes = AnnotationDbi::select(txdb, geneKeys, c('ACCNUM','SYMBOL'), 'ACCNUM')
+colnames(mappedGenes) = c('arrayGenbank', 'symbol')
+esExpressionAnnotatedTxdb = left_join(mappedGenes,esExpressionAnnotated) %>%
+  dplyr::select(ID, symbol, arrayGenbank, arraySymbolOne, arraySymbolTwo, GSM439886:GSM441061)
+```
+
+<div style="margin-bottom:50px;"></div>
 
 Now I want to look at the phenotype data. I think there are a bunch of samples here we don't want, so we should get rid of these. There appears to be PNET cases in here, cell lines, and some other tissues. I will keep only things classified as Ewing.
 
@@ -82,13 +112,17 @@ esPhenotype = as_tibble(pData(esData)) %>%
 esPhenotype$status = ifelse(esPhenotype$status == 'Dead', 2, 1)
 ```
 
+<div style="margin-bottom:50px;"></div>
+
 Now we can save the two datasets.
 
 ```{r}
 ##################################################################################
-saveRDS(esExpressionAnnotated, paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_savolaExpression.rds', sep = ''))
+saveRDS(esExpressionAnnotatedTxdb, paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_savolaExpression.rds', sep = ''))
 saveRDS(esPhenotype, paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_savolaPhenotype.rds', sep = ''))
 ```
+
+<div style="margin-bottom:50px;"></div>
 
 ## Session info
 
