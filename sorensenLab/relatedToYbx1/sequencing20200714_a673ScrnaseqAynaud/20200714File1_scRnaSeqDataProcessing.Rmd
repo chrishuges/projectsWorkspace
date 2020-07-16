@@ -5,17 +5,16 @@ output:
       code_folding: none
 ---
 
-This document details the processing of the published scRNAseq data from PMID: 32049009 and GEO: GSE130019. A count table was provided with the deposited data, so we will use this. We will focus on the A673 EWS-FLI1 induction experiment.
+This document details the processing of the published scRNAseq data from PMID: 32049009 and GEO: GSE130019. A count table was provided with the deposited data, so we will use this. We will focus on the A673 EWS-FLI1 induction experiment and the xenograft data.
 
 ## Setting up the environment
 
 These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
 
-```{r, message = FALSE, echo = FALSE}
+```{r, message = FALSE}
 library('tidyverse')
 library('ggplot2')
 library('RColorBrewer')
-library('vroom')
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -48,32 +47,33 @@ rna = read_tsv(paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/GSE
   mutate(ensg = X1, symbol = type) %>%
   dplyr::select(ensg, symbol, d7:d0_Xeno_105) %>%
   pivot_longer(cols = d7:d0_Xeno_105, names_to = 'annotation', values_to = 'counts') %>%
-  filter(!grepl('Xeno', annotation) & counts > 0) %>%
+  filter(counts > 0) %>%
   mutate(day = sub('(.*)_[0-9]+.*$', '\\1', annotation)) %>%
-  mutate(cell = sub('.*_(.*).*$', '\\1', annotation)) %>%
+  mutate(cell = sub('.*_([0-9]+).*$', '\\1', annotation)) %>%
   filter(!grepl('d', cell))
-rna$day = factor(rna$day, levels = c('d7','d7+2','d7+3','d7+4','d7+7','d7+10','d7+15'))
+rna$day = factor(rna$day, levels = c('d7','d7+2','d7+3','d7+4','d7+7','d7+10','d7+15','d0_Xeno','d7_Xeno'))
 ```
 
 <div style="margin-bottom:50px;"></div>
 
-Make a quick test plot to make sure our processed data is ok. They use PRKCB in the paper.
+Make a quick test plot to make sure our processed data is OK. They use PRKCB in the paper.
 
 ```{r}
 ##########################################################################################
-goi = filter(rna, symbol == 'STEAP2')
+goi = filter(rna, symbol == 'PRKCB')
 ggplot(goi, aes(day, log10(counts), color = day)) +
   geom_boxplot(size = 1, outlier.shape = NA, width = 0.25, color = brewer.pal(8,'Greys')[7]) +
   geom_point(size = 2, position = position_jitterdodge(jitter.width = 1)) +
   labs(x = 'Timepoint', y = 'log10(rna counts)', title = 'scRNAseq counts') +
-  scale_color_manual(values = brewer.pal(9,'Reds')[3:9]) +
+  scale_color_manual(values = c(brewer.pal(9,'Reds')[3:9], brewer.pal(8,'Blues')[c(5,8)])) +
+  geom_vline(xintercept = 7.5, linetype = 'dashed') +
   theme_classic() +
   theme(legend.position = 'none')
 ```
 
 <div style="margin-bottom:50px;"></div>
 
-OK looks good. Save the data.
+OK looks good. Save the data in case we want to use it later.
 
 ```{r}
 ##########################################################################################
@@ -82,40 +82,23 @@ saveRDS(rna, paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/datas
 
 <div style="margin-bottom:50px;"></div>
 
-Make a quick plot for Haifeng.
+Make plots for different genes.
 
 ```{r}
 ##########################################################################################
-goi = filter(rna, symbol == 'IL1RAP')
-ggplot(goi, aes(day, log10(counts), color = day)) +
-  geom_boxplot(size = 1, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[7]) +
-  geom_point(size = 1.5, position = position_jitterdodge(jitter.width = 1)) +
-  labs(x = 'Timepoint', y = 'log10(rna counts)', title = 'scRNAseq counts') +
-  scale_color_manual(values = brewer.pal(9,'Reds')[3:9]) +
-  theme_classic() +
-  theme(legend.position = 'none')
-ggsave(paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/scatterplot_scRnaSeqA673Il1rap.pdf', sep = ''),
-       height = 4, width = 4, useDingbats = FALSE)
-```
-
-<div style="margin-bottom:50px;"></div>
-
-Make plots for other genes
-
-```{r}
-##########################################################################################
-geneSet = c('STEAP1','STEAP2','EIF4A3','G3BP1','EIF4A1','TPD52','TP53','CTH','PHGDH','SLC7A11')
+geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3')
 for (i in 1:length(geneSet)){
   goi = filter(rna, symbol == geneSet[i])
   ggplot(goi, aes(day, log10(counts), color = day)) +
     geom_boxplot(size = 1, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[7]) +
     geom_point(size = 1.5, position = position_jitterdodge(jitter.width = 1)) +
     labs(x = 'Timepoint', y = 'log10(rna counts)', title = paste(geneSet[i], 'scRNAseq counts')) +
-    scale_color_manual(values = brewer.pal(9,'Reds')[3:9]) +
+    scale_color_manual(values = c(brewer.pal(9,'Reds')[3:9], brewer.pal(8,'Blues')[c(5,8)])) +
+    geom_vline(xintercept = 7.5, linetype = 'dashed') +
     theme_classic() +
-    theme(legend.position = 'none')
-  ggsave(paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/scatterplot_',geneSet[i],'scRnaSeqA673.pdf', sep = ''),
-       height = 4, width = 3, useDingbats = FALSE)
+    theme(legend.position = 'none', axis.text.x = element_text(angle = 45, hjust = 1))
+  ggsave(paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/scatterplot_',geneSet[i],'scRnaSeqA673Xeno.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
 }
 ```
 
