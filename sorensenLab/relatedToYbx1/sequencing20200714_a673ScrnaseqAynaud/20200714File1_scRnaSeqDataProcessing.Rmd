@@ -39,7 +39,7 @@ source(paste(baseWorkspace, '/sequencing20200714_a673ScrnaseqAynaud/userDefinedF
 
 ## Data processing
 
-First I need to read the count data table. After we read the data in, lets reshape it. The column names kind of suck. I think the 'd7' column, for example, is a summary of all cells for that time point. We will remove those entries and just keep the single cells.
+First I need to read the count data table. After we read the data in, lets reshape it. The column names kind of suck. I think the 'd7' column, for example, is a summary of all cells for that time point (actually no this is not true, it is a naming artifact so we should keep it). We will remove those entries and just keep the single cells.
 
 ```{r, message = FALSE, warning = FALSE}
 ##########################################################################################
@@ -86,7 +86,7 @@ Make plots for different genes.
 
 ```{r}
 ##########################################################################################
-geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3')
+geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3','ATF4')
 for (i in 1:length(geneSet)){
   goi = filter(rna, symbol == geneSet[i])
   ggplot(goi, aes(day, log10(counts), color = day)) +
@@ -101,6 +101,47 @@ for (i in 1:length(geneSet)){
        height = 4, width = 4, useDingbats = FALSE)
 }
 ```
+
+<div style="margin-bottom:50px;"></div>
+
+Add MSC data.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+msc = read_tsv(paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/GSE130020_msc.count.table.txt', sep = ''), skip = 1) %>%
+  mutate(ensg = X1, symbol = type) %>%
+  dplyr::select(ensg, symbol, `MSC-7BJ`:`MSC-15FL_47`) %>%
+  pivot_longer(cols = `MSC-7BJ`:`MSC-15FL_47`, names_to = 'annotation', values_to = 'counts') %>%
+  filter(counts > 0) %>%
+  mutate(day = sub('(.*)_.*$', '\\1', annotation)) %>%
+  mutate(cell = sub('.*_([0-9]+).*$', '\\1', annotation)) %>%
+  filter(!grepl('d', cell))
+msc$day = factor(msc$day, levels = c('MSC-15FL', 'MSC-7BJ'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make the plots again.
+
+```{r}
+##########################################################################################
+totalSet = rbind(rna, msc)
+geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3','ATF4')
+for (i in 1:length(geneSet)){
+  goi = filter(totalSet, symbol == geneSet[i])
+  ggplot(goi, aes(day, log10(counts), color = day)) +
+    geom_boxplot(size = 1, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[7]) +
+    geom_point(size = 1, position = position_jitterdodge(jitter.width = 1)) +
+    labs(x = 'Timepoint', y = 'log10(rna counts)', title = paste(geneSet[i], 'scRNAseq counts')) +
+    scale_color_manual(values = c(brewer.pal(9,'Reds')[3:9], brewer.pal(8,'Blues')[c(5,8)], brewer.pal(8,'Spectral')[2:3])) +
+    geom_vline(xintercept = c(7.5,9.5), linetype = 'dashed') +
+    theme_classic() +
+    theme(legend.position = 'none', axis.text.x = element_text(angle = 45, hjust = 1))
+  ggsave(paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/scatterplot_',geneSet[i],'scRnaSeqA673XenoMsc.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+}
+```
+
 
 ## Session info
 

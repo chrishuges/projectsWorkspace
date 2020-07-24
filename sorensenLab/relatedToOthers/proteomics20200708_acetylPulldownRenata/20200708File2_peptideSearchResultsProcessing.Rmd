@@ -136,7 +136,20 @@ psmQuantReshape = psmQuantFiltered %>%
   pivot_wider(names_from = sampleId, values_from = signal) %>%
   dplyr::select(accession, gene, igg_1:ip3_2) %>%
   group_by(accession, gene) %>%
-  summarise_all(sum, na.rm = TRUE)
+  summarise_all(median, na.rm = TRUE)
+colnames(psmQuantReshape)[3:10] = c('igg_dmso','ip1_dmso','ip2_dmso','ip3_dmso',
+                                    'igg_ms275','ip1_ms275','ip2_ms275','ip3_ms275')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Add some summary data.
+
+```{r}
+##########################################################################################
+psmQuantReshape$dmsoMeanExprs = rowMeans(psmQuantReshape[,4:6], na.rm = TRUE)
+psmQuantReshape$ms275MeanExprs = rowMeans(psmQuantReshape[,8:10], na.rm = TRUE)
+psmQuantReshape$log2Ms275VsDmso = log2(psmQuantReshape$ms275MeanExprs / psmQuantReshape$dmsoMeanExprs)
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -150,6 +163,7 @@ write_csv(psmQuantReshape,
 
 ```
 
+<div style="margin-bottom:50px;"></div>
 
 ## Session info
 

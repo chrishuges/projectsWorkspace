@@ -1,0 +1,186 @@
+---
+title: "Analysis of exosome data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to investigate proteins found in exosomes. The raw MS data were compiled to peptide identifications using SearchGUI and PeptideShaker as detailed in the rawMsDataProcessing.md file also found in this directory.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('vroom')
+library('DEqMS')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains script files, but the Repository is where more of the big data and plots are stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/proteomics20200715_exosomeProfilingValentina/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+As part of the raw data processing, I created an annotated fasta index that I can use to map to gene identifiers downstream. I will read this in now.
+
+```{r}
+##########################################################################################
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/uniprotHumanJul2020.fasta.annotated.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now I will read in the peptide search results. We will use a function for list because they are all separate files and we want to handle them individually for now, but will combine them later.Actually, on second thought, I will just use a loop here because although it is less efficient, the object is going to be pretty small, so it is not a big deal.
+
+```{r, warning = FALSE, message = FALSE}
+##########################################################################################
+psmFiles = list.files(paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/', sep = ''),
+                      pattern = '*Default_PSM_Report\\.txt',
+                      full.names = TRUE)
+##
+psmSet = data.frame()
+for (i in 1:length(psmFiles)){
+  psmInFile = read_tsv(psmFiles[i]) %>%
+    dplyr::select(`Protein(s)`, Sequence, `Modified Sequence`, `Spectrum File`, `Spectrum Scan Number`) %>%
+    mutate(sample = sub('.*Valentina_(.*)\\.raw\\.mgf', '\\1', `Spectrum File`)) %>%
+    mutate(accession = sapply(str_split(`Protein(s)`, ','), '[', 1)) %>%
+    filter(!grepl('CONT', accession)) %>%
+    mutate(scan = `Spectrum Scan Number`) %>%
+    mutate(sequence = Sequence) %>%
+    mutate(modSequence = `Modified Sequence`) %>%
+    left_join(proteinAnnotation) %>%
+    filter(!is.na(gene)) %>%
+    dplyr::select(sample, scan, accession, gene, detectablePeptides, sequence, modSequence)
+  psmSet = rbind(psmSet, psmInFile)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we will do the same thing, but for the quantification data.
+
+```{r, warning = FALSE, message = FALSE}
+##########################################################################################
+quantFiles = list.files(paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/quantFiles/', sep = ''),
+                      pattern = '*Matrix\\.txt',
+                      full.names = TRUE)
+##
+quantSet = data.frame()
+for (i in 1:length(quantFiles)){
+  quantInFile = read_tsv(quantFiles[i]) %>%
+    dplyr::select(MS2ScanNumber, ParentPeakArea)
+  colnames(quantInFile)[1] = 'scan'
+  quantInFile$sample = sub('.*Valentina_(.*)\\.raw_Matrix\\.txt', '\\1', quantFiles[i])
+  quantSet = rbind(quantSet, quantInFile)
+} 
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now the two data sets can be combined and we can start the real processing.
+
+```{r}
+##########################################################################################
+exoSet = psmSet %>%
+  left_join(quantSet)
+saveRDS(exoSet, paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/dataset_exosomePeptidesAllSamples.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can summarize the peptide data into proteins. 
+
+```{r}
+##########################################################################################
+exoSet$psm = 1
+exoIntensitySet = exoSet %>%
+  group_by(sample, accession, gene) %>%
+  summarise('area' = sum(ParentPeakArea, na.rm = TRUE), 'psm' = sum(psm, na.rm = TRUE), 'numDetectable' = mean(detectablePeptides, na.rm = TRUE)) %>%
+  mutate(iBAQ = area / numDetectable) %>%
+  filter(psm > (numDetectable * 0.2)) %>%
+  pivot_wider(id_cols = c('accession','gene'), names_from = sample, values_from = iBAQ, names_prefix = 'ibaq_')
+##
+exoPsmSet = exoSet %>%
+  group_by(sample, accession, gene) %>%
+  summarise('area' = sum(ParentPeakArea, na.rm = TRUE), 'psm' = sum(psm, na.rm = TRUE), 'numDetectable' = mean(detectablePeptides, na.rm = TRUE)) %>%
+  mutate(iBAQ = area / numDetectable) %>%
+  filter(psm > (numDetectable * 0.2)) %>%
+  pivot_wider(id_cols = c('accession','gene'), names_from = sample, values_from = psm, names_prefix = 'psm_')
+##
+exoProteinSet = exoPsmSet %>%
+  left_join(exoIntensitySet)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+There are a lot of NA values in these data. We should filter. I will do this based on the condition that a protein must have been identified in at least all 3 replicates of one sample or condition. We can be more flexible here if we want.
+
+```{r}
+##########################################################################################
+exoProteinSubset = subset(exoProteinSet,
+                         rowSums(is.na(exoProteinSet[,15:17])) < 2 |
+                         rowSums(is.na(exoProteinSet[,18:20])) < 2 |
+                         rowSums(is.na(exoProteinSet[,21:23])) < 2 |
+                         rowSums(is.na(exoProteinSet[,24:26])) < 2)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now prepare to annotate these data with some of the exosome database information you can find online. 
+
+```{r}
+##########################################################################################
+exocarta = vroom(paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/EXOCARTA_PROTEIN_MRNA_DETAILS_5.txt', sep = '')) %>%
+  filter(SPECIES == 'Homo sapiens') %>%
+  mutate(gene = `GENE SYMBOL`, inExocarta = 'yes') %>%
+  dplyr::select(gene, inExocarta)
+exocarta = unique(exocarta)
+##
+vesicle = vroom(paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/VESICLEPEDIA_PROTEIN_MRNA_DETAILS_4.1.txt', sep = '')) %>%
+  filter(SPECIES == 'Homo sapiens') %>%
+  mutate(gene = `GENE SYMBOL`, inVesiclepedia = 'yes') %>%
+  dplyr::select(gene, inVesiclepedia)
+vesicle = unique(vesicle)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Do the actual annotation and save the data.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+exoAnnotatedSet = exoProteinSubset %>%
+  left_join(exocarta) %>%
+  left_join(vesicle)
+saveRDS(exoAnnotatedSet, paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/dataset_exosomeProteinsAllSamples.rds', sep = ''))
+write.table(exoAnnotatedSet, paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/dataset_exosomeProteinsAllSamples.csv', sep = ''),
+            col.names = TRUE, row.names = FALSE, sep = ',', quote = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We are finished. 
+
+## Session info
+
+```{r}
+sessionInfo()
+```

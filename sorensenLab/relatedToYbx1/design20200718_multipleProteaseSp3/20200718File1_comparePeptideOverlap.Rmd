@@ -1,0 +1,120 @@
+---
+title: "Comparison of peptide overlap with multiple proteases"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details investigation of combining digests from multiple proteases into a single SP3 experiment.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('Biostrings')
+library('GenomicRanges')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/design20200718_multipleProteaseSp3/userDefinedFunctions.R', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First I need to read in the processed differential expression data.
+
+```{r}
+##########################################################################################
+fastaDb = readAAStringSet(paste(baseRepository, '/design20200718_multipleProteaseSp3/uniprotHumanJul2020.fasta', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+So the below function aims to digest peptides based on a cleavage specificity you give it, and it works, but is mega slow. So, I deployed it on the server to run there and give me the result file. We can look at the first 100 while it runs just to serve as an optimization set.
+
+```{r}
+##########################################################################################
+outputData = data.frame()
+for (i in 1:100){
+  inputSequence = as.character(fastaDb[[i]])
+  digestData = enzymeCoverage(inputSequence, 'KR', i)
+  outputData = rbind(outputData, digestData)
+  print(paste(i,'proteins completed'))
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot with this test set that we can use to optimize the plot code for our big set.
+
+```{r}
+##########################################################################################
+combinedData = unique(dplyr::select(outputData, seqnames, combinedCoverage))
+combinedData$cutSite = 'combined'
+colnames(combinedData)[2] = 'coverage'
+outputDataPlot = rbind(outputData[,c(1:3)], combinedData)
+outputDataPlot$cutSite = factor(outputDataPlot$cutSite, levels = c('K','R','K|R','combined'))
+##
+ggplot(outputDataPlot, aes(cutSite, coverage, color = cutSite)) +
+  geom_boxplot(size = 0.5, width = 0.25, color = brewer.pal(8,'Greys')[6], outlier.shape = NA) +
+  geom_point(size = 1, position = position_jitterdodge(jitter.width = 0.5), alpha = 0.5) +
+  scale_color_manual(values = c(rep(brewer.pal(8,'Greys')[8],3), brewer.pal(8,'RdBu')[8])) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/design20200718_multipleProteaseSp3/boxplot_krCutSiteCoverageMap.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now make a plot for the fully processed set.
+
+```{r}
+##########################################################################################
+outputData = readRDS(paste(baseRepository, '/design20200718_multipleProteaseSp3/uniprotHumanJul2020Digested.rds', sep = ''))
+combinedData = unique(dplyr::select(outputData, seqnames, combinedCoverage))
+combinedData$cutSite = 'combined'
+colnames(combinedData)[2] = 'coverage'
+outputDataPlot = rbind(outputData[,c(1:3)], combinedData)
+outputDataPlot$cutSite = factor(outputDataPlot$cutSite, levels = c('K','R','K|R','combined'))
+##
+ggplot(outputDataPlot, aes(cutSite, coverage, color = cutSite)) +
+  geom_boxplot(size = 1, width = 0.25, outlier.shape = NA) +
+  #geom_point(size = 1, position = position_jitterdodge(jitter.width = 0.5), alpha = 0.5) +
+  scale_color_manual(values = c(rep(brewer.pal(8,'Greys')[8],3), brewer.pal(8,'RdBu')[8])) +
+  labs(x = 'Digestion', y = 'Percent coverage', title = 'KR digestion coverage') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/design20200718_multipleProteaseSp3/boxplot_krCutSiteCoverageMap.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```
