@@ -136,10 +136,10 @@ There are a lot of NA values in these data. We should filter. I will do this bas
 ```{r}
 ##########################################################################################
 exoProteinSubset = subset(exoProteinSet,
-                         rowSums(is.na(exoProteinSet[,15:17])) < 2 |
-                         rowSums(is.na(exoProteinSet[,18:20])) < 2 |
-                         rowSums(is.na(exoProteinSet[,21:23])) < 2 |
-                         rowSums(is.na(exoProteinSet[,24:26])) < 2)
+                         rowSums(is.na(exoProteinSet[,15:17])) < 3 |
+                         rowSums(is.na(exoProteinSet[,18:20])) < 3 |
+                         rowSums(is.na(exoProteinSet[,21:23])) < 3 |
+                         rowSums(is.na(exoProteinSet[,24:26])) < 3)
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -170,8 +170,8 @@ Do the actual annotation and save the data.
 exoAnnotatedSet = exoProteinSubset %>%
   left_join(exocarta) %>%
   left_join(vesicle)
-saveRDS(exoAnnotatedSet, paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/dataset_exosomeProteinsAllSamples.rds', sep = ''))
-write.table(exoAnnotatedSet, paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/dataset_exosomeProteinsAllSamples.csv', sep = ''),
+saveRDS(exoAnnotatedSet, paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/dataset_exosomeProteinsAllSamplesUnfiltered.rds', sep = ''))
+write.table(exoAnnotatedSet, paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/dataset_exosomeProteinsAllSamplesUnfiltered.csv', sep = ''),
             col.names = TRUE, row.names = FALSE, sep = ',', quote = FALSE)
 ```
 

@@ -6,6 +6,8 @@ This page is the front of the workspace containing the code, data analysis, and 
 
 - [Sorensen lab](https://github.com/chrishuges/wetLabProtocols/tree/master/sorensenLab)
   - [Related to YBX1](https://github.com/chrishuges/projectsWorkspace/tree/master/sorensenLab/relatedToYbx1)
+  - [Related to SP3 PRD](https://github.com/chrishuges/projectsWorkspace/tree/master/sorensenLab/relatedToSp3Prd)
+  - [Related to Others](https://github.com/chrishuges/projectsWorkspace/tree/master/sorensenLab/relatedToOthers)
 - [Morin lab](https://github.com/chrishuges/wetLabProtocols/tree/master/morinLab)
 - [Troubleshooting](#troubleshooting)
 
