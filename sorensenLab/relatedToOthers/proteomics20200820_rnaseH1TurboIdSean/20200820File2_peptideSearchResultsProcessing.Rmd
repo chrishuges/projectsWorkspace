@@ -1,0 +1,148 @@
+---
+title: "Analysis of TurboId data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired on samples processed using TurboID. The raw MS data were compiled to peptide identifications using SearchGUI and PeptideShaker as detailed elsewhere in this folder.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+source(paste(baseWorkspace, '/proteomics20200820_rnaseH1TurboIdSean/userDefinedFunctions.R', sep = ''))
+```
+
+## Data processing
+
+I want to process the data using SAINTq in the end. Problematically, I don't know much about these data, just that it is an RNaseH1 pulldown. I am not entirely sure of the TMT layout that was used. First, I want to annotate the identification data with gene names, so I will use the annotation index that was created as part of the rawMsDataProcessing that is detailed in other files in this folder. I will read it in to the R session now.
+
+```{r}
+##########################################################################################
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20200820_rnaseH1TurboIdSean/uniprotHumanAug2020.fasta.annotated.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now I will read in the peptide search results and keep only the information I need. I will also annotate the data using the above object.
+
+```{r}
+##########################################################################################
+psm = read_tsv(paste(baseRepository, '/proteomics20200820_rnaseH1TurboIdSean/n_20200114_BMBP_SS_Stirling_TurboID_TMT-IP_1_Default_PSM_Report.txt', sep = '')) %>%
+  dplyr::select(`Protein(s)`, Sequence, `Modified Sequence`, `Spectrum File`, `Spectrum Scan Number`) %>%
+  mutate(accession = sapply(str_split(`Protein(s)`, ','), '[', 1)) %>%
+  mutate(scan = `Spectrum Scan Number`) %>%
+  mutate(sequence = Sequence) %>%
+  mutate(modSequence = `Modified Sequence`) %>%
+  left_join(proteinAnnotation) %>%
+  dplyr::select(scan, accession, gene, detectablePeptides, sequence, modSequence)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we need the quantification data. These are hosted in a folder called quantFiles in the same directory as the data.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+quantFiles = as.list(list.files(paste(baseRepository, '/proteomics20200820_rnaseH1TurboIdSean/quantFiles/', sep = ''),
+           pattern = '_Matrix.txt', full.names = TRUE))
+##
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now combine the identification and the quantification data into a single object.
+
+```{r}
+##########################################################################################
+allQuantData = do.call('rbind', quantDataSet)
+psmQuant = psm %>%
+  left_join(allQuantData)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Save the peptide object in case we want to use it later.
+
+```{r}
+##########################################################################################
+saveRDS(psmQuant, paste(baseRepository, '/proteomics20200820_rnaseH1TurboIdSean/datasetPeptidesNonNormalized.rds', sep = ''))
+write.table(psmQuant, paste(baseRepository, '/proteomics20200820_rnaseH1TurboIdSean/datasetPeptidesNonNormalized.csv', sep = ''),
+            quote = FALSE, sep = ',', col.names = TRUE, row.names = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+So the problem I have now is that I don't know the TMT layout. Maybe I can guess it from the quantification data. Make a boxplot and see what it looks like.
+
+```{r}
+##########################################################################################
+psmLong = psmQuant %>%
+  pivot_longer(cols = tmt10plex_126:tmt10plex_131C, names_to = 'label', values_to = 's2n')
+##
+ggplot(psmLong, aes(label, log2(s2n))) +
+  geom_boxplot(size = 1, outlier.size = 1, outlier.alpha = 0.5)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+So that isn't super informative. It looks like all channels have some sort of sample in them. Maybe if we just look at RNaseH1.
+
+```{r}
+##########################################################################################
+psmLong = psmQuant %>%
+  pivot_longer(cols = tmt10plex_126:tmt10plex_131C, names_to = 'label', values_to = 's2n') %>%
+  filter(grepl('RNASEH1$', gene))
+##
+ggplot(psmLong, aes(label, log2(s2n))) +
+  geom_boxplot(size = 1, outlier.size = 1, outlier.alpha = 0.5)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Alright so it definitely looks like the later 6 channels are possibly IP samples, with the exception of maybe 131N? I need to ask what the layout here is. Once I get these data back, I can do more work with these data. In the meantime, I will write the code for doing the SAINTq analysis (information available [here](http://saint-apms.sourceforge.net/Main.html). 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
