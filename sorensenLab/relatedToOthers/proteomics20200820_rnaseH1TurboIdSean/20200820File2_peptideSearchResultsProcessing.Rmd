@@ -80,7 +80,10 @@ Now combine the identification and the quantification data into a single object.
 ##########################################################################################
 allQuantData = do.call('rbind', quantDataSet)
 psmQuant = psm %>%
-  left_join(allQuantData)
+  left_join(allQuantData) %>%
+  group_by(accession, gene, sequence) %>%
+  summarise_at(vars(tmt10plex_126:tmt10plex_131C), median, na.rm = TRUE) %>%
+  as_tibble()
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -118,16 +121,113 @@ psmLong = psmQuant %>%
   filter(grepl('RNASEH1$', gene))
 ##
 ggplot(psmLong, aes(label, log2(s2n))) +
-  geom_boxplot(size = 1, outlier.size = 1, outlier.alpha = 0.5)
+  geom_boxplot(size = 1, outlier.size = 1, outlier.alpha = 0.5) +
+  labs(title = 'RNaseH1 peptides')
 ```
 
 <div style="margin-bottom:50px;"></div>
 
-Alright so it definitely looks like the later 6 channels are possibly IP samples, with the exception of maybe 131N? I need to ask what the layout here is. Once I get these data back, I can do more work with these data. In the meantime, I will write the code for doing the SAINTq analysis (information available [here](http://saint-apms.sourceforge.net/Main.html). 
+Alright so it definitely looks like the later 6 channels are possibly IP samples, with the exception of maybe 131N? I need to ask what the layout here is. Once I get these data back, I can do more work with these data.
 
+Ok, I just got the TMT layout data. It is:
 
+|label|sample|
+|----|----|
+|TMT126|WKKD1|
+|TMT127N|TurboId1|
+|TMT127C|WKKD2|
+|TMT128N|TurboId2|
+|TMT128C|WKKD3|
+|TMT129N|WT1|
+|TMT129C|D210W1|
+|TMT130N|WT2|
+|TMT130C|D210W2|
+|TMT131N|WT3|
+|TMT131C|D210W3|
 
+So now we have the information to do the SAINTq analysis (information available [here](http://saint-apms.sourceforge.net/Main.html). We need to make the input file, as well as the parameters file. First, the input file will be created. This is just for the wild-type compared to the turboID control, for now.
 
+```{r}
+##########################################################################################
+##annotation file
+annoCondition = c('','','','C','C','T','T','T')
+annoBait = c('','','','TURBOID','TURBOID','RNASEH1','RNASEH1','RNASEH1')
+annoFile = rbind(annoCondition, annoBait)
+write.table(annoFile, paste(baseRepository, '/proteomics20200820_rnaseH1TurboIdSean/datasetAnnotationFile.tsv', sep = ''),
+            quote = FALSE, sep = '\t', col.names = FALSE, row.names = FALSE)
+##intensity file
+psmFile = psmQuant %>%
+  mutate('Protein' = gene, 'Peptide' = sequence, 'Fragment' = '+2y5+1') %>%
+  mutate('TURBOID_rep1' = tmt10plex_127N, 'TURBOID_rep2' = tmt10plex_128N) %>%
+  mutate('RNASEH1_rep1' = tmt10plex_129N, 'RNASEH1_rep2' = tmt10plex_130N, 'RNASEH1_rep3' = tmt10plex_131N) %>%
+  dplyr::select(Protein, Peptide, Fragment, TURBOID_rep1, TURBOID_rep2, RNASEH1_rep1, RNASEH1_rep2, RNASEH1_rep3)
+write.table(psmFile, paste(baseRepository, '/proteomics20200820_rnaseH1TurboIdSean/datasetQuantificationFile.tsv', sep = ''),
+            quote = FALSE, sep = '\t', col.names = TRUE, row.names = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we need to go to the command line and combine these two files. On my system, in terminal I use the commands:
+
+```
+> cd /mnt/c/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers/proteomics20200820_rnaseH1TurboIdSean/
+> cat datasetAnnotationFile.tsv datasetQuantificationFile.tsv > datasetSaintQuantificationFile.tsv
+```
+
+The last thing we need is the parameters file for SAINTq. I used the example parameters file they provided with the tool itself, and just modified the file paths using Notepad software. To run SAINTq, I navigated to the directory where I saved it and pointed it at the parameters file that I modified.
+
+```
+> /mnt/c/Users/chris/OneDrive/Documents/software/saintq_v0.0.4/saintq/binaries/saintq.exe param_MSPLIT_pep_level
+
+```
+
+I repeated the above analysis for the other comparisons using the same code as above.
+
+```{r}
+##########################################################################################
+##annotation file
+annoCondition = c('','','','C','C','T','T','T')
+annoBait = c('','','','TURBOID','TURBOID','RNASEH1','RNASEH1','RNASEH1')
+annoFile = rbind(annoCondition, annoBait)
+write.table(annoFile, paste(baseRepository, '/proteomics20200820_rnaseH1TurboIdSean/datasetAnnotationFile.tsv', sep = ''),
+            quote = FALSE, sep = '\t', col.names = FALSE, row.names = FALSE)
+##intensity file
+psmFile = psmQuant %>%
+  mutate('Protein' = gene, 'Peptide' = sequence, 'Fragment' = '+2y5+1') %>%
+  mutate('TURBOID_rep1' = tmt10plex_127N, 'TURBOID_rep2' = tmt10plex_128N) %>%
+  mutate('RNASEH1_rep1' = tmt10plex_129C, 'RNASEH1_rep2' = tmt10plex_130C, 'RNASEH1_rep3' = tmt10plex_131C) %>%
+  dplyr::select(Protein, Peptide, Fragment, TURBOID_rep1, TURBOID_rep2, RNASEH1_rep1, RNASEH1_rep2, RNASEH1_rep3)
+write.table(psmFile, paste(baseRepository, '/proteomics20200820_rnaseH1TurboIdSean/datasetQuantificationFile.tsv', sep = ''),
+            quote = FALSE, sep = '\t', col.names = TRUE, row.names = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+```{r}
+##########################################################################################
+##annotation file
+annoCondition = c('','','','C','C','T','T','T')
+annoBait = c('','','','TURBOID','TURBOID','RNASEH1','RNASEH1','RNASEH1')
+annoFile = rbind(annoCondition, annoBait)
+write.table(annoFile, paste(baseRepository, '/proteomics20200820_rnaseH1TurboIdSean/datasetAnnotationFile.tsv', sep = ''),
+            quote = FALSE, sep = '\t', col.names = FALSE, row.names = FALSE)
+##intensity file
+psmFile = psmQuant %>%
+  mutate('Protein' = gene, 'Peptide' = sequence, 'Fragment' = '+2y5+1') %>%
+  mutate('TURBOID_rep1' = tmt10plex_127N, 'TURBOID_rep2' = tmt10plex_128N) %>%
+  mutate('RNASEH1_rep1' = tmt10plex_126, 'RNASEH1_rep2' = tmt10plex_127C, 'RNASEH1_rep3' = tmt10plex_128C) %>%
+  dplyr::select(Protein, Peptide, Fragment, TURBOID_rep1, TURBOID_rep2, RNASEH1_rep1, RNASEH1_rep2, RNASEH1_rep3)
+write.table(psmFile, paste(baseRepository, '/proteomics20200820_rnaseH1TurboIdSean/datasetQuantificationFile.tsv', sep = ''),
+            quote = FALSE, sep = '\t', col.names = TRUE, row.names = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```
 
 
 
