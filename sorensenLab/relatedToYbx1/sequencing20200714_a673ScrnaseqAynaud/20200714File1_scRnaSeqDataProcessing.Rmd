@@ -86,7 +86,8 @@ Make plots for different genes.
 
 ```{r}
 ##########################################################################################
-geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3','ATF4')
+rna = readRDS(paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/dataset_scRNAseqProcessedA673Only.rds', sep = ''))
+geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3','ATF4','HDAC11')
 for (i in 1:length(geneSet)){
   goi = filter(rna, symbol == geneSet[i])
   ggplot(goi, aes(day, log10(counts), color = day)) +
@@ -126,7 +127,7 @@ Make the plots again.
 ```{r}
 ##########################################################################################
 totalSet = rbind(rna, msc)
-geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3','ATF4')
+geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3','ATF4', 'HDAC11')
 for (i in 1:length(geneSet)){
   goi = filter(totalSet, symbol == geneSet[i])
   ggplot(goi, aes(day, log10(counts), color = day)) +
