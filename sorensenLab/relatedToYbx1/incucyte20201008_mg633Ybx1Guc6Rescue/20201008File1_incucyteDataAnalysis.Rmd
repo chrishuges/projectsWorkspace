@@ -1,0 +1,78 @@
+---
+title: "Incucyte analysis of GUC6 Rescue cells"
+output:
+  html_notebook:
+    code_folding: none
+  html_document:
+    df_print: paged
+---
+
+This document contains code related to the analysis of incucyte data from MG63.3 YBX1 GUC6 cells carrying piggyBac rescue vectors. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First we can grab the data from the instrument.
+
+```{r}
+##########################################################################################
+incucyteData = read_tsv(paste(baseRepository, '/incucyte20201008_mg633Ybx1Guc6Rescue/incucyte20201008_mg633Ybx1Guc6Rescue_noGroups.txt', sep = ''), skip = 2) %>%
+  dplyr::select(Elapsed, `parental (1) 1K cells / well (A2)`:`guc6Ybx1K81a (1) 1K cells / well (H11)`) %>%
+  filter(Elapsed == 0 | Elapsed == 72) %>%
+  pivot_longer(cols = `parental (1) 1K cells / well (A2)`:`guc6Ybx1K81a (1) 1K cells / well (H11)`, names_to = 'well', values_to = 'confluence') %>%
+  pivot_wider(names_from = Elapsed, values_from = confluence) %>%
+  mutate(difference = `72` - `0`) %>%
+  mutate(cells = sub('(.*) \\([0-9]+\\) 1K cells \\/ well \\([A-H][0-9]+\\)', '\\1', well))
+##
+incucyteData$cells = factor(incucyteData$cells, levels = c('parental', 'guc6','guc6Ybx1','guc6Ybx1K64a','guc6Ybx1K81a'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot displaying the difference in confluence after 72-hours between the individual cell lines.
+
+```{r}
+##########################################################################################
+ggplot(incucyteData, aes(cells, difference, colour = cells)) +
+  geom_point(size = 4, position = position_jitterdodge(jitter.width = 0.50), alpha = 0.5) +
+  labs(x = 'Cell line', y = 'Confluence difference in 72h', title = 'YBX1 GUC rescue growth') +
+  scale_y_continuous(limits = c(0, 100), breaks = seq(0,100,10)) +
+  scale_colour_manual(values = c(brewer.pal(8,'Greys')[4], brewer.pal(8,'RdBu')[1], rep(brewer.pal(8,'RdBu')[8],3))) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/incucyte20201008_mg633Ybx1Guc6Rescue/scatter_mg633Ybx1GucRescueGrowthDifference.pdf', sep = ''),
+       height = 4,
+       width = 3,
+       useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```
+
+
