@@ -1,0 +1,85 @@
+---
+title: "Analysis of YBX1 GUC Crispr soft agar growth"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document is to investigate the soft agar data for the YBX1 GUC crispr clones in MG633. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First we can grab the data from the instrument.
+
+```{r}
+##########################################################################################
+agarFiles = list.files(paste(baseRepository, '/softAgar20200825_mg633Ybx1Guc46/', sep = ''),
+                           pattern = 'Replicate[1-3].txt', full.names = TRUE)
+##
+agarData = lapply(agarFiles, read_tsv, skip = 2)
+names(agarData) = sub('.*plate[12]_(.*)Replicate[123]\\.txt','\\1',agarFiles)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Count the number of colonies in each sample. 
+
+```{r}
+##########################################################################################
+agarRows = tibble(unlist(lapply(agarData, nrow))) %>%
+  mutate(sample = names(agarData))
+colnames(agarRows)[1] = 'count'
+agarRows$sample = factor(agarRows$sample, levels = c('parent','guc4','guc6'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we are ready to make the plot.
+
+```{r}
+##########################################################################################
+ggplot(agarRows, aes(sample, count, color = sample)) +
+  geom_point(size = 4, position = position_jitterdodge(jitter.width = 0.25), alpha = 0.5) +
+  labs(x = 'Cell line', y = 'Number of colonies', title = 'YBX1 GUC clone colony formation') +
+  scale_y_continuous(limits = c(0, 180), breaks = seq(0,180,20)) +
+  scale_color_manual(values = c(brewer.pal(8,'Greys')[4], rep(brewer.pal(8,'RdBu')[1],2))) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/softAgar20200825_mg633Ybx1Guc46/scatter_mg633Ybx1GucColonyFormation.pdf', sep = ''),
+       height = 4,
+       width = 3,
+       useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```
