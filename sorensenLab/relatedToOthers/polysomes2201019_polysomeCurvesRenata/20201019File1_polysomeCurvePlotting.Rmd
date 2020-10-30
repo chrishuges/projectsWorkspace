@@ -87,6 +87,115 @@ ggsave(paste(baseRepository, '/line_polysomeGradientCurveSmooth.pdf', sep = ''),
 
 <div style="margin-bottom:50px;"></div>
 
+What if we want to put multiple curves on a single plot? The most efficient way to do this is by make a long-format data table with groups.
+
+We can either read files in one at a time and combine them into a single object:
+
+```{r}
+###########################################################
+polyFile1 = read_csv(paste(baseRepository, '/polysomes2201019_polysomeCurvesRenata/rs_20201016_chla10ms275_dmso1.csv', sep = ''), skip = 45) %>%
+  filter(`Position(mm)` >= 5 & Absorbance <= 1) %>%
+  mutate(avgAbsorbance = rollmean(Absorbance, 3, fill = NA)) %>%
+  mutate(sample = 'dmso1')
+##
+polyFile2 = read_csv(paste(baseRepository, '/polysomes2201019_polysomeCurvesRenata/rs_20201016_chla10ms275_dmso1.csv', sep = ''), skip = 45) %>%
+  filter(`Position(mm)` >= 5 & Absorbance <= 1) %>%
+  mutate(avgAbsorbance = rollmean(Absorbance, 3, fill = NA)) %>%
+  mutate(`Position(mm)` = `Position(mm)` + 1) %>% #I just do this so the data will be shifted so it looks different...don't do for your real file
+  mutate(sample = 'dmso2')
+##
+polyData = rbind(polyFile1, polyFile2)
+polyData$sample = factor(polyData$sample, levels = c('dmso1','dmso2')) #this just determines the order that things are presented on the x-axis in a plot
+```
+
+<div style="margin-bottom:50px;"></div>
+
+And we can make a plot exactly as we did before using this group to separate the two.
+
+```{r}
+###########################################################
+ggplot(polyData, aes(`Position(mm)`, avgAbsorbance, color = sample)) +
+  geom_line(size = 1) +
+  labs(x = 'Position (mm)', y = 'Absorbance', title = 'Sucrose gradient') +
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2)) +
+  scale_color_manual(values = brewer.pal(8,'RdBu')[c(1,8)]) +
+  theme_classic()
+ggsave(paste(baseRepository, '/line_polysomeGradientCurveSmoothMultiple.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We could also use facet wrap to put them on separate plots.
+
+```{r}
+###########################################################
+ggplot(polyData, aes(`Position(mm)`, avgAbsorbance)) +
+  geom_line(size = 1, color = brewer.pal(8, 'Spectral')[8]) +
+  labs(x = 'Position (mm)', y = 'Absorbance', title = 'Sucrose gradient') +
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2)) +
+  facet_wrap(~sample) +
+  theme_classic()
+ggsave(paste(baseRepository, '/line_polysomeGradientCurveSmoothMultiple.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+If we don't want to do this manually for a bunch of files, we can read all the files in a directory and plot them all. First we read the list of files we want to process, each having a .csv extension.
+
+```{r}
+###########################################################
+polyFiles = list.files(paste(baseRepository, '/polysomes2201019_polysomeCurvesRenata/', sep = ''), pattern = '.csv', full.names = TRUE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we create a function to do the same processing as above for each file in the list and to output them to the same data table.
+
+```{r, warning = FALSE}
+###########################################################
+##create a function to process the files
+polysomeProcessing = function(fileList, ...){
+  polyData = read_csv(fileList, skip = 45) %>%
+    filter(`Position(mm)` >= 5 & Absorbance <= 1) %>%
+    mutate(avgAbsorbance = rollmean(Absorbance, 3, fill = NA)) %>%
+    mutate(sample = sub('.*chla10ms275_(.*)\\.csv', '\\1', fileList))
+  return(polyData)
+}
+##process the files
+polyData = do.call(rbind, lapply(polyFiles, polysomeProcessing))
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we have our data all as one big object.
+
+```{r}
+###########################################################
+polyData
+##
+table(polyData$sample)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We can make the same plots as before using this bigger data set.
+
+```{r}
+###########################################################
+ggplot(polyData, aes(`Position(mm)`, avgAbsorbance)) +
+  geom_line(size = 1, color = brewer.pal(8, 'Spectral')[8]) +
+  labs(x = 'Position (mm)', y = 'Absorbance', title = 'Sucrose gradient') +
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2)) +
+  facet_wrap(~sample, ncol = 3) +
+  theme_classic()
+ggsave(paste(baseRepository, '/line_polysomeGradientCurveSmoothAllSamples.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+
 ## Session Info
 
 ```{r}

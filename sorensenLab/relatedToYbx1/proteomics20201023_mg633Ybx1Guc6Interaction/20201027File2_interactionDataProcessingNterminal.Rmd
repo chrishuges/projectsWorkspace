@@ -1,0 +1,192 @@
+---
+title: "Analysis of MG63.3 YBX1 GUC6 N-terminal FLAG data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to compare MG63.3 GUC6 expressing FLAG tagged versions of YB-1 for interactomics. The raw MS data were compiled to peptide identifications using ProteomeDiscoverer.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('vroom')
+library('pheatmap')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the protein annotation details.
+
+```{r}
+##########################################################################################
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/uniprotHumanJul2020.fasta.annotated.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+
+## N-terminal data
+
+Read the peptide results and parse to a more usable format. We will focus first on the n-terminal FLAG tag data.
+
+```{r}
+##########################################################################################
+psm = vroom(paste(baseRepository, '/proteomics20201023_mg633Ybx1Guc6Interaction/ch_20201022_mg633Ybx1Guc6FlagIpSet_TMT16_PSMs.txt', sep = '')) %>%
+  dplyr::select(`Protein Accessions`, `Abundance 126`, `Abundance 127C`, `Abundance 128C`, `Abundance 129C`, `Abundance 133N`:`Abundance 134N`) %>%
+  mutate(accession = sapply(str_split(`Protein Accessions`, ';'), '[', 1)) %>%
+  dplyr::select(accession, `Abundance 126`:`Abundance 134N`) %>%
+  left_join(proteinAnnotation) %>%
+  dplyr::select(accession, gene, `Abundance 126`:`Abundance 134N`) %>%
+  filter(!grepl('^sp$', accession) | !is.na(gene)) %>%
+  mutate(gene = gsub('-', NA, gene, fixed = TRUE)) %>%
+  mutate(psms = 1)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Filter the data to remove less confident PSMs.
+
+```{r}
+##########################################################################################
+psmFiltered1 = subset(psm, rowSums(is.na(psm[,3:6])) < 2 & rowSums(is.na(psm[,7:9])) < 3)
+psmFiltered2 = subset(psmFiltered1, rowSums(psmFiltered1[,3:6], na.rm = TRUE) > 40)
+colnames(psmFiltered2)[3:9] = c('nYb1_1','nYb1_2','nYb1_3','nYb1_4','nGfp_1','nGfp_2','nGfp_3')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Roll the data into proteins.
+
+```{r}
+##########################################################################################
+proPsms = psmFiltered2 %>%
+  group_by(accession, gene) %>%
+  summarise(numPsm = sum(psms, na.rm = TRUE))
+pro = psmFiltered2 %>%
+  group_by(accession, gene) %>%
+  summarise(across(.cols = nYb1_1:nGfp_3, .fns = median, na.rm = TRUE)) %>%
+  left_join(proPsms) %>%
+  left_join(proteinAnnotation) %>%
+  filter(!is.na(gene)) %>%
+  arrange(-numPsm)
+pro = subset(pro, rowSums(is.na(pro[,3:9])) < 1)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can create the input files for SAINT analysis. First, create the 'Bait' file.
+
+```{r}
+##########################################################################################
+baitMatrix = data.frame('ipName' = c('nYb1_1','nYb1_2','nYb1_3','nYb1_4','nGfp_1','nGfp_2','nGfp_3'),
+                        'bait' = c('YBX1','YBX1','YBX1','YBX1','GFP_1','GFP_2','GFP_3'),
+                        'type' = c('T','T','T','T','C','C','C'))
+write.table(baitMatrix, paste(baseRepository, '/proteomics20201023_mg633Ybx1Guc6Interaction/yb1NterminalBaitFile.dat', sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+
+<div style="margin-bottom:50px;"></div>
+
+Now can make the 'Interaction' file.
+
+```{r}
+##########################################################################################
+interactionMatrix = ungroup(pro) %>%
+  dplyr::select(accession, nYb1_1, nYb1_2, nYb1_3, nYb1_4, nGfp_1, nGfp_2, nGfp_3) %>%
+  pivot_longer(cols = nYb1_1:nGfp_3, names_to = 'ipName', values_to = 'intensity') %>%
+  filter(!is.na(intensity) & intensity > 0 & !grepl('P67809', accession)) %>%
+  distinct()
+interactionMatrix$baitName = ifelse(grepl('Yb1',interactionMatrix$ipName), 'YBX1', 'GFP')
+interactionMatrix = dplyr::select(interactionMatrix, ipName, baitName, accession, intensity)
+write.table(interactionMatrix, paste(baseRepository, '/proteomics20201023_mg633Ybx1Guc6Interaction/yb1NterminalInteractionFile.dat', sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now create the 'Prey' file.
+
+```{r}
+##########################################################################################
+preyMatrix = ungroup(pro) %>%
+  dplyr::select(accession, gene, length, nYb1_1, nYb1_2, nYb1_3, nYb1_4, nGfp_1, nGfp_2, nGfp_3) %>%
+  pivot_longer(cols = nYb1_1:nGfp_3, names_to = 'ipName', values_to = 'intensity') %>%
+  filter(!is.na(intensity) & !grepl('P67809', accession)) %>%
+  dplyr::select(accession, length, gene) %>%
+  distinct()
+write.table(preyMatrix, paste(baseRepository, '/proteomics20201023_mg633Ybx1Guc6Interaction/yb1NterminalPreyFile.dat', sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+NOTE - I chased this down for a while, but it was giving me some 'char const*' error. Basically it boiled down to it wanting me to remove the bait and to make sure that there were enough observations in the IP and GFP samples.
+
+<div style="margin-bottom:50px;"></div>
+
+Run SAINTexpress with these files. For this I used the command '/projects/ptx_analysis/chughes/software/SAINTexpress_v3.6.3__2018-03-09/Precompiled_binaries/Linux64/SAINTexpress-int -L 3 ./yb1NterminalInteractionFile.dat ./yb1NterminalPreyFile.dat ./yb1NterminalBaitFile.dat'.
+
+Now we can import the output file from SAINT and make a plot.
+
+```{r}
+##########################################################################################
+saint = read_tsv(paste(baseRepository, '/proteomics20201023_mg633Ybx1Guc6Interaction/nTerminalYbx1SaintAnalysis.txt', sep = '')) %>%
+  arrange(-SaintScore)
+saint$pText = ifelse(saint$SaintScore > 0.75 & log2(saint$FoldChange) > 2, saint$PreyGene, '')
+##
+ggplot(saint, aes(log2(FoldChange), SaintScore)) +
+  geom_point(size = 2, color = brewer.pal(8,'RdBu')[1], alpha = 0.5) +
+  geom_text_repel(label = saint$pText, segment.size = 0.25, size = 2) +
+  scale_x_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2)) +
+  geom_vline(xintercept = 2, linetype = 'dashed') +
+  geom_hline(yintercept = 0.75, linetype = 'dashed') +
+  labs(x = 'log2(Fold change to GFP)', y = 'Probability of interaction', title = 'YB-1 protein interactions') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20201023_mg633Ybx1Guc6Interaction/scatter_mg633Ybx1Guc6NflagSaint.pdf', sep = ''),
+       height = 4,
+       width = 4,
+       useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+
+
+
+

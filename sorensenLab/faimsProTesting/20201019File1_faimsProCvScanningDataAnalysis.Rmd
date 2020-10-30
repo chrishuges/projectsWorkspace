@@ -106,14 +106,15 @@ idData$cv = factor(idData$cv, levels = seq(110,10,-5))
 
 <div style="margin-bottom:50px;"></div>
 
-Plot the identification data.
+Plot the MS2 acquisition data.
 
 ```{r}
 ###########################################################
-ggplot(idData, aes(cv, `MS/MS`)) +
+ggplot(idData, aes(cv, `MS/MS`, group = 1)) +
   geom_point(size = 2) +
+  geom_line(size = 0.75) +
   scale_y_continuous(limits = c(0, 3e4), breaks = seq(0,3e4,5000)) +
-  labs(x = 'CV', y = 'Number of MS/MS', title = 'Unlabeled scan distribution') +
+  labs(x = 'CV', y = 'Number of MS/MS', title = 'Unlabeled MS2 scan distribution') +
   theme_classic() +
   theme(panel.grid.major = element_line(size = 0.25), 
         axis.text.x = element_text(size = 4),
@@ -121,6 +122,30 @@ ggplot(idData, aes(cv, `MS/MS`)) +
         legend.key.size = unit(0.5, 'cm'),
         legend.title = element_text(size = 8),
         legend.text = element_text(size = 8))
+ggsave(paste(baseRepository, '/scatter_cvMs2DistributionNonTmt.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Plot the MS2 identification data.
+
+```{r}
+###########################################################
+ggplot(idData, aes(cv, `MS/MS Identified`, group = 1)) +
+  geom_point(size = 2) +
+  geom_line(size = 0.75) +
+  scale_y_continuous(limits = c(0, 1e4), breaks = seq(0,1e4,2000)) +
+  labs(x = 'CV', y = 'Number of MS/MS Identified', title = 'Unlabeled MS2 scans identified') +
+  theme_classic() +
+  theme(panel.grid.major = element_line(size = 0.25), 
+        axis.text.x = element_text(size = 4),
+        axis.text.y = element_text(size = 6),
+        legend.key.size = unit(0.5, 'cm'),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 8))
+ggsave(paste(baseRepository, '/scatter_cvMs2IdDistributionNonTmt.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
 ```
 
 <div style="margin-bottom:50px;"></div>

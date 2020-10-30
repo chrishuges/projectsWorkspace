@@ -1,0 +1,110 @@
+---
+title: "Cell viability in GUC clones"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of cell viability data from drug treated MG63.3 cells, parentals and GUC4/6.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Some functions.
+
+```{r}
+##########################################################################################
+lower_ci <- function(mean, se, n, conf_level = 0.95){
+  lower_ci <- mean - qt(1 - ((1 - conf_level) / 2), n - 1) * se
+}
+upper_ci <- function(mean, se, n, conf_level = 0.95){
+  upper_ci <- mean + qt(1 - ((1 - conf_level) / 2), n - 1) * se
+}
+```
+
+## Data processing
+
+Read in the qPCR data. I edited the Excel file from the instrument to remove rows that weren't associated with the raw data.
+
+```{r}
+##########################################################################################
+plateDataFiles = list.files(paste(baseRepository, '/plateReader20200812_mg633Ybx1Guc6StressViability/', sep = ''), pattern = '[ent]\\.txt', full.names = TRUE)
+##
+plateDataProcess = function(dataFile, ...){
+  rawData = read_tsv(dataFile)
+  scaledData = data.frame(apply(rawData[,2:12], 2, function(x) x / rawData[,1]))
+  colnames(scaledData) = c('0.25', '0.5', '1', '2', '4', '8', '16', '32', '48', '64', '80')
+  scaledData$treatment = sub('.*Ybx1[Guc46Parent]+(.*)\\.txt', '\\1', dataFile)
+  scaledData$cells = sub('.*Ybx1(.*)[ADE].*', '\\1', dataFile)
+  scaledDataLong = scaledData %>%
+    pivot_longer(cols = `0.25`:`80`, names_to = 'drugLevel', values_to = 'lumSignal') %>%
+    mutate(drugLevel = factor(drugLevel, levels = c('0.25', '0.5', '1', '2', '4', '8', '16', '32', '48', '64', '80'))) %>%
+    mutate(cells = factor(cells, levels = c('Parent','Guc4','Guc6')))
+  return(scaledDataLong)
+}
+##
+plateData = lapply(plateDataFiles, plateDataProcess)
+plateData = do.call(rbind, lapply(plateDataFiles, plateDataProcess))
+plateDataSummary = plateData %>%
+  group_by(treatment, cells, drugLevel) %>%
+  summarise(avgLum = mean(log10(lumSignal), na.rm = TRUE), sdLum = sd(log10(lumSignal), na.rm = TRUE), count = n()) %>%
+  mutate(se = sdLum / sqrt(count), lowerCI = lower_ci(avgLum, se, count), upperCI = upper_ci(avgLum, se, count))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Try making a plot of the parsed data.
+
+```{r}
+##########################################################################################
+ggplot(plateDataSummary, aes(drugLevel, avgLum, color = cells, group = cells)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  geom_ribbon(aes(ymin = plateDataSummary$lowerCI, ymax = plateDataSummary$upperCI), linetype = 2, alpha = 0.1) +
+  scale_color_manual(values = c(brewer.pal(8,'Greys')[6], brewer.pal(8,'RdBu')[2:1])) +
+  labs(x = 'Treatment concentration (uM)', y = 'log10(Luminescence relative to 0uM)', title = 'YBX1 GUC clone viability') +
+  facet_wrap(~treatment) +
+  theme_classic()
+ggsave(paste(baseRepository, '/plateReader20200812_mg633Ybx1Guc6StressViability/line_gucCloneViabilityCurves.pdf', sep = ''),
+       height = 4, width = 8, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+

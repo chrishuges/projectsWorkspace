@@ -11,12 +11,13 @@ This document details the analysis of proteomics data acquired to compare MG63.3
 
 These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
 
-```{r, message = FALSE, echo = FALSE}
+```{r, message = FALSE, warning=FALSE}
 library('tidyverse')
 library('ggplot2')
 library('RColorBrewer')
 library('vroom')
 library('DEqMS')
+library('ggrepel')
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -24,9 +25,12 @@ library('DEqMS')
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
 
 ```{r}
-generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
-baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
-baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -197,9 +201,11 @@ deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
 deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
                               ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
                                      brewer.pal(8,'Greys')[6]))
+deqmsResults$pText = ifelse(grepl('YBX[13]',deqmsResults$gene), deqmsResults$gene, '')
 ##
 ggplot(deqmsResults, aes(logFC, plotPValue)) +
   geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
+  geom_text_repel(label = deqmsResults$pText) +
   labs(x = 'log2(Guc4 to parental)', y = '-log10(P-value)', title = 'Guc4 versus parental protein abundance') +
   scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
   geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
@@ -220,9 +226,11 @@ deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
 deqmsResults$pColors = ifelse(deqmsResults$logFC <= -1 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
                               ifelse(deqmsResults$logFC >= 1 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
                                      brewer.pal(8,'Greys')[6]))
+deqmsResults$pText = ifelse(grepl('YBX[13]',deqmsResults$gene), deqmsResults$gene, '')
 ##
 ggplot(deqmsResults, aes(logFC, plotPValue)) +
   geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
+  geom_text_repel(label = deqmsResults$pText) +
   labs(x = 'log2(Guc6 to parental)', y = '-log10(P-value)', title = 'Guc6 versus parental protein abundance') +
   #scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
   geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
@@ -246,16 +254,22 @@ gucSet = as_tibble(guc4Results) %>%
   dplyr::select(gene, guc4Exp) %>%
   left_join(guc6Results) %>%
   dplyr::select(gene, guc4Exp, guc6Exp)
+goi = c('YBX1','YBX3','CDH2','TPD52','STK26','NUP210')
+gucSet$pText = ifelse(gucSet$gene %in% goi, gucSet$gene, '')
 ##
 ggplot(gucSet, aes(guc4Exp, guc6Exp)) +
-  geom_point(size = 1, color = brewer.pal(8,'Greys')[6]) +
+  geom_point(size = 1, color = brewer.pal(8,'RdBu')[1], alpha = 0.5) +
+  geom_text_repel(label = gucSet$pText) +
+  labs(x = 'GUC4 log2(Fold change to WT)', y = 'GUC6 log2(Fold change to WT)', title = 'GUC clone protein abundance') +
   #scale_x_continuous(limits = c(-3.5,0), breaks = seq(-10,10,2)) +
   #scale_y_continuous(limits = c(-5.5,0), breaks = seq(-10,10,2)) +
   geom_vline(xintercept = 0, linetype = 'dashed') +
   geom_hline(yintercept = 0, linetype = 'dashed') +
   theme_classic()
-
-#cor(gucSet$guc4Exp, gucSet$guc6Exp, use='pairwise.complete.obs', method = 'pearson')
+ggsave(paste(baseRepository, '/proteomics20200705_mg633CrisprYbx1GucClones/scatter_deqmsGuc4-Guc6.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+##
+cor(gucSet$guc4Exp, gucSet$guc6Exp, use='pairwise.complete.obs', method = 'pearson')
 ```
 
 ## Session info
