@@ -11,26 +11,38 @@ This document describes exploration of some of the DepMap cell line expression d
 
 These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
 
-```{r, message = FALSE, echo = FALSE}
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
 library('tidyverse')
 library('ggplot2')
 library('RColorBrewer')
 library('vroom')
 ```
 
+<div style="margin-bottom:50px;"></div>
+
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
 
 ```{r}
-generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
-baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
-baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
 ```
+
+<div style="margin-bottom:50px;"></div>
 
 Lastly, we need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
 
 ```{r}
+##########################################################################################
 source(paste(baseWorkspace, '/database20200529_depmapYbx1Crispr/userDefinedFunctions.R', sep = ''))
 ```
+
+<div style="margin-bottom:50px;"></div>
 
 ## Data processing
 
@@ -42,12 +54,16 @@ crispr = vroom(paste(generalDatasets, '/depmap20Q1/Achilles_gene_effect.csv', se
 colnames(crispr)[1] = 'DepMap_ID'
 ```
 
+<div style="margin-bottom:50px;"></div>
+
 Data read looks good. Now I will get the cell line annotation details.
 
 ```{r}
 ##########################################################################################
 anno = read_csv(paste(generalDatasets, '/depmap20Q1/sample_info.csv', sep = ''))
 ```
+
+<div style="margin-bottom:50px;"></div>
 
 Now we can select the values for dependency for YB-1 across all of the different cancers.
 
@@ -60,6 +76,9 @@ crisprYbx1 = crispr %>%
 keep = names(which(table(crisprYbx1$lineage) > 5))
 crisprYbx1Lineage = crisprYbx1[crisprYbx1$lineage %in% keep, ]
 ```
+
+<div style="margin-bottom:50px;"></div>
+
 Now we can make the plot.
 
 ```{r}
@@ -84,9 +103,38 @@ ggsave(paste(baseWorkspace, '/database20200529_depmapYbx1Crispr/scatterplot_ybx1
        width = 4)
 ```
 
+<div style="margin-bottom:50px;"></div>
+
+I also want to make a plot for DLG2. 
+
+```{r}
+##########################################################################################
+box_colors = setNames(c(rep('grey50', length(unique(crisprYbx1Lineage$lineage)) - 1), brewer.pal(9,'Spectral')[1]),
+                      c(unique(crisprYbx1Lineage$lineage)[!unique(crisprYbx1Lineage$lineage) %in% 'bone'], 'bone'))
+#
+ggplot(crisprYbx1Lineage, aes(reorder(lineage, `YBX1 (4904)`, FUN = median), `YBX1 (4904)`, group = lineage, color = lineage)) +
+  geom_boxplot(outlier.shape = NA, width = 0.5, size = 0.5) +
+  geom_point(size = 0.5) +
+  scale_color_manual(values = box_colors) +
+  scale_y_continuous(limits = c(-1.75,0.5), breaks = seq(-2,1,0.5)) +
+  geom_hline(yintercept = -1, linetype = 'dashed') +
+  labs(x = '', y = 'CERES Dependency Score', title = 'DepMap DLG2 Dependency Scores') +
+  coord_flip() +
+  theme_classic() +
+  theme(legend.position = 'none', axis.text.y = element_text(size = 3))
+##write the plot to a file
+ggsave(paste(baseWorkspace, '/database20200529_depmapYbx1Crispr/scatterplot_ybx1CeresScoresLineages.pdf', sep = ''),
+       useDingbats = FALSE,
+       height = 4, 
+       width = 4)
+```
+
+<div style="margin-bottom:50px;"></div>
+
 ## Session info
 
 ```{r}
+##########################################################################################
 sessionInfo()
 ```
 

@@ -11,7 +11,8 @@ This document details the processing of the published scRNAseq data from PMID: 3
 
 These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
 
-```{r, message = FALSE}
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
 library('tidyverse')
 library('ggplot2')
 library('RColorBrewer')
@@ -24,20 +25,11 @@ I want to set a base directory that we can use as a link to the directory where 
 ```{r}
 ##########################################################################################
 generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
-baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
-baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
 #generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
 #baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
 #baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
-```
-
-<div style="margin-bottom:50px;"></div>
-
-We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
-
-```{r}
-##########################################################################################
-source(paste(baseWorkspace, '/sequencing20200714_a673ScrnaseqAynaud/userDefinedFunctions.R', sep = ''))
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -48,7 +40,7 @@ First I need to read the count data table. After we read the data in, lets resha
 
 ```{r, message = FALSE, warning = FALSE}
 ##########################################################################################
-rna = read_tsv(paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/GSE130019_a673.count.table.txt', sep = ''), skip = 1) %>%
+rna = read_tsv(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/GSE130019_a673.count.table.txt', sep = ''), skip = 1) %>%
   mutate(ensg = X1, symbol = type) %>%
   dplyr::select(ensg, symbol, d7:d0_Xeno_105) %>%
   pivot_longer(cols = d7:d0_Xeno_105, names_to = 'annotation', values_to = 'counts') %>%
@@ -82,7 +74,7 @@ OK looks good. Save the data in case we want to use it later.
 
 ```{r}
 ##########################################################################################
-saveRDS(rna, paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/dataset_scRNAseqProcessedA673Only.rds', sep = ''))
+saveRDS(rna, paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/dataset_scRNAseqProcessedA673Only.rds', sep = ''))
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -91,8 +83,8 @@ Make plots for different genes.
 
 ```{r}
 ##########################################################################################
-rna = readRDS(paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/dataset_scRNAseqProcessedA673Only.rds', sep = ''))
-geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3','ATF4','HDAC11','LCN2','TFRC','SLC40A1','STEAP3','STEAP4','ATP11C','ENPP1','CENPC','CENPA','DLG2')
+rna = readRDS(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/dataset_scRNAseqProcessedA673Only.rds', sep = ''))
+geneSet = c('PRKCB','STEAP1','STEAP2','IL1RAP','DLG2')
 for (i in 1:length(geneSet)){
   goi = filter(rna, symbol == geneSet[i])
   ggplot(goi, aes(day, log10(counts), color = day)) +
@@ -103,7 +95,7 @@ for (i in 1:length(geneSet)){
     geom_vline(xintercept = 7.5, linetype = 'dashed') +
     theme_classic() +
     theme(legend.position = 'none', axis.text.x = element_text(angle = 45, hjust = 1))
-  ggsave(paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/scatterplot_',geneSet[i],'scRnaSeqA673Xeno.pdf', sep = ''),
+  ggsave(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/scatterplot_',geneSet[i],'scRnaSeqA673Xeno.pdf', sep = ''),
        height = 4, width = 4, useDingbats = FALSE)
 }
 ```
@@ -114,7 +106,7 @@ Add MSC data.
 
 ```{r, message = FALSE, warning = FALSE}
 ##########################################################################################
-msc = read_tsv(paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/GSE130020_msc.count.table.txt', sep = ''), skip = 1) %>%
+msc = read_tsv(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/GSE130020_msc.count.table.txt', sep = ''), skip = 1) %>%
   mutate(ensg = X1, symbol = type) %>%
   dplyr::select(ensg, symbol, `MSC-7BJ`:`MSC-15FL_47`) %>%
   pivot_longer(cols = `MSC-7BJ`:`MSC-15FL_47`, names_to = 'annotation', values_to = 'counts') %>%
@@ -131,8 +123,9 @@ Make the plots again.
 
 ```{r}
 ##########################################################################################
-totalSet = rbind(rna, msc)
-geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3','ATF4','HDAC11','LCN2','TFRC','SLC40A1','STEAP3','STEAP4','ATP11C','ENPP1','CENPC','CENPA','DLG2')
+totalSet = rbind(rna, msc) %>%
+  mutate(day = factor(day, levels = c('d7','d7+2','d7+3','d7+4','d7+7','d7+10','d7+15','d0_Xeno','d7_Xeno','MSC-15FL','MSC-7BJ')))
+geneSet = c('PRKCB','STEAP1','STEAP2','IL1RAP','DLG2')
 for (i in 1:length(geneSet)){
   goi = filter(totalSet, symbol == geneSet[i])
   ggplot(goi, aes(day, log10(counts), color = day)) +
@@ -143,15 +136,17 @@ for (i in 1:length(geneSet)){
     geom_vline(xintercept = c(7.5,9.5), linetype = 'dashed') +
     theme_classic() +
     theme(legend.position = 'none', axis.text.x = element_text(angle = 45, hjust = 1))
-  ggsave(paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/scatterplot_',geneSet[i],'scRnaSeqA673XenoMsc.pdf', sep = ''),
+  ggsave(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/scatterplot_',geneSet[i],'scRnaSeqA673XenoMsc.pdf', sep = ''),
        height = 4, width = 4, useDingbats = FALSE)
 }
 ```
 
+<div style="margin-bottom:50px;"></div>
 
 ## Session info
 
 ```{r}
+##########################################################################################
 sessionInfo()
 ```
 

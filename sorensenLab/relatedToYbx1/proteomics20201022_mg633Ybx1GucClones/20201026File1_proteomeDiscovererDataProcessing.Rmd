@@ -17,7 +17,7 @@ library('ggplot2')
 library('RColorBrewer')
 library('vroom')
 library('DEqMS')
-library('M3C')
+library('pheatmap')
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -117,8 +117,9 @@ Take a quick look at YB-3 abundance, as well as some others.
 
 ```{r}
 ##########################################################################################
-geneSet = c('YBX1','YBX3','CDH2','NUP210','STK26','TPD52','OAS1')
+geneSet = c('YBX1','YBX3','CDH2','NUP210','STK26','TPD52','PSPC1','CCN2')
 for (i in 1:length(geneSet)){
+  print(i)
   goi = pro %>%
     filter(grepl(paste('^',geneSet[i],'$', sep = ''), gene)) %>%
     pivot_longer(cols = parent:guc2, names_to = 'clone', values_to = 'expression') %>%
@@ -151,8 +152,8 @@ proScaled$msd = apply(proScaled[,4:17], 1, function(x)
 ##
 goiSlope = vector()
 for(i in 1:nrow(pro)){
-  goi = proInput[i,'accession']
-  goiData = proInput %>%
+  goi = proScaled[i,'accession']
+  goiData = proScaled %>%
     filter(accession == goi$accession) %>%
     pivot_longer(cols = parent:guc2, names_to = 'clone', values_to = 'expression') %>%
     mutate(clone = factor(clone, levels = c('parent','guc5','guc24','guc3','guc9','guc22','guc14','guc16','guc7','guc19','guc21','guc8','guc2','guc6','guc20'))) %>%
@@ -178,19 +179,120 @@ ggplot(proScaled, aes(slope, -log10(msd)))+
 ggsave(paste(baseRepository, '/proteomics20201022_mg633Ybx1GucClones/scatter_msdLinearModelYbx1.pdf', sep = ''),
          height = 4, width = 4, useDingbats = FALSE)
 ```
-##
 
+<div style="margin-bottom:50px;"></div>
 
-
+Make a heatmap to just look at genes with high global variance.
 
 ```{r}
+##########################################################################################
 pro$cloneVariance = apply(pro[,1:15], 1, function(x) var(x, na.rm = TRUE))
 proSort = pro %>%
   arrange(-cloneVariance) %>%
   filter(Freq > 1)
 
-pheatmap(proSort[1:100,1:15], labels_row = proSort$gene, fontsize_row = 5)
+pheatmap(proSort[1:500,1:15], labels_row = proSort$gene, fontsize_row = 5)
 ```
+
+<div style="margin-bottom:50px;"></div>
+
+This is not super useful, so maybe it is better if we use specific gene sets. I am interested in cell cycle because these cells seem to have a defect here.
+
+```{r}
+##########################################################################################
+geneSet = read_tsv(paste(generalDatasets, '/geneSets/hallmarkG2mCheckpoint.txt', sep = ''), skip = 1)
+colnames(geneSet) = 'gene'
+proGeneSet = pro[,c(1:15,17)] %>%
+  filter(gene %in% geneSet$gene)
+proGeneSet[,2:15] = apply(proGeneSet[,2:15], 2, function(x) x - proGeneSet$parent)
+##
+pheatmap(proGeneSet[,c(2,4,6,9:15)],
+         color = colorRampPalette(rev(brewer.pal(8, name = "RdYlBu")))(50),
+         labels_row = proGeneSet$gene, 
+         fontsize_row = 2,
+         cellwidth = 5,
+         filename = paste(baseRepository, '/proteomics20201022_mg633Ybx1GucClones/heatmap_hallmarkCellCycle.pdf', sep = ''),
+         height = 4, width = 4)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Same thing, but for TP53 targets.
+
+```{r}
+##########################################################################################
+geneSet = read_tsv(paste(generalDatasets, '/geneSets/hallmarkTp53Pathway.txt', sep = ''), skip = 1)
+colnames(geneSet) = 'gene'
+proGeneSet = pro[,c(1:15,17)] %>%
+  filter(gene %in% geneSet$gene)
+proGeneSet[,2:15] = apply(proGeneSet[,2:15], 2, function(x) x - proGeneSet$parent)
+##
+pheatmap(proGeneSet[,c(2,4,6,9:15)],
+         color = colorRampPalette(rev(brewer.pal(8, name = "RdYlBu")))(50),
+         labels_row = proGeneSet$gene, 
+         fontsize_row = 2,
+         cellwidth = 5,
+         filename = paste(baseRepository, '/proteomics20201022_mg633Ybx1GucClones/heatmap_hallmarkTp53Pathway.pdf', sep = ''),
+         height = 4, width = 4)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Same thing, but for E2F1 targets.
+
+```{r}
+##########################################################################################
+geneSet = read_tsv(paste(generalDatasets, '/geneSets/hallmakrE2fTarget.txt', sep = ''), skip = 1)
+colnames(geneSet) = 'gene'
+proGeneSet = pro[,c(1:15,17)] %>%
+  filter(gene %in% geneSet$gene)
+proGeneSet[,2:15] = apply(proGeneSet[,2:15], 2, function(x) x - proGeneSet$parent)
+##
+pheatmap(proGeneSet[,c(2,4,6,9:15)],
+         color = colorRampPalette(rev(brewer.pal(8, name = "RdYlBu")))(50),
+         labels_row = proGeneSet$gene, 
+         fontsize_row = 2,
+         cellwidth = 5,
+         filename = paste(baseRepository, '/proteomics20201022_mg633Ybx1GucClones/heatmap_hallmarkE2fTarget.pdf', sep = ''),
+         height = 4, width = 4)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Same thing, but for TGFBeta targets.
+
+```{r}
+##########################################################################################
+geneSet = read_tsv(paste(generalDatasets, '/geneSets/hallmarkTgfBetaSignaling.txt', sep = ''), skip = 1)
+colnames(geneSet) = 'gene'
+proGeneSet = pro[,c(1:15,17)] %>%
+  filter(gene %in% geneSet$gene)
+proGeneSet[,2:15] = apply(proGeneSet[,2:15], 2, function(x) x - proGeneSet$parent)
+##
+pheatmap(proGeneSet[,c(2,4,6,9:15)],
+         color = colorRampPalette(rev(brewer.pal(8, name = "RdYlBu")))(50),
+         labels_row = proGeneSet$gene, 
+         fontsize_row = 2,
+         cellwidth = 5,
+         filename = paste(baseRepository, '/proteomics20201022_mg633Ybx1GucClones/heatmap_hallmarkTgfBetaSignaling.pdf', sep = ''),
+         height = 4, width = 4)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

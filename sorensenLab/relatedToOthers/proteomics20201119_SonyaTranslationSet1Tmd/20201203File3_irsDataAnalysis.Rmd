@@ -1,0 +1,199 @@
+---
+title: "Analysis of Sonya translatome data with IRS"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to look at the translatome of cells from Sonya. All samples were run with targeted mass difference.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('limma')
+library('edgeR')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the protein data sets. There are two sets in total for this experiment.
+
+```{r}
+##########################################################################################
+proteinSet1 = readRDS(paste(baseRepository, '/proteomics20201119_SonyaTranslationSet1Tmd/dataset_proteinSetDataset1.rds', sep = ''))
+proteinSet2 = readRDS(paste(baseRepository, '/proteomics20201119_SonyaTranslationSet2Tmd/dataset_proteinSetDataset2.rds', sep = ''))
+proteinSet3 = readRDS(paste(baseRepository, '/proteomics20201119_SonyaTranslationSet3Tmd/dataset_proteinSetDataset3.rds', sep = ''))
+proteinSet = proteinSet1 %>%
+  left_join(proteinSet2) %>%
+  left_join(proteinSet3)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Start with the sum data and work through the IRS analysis. 
+
+```{r}
+##########################################################################################
+rawData = proteinSet[,c(which(grepl('_sum', colnames(proteinSet))))]
+rawData = rawData[,c(7,9,16,18,25,27,1:6,10:15,19:24)]
+rawData[rawData == 0] = NA
+rawData$accession = proteinSet$accession
+rawData = subset(rawData, rowSums(is.na(rawData[,7:12])) < 6 & rowSums(is.na(rawData[,13:18])) < 6 & rowSums(is.na(rawData[,19:24])) < 6)
+rawData[is.na(rawData)] = 1
+##
+boxplot(log2(rawData[,7:24]), col = rep(c('red', 'green', 'blue'), each = 6), 
+        notch = TRUE, main = 'RAW data: 0h (red), 3h (green), 24h (blue)',
+        xlab = 'TMT Samples', ylab = 'log2 of Intensity')
+##
+plotDensities(log2(rawData[,7:24]), col = rep(c('red', 'green', 'blue'), each = 6), 
+              main = 'Raw data')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+The data actually look pretty tight already. Check for column totals.
+
+```{r}
+##########################################################################################
+format(round(colSums(rawData[,5:24], na.rm = TRUE), digits = 0), big.mark = ",")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Start off with the sample loading 'SL' normalization.
+
+```{r}
+##########################################################################################
+# separate the TMT data by experiment
+# we do not need to do this for the normalization factor calculation here,
+# but we will need these data frames for the IRS step below.
+exp1Raw = rawData[c(7:12)]
+exp2Raw = rawData[c(13:18)]
+exp3Raw = rawData[c(19:24)]
+
+# first basic normalization is to adjust each TMT experiment to equal signal per channel
+# figure out the global scaling value
+target = mean(c(colSums(exp1Raw, na.rm = TRUE), colSums(exp2Raw, na.rm = TRUE), colSums(exp3Raw, na.rm = TRUE)))
+
+# do the sample loading normalization before the IRS normalization
+# there is a different correction factor for each column
+normFacs = target / colSums(exp1Raw, na.rm = TRUE)
+exp1Sl = sweep(exp1Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp2Raw, na.rm = TRUE)
+exp2Sl = sweep(exp2Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp3Raw, na.rm = TRUE)
+exp3Sl = sweep(exp3Raw, 2, normFacs, FUN = "*")
+
+# make a pre-IRS data frame after sample loading normalizations
+dataSl = cbind(exp1Sl, exp2Sl, exp3Sl)
+
+# see what the SL normalized data look like
+boxplot(log2(dataSl), col = rep(c('red', 'green', 'blue'), each = 6), 
+        notch = TRUE, main = "Sample Loading (SL) normalized data: \n0h (red), 3h (green), 24h (blue)",
+        xlab = 'TMT Sample', ylab = 'log2 of Intensity')
+
+# can also look at density plots (like a distribution histogram)
+plotDensities(log2(dataSl), col = rep(c('red', 'green', 'blue'), each = 6), main = "SL normalization")
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+They look even tighter now. I think we can move onto IRS normalization now. 
+
+```{r}
+##########################################################################################
+# make new data frame with row sums from each frame
+irs = tibble(rowSums(rawData[,1:2], na.rm = TRUE), rowSums(rawData[,3:4], na.rm = TRUE), rowSums(rawData[,5:6], na.rm = TRUE))
+colnames(irs) = c('sum1','sum2','sum3')
+
+# get the geometric average intensity for each protein
+irs$average = apply(irs, 1, function(x) exp(mean(log(x),na.rm = TRUE)))
+
+# compute the scaling factor vectors
+irs$fac1 = irs$average / irs$sum1
+irs$fac2 = irs$average / irs$sum2
+irs$fac3 = irs$average / irs$sum3
+
+# make new data frame with IRS normalized data
+dataIrs = exp1Sl * irs$fac1
+dataIrs = cbind(dataIrs, exp2Sl * irs$fac2)
+dataIrs = cbind(dataIrs, exp3Sl * irs$fac3)
+    
+# see what the IRS data look like
+boxplot(log2(dataIrs), col = rep(c('red', 'green', 'blue'), each = 6), 
+        main = "Internal Reference Scaling (IRS) normalized data: \n0h (red), 3h (green), 24h (blue)",
+        xlab = 'TMT Sample', ylab = 'log2 of Intensity', notch = TRUE)
+
+# can also look at density plots (like a distribution histogram)    
+plotDensities(log2(dataIrs), col = rep(c('red', 'green', 'blue'), each = 6), main = "IRS data")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now check the column totals again.
+
+```{r}
+##########################################################################################
+format(round(colSums(dataIrs, na.rm = TRUE), digits = 0), big.mark = ",")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Take a quick look to see how it is without TMM.
+
+```{r}
+##########################################################################################
+# see how things cluster after IRS 
+colVec = c(rep('red',6),rep('blue',6),rep('green',6))
+plotMDS(log2(dataIrs), col = colVec, main = "IRS clusters group by condition")
+```
+
+
+
+<div style="margin-bottom:50px;"></div>
+
+While this may look like they have separated by batch (they have), the batches are not technically the same, so this is not surprising. The batches are different oxygen conditions. 
+
+Recombine the data with the accessions and look at a few target proteins.
+
+```{r}
+##########################################################################################
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20201119_SonyaTranslationSet1Tmd/uniprotHumanNov2020.fasta.annotated.rds', sep = ''))
+finalIrsData = as_tibble(cbind(rawData$accession, dataIrs)) %>%
+  rename(accession = `rawData$accession`) %>%
+  left_join(proteinAnnotation)
+finalIrsData[grepl('HIF1A', finalIrsData$gene),]
+##save data
+saveRDS(finalIrsData, paste(baseRepository, '/proteomics20201119_SonyaTranslationSet1Tmd/dataset_proteinSetIsribIrsNormalized.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```

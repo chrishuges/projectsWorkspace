@@ -1,0 +1,87 @@
+---
+title: "Analysis of GTEx data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of rna-seq data from GTEx.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('vroom')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the protein annotation details.
+
+```{r}
+##########################################################################################
+sampleInfo = read_tsv(paste(generalDatasets, '/gtexVersion8/GTEx_Analysis_v8_Annotations_SampleAttributesDS.txt', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read in the rna data and reshape it. This is a huge dataset, so you just have to take your gene of interest individually.
+
+```{r}
+##########################################################################################
+rna = vroom(paste(generalDatasets, '/gtexVersion8/GTEx_Analysis_2017-06-05_v8_RNASeQCv1.1.9_gene_tpm.gct', sep = ''), skip = 2, delim = '\t') %>%
+  filter(grepl('DLG2$', Description)) %>%
+  pivot_longer(cols = `GTEX-1117F-0226-SM-5GZZ7`:`GTEX-ZZPU-2726-SM-5NQ8O`, names_to = 'SAMPID', values_to = 'readCount') %>%
+  filter(readCount >= 1) %>%
+  mutate(log2Tpm = log2(readCount)) %>%
+  left_join(sampleInfo)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot for DLG2 across the SMTS column.
+
+```{r}
+##########################################################################################
+ggplot(rna, aes(x = reorder(SMTS, log2Tpm, median, na.rm = TRUE), log2Tpm)) +
+  geom_boxplot(size = 0.5, outlier.shape = NA) +
+  labs(x = 'Tissue Specification in GTEx', y = 'log2(Transcripts per million)', title = 'DLG2 RNA expression in GTEx') +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+ggsave(paste(baseRepository, '/database20201203_dlg2RnaExpressionGtex/boxplot_dlg2RnaExpressionSmtsGtex.pdf', sep = ''),
+       height = 4, width = 6, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```
+
+
+
+

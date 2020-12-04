@@ -22,12 +22,27 @@ library('RColorBrewer')
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
 
 ```{r}
+##########################################################################################
 #generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
 #baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
 #baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
 generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
 baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
 baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Some functions.
+
+```{r}
+##########################################################################################
+lower_ci <- function(mean, se, n, conf_level = 0.95){
+  lower_ci <- mean - qt(1 - ((1 - conf_level) / 2), n - 1) * se
+}
+upper_ci <- function(mean, se, n, conf_level = 0.95){
+  upper_ci <- mean + qt(1 - ((1 - conf_level) / 2), n - 1) * se
+}
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -175,6 +190,68 @@ Calculate some p-values.
 t.test(difference ~ cells, data = mgData[!grepl('ko6',mgData$cells),])
 t.test(difference ~ cells, data = mgData[!grepl('ko4',mgData$cells),])
 ```
+
+<div style="margin-bottom:50px;"></div>
+
+Can also just plot the regular growth.
+
+```{r}
+##########################################################################################
+parental = incucyteData[[1]] %>%
+  dplyr::select(Elapsed, A1:H12) %>%
+  pivot_longer(cols = A1:H12, names_to = 'well', values_to = 'confluence') %>%
+  mutate(treatmentGroup = factor(sub('[A-H](.*)', '\\1', well), levels = seq(1,12,1))) %>%
+  mutate(cellLine = 'WT')
+##
+guc4 = incucyteData[[1]] %>%
+  dplyr::select(Elapsed, A1:H12) %>%
+  pivot_longer(cols = A1:H12, names_to = 'well', values_to = 'confluence') %>%
+  mutate(treatmentGroup = factor(sub('[A-H](.*)', '\\1', well), levels = seq(1,12,1))) %>%
+  mutate(cellLine = 'GUC4')
+##
+guc6 = incucyteData[[1]] %>%
+  dplyr::select(Elapsed, A1:H12) %>%
+  pivot_longer(cols = A1:H12, names_to = 'well', values_to = 'confluence') %>%
+  mutate(treatmentGroup = factor(sub('[A-H](.*)', '\\1', well), levels = seq(1,12,1))) %>%
+  mutate(cellLine = 'GUC6')
+##
+plateDataSummary = rbind(parental, guc4, guc6) %>%
+  mutate(cellLine = factor(cellLine, levels = c('WT','GUC4','GUC6'))) %>%
+  group_by(Elapsed, treatmentGroup, cellLine) %>%
+  summarise(avgConf = mean(confluence, na.rm = TRUE), sdConf = sd(confluence, na.rm = TRUE), count = n()) %>%
+  mutate(se = sdConf / sqrt(count), lowerCI = lower_ci(avgConf, se, count), upperCI = upper_ci(avgConf, se, count))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now plot the regular growth data.
+
+```{r}
+##########################################################################################
+ggplot(plateDataSummary, aes(Elapsed, avgConf, color = treatmentGroup, group = treatmentGroup)) +
+  geom_line(size = 1) +
+  geom_point(size = 1) +
+  geom_ribbon(aes(ymin = plateDataSummary$lowerCI, ymax = plateDataSummary$upperCI), linetype = 2, alpha = 0.1) +
+  scale_color_manual(values = colorRampPalette(c(brewer.pal(8,'Greys')[4], brewer.pal(8,'RdBu')[1]))(12)) +
+  labs(x = 'Elapsed time (hours)', y = 'Percent confluence', title = 'YBX1 GUC clone groth - tBHP') +
+  facet_wrap(~cellLine, nrow = 1, ncol = 3) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/incucyte20200629_mg633CrisprYbx1GucClonesTbhp/line_gucCloneViabilityCurves.pdf', sep = ''),
+       height = 4, width = 8, useDingbats = FALSE)
+```
+
+
+
+
+
+  pivot_wider(names_from = Elapsed, values_from = confluence) %>%
+  mutate(difference = `72` - `0`) %>%
+  mutate(cells = 'parental') %>%
+  dplyr::select(cells, well, difference)
+##
+
+
 
 ## Session info
 

@@ -11,19 +11,24 @@ After looking at the osteosarcoma data, I think it makes more sense to instead t
 
 These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
 
-```{r, message = FALSE, echo = FALSE}
+```{r, message = FALSE, warning = FALSE}
 library('tidyverse')
 library('ggplot2')
 library('RColorBrewer')
 library('vroom')
+library('ggrepel')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
 
 ```{r}
-generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
-baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
-baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+##########################################################################################
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
 ```
 
 We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
@@ -114,11 +119,14 @@ Alright, now we have all these data just in case we want them later. Now we can 
 
 ```{r}
 ##########################################################################################
+depSetAnnotated = readRDS(paste(baseRepository, '/database20200604_depmapEwing/dataset_ewingRnaExprsCrisprDep.rds', sep = ''))
 depSetAnnotated$pColors = ifelse(depSetAnnotated$medDep <= -1 & depSetAnnotated$medExprs >= 4,
                                  brewer.pal(8,'Spectral')[1], brewer.pal(8,'Greys')[4])
+depSetAnnotated$pText = ifelse(grepl('YBX1',depSetAnnotated$symbol), depSetAnnotated$symbol, '')
 table(depSetAnnotated$pColors)
 ggplot(depSetAnnotated, aes(medExprs, medDep)) +
   geom_point(size = 1, color = depSetAnnotated$pColors) +
+  geom_text_repel(label = depSetAnnotated$pText, nudge_y = -2) +
   labs(x = 'log2(TPM + 1)', y = 'CERES Score', title = 'Ewing sarcoma gene dependency') +
   scale_x_continuous(limits = c(0,14.5), breaks = seq(0,20,2)) +
   scale_y_continuous(limits = c(-2.5,1), breaks = seq(-3,3,1)) +

@@ -38,3 +38,60 @@ CGGATCGTATGGATCCACCTGAGGATCACCACTTT
 
 Anneal at +64C in PCR with Q5. Digest with the RE from the above table and anneal into vectors.
 
+We can also try in another vector, pLVX-Puro. Here we need to use XhoI on the 5' end, so we need a different primer.
+
+moveInsertPiggyXhoI
+
+```
+CAGCTACCTCGAGCAGAACACAGGCAAGTTTGTAC
+```
+
+But, we don't actually know where this vector was cut, so this is not so useful. Something we just discovered is that the new SBI vector doesn't include a poly-A sequence after the MCS, so we need to go back and add one without destroying the MCS.
+
+I will target the BGH polyA sequence because it is strong and we have it in the original piggyBAC vector, so we can easily clone it out. 
+
+BGH polyA
+
+```
+ctgtgccttctagttgccagccatctgttgtttgcccctcccccgtgccttccttgaccctggaaggtgccactcccactgtcctttcctaataaaatgaggaaattgcatcgcattgtctgagtaggtgtcattctattctggggggtggggtggggcaggacagcaagggggaggattgggaagacaatagcaggcatgctggggatgcggtgggctctatgg
+```
+
+bghBamHI_fwd
+
+```
+attcgacaGGATCCgcctcgactgtgccttctagttgc
+```
+
+bghNotI_rev
+
+```
+gatgcggtgggctctatggctcGCGGCCGCtctaacga
+tcgttagaGCGGCCGCgagccatagagcccaccgcatc
+```
+
+combined insert
+
+```
+GGATCCgcctcgactgtgccttctagttgccagccatctgttgtttgcccctcccccgtgccttccttgaccctggaaggtgccactcccactgtcctttcctaataaaatgaggaaattgcatcgcattgtctgagtaggtgtcattctattctggggggtggggtggggcaggacagcaagggggaggattgggaagacaatagcaggcatgctggggatgcggtgggctctatggctcGCGGCCGC
+```
+
+NEB says to anneal at 72C. I think around 64C should be ok. 
+
+Lastly, we will make an mCherry version for later use.
+
+mCherryNheI_fwd
+
+```
+ACCATCgctagcaccATGgtgagcaagggcgagga
+```
+
+mCherryBstBi_rev
+
+```
+tagagggcccgtttaaacccgcttcgaaTTACCAGA
+TCTGGTAAttcgaagcgggtttaaacgggccctcta
+```
+
+
+
+
