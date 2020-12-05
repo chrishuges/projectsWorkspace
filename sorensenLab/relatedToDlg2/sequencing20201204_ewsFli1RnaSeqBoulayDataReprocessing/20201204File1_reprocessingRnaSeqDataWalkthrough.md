@@ -99,7 +99,7 @@ gunzip *.gz
 Prepare to do the alignment by creating a shell script to run it for all of the file pairs. This script is called `bbmapAlignmentHuman.sh`.
 
 ```shell
-#!/bin/bash/
+#!/bin/bash
 rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201709BoulayCellPmid28844694/"
 bbmapLocation="/projects/ptx_analysis/chughes/software/bbmap_v38_87/bbmap.sh"
 referenceLocation="/projects/ptx_analysis/chughes/databases/HomoSapiensEnsemblGRCh38_rel102/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
@@ -115,7 +115,7 @@ done
 Now we can run [featurecounts](http://bioinf.wehi.edu.au/featureCounts/) on the output. The featurecounts tool is stored in `/projects/ptx_analysis/chughes/software/subread-2.0.1-Linux-x86_64/bin/`. I will execute this using a script called `featureCountsProcessing.sh`. I checked the gtf file and it is in the format required by featurecounts.
 
 ```shell
-#!/bin/bash/
+#!/bin/bash
 rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201709BoulayCellPmid28844694/"
 featureCountsLocation="/projects/ptx_analysis/chughes/software/subread-2.0.1-Linux-x86_64/bin/featureCounts"
 gtfLocation="/projects/ptx_analysis/chughes/databases/HomoSapiensEnsemblGRCh38_rel102/Homo_sapiens.GRCh38.102.gtf"
