@@ -125,7 +125,7 @@ Make the plots again.
 ##########################################################################################
 totalSet = rbind(rna, msc) %>%
   mutate(day = factor(day, levels = c('d7','d7+2','d7+3','d7+4','d7+7','d7+10','d7+15','d0_Xeno','d7_Xeno','MSC-15FL','MSC-7BJ')))
-geneSet = c('PRKCB','STEAP1','STEAP2','IL1RAP','DLG2')
+geneSet = c('PRKCB','STEAP1','STEAP2','IL1RAP','DLG2','SLC7A11')
 for (i in 1:length(geneSet)){
   goi = filter(totalSet, symbol == geneSet[i])
   ggplot(goi, aes(day, log10(counts), color = day)) +

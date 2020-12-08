@@ -70,7 +70,7 @@ goi = rna %>%
   mutate(a673Fc = log2(A673.shEWSFLI1.RNAseq/A673.shGFP.RNAseq)) %>%
   mutate(SknmcFc = log2(SKNMC.shEWSFLI1.RNAseq/SKNMC.shGFP.RNAseq)) %>%
   filter(!is.na(a673Fc) & !is.na(SknmcFc) & !is.infinite(a673Fc) & !is.infinite(SknmcFc))
-targetGenes = c('DLG2','PRKCB')
+targetGenes = c('DLG2','PRKCB','SLC7A11')
 goi$pText = ifelse(goi$gene %in% targetGenes, goi$gene, '')
 goi$pColors = ifelse(goi$a673Fc <= -1 & goi$SknmcFc <= -1, brewer.pal(8,'RdBu')[8],
                               ifelse(goi$a673Fc >= 1 & goi$SknmcFc >= 1, brewer.pal(8,'RdBu')[1],
