@@ -59,7 +59,7 @@ Now plot the data for candidates of interest.
 
 ```{r}
 ##########################################################################################
-geneOfInterest = c('IL1RAP','CTH','DLG2','SLC7A11')
+geneOfInterest = c('IL1RAP','CTH','DLG2','SLC7A11','ATF4','STAG2')
 ##
 for (i in 1:length(geneOfInterest)){
   goiSet = allData %>%

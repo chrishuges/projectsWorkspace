@@ -70,7 +70,7 @@ goi = rna %>%
   mutate(a673Fc = log2(A673.shEWSFLI1.RNAseq/A673.shGFP.RNAseq)) %>%
   mutate(SknmcFc = log2(SKNMC.shEWSFLI1.RNAseq/SKNMC.shGFP.RNAseq)) %>%
   filter(!is.na(a673Fc) & !is.na(SknmcFc) & !is.infinite(a673Fc) & !is.infinite(SknmcFc))
-targetGenes = c('DLG2','PRKCB','SLC7A11')
+targetGenes = c('STAG2')
 goi$pText = ifelse(goi$gene %in% targetGenes, goi$gene, '')
 goi$pColors = ifelse(goi$a673Fc <= -1 & goi$SknmcFc <= -1, brewer.pal(8,'RdBu')[8],
                               ifelse(goi$a673Fc >= 1 & goi$SknmcFc >= 1, brewer.pal(8,'RdBu')[1],
@@ -79,13 +79,13 @@ goi$pColors = ifelse(goi$a673Fc <= -1 & goi$SknmcFc <= -1, brewer.pal(8,'RdBu')[
 ggplot(goi, aes(a673Fc, SknmcFc)) +
   geom_point(size = 1, color = goi$pColors, alpha = 0.5) +
   geom_text_repel(label = goi$pText) +
-  labs(x = 'log2(shEWS-FLI1 vs shGFP in A673)', y = 'log2(shEWS-FLI1 vs shGFP in SKNMC)', title = 'DLG2 expression in Ewing sarcoma') +
+  labs(x = 'log2(shEWS-FLI1 vs shGFP in A673)', y = 'log2(shEWS-FLI1 vs shGFP in SKNMC)', title = 'ATF4 expression in Ewing sarcoma') +
   geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
   geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
   scale_y_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
   scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
   theme_classic()
-ggsave(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/scatter_dlg2RnaExpressionShEwsfli1.pdf', sep = ''),
+ggsave(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/scatter_stag2RnaExpressionShEwsfli1.pdf', sep = ''),
        height = 4, width = 4, useDingbats = FALSE)
 ```
 
@@ -96,16 +96,16 @@ Now we can show the MSC data.
 ```{r}
 ##########################################################################################
 goi = rna %>%
-  filter(grepl('^DLG2$', gene)) %>%
+  filter(grepl('^STAG2$', gene)) %>%
   pivot_longer(cols = MSC1.control.RNAseq:MSC5b.shBRG1.EWSFLI1.RNAseq, names_to = 'sample', values_to = 'readCounts') %>%
   mutate(condition = sub('(.*)\\.RNAseq$', '\\1', sample))
 ##
 ggplot(goi, aes(condition, readCounts)) +
   geom_col() +
-  labs(x = 'Cell type, condition', y = 'Raw RNAseq read counts', title = 'DLG2 expression in Ewing sarcoma') +
+  labs(x = 'Cell type, condition', y = 'Raw RNAseq read counts', title = 'STAG2 expression in Ewing sarcoma') +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-ggsave(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/barplot_dlg2RnaExpressionAllConditions.pdf', sep = ''),
+ggsave(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/barplot_stag2RnaExpressionAllConditions.pdf', sep = ''),
        height = 4, width = 6, useDingbats = FALSE)
 ```
 
@@ -116,7 +116,7 @@ This is kind of hard to look at, so let's try to reshape it a bit and plot ratio
 ```{r}
 ##########################################################################################
 goi = rna %>%
-  filter(grepl('^DLG2$', gene)) %>%
+  filter(grepl('^STAG2$', gene)) %>%
   mutate(mscEwsFli1.1 = MSC1.EWSFLI1.RNAseq / MSC1.control.RNAseq) %>%
   mutate(mscEwsFli1.2 = MSC1b.EWSFLI1.RNAseq / MSC1b.control.RNAseq) %>%
   mutate(mscEwsFli1.3 = MSC2.EWSFLI1.RNAseq / MSC2.control.RNAseq) %>%
@@ -149,10 +149,10 @@ ggplot(goi, aes(sampleName, log2Relative_mean)) +
   geom_point() +
   geom_bar(stat = 'identity', alpha = 0.25) +
   geom_errorbar(aes(ymin=log2Relative_mean-log2Relative_sd, ymax=log2Relative_mean+log2Relative_sd), width=.2, position=position_dodge(.9)) + 
-  labs(x = 'Experimental condition', y = 'log2(RNA fold change to control)', title = 'DLG2 expression in modified MSCs') +
+  labs(x = 'Experimental condition', y = 'log2(RNA fold change to control)', title = 'STAG2 expression in modified MSCs') +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-ggsave(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/barplot_dlg2RnaExpressionMscOnlyConditions.pdf', sep = ''),
+ggsave(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/barplot_stag2RnaExpressionMscOnlyConditions.pdf', sep = ''),
        height = 4, width = 4, useDingbats = FALSE)
 ```
 
