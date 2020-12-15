@@ -1,0 +1,86 @@
+---
+title: "Incucyte analysis of GUC clone migration"
+output:
+  html_notebook:
+    code_folding: none
+  html_document:
+    df_print: paged
+---
+
+This document contains code related to the analysis of incucyte data from MG63.3 YBX1 GUC6 cells in a scratch-wound assay. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First we can grab the data from the instrument.
+
+```{r}
+##########################################################################################
+incucyteData = read_tsv(paste(baseRepository, '/incucyte20200717_mg633Ybx1Guc46ScratchWound/ch_20200717_Mg633Ybx1Guc46_scratchWound_relativeWoundDensityNoGroups.txt', sep = ''), skip = 7) %>%
+  dplyr::select(Elapsed, `mg633Parental (1) 10K cells / well (A1)`:`mg633Guc6 (1) 10K cells / well (H12)`) %>%
+  filter(Elapsed == 0 | Elapsed == 48) %>%
+  pivot_longer(cols = `mg633Parental (1) 10K cells / well (A1)`:`mg633Guc6 (1) 10K cells / well (H12)`, names_to = 'well', values_to = 'migration') %>%
+  pivot_wider(names_from = Elapsed, values_from = migration) %>%
+  mutate(difference = `48` - `0`) %>%
+  mutate(cells = sub('mg633(.*) \\([0-9]+\\) 10K cells \\/ well \\([A-H][0-9]+\\)', '\\1', well))
+##
+incucyteData$cells = factor(incucyteData$cells, levels = c('Parental', 'Guc4','Guc6'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot displaying the difference in confluence after 72-hours between the individual cell lines.
+
+```{r}
+##########################################################################################
+ggplot(incucyteData, aes(cells, difference, colour = cells)) +
+  geom_point(size = 4, position = position_jitterdodge(jitter.width = 0.50), alpha = 0.5) +
+  labs(x = 'Cell line', y = 'Wound confluence difference in 48h', title = 'YBX1 GUC clone migration') +
+  scale_y_continuous(limits = c(0, 120), breaks = seq(0,120,10)) +
+  scale_colour_manual(values = c(brewer.pal(8,'Greys')[4], rep(brewer.pal(8,'RdBu')[1],2))) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/incucyte20200717_mg633Ybx1Guc46ScratchWound/scatter_mg633Ybx1GucCloneMigration.pdf', sep = ''),
+       height = 4,
+       width = 3,
+       useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Calculate some p-values.
+
+```{r}
+##########################################################################################
+t.test(difference ~ cells, data = incucyteData[!grepl('Guc6',incucyteData$cells),])
+t.test(difference ~ cells, data = incucyteData[!grepl('Guc4',incucyteData$cells),])
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```

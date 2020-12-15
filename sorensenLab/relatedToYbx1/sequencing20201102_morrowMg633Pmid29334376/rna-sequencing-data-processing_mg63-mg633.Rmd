@@ -1,0 +1,230 @@
+---
+title: "Processing the RNA-seq data from the Morrow paper for MG63"
+output: html_notebook
+---
+
+```{r, message=FALSE, warning=FALSE}
+#Load in the libraries
+###################################################################################################################################################################
+library(tximeta)
+library(dplyr)
+library(ggplot2)
+library(DESeq2)
+library(hexbin)
+library(RColorBrewer)
+library(pheatmap)
+library(PoiClaClu)
+library(apeglm)
+library(genefilter)
+library("AnnotationDbi")
+library("org.Hs.eg.db")
+
+######select the directory depending on your location
+base_dir = '/Users/chughes/Documents/chughes_bitbucket/'
+#base_dir = '/projects/ptx_analysis/chughes/projects-current/'
+```
+
+First read in the annotation table.
+
+```{r}
+sample_anno = read.table(paste(base_dir, 'projects-current/sorensen_mg63/published-data/morrow_2018-NatureMedicine_PMID29334376/mg63-mg633-rna-seq_sequencing-annotation.csv',sep = ''), header = TRUE, sep = ',', stringsAsFactors = FALSE)
+```
+
+Get the quant files for each barcode.
+
+```{r}
+quant_locations = vector()
+for (i in 1:nrow(sample_anno)){
+  quant_locations[i] = paste(base_dir, 'projects-current/sorensen_mg63/published-data/morrow_2018-NatureMedicine_PMID29334376/', sample_anno[i,'barcode'], '_quant/quant.sf', sep = '')
+}
+sample_anno$files = file.path(quant_locations)
+sample_anno$names = sample_anno$sampleName
+file.exists(sample_anno$files)
+```
+
+Make a linked transcriptome.
+
+```{r}
+index_location = '/Users/chughes/Documents/chughes_bitbucket/databases/salmon/salmon-index_01Nov2019_Gencode-v32_human-transcriptome/'
+
+gtfPath = ("ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_32/gencode.v32.annotation.gtf.gz") 
+
+fasta_file = ("ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_32/gencode.v32.transcripts.fa.gz")
+
+######make the transcriptome
+makeLinkedTxome(indexDir = index_location, 
+                source = "Gencode", 
+                organism = "Homo sapiens", 
+                release = "32",
+                genome = "GRCh38",
+                fasta = fasta_file,
+                gtf = gtfPath,
+                write = FALSE)
+
+```
+
+Load the data into R using tximeta.
+
+```{r}
+mg63_data = tximeta(sample_anno)
+
+dim(mg63_data) #226608      9
+head(rownames(mg63_data))
+```
+
+Summarize the data to the gene level.
+
+```{r}
+mg63_gene = summarizeToGene(mg63_data)
+
+dim(mg63_gene) #60179     9
+```
+
+Play around with the data a bit.
+
+```{r}
+#take a look
+mg63_gene
+
+assayNames(mg63_gene)
+head(assay(mg63_gene), 3)
+colSums(assay(mg63_gene))
+rowRanges(mg63_gene)
+seqinfo(rowRanges(mg63_gene))
+colData(mg63_gene)
+```
+
+Now do some DESeq2 work.
+
+```{r}
+
+####might need to rework the meta-data
+####how many fragmens mapped, in millions
+round( colSums(assay(mg63_gene)) / 1e6, 1 )
+dds = DESeqDataSet(mg63_gene, design = ~ cell)
+nrow(dds) #60179
+
+##keep entries with at least 2 counts
+#keep = rowSums(counts(dds)) > 1
+# at least 3 samples with a count of 10 or higher
+keep <- rowSums(counts(dds) >= 10) >= 3
+
+dds = dds[keep,]
+nrow(dds) #15004
+
+
+
+```
+
+Look at some normalization, although for differential expression we should not use these.
+
+```{r}
+##vsn normalization
+vsd = vst(dds, blind = FALSE)
+head(assay(vsd), 3)
+
+
+#rlog normalization, good for sample sets with n<30
+rld = rlog(dds, blind = FALSE)
+head(assay(rld), 3)
+
+
+dds <- estimateSizeFactors(dds)
+
+df <- bind_rows(
+  as_data_frame(log2(counts(dds, normalized=TRUE)[, 1:2]+1)) %>%
+         mutate(transformation = "log2(x + 1)"),
+  as_data_frame(assay(vsd)[, 1:2]) %>% mutate(transformation = "vst"),
+  as_data_frame(assay(rld)[, 1:2]) %>% mutate(transformation = "rlog"))
+  
+colnames(df)[1:2] <- c("x", "y")  
+
+ggplot(df, aes(x = x, y = y)) + geom_hex(bins = 80) +
+  coord_fixed() + facet_grid( . ~ transformation)  
+```
+
+Sample distances.
+
+```{r}
+sampleDists = dist(t(assay(rld)))
+sampleDists
+
+sampleDistMatrix <- as.matrix( sampleDists )
+rownames(sampleDistMatrix) <- paste( rld$cell, sep = " - " )
+colnames(sampleDistMatrix) <- NULL
+colors <- colorRampPalette( rev(brewer.pal(9, "Blues")) )(255)
+pheatmap(sampleDistMatrix,
+         clustering_distance_rows = sampleDists,
+         clustering_distance_cols = sampleDists,
+         col = colors)
+
+
+poisd <- PoissonDistance(t(counts(dds)))
+samplePoisDistMatrix <- as.matrix( poisd$dd )
+rownames(samplePoisDistMatrix) <- paste(dds$cell, sep=" - " )
+colnames(samplePoisDistMatrix) <- NULL
+pheatmap(samplePoisDistMatrix,
+         clustering_distance_rows = poisd$dd,
+         clustering_distance_cols = poisd$dd,
+         col = colors)
+
+mdsPois <- as.data.frame(colData(dds)) %>%
+   cbind(cmdscale(samplePoisDistMatrix))
+ggplot(mdsPois, aes(x = `1`, y = `2`, color = cell, shape = cell)) +
+  geom_point(size = 3) + coord_fixed() + ggtitle("MDS with PoissonDistances")
+```
+
+Now for differential expression.
+
+```{r}
+dds <- DESeq(dds)
+res <- results(dds)
+res
+
+
+res = results(dds, contrast = c("cell", "mg63", "mg633"))
+mcols(res, use.names = TRUE)
+resLFC1 <- results(dds, lfcThreshold=1)
+table(resLFC1$padj < 0.1)
+sum(res$padj < 0.1, na.rm=TRUE)
+resSig <- subset(res, padj < 0.1)
+head(resSig[ order(resSig$log2FoldChange), ])
+head(resSig[ order(resSig$log2FoldChange, decreasing = TRUE), ])
+
+
+topGene <- rownames(res)[which.min(res$padj)]
+plotCounts(dds, gene = topGene, intgroup=c("cell"))
+
+resultsNames(dds)
+res <- lfcShrink(dds, coef="cell_mg633_vs_mg63", type="apeglm")
+plotMA(res, ylim = c(-5, 5))
+
+
+hist(res$pvalue[res$baseMean > 1], breaks = 0:20/20,
+     col = "grey50", border = "white")
+
+
+
+ens.str <- substr(rownames(res), 1, 15)
+res$symbol <- mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+res$entrez <- mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="ENTREZID",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+
+resOrdered <- res[order(res$pvalue),]
+head(resOrdered)
+write.table(resOrdered, paste(base_dir, 'projects-current/sorensen_mg63/published-data/morrow_2018-NatureMedicine_PMID29334376/Routput/proedata.txt',sep = ''), col.names = TRUE, row.names = TRUE, quote = FALSE, sep = '\t')
+```
+
+
+
+
+
+
+

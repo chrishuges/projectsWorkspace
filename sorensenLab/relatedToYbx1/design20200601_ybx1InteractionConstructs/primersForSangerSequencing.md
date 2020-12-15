@@ -4,6 +4,12 @@ This document contains information on primers to be used for sanger sequencing o
 
 ## Individual primers
 
+piggySangerFwd
+
+```
+GTGAGGCGTGCTTGTCAATG
+```
+
 piggyFwdRev_3xFLAG-eGFP
 
 ```

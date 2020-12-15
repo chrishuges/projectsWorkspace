@@ -1,0 +1,84 @@
+---
+title: "qPCR Analysis of MG63.3 Rescue Clones"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of qPCR data obtained for the GUC6 rescue clones in the MG63.3 cell line.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the qPCR data. I edited the Excel file from the instrument to remove rows that weren't associated with the raw data.
+
+```{r}
+##########################################################################################
+pcr = read_tsv(paste(baseRepository, '/qPcr20201020_mg633Ybx1GucRescue/qPcr20201020_mg633Ybx1GucRescue.txt', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+What we are interested in for this is the deltaCT mean and SE. These are the values relative to GAPDH. 
+
+```{r}
+##########################################################################################
+pcrCt = pcr %>%
+  dplyr::select(`Sample Name`, `Target Name`, `Delta Ct Mean`, `Delta Ct SE`) %>%
+  filter(!grepl('GAPDH', `Target Name`)) %>%
+  mutate(`Target Name` = factor(`Target Name`, levels = c('YBX1','YBX1piggyWT','YBX1piggyK64','YBX1piggyK81')))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+The data are already pretty close to long format, so I think we can plot right away.
+
+```{r}
+##########################################################################################
+ggplot(pcrCt, aes(`Target Name`, `Delta Ct Mean`, color = `Target Name`)) +
+  geom_point(size = 2) +
+  scale_color_manual(values = c(brewer.pal(8,'RdBu')[1], rep(brewer.pal(8,'RdBu')[8],3))) +
+  scale_y_continuous(limits = c(5,20), breaks = seq(0,25,5)) +
+  facet_wrap(~`Sample Name`) +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/qPcr20201020_mg633Ybx1GucRescue/scatter_ybx1RnaAbundanceGucClones.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+

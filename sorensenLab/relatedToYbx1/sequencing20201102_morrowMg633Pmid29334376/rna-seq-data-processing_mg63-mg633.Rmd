@@ -1,0 +1,117 @@
+---
+title: "Processing the RNA-seq data from the Morrow paper for MG63"
+output: html_notebook
+---
+
+```{r, message=FALSE, warning=FALSE}
+#Load in the libraries
+###################################################################################################################################################################
+library(tximeta)
+library(dplyr)
+library(ggplot2)
+library(DESeq2)
+library(hexbin)
+library(RColorBrewer)
+library(pheatmap)
+library(PoiClaClu)
+library(apeglm)
+library(genefilter)
+library("AnnotationDbi")
+library("org.Hs.eg.db")
+
+######select the directory depending on your location
+base_dir = '/Users/chughes/Documents/chughes_bitbucket/'
+#base_dir = '/projects/ptx_analysis/chughes/projects-current/'
+```
+
+```{r}
+#########################################################################################################################################
+###First read in the annotation table
+#########################################################################################################################################
+sample_anno = read.table(paste(base_dir, 'projects-current/sorensen_mg63/published-data/morrow_2018-NatureMedicine_PMID29334376/mg63-mg633-rna-seq_sequencing-annotation.csv',sep = ''), header = TRUE, sep = ',', stringsAsFactors = FALSE)
+```
+
+```{r}
+#########################################################################################################################################
+###Get the quant files for each barcode
+#########################################################################################################################################
+quant_locations = vector()
+for (i in 1:nrow(sample_anno)){
+  quant_locations[i] = paste(base_dir, 'projects-current/sorensen_mg63/published-data/morrow_2018-NatureMedicine_PMID29334376/', sample_anno[i,'barcode'], '_quant/quant.sf', sep = '')
+}
+sample_anno$files = file.path(quant_locations)
+sample_anno$names = sample_anno$sampleName
+file.exists(sample_anno$files)
+```
+
+```{r}
+#########################################################################################################################################
+###Make a linked transcriptome
+#########################################################################################################################################
+index_location = '/Users/chughes/Documents/chughes_bitbucket/databases/salmon/salmon-index_jan2020_index-k31/'
+#######
+gtfPath = ("ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_32/gencode.v32.annotation.gtf.gz") 
+#####
+fasta_file = ("ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_32/gencode.v32.transcripts.fa.gz")
+######make the transcriptome
+makeLinkedTxome(indexDir = index_location, 
+                source = "Gencode", 
+                organism = "Homo sapiens", 
+                release = "32",
+                genome = "GRCh38",
+                fasta = fasta_file,
+                gtf = gtfPath,
+                write = FALSE)
+```
+
+```{r}
+#########################################################################################################################################
+###Load the data into R using tximeta and perform a DESeq analysis
+#########################################################################################################################################
+rna_data = tximeta(sample_anno) #need to be on VPN for the gencode communication to work
+############## check the data
+dim(rna_data) #226608      9
+head(rownames(rna_data))
+#####summarize to genes
+rna_gene = summarizeToGene(rna_data)
+dim(rna_gene) #60179     9
+########
+####how many fragmens mapped, in millions
+round(colSums(assay(rna_gene))/1e6, 1) #general output
+rna_deseq1 = DESeqDataSet(rna_gene, design = ~ cell)
+nrow(rna_deseq1) #60179
+##############filter the data
+#####at least 2 samples with a count of 10 or higher
+genes_to_keep <- rowSums(counts(rna_deseq1) >= 10) >= 2
+###########
+rna_deseq2 = rna_deseq1[genes_to_keep,]
+nrow(rna_deseq2) #15004
+##############
+rna_deseq3 = DESeq(rna_deseq2)
+resultsNames(rna_deseq3)
+rna_results = lfcShrink(rna_deseq3, coef="cell_mg633_vs_mg63", type="apeglm")
+#########test plots
+plotMA(rna_results, ylim = c(-5, 5))
+hist(rna_results$pvalue[rna_results$baseMean > 1], breaks = 0:20/20, col = "grey50", border = "white")
+#######add some annotation
+ens.str <- substr(rownames(rna_results), 1, 15)
+rna_results$symbol <- mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+rna_results$entrez <- mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="ENTREZID",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+
+rna_ordered = as.data.frame(rna_results[order(rna_results$pvalue),])
+rna_ordered$ensembl = row.names(rna_ordered)
+row.names(rna_ordered) = NULL
+rna_ordered = subset(rna_ordered, !is.na(rna_ordered$entrez))
+#######save the data
+saveRDS(rna_ordered, paste(base_dir, 'projects-current/sorensen_mg63/published-data/morrow_2018-NatureMedicine_PMID29334376/Routput/rna-seq_processed-data_mg63-mg633_deseq.txt',sep = ''))
+write.table(rna_ordered, paste(base_dir, 'projects-current/sorensen_mg63/published-data/morrow_2018-NatureMedicine_PMID29334376/Routput/rna-seq_processed-data_mg63-mg633_deseq.txt',sep = ''), col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+

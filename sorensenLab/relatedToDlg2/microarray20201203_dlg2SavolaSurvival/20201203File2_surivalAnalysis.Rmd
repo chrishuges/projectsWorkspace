@@ -1,0 +1,143 @@
+---
+title: "Analysis of survival data for Ewing sarcoma"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+I again want to look at survival data for Ewing sarcoma, but instead of just going set by set, I am going to combine all the sets I can find into one object and go from there. I have performed the preprocessing of the data, and now will combine and do survival analysis.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('survival')
+library('survminer')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First we will read in all the data sets.
+
+```{r}
+##########################################################################################
+esExpression = readRDS(paste(baseRepository, '/microarray20201203_dlg2SavolaSurvival/dataset_savolaExpression.rds', sep = ''))
+esPhenotype = readRDS(paste(baseRepository, '/microarray20201203_dlg2SavolaSurvival/dataset_savolaPhenotype.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+
+<div style="margin-bottom:50px;"></div>
+
+Do a test survival analysis for our gene of interest. I wrote a function for this a while ago, so I will just walk through it here.
+
+```{r}
+##########################################################################################
+expressionData = esExpression
+phenotypeData = esPhenotype
+geneOfInterest = 'DLG2'
+##
+geneOfInterestExprs = expressionData %>%
+  filter(symbol == geneOfInterest)
+  ##check for data
+if (nrow(geneOfInterestExprs) < 1){
+  print('Gene not found in first pass, searching secondary identifier annotation.')
+  geneOfInterestExprs = expressionData %>%
+    filter(arraySymbolOne == geneOfInterest)
+}
+if (nrow(geneOfInterestExprs) < 1){
+  print('Gene not found in second pass, searching third identifier annotation.')
+  geneOfInterestExprs = expressionData %>%
+    filter(arraySymbolTwo == geneOfInterest)
+}
+if (nrow(geneOfInterestExprs) < 1){
+  print('Gene not found. Moving on to next entry.')
+}
+geneOfInterestExprs$medExprs = apply(geneOfInterestExprs[,which(grepl('GS',colnames(geneOfInterestExprs)))[1]:ncol(geneOfInterestExprs)], 
+                                       1, function(x) mean(x, na.rm = TRUE))
+geneOfInterestSort = geneOfInterestExprs %>%
+  arrange(desc(medExprs))
+########
+#keep the top probe for the gene, based on the expression calculated above
+geneSurvivalInput = geneOfInterestSort[1,1:(ncol(geneOfInterestSort) - 1)] %>%
+  pivot_longer(cols = colnames(geneOfInterestSort)[which(grepl('GS',colnames(geneOfInterestSort)))[1]]:colnames(geneOfInterestSort)[(ncol(geneOfInterestSort) - 1)], 
+                 names_to = 'geo_accession', values_to = 'rnaExprs') %>%
+  right_join(phenotypeData) %>%
+  arrange(rnaExprs)
+  ########
+geneCutPoint = surv_cutpoint(geneSurvivalInput,
+                               time = 'ovs',
+                               event = 'status',
+                               variables = 'rnaExprs')
+geneSurvivalCat = surv_categorize(geneCutPoint)
+geneSurvivalInput$geneLevel = geneSurvivalCat$rnaExprs
+geneSurvivalInput$geneLevel = factor(geneSurvivalInput$geneLevel, levels = c('low','high'))
+#calculation of the different survival metrics based on our data
+survivalFit = survfit(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Run the function.
+
+```{r}
+##########################################################################################
+ggsurvplot(survivalFit,
+          pval = TRUE, conf.int = TRUE,
+          risk.table = TRUE, # Add risk table
+          risk.table.col = "strata", # Change risk table color by groups
+          linetype = "strata", # Change line type by groups
+          surv.median.line = "hv", # Specify median survival
+          ggtheme = theme_classic(), # Change ggplot2 theme
+          palette = c(brewer.pal(8,'RdBu')[c(8,1)]))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+That plot doesn't play nice with ggsave for some reason. Need to make a stripped down plot for saving.
+
+```{r}
+##########################################################################################
+ggsurvplot(survivalFit,
+          pval = FALSE, conf.int = TRUE,
+          risk.table = FALSE, # Add risk table
+          linetype = "strata", # Change line type by groups
+          surv.median.line = "hv", # Specify median survival
+          ggtheme = theme_classic(), # Change ggplot2 theme
+          palette = c(brewer.pal(8,'RdBu')[c(8,1)]))
+ggsave(paste(baseRepository, '/microarray20201203_dlg2SavolaSurvival/survival_dlg2SurvivalSavola.pdf', sep = ''), 
+       width = 4, height = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

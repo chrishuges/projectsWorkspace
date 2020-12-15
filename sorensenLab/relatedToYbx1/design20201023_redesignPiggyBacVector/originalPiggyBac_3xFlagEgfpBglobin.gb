@@ -1,0 +1,92 @@
+LOCUS       Exported                1831 bp ds-DNA     linear   UNA 16-NOV-2020
+DEFINITION  .
+ACCESSION   .
+VERSION     .
+KEYWORDS    .
+SOURCE      natural DNA sequence
+  ORGANISM  unspecified
+REFERENCE   1  (bases 1 to 1831)
+  AUTHORS   Poul Sorensen Lab
+  TITLE     Direct Submission
+  JOURNAL   Exported Monday, Nov 16, 2020 from SnapGene 5.0.7
+            https://www.snapgene.com
+FEATURES             Location/Qualifiers
+     source          1..1831
+                     /organism="unspecified"
+                     /mol_type="genomic DNA"
+     protein_bind    144..164
+                     /gene="mutant version of attB"
+                     /label=attB4
+                     /bound_moiety="BP Clonase(TM)"
+                     /note="core recombination site for the Gateway(R) BP 
+                     reaction"
+                     /note="color: #31849b; direction: RIGHT"
+     promoter        184..395
+                     /label=EF-1-alpha core promoter
+                     /note="core promoter for human elongation factor 
+                     EF-1-alpha"
+                     /note="color: #ffffff; direction: RIGHT"
+     regulatory      413..422
+                     /regulatory_class="other"
+                     /note="vertebrate consensus sequence for strong initiation 
+                     of translation (Kozak, 1987)"
+                     /note="color: #a6acb3"
+     CDS             422..487
+                     /codon_start=1
+                     /product="three tandem FLAG(R) epitope tags, followed by an
+                     enterokinase cleavage site"
+                     /label=3xFLAG
+                     /note="color: #cc99b2
+                     Cleavage site after base 487"
+                     /translation="DYKDHDGDYKDHDIDYKDDDDK"
+     CDS             491..1207
+                     /codon_start=1
+                     /product="enhanced GFP"
+                     /label=EGFP
+                     /note="This feature has 3 segments:
+                        1:  491 ..  493 / #05fc14
+                        2:  494 ..  496 / #05fc14 / 1a
+                        3:  497 .. 1207 / #05fc14"
+                     /translation="MVSKGEELFTGVVPILVELDGDVNGHKFSVSGEGEGDATYGKLTL
+                     KFICTTGKLPVPWPTLVTTLTYGVQCFSRYPDHMKQHDFFKSAMPEGYVQERTIFFKDD
+                     GNYKTRAEVKFEGDTLVNRIELKGIDFKEDGNILGHKLEYNYNSHNVYIMADKQKNGIK
+                     VNFKIRHNIEDGSVQLADHYQQNTPIGDGPVLLPDNHYLSTQSALSKDPNEKRDHMVLL
+                     EFVTAAGITLGMDELYK"
+     polyA_signal    1372..1427
+                     /label=beta-globin poly(A) signal
+                     /note="rabbit beta-globin polyadenylation signal (Gil and 
+                     Proudfoot, 1987)"
+                     /note="color: #a6acb3"
+ORIGIN
+        1 taacgaccgc gtgagtcaaa atgacgcatg attatctttt acgtgacttt taagatttaa
+       61 ctcatacgat aattatattg ttatttcatg ttctacttac gtgataactt attatatata
+      121 tattttcttg ttatagatat catcaacttt gtatagaaaa gttgggctcc ggtgcccgtc
+      181 agtgggcaga gcgcacatcg cccacagtcc ccgagaagtt ggggggaggg gtcggcaatt
+      241 gatccggtgc ctagagaagg tggcgcgggg taaactggga aagtgatgtc gtgtactggc
+      301 tccgcctttt tcccgagggt gggggagaac cgtatataag tgcagtagtc gccgtgaacg
+      361 ttctttttcg caacgggttt gccgccagaa cacaggcaag tttgtacagc tagccaccat
+      421 ggactacaag gatcatgatg gcgactacaa agatcatgac atagattata aggatgatga
+      481 cgacaagctc atggtgagta aaggggagga actgttcact ggtgtggttc ctatattggt
+      541 agagcttgac ggcgatgtga acggtcataa gttttccgta tctggtgaag gggagggaga
+      601 tgccacatac gggaagctca ccctgaaatt tatctgcacc actggtaaac ttcccgtgcc
+      661 gtggccgacc cttgtgacga cactgaccta cggcgtgcag tgttttagtc gctatccgga
+      721 tcacatgaag caacacgact tcttcaaaag cgcgatgccc gagggatacg tccaggaacg
+      781 gacgatattt ttcaaagacg acggaaatta taaaaccagg gcagaagtca aattcgaagg
+      841 tgataccctc gtgaaccgga tagagctcaa gggaattgac ttcaaagagg acggcaacat
+      901 actggggcac aaactggaat acaattataa tagtcacaac gtttatataa tggcggataa
+      961 gcagaagaac ggaattaaag tgaactttaa gatccggcac aatatagagg atgggagtgt
+     1021 acagctcgct gaccattacc agcagaacac gccgatcggc gatggtcccg ttctgctgcc
+     1081 agataaccat tacttgtcca cccagagtgc actgagtaag gacccaaatg aaaaacgcga
+     1141 ccacatggtt cttttggaat tcgtgaccgc agcagggatt accctgggaa tggacgaact
+     1201 ctacaaataa ttcgaatgta caaagtggtg atcctcaggt gcaggctgcc tatcagaagg
+     1261 tggtggctgg tgtggccaat gccctggctc acaaatacca ctgagatctt tttccctctg
+     1321 ccaaaaatta tggggacatc atgaagcccc ttgagcatct gacttctggc taataaagga
+     1381 aatttatttt cattgcaata gtgtgttgga attttttgtg tctctcactc ggaaggacat
+     1441 atgggagggc aaatcattta aaacatcaga atgagtattt ggtttagagt ttggcaacat
+     1501 atgcccatat gctggctgcc atgaacaaag gttggctata aagaggtcat cagtatatga
+     1561 aacagccccc tgctgtccat tccttattcc atagaaaagc cttgacttga ggttagattt
+     1621 tttttatatt ttgttttgtg ttattttttt ctttaacatc cctaaaattt tccttacatg
+     1681 ttttactagc cagatttttc ctcctctcct gactactccc agtcatagct gtccctcttc
+     1741 tcttatggan atccctcnac ctgcagccca agcttcgcgt tgacattgat tantgactag
+     1801 ttattaatag taatcaatta cggggtcatt a
+//

@@ -1,0 +1,147 @@
+---
+title: "Analysis of Entinostat thermal profiling"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to look at the thermal proteome profiling of entinostat in mg63.3 cells.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the protein annotation details.
+
+```{r}
+##########################################################################################
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20201110_mg633EntinostatThermalProfiling/uniprotHumanNov2020.fasta.annotated.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read in the psm data and process into a peptide set.
+
+```{r}
+##########################################################################################
+psm = read_tsv(paste(baseRepository, '/proteomics20201110_mg633EntinostatThermalProfiling/20201110_mg633EntinostatThermalProfilingSet1_TMT16_HpH_Default_PSM_Report.txt', sep = '')) %>%
+  dplyr::select(`Protein(s)`, Sequence, `Modified Sequence`, `Spectrum File`, `Spectrum Title`) %>%
+  mutate(fraction = factor(sub('.*HpH_(.*)\\.raw$', '\\1', `Spectrum File`), levels = seq(1,36,1))) %>%
+  mutate(accession = sapply(strsplit(`Protein(s)`, ','), '[', 1)) %>%
+  mutate(scan = as.numeric(sub('Spectrum_(.*)', '\\1', `Spectrum Title`))) %>%
+  mutate(sequence = Sequence) %>%
+  mutate(modSequence = `Modified Sequence`) %>%
+  left_join(proteinAnnotation) %>%
+  dplyr::select(fraction, scan, accession, gene, detectablePeptides, sequence, modSequence)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we need the quantification data. I will use a function to process these data.
+
+```{r}
+#######################################################################
+#######################################################################
+##this function goes through the provided quant files and returns
+##a parsed object for each. It returns signal to noise ratio for quant
+#######################################################################
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`134NIntensity`)
+  colnames(quantData) = c('scan','tmt16plex_126C','tmt16plex_127N','tmt16plex_127C','tmt16plex_128N',
+                  'tmt16plex_128C','tmt16plex_129N','tmt16plex_129C','tmt16plex_130N','tmt16plex_130C','tmt16plex_131N',
+                  'tmt16plex_131C','tmt16plex_132N','tmt16plex_132C','tmt16plex_133N','tmt16plex_133C','tmt16plex_134N')
+  ##
+  fraction = sub('.*HpH_(.*)\\.raw_Matrix\\.txt$', '\\1', filePath)
+  quantData$fraction = fraction
+  print(paste('Processing file for fraction ', fraction, '.', sep = ''))
+  ##
+  return(quantData)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We can use this function to parse the quant data into a single object.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+quantFiles = as.list(list.files(paste(baseRepository, '/proteomics20201110_mg633EntinostatThermalProfiling/quantFiles/', sep = ''),
+           pattern = '_Matrix.txt', full.names = TRUE))
+##
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now combine the quant data into a single data frame and with the previously processed PSM data.
+
+```{r}
+##########################################################################################
+allQuantData = do.call('rbind', quantDataSet)
+psmQuant = psm %>%
+  left_join(allQuantData)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Plot some peptides for candidate genes.
+
+```{r}
+##########################################################################################
+geneSet = psmQuant[grepl('HDAC2',psmQuant$gene),] %>%
+  pivot_longer(cols = tmt16plex_126C:tmt16plex_134N, names_to = 'label', values_to = 'intensity') %>%
+  mutate(label = factor(label, levels = c('tmt16plex_126C','tmt16plex_127N','tmt16plex_127C','tmt16plex_128N',
+                  'tmt16plex_128C','tmt16plex_129N','tmt16plex_129C','tmt16plex_130N','tmt16plex_130C','tmt16plex_131N',
+                  'tmt16plex_131C','tmt16plex_132N','tmt16plex_132C','tmt16plex_133N','tmt16plex_133C','tmt16plex_134N'))) %>%
+  group_by(accession, gene, label) %>%
+  summarise(medIntensity = median(intensity, na.rm = TRUE))
+geneSet$treatment = ifelse(grepl('C', geneSet$label), 'control', 'drug')
+ggplot(geneSet, aes(label, medIntensity, color = treatment, group = treatment)) +
+  geom_line()
+```
+
+<div style="margin-bottom:50px;"></div>
+
+
+
+
+
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+

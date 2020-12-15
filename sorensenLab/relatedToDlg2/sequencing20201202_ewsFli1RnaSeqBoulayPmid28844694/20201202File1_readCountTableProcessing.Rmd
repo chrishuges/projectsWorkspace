@@ -1,0 +1,176 @@
+---
+title: "EWS-FLI1 gene regulated genes"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of RNAseq data from different scenarios carried out in the Boulay 2017 paper at PMID28844694. I use the counts file provided in GSE94277 for this work.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Get the raw data.
+
+```{r}
+##########################################################################################
+rna = read_tsv(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/GSE94277_counts_matrix.txt', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot for Dgl2.
+
+```{r}
+##########################################################################################
+goi = rna %>%
+  filter(grepl('^DLG2$', gene)) %>%
+  pivot_longer(cols = A673.shGFP.RNAseq:MSC5b.shBRG1.EWSFLI1.RNAseq, names_to = 'sample', values_to = 'readCounts')
+##
+ggplot(goi, aes(sample, readCounts)) +
+  geom_col()
+```
+
+<div style="margin-bottom:50px;"></div>
+
+So that isn't super useful. Maybe we should plot just the Ewing sarcoma genes first, then look at the MSCs. 
+
+```{r}
+##########################################################################################
+goi = rna %>%
+  dplyr::select(gene:SKNMC.shEWSFLI1.RNAseq) %>%
+  filter(A673.shGFP.RNAseq >= 10 | A673.shEWSFLI1.RNAseq >= 10 | SKNMC.shGFP.RNAseq >= 10 | SKNMC.shEWSFLI1.RNAseq >= 10) %>%
+  mutate(a673Fc = log2(A673.shEWSFLI1.RNAseq/A673.shGFP.RNAseq)) %>%
+  mutate(SknmcFc = log2(SKNMC.shEWSFLI1.RNAseq/SKNMC.shGFP.RNAseq)) %>%
+  filter(!is.na(a673Fc) & !is.na(SknmcFc) & !is.infinite(a673Fc) & !is.infinite(SknmcFc))
+targetGenes = c('DLG2','PRKCB','SLC7A11')
+goi$pText = ifelse(goi$gene %in% targetGenes, goi$gene, '')
+goi$pColors = ifelse(goi$a673Fc <= -1 & goi$SknmcFc <= -1, brewer.pal(8,'RdBu')[8],
+                              ifelse(goi$a673Fc >= 1 & goi$SknmcFc >= 1, brewer.pal(8,'RdBu')[1],
+                                     brewer.pal(8,'Greys')[6]))
+##
+ggplot(goi, aes(a673Fc, SknmcFc)) +
+  geom_point(size = 1, color = goi$pColors, alpha = 0.5) +
+  geom_text_repel(label = goi$pText) +
+  labs(x = 'log2(shEWS-FLI1 vs shGFP in A673)', y = 'log2(shEWS-FLI1 vs shGFP in SKNMC)', title = 'DLG2 expression in Ewing sarcoma') +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  scale_y_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+  scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/scatter_dlg2RnaExpressionShEwsfli1.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can show the MSC data.
+
+```{r}
+##########################################################################################
+goi = rna %>%
+  filter(grepl('^DLG2$', gene)) %>%
+  pivot_longer(cols = MSC1.control.RNAseq:MSC5b.shBRG1.EWSFLI1.RNAseq, names_to = 'sample', values_to = 'readCounts') %>%
+  mutate(condition = sub('(.*)\\.RNAseq$', '\\1', sample))
+##
+ggplot(goi, aes(condition, readCounts)) +
+  geom_col() +
+  labs(x = 'Cell type, condition', y = 'Raw RNAseq read counts', title = 'DLG2 expression in Ewing sarcoma') +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/barplot_dlg2RnaExpressionAllConditions.pdf', sep = ''),
+       height = 4, width = 6, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This is kind of hard to look at, so let's try to reshape it a bit and plot ratios relative to controls.
+
+```{r}
+##########################################################################################
+goi = rna %>%
+  filter(grepl('^DLG2$', gene)) %>%
+  mutate(mscEwsFli1.1 = MSC1.EWSFLI1.RNAseq / MSC1.control.RNAseq) %>%
+  mutate(mscEwsFli1.2 = MSC1b.EWSFLI1.RNAseq / MSC1b.control.RNAseq) %>%
+  mutate(mscEwsFli1.3 = MSC2.EWSFLI1.RNAseq / MSC2.control.RNAseq) %>%
+  mutate(mscEwsFli1.4 = MSC2b.EWSFLI1.RNAseq / MSC2b.control.RNAseq) %>%
+  mutate(mscFli1.1 = MSC1.FLI1.RNAseq / MSC1.control.RNAseq) %>%
+  mutate(mscFli1.2 = MSC1b.FLI1.RNAseq / MSC1b.control.RNAseq) %>%
+  mutate(mscYs37Fli1.1 = MSC2.EWS.YS37.FLI1.RNAseq / MSC2.control.RNAseq) %>%
+  mutate(mscYs37Fli1.2 = MSC2b.EWS.YS37.FLI1.RNAseq / MSC2b.control.RNAseq) %>%
+  mutate(mscSygq2Fli1.1 = MSC2b.SYGQ2.FLI1.RNAseq / MSC2b.control.RNAseq) %>%
+  mutate(mscSygq2Fli1.2 = MSC3.SYGQ2.FLI1.RNAseq / MSC3.control.RNAseq) %>%
+  mutate(mscBaf47Fli1.1 = MSC4.BAF47FLI1.RNAseq / MSC4.control.RNAseq) %>%
+  mutate(mscBaf47Fli1.2 = MSC4b.BAF47FLI1.RNAseq / MSC4b.control.RNAseq) %>%
+  mutate(mscShgfpEwsFli1.1 = MSC5.shGFP.EWSFLI1.RNAseq / MSC5.shGFP.control.RNAseq) %>%
+  mutate(mscShgfpEwsFli1.2 = MSC5b.shGFP.EWSFLI1.RNAseq / MSC5b.shGFP.control.RNAseq) %>%
+  mutate(mscShbrg1EwsFli1.1 = MSC5.shBRG1.EWSFLI1.RNAseq / MSC5.shGFP.control.RNAseq) %>%
+  mutate(mscShbrg1EwsFli1.2 = MSC5b.shBRG1.EWSFLI1.RNAseq / MSC5b.shGFP.control.RNAseq) %>%
+  dplyr::select(gene, mscEwsFli1.1:mscShbrg1EwsFli1.2) %>%
+  pivot_longer(cols = mscEwsFli1.1:mscShbrg1EwsFli1.2, names_to = 'replicate', values_to = 'readsRelativeToControl') %>%
+  mutate(sampleName = sub('(.*)\\.[0-9]$', '\\1', replicate)) %>%
+  mutate(log2Relative = log2(readsRelativeToControl)) %>%
+  dplyr::select(sampleName, log2Relative) %>%
+  group_by(sampleName) %>%
+  summarise(across(starts_with('log2'), list(mean = mean, sd = sd))) %>%
+  mutate(sampleName = factor(sampleName, levels = c('a673EwsFli1','sknmcEwsFli1',
+                                                   'mscEwsFli1','mscFli1',
+                                                   'mscShgfpEwsFli1','mscShbrg1EwsFli1',
+                                                   'mscYs37Fli1','mscBaf47Fli1','mscSygq2Fli1')))
+##
+ggplot(goi, aes(sampleName, log2Relative_mean)) +
+  geom_point() +
+  geom_bar(stat = 'identity', alpha = 0.25) +
+  geom_errorbar(aes(ymin=log2Relative_mean-log2Relative_sd, ymax=log2Relative_mean+log2Relative_sd), width=.2, position=position_dodge(.9)) + 
+  labs(x = 'Experimental condition', y = 'log2(RNA fold change to control)', title = 'DLG2 expression in modified MSCs') +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/barplot_dlg2RnaExpressionMscOnlyConditions.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+

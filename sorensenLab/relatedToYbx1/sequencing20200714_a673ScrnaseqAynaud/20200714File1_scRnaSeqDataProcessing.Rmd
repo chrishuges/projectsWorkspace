@@ -22,9 +22,13 @@ library('RColorBrewer')
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
 
 ```{r}
-generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
-baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
-baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -32,6 +36,7 @@ baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sor
 We need to call a source file that has some functions we will need. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
 
 ```{r}
+##########################################################################################
 source(paste(baseWorkspace, '/sequencing20200714_a673ScrnaseqAynaud/userDefinedFunctions.R', sep = ''))
 ```
 
@@ -87,7 +92,7 @@ Make plots for different genes.
 ```{r}
 ##########################################################################################
 rna = readRDS(paste(baseRepository, '/sequencing20200714_a673ScrnaseqAynaud/dataset_scRNAseqProcessedA673Only.rds', sep = ''))
-geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3','ATF4','HDAC11')
+geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3','ATF4','HDAC11','LCN2','TFRC','SLC40A1','STEAP3','STEAP4','ATP11C','ENPP1','CENPC','CENPA','DLG2')
 for (i in 1:length(geneSet)){
   goi = filter(rna, symbol == geneSet[i])
   ggplot(goi, aes(day, log10(counts), color = day)) +
@@ -127,7 +132,7 @@ Make the plots again.
 ```{r}
 ##########################################################################################
 totalSet = rbind(rna, msc)
-geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3','ATF4', 'HDAC11')
+geneSet = c('STEAP1','STEAP2','G3BP1','TPD52','IL1RAP','CTH','PHGDH','SLC7A11','HMGB2','HMGB3','ATF4','HDAC11','LCN2','TFRC','SLC40A1','STEAP3','STEAP4','ATP11C','ENPP1','CENPC','CENPA','DLG2')
 for (i in 1:length(geneSet)){
   goi = filter(totalSet, symbol == geneSet[i])
   ggplot(goi, aes(day, log10(counts), color = day)) +

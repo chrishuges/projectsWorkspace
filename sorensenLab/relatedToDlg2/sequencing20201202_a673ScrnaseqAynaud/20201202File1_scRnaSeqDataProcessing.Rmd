@@ -1,0 +1,157 @@
+---
+title: "scRNAseq data processing"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the processing of the published scRNAseq data from PMID: 32049009 and GEO: GSE130019. A count table was provided with the deposited data, so we will use this. We will focus on the A673 EWS-FLI1 induction experiment and the xenograft data.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First I need to read the count data table. After we read the data in, lets reshape it. The column names kind of suck. I think the 'd7' column, for example, is a summary of all cells for that time point (actually no this is not true, it is a naming artifact so we should keep it). We will remove those entries and just keep the single cells.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+rna = read_tsv(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/GSE130019_a673.count.table.txt', sep = ''), skip = 1) %>%
+  mutate(ensg = X1, symbol = type) %>%
+  dplyr::select(ensg, symbol, d7:d0_Xeno_105) %>%
+  pivot_longer(cols = d7:d0_Xeno_105, names_to = 'annotation', values_to = 'counts') %>%
+  filter(counts > 0) %>%
+  mutate(day = sub('(.*)_[0-9]+.*$', '\\1', annotation)) %>%
+  mutate(cell = sub('.*_([0-9]+).*$', '\\1', annotation)) %>%
+  filter(!grepl('d', cell))
+rna$day = factor(rna$day, levels = c('d7','d7+2','d7+3','d7+4','d7+7','d7+10','d7+15','d0_Xeno','d7_Xeno'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a quick test plot to make sure our processed data is OK. They use PRKCB in the paper.
+
+```{r}
+##########################################################################################
+goi = filter(rna, symbol == 'PRKCB')
+ggplot(goi, aes(day, log10(counts), color = day)) +
+  geom_boxplot(size = 1, outlier.shape = NA, width = 0.25, color = brewer.pal(8,'Greys')[7]) +
+  geom_point(size = 2, position = position_jitterdodge(jitter.width = 1)) +
+  labs(x = 'Timepoint', y = 'log10(rna counts)', title = 'scRNAseq counts') +
+  scale_color_manual(values = c(brewer.pal(9,'Reds')[3:9], brewer.pal(8,'Blues')[c(5,8)])) +
+  geom_vline(xintercept = 7.5, linetype = 'dashed') +
+  theme_classic() +
+  theme(legend.position = 'none')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+OK looks good. Save the data in case we want to use it later.
+
+```{r}
+##########################################################################################
+saveRDS(rna, paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/dataset_scRNAseqProcessedA673Only.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make plots for different genes.
+
+```{r}
+##########################################################################################
+rna = readRDS(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/dataset_scRNAseqProcessedA673Only.rds', sep = ''))
+geneSet = c('PRKCB','STEAP1','STEAP2','IL1RAP','DLG2')
+for (i in 1:length(geneSet)){
+  goi = filter(rna, symbol == geneSet[i])
+  ggplot(goi, aes(day, log10(counts), color = day)) +
+    geom_boxplot(size = 1, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[7]) +
+    geom_point(size = 1.5, position = position_jitterdodge(jitter.width = 1)) +
+    labs(x = 'Timepoint', y = 'log10(rna counts)', title = paste(geneSet[i], 'scRNAseq counts')) +
+    scale_color_manual(values = c(brewer.pal(9,'Reds')[3:9], brewer.pal(8,'Blues')[c(5,8)])) +
+    geom_vline(xintercept = 7.5, linetype = 'dashed') +
+    theme_classic() +
+    theme(legend.position = 'none', axis.text.x = element_text(angle = 45, hjust = 1))
+  ggsave(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/scatterplot_',geneSet[i],'scRnaSeqA673Xeno.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Add MSC data.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+msc = read_tsv(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/GSE130020_msc.count.table.txt', sep = ''), skip = 1) %>%
+  mutate(ensg = X1, symbol = type) %>%
+  dplyr::select(ensg, symbol, `MSC-7BJ`:`MSC-15FL_47`) %>%
+  pivot_longer(cols = `MSC-7BJ`:`MSC-15FL_47`, names_to = 'annotation', values_to = 'counts') %>%
+  filter(counts > 0) %>%
+  mutate(day = sub('(.*)_.*$', '\\1', annotation)) %>%
+  mutate(cell = sub('.*_([0-9]+).*$', '\\1', annotation)) %>%
+  filter(!grepl('d', cell))
+msc$day = factor(msc$day, levels = c('MSC-15FL', 'MSC-7BJ'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make the plots again.
+
+```{r}
+##########################################################################################
+totalSet = rbind(rna, msc) %>%
+  mutate(day = factor(day, levels = c('d7','d7+2','d7+3','d7+4','d7+7','d7+10','d7+15','d0_Xeno','d7_Xeno','MSC-15FL','MSC-7BJ')))
+geneSet = c('PRKCB','STEAP1','STEAP2','IL1RAP','DLG2','SLC7A11')
+for (i in 1:length(geneSet)){
+  goi = filter(totalSet, symbol == geneSet[i])
+  ggplot(goi, aes(day, log10(counts), color = day)) +
+    geom_boxplot(size = 1, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[7]) +
+    geom_point(size = 1, position = position_jitterdodge(jitter.width = 1)) +
+    labs(x = 'Timepoint', y = 'log10(rna counts)', title = paste(geneSet[i], 'scRNAseq counts')) +
+    scale_color_manual(values = c(brewer.pal(9,'Reds')[3:9], brewer.pal(8,'Blues')[c(5,8)], brewer.pal(8,'Spectral')[2:3])) +
+    geom_vline(xintercept = c(7.5,9.5), linetype = 'dashed') +
+    theme_classic() +
+    theme(legend.position = 'none', axis.text.x = element_text(angle = 45, hjust = 1))
+  ggsave(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/scatterplot_',geneSet[i],'scRnaSeqA673XenoMsc.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+

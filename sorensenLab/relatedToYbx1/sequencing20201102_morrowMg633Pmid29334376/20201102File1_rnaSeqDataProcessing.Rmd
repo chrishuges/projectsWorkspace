@@ -1,0 +1,156 @@
+---
+title: "RNA-seq data from Morrow MG63.3 cells"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document covers the analysis of RNAseq data from Morrow et al. in PMID29334376. The analysis is focused on differences between the MG63.3 and MG63 lines.
+
+## Setting up the environment
+
+```{r, message=FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library(tximeta)
+library(dplyr)
+library(ggplot2)
+library(DESeq2)
+library(RColorBrewer)
+library(PoiClaClu)
+library(apeglm)
+library(genefilter)
+library("AnnotationDbi")
+library("org.Hs.eg.db")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the annotation data.
+
+```{r}
+##########################################################################################
+sampleAnno = read_csv(paste(baseWorkspace, '/sequencing20201102_morrowMg633Pmid29334376/mg63-mg633-rna-seq_sequencing-annotation.csv',sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Built a matrix for the quantification files generated via Salmon and add it to the annotation matrix.
+
+```{r}
+##########################################################################################
+quantLocations = vector()
+for (i in 1:nrow(sampleAnno)){
+  quantLocations[i] = paste(baseRepository, '/sequencing20201102_morrowMg633Pmid29334376/', sampleAnno[i,'barcode'], '_quant/quant.sf', sep = '')
+}
+sampleAnno$files = file.path(quantLocations)
+sampleAnno$names = sampleAnno$sampleName
+file.exists(sampleAnno$files)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Create a linked transcriptome using txiMeta.
+
+```{r}
+##########################################################################################
+indexLocation = 'C:/Users/chughes/Documents/bccrc/databases/salmon/salmon-index_jan2020_index-k31/'
+#######
+gtfPath = ("ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_32/gencode.v32.annotation.gtf.gz") 
+#####
+fastaFile = ("ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_32/gencode.v32.transcripts.fa.gz")
+######make the transcriptome
+makeLinkedTxome(indexDir = indexLocation, 
+                source = "Gencode", 
+                organism = "Homo sapiens", 
+                release = "32",
+                genome = "GRCh38",
+                fasta = fastaFile,
+                gtf = gtfPath,
+                write = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Load the data using txiMeta and perform the DESeq2 analysis.
+
+```{r}
+##########################################################################################
+rnaData = tximeta(sampleAnno) #needed to be on VPN for the gencode communication to work
+############## check the data
+dim(rnaData) #226608      9
+head(rownames(rnaData))
+#####summarize to genes
+rnaGene = summarizeToGene(rnaData)
+dim(rnaGene) #60179     9
+########
+####how many fragments mapped, in millions
+round(colSums(assay(rnaGene))/1e6, 1) #general output
+rnaDeseq1 = DESeqDataSet(rnaGene, design = ~ cell)
+nrow(rnaDeseq1) #60179
+##############filter the data
+#####at least 2 samples with a count of 10 or higher
+genesToKeep = rowSums(counts(rnaDeseq1) >= 10) >= 2
+###########
+rnaDeseq2 = rnaDeseq1[genesToKeep,]
+nrow(rnaDeseq2) #15004
+##############
+rnaDeseq3 = DESeq(rnaDeseq2)
+resultsNames(rnaDeseq3)
+rnaResults = lfcShrink(rnaDeseq3, coef="cell_mg633_vs_mg63", type="apeglm")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make some test plots to see how the data looks and assign gene annotation.
+
+```{r}
+##########################################################################################
+plotMA(rnaResults, ylim = c(-5, 5))
+hist(rnaResults$pvalue[rnaResults$baseMean > 1], breaks = 0:20/20, col = "grey50", border = "white")
+#######add some annotation
+ens.str = substr(rownames(rnaResults), 1, 15)
+rnaResults$symbol = mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+rnaResults$entrez = mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="ENTREZID",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Reshape the data and output to files for storage.
+
+```{r}
+##########################################################################################
+rnaOrdered = as.data.frame(rnaResults[order(rnaResults$pvalue),])
+rnaOrdered$ensembl = row.names(rnaOrdered)
+row.names(rnaOrdered) = NULL
+rnaOrdered = subset(rnaOrdered, !is.na(rnaOrdered$entrez))
+#######save the data
+saveRDS(rnaOrdered, paste(baseRepository, '/sequencing20201102_morrowMg633Pmid29334376/dataset_processedDataMg63VsMg633Deseq.rds', sep = ''))
+write.table(rnaOrdered, paste(baseRepository, '/sequencing20201102_morrowMg633Pmid29334376/dataset_processedDataMg63VsMg633Deseq.txt',sep = ''), 
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
