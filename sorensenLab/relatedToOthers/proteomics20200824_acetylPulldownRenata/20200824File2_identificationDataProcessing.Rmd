@@ -1,0 +1,106 @@
+---
+title: "Proteomics analysis of acetyl IP samples"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document describes exploration of the proteomics data from the anti-acetyl IP samples from Renata.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Call a source file that has some functions we will use. For simplicity and ease of tracking, I make a copy of this file in each directory that I will work in in order to be able to trace the exact one functions that are used, in case I change them and mistakenly don't push it to GitHub.
+
+```{r}
+##########################################################################################
+source(paste(baseWorkspace, '/proteomics20200824_acetylPulldownRenata/userDefinedFunctions.R', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the fasta database that will be used for annotation.
+
+```{r}
+##########################################################################################
+annoDb = readRDS(paste(baseRepository, '/proteomics20200824_acetylPulldownRenata/uniprotHumanAug2020.fasta.annotated.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Parse these data down to a more manageable set that contains only the data we are interested in.
+
+```{r}
+##########################################################################################
+mqData = read_tsv(paste(baseRepository, '/proteomics20200824_acetylPulldownRenata/proteinGroups.txt', sep = '')) %>%
+  filter(!grepl('REV', `Protein IDs`) & !grepl('CONT', `Protein IDs`)) %>%
+  mutate(accession = sapply(str_split(`Protein IDs`, '\\|'), '[', 2)) %>%
+  left_join(annoDb) %>%
+  mutate(peptideDifference = (`Razor + unique peptides` / detectablePeptides) * 100) %>%
+  filter(peptideDifference >= 25) %>%
+  dplyr::select(accession, gene, detectablePeptides, `Razor + unique peptides`,`Acetyl (K) site IDs`, `LFQ intensity ARSa`:`LFQ intensity MS275c`) 
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Change the column names to something more suitable. There are many zero values, so change them to NA and we can filter rows that have too many.
+
+```{r}
+##########################################################################################
+colnames(mqData)[4:5] = c('numPeptides','acetylSiteIds')
+colnames(mqData)[6:20] = sub('.*intensity (.*)$', '\\1', colnames(mqData)[6:20])
+mqData[,6:20][mqData[,6:20] == 0] = NA
+mqDataSub1 = subset(mqData, rowSums(is.na(mqData[,6:20])) < 10)
+```
+
+
+<div style="margin-bottom:50px;"></div>
+
+Add some summary values.
+
+```{r}
+##########################################################################################
+mqDataSub1$iggMedian = apply(mqDataSub1[,c('IGGa','IGGb','IGGc')], 1, function(x) median(x, na.rm = TRUE))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Save the data.
+
+```{r}
+##########################################################################################
+saveRDS(mqDataSub1, paste(baseRepository, '/proteomics20200824_acetylPulldownRenata/datasetMaxQuantProteinsProcessed.rds', sep = ''))
+write.table(mqDataSub1, paste(baseRepository, '/proteomics20200824_acetylPulldownRenata/datasetMaxQuantProteinsProcessed.csv', sep = ''),
+            col.names = TRUE, row.names = FALSE, sep = ',', quote = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```

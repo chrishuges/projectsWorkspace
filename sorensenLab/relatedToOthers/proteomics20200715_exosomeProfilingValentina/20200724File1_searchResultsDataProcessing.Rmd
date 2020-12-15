@@ -17,6 +17,7 @@ library('ggplot2')
 library('RColorBrewer')
 library('vroom')
 library('DEqMS')
+library('UniProt.ws')
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -163,13 +164,39 @@ vesicle = unique(vesicle)
 
 <div style="margin-bottom:50px;"></div>
 
-Do the actual annotation and save the data.
+Do the actual annotation now.
 
 ```{r, message = FALSE, warning = FALSE}
 ##########################################################################################
 exoAnnotatedSet = exoProteinSubset %>%
   left_join(exocarta) %>%
   left_join(vesicle)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Need to add the protein names back in. I guess it is confusing otherwise? So, grab the uniprot object.
+
+```{r}
+##########################################################################################
+uniprotAnno = UniProt.ws(taxId = 9606)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now annotate the uniprot IDs we already have and add them to the data.
+
+```{r}
+##########################################################################################
+exoAnnotatedSet$proteinName = AnnotationDbi::select(uniprotAnno, keys = exoAnnotatedSet$accession, columns = 'PROTEIN-NAMES', keytype = 'UNIPROTKB')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Save the data.
+
+```{r}
+##########################################################################################
 saveRDS(exoAnnotatedSet, paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/dataset_exosomeProteinsAllSamplesUnfiltered.rds', sep = ''))
 write.table(exoAnnotatedSet, paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/dataset_exosomeProteinsAllSamplesUnfiltered.csv', sep = ''),
             col.names = TRUE, row.names = FALSE, sep = ',', quote = FALSE)
