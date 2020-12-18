@@ -56,7 +56,7 @@ rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201411
 for i in SRR1594024 SRR1594025 SRR1594020 SRR1594021 SRR1594022 SRR1594023
 do
   echo $i
-  fastqCall="$fastqDumpLocation --outdir $rawDataOutputDirectory --split-files /home/chughes/ncbi/public/sra/${i}.sra"
+  fastqCall="$fastqDumpLocation --gzip --outdir $rawDataOutputDirectory --split-files /home/chughes/ncbi/public/sra/${i}.sra"
   eval $fastqCall
 done
 ```
@@ -147,6 +147,43 @@ eval ./bbmapAlignmentHuman.sh
 eval ./featureCountsProcessing.sh
 ```
 
+I want to create bam files so I can look at the reads aligning with DLG2. To do this, I will use samtools in a script called `bamFileCreation.sh`. 
+
+```shell
+#!/bin/bash
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201411RiggiCancerCellPmid25453903/"
+samtoolsLocation="/projects/ptx_analysis/chughes/software/samtools-1.9/samtools"
+#########################################
+for i in SRR1594024 SRR1594025 SRR1594020 SRR1594021 SRR1594022 SRR1594023
+do
+  echo $i
+  bamCreateCall="$samtoolsLocation view -b ${rawDataOutputDirectory}${i}.clean.sam > ${rawDataOutputDirectory}${i}.clean.bam"
+  eval $bamCreateCall
+  bamSortCall="$samtoolsLocation sort ${rawDataOutputDirectory}${i}.clean.bam -o ${rawDataOutputDirectory}${i}.sorted.bam"
+  eval $bamSortCall
+  bamIndexCall="$samtoolsLocation index ${rawDataOutputDirectory}${i}.sorted.bam"
+  eval $bamIndexCall
+done
+```
+
+These files are pretty large, so I will just extract DLG2 at the end. The location for this in GRCh38 is chr11:83455009-85628535, so we will just do the whole chromosome 11. I will do this using a script called `chrExtraction.sh`. To get the chromosome name format, I used the command `samtools view -H your.bam` to see if they had the 'chr' prefix. They didn't.
+
+```shell
+#!/bin/bash
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201411RiggiCancerCellPmid25453903/"
+samtoolsLocation="/projects/ptx_analysis/chughes/software/samtools-1.9/samtools"
+#########################################
+for i in SRR1594024 SRR1594025 SRR1594020 SRR1594021 SRR1594022 SRR1594023
+do
+  echo $i
+  chr11ExtractCall="$samtoolsLocation view -b ${rawDataOutputDirectory}${i}.sorted.bam 11 > ${rawDataOutputDirectory}${i}.chr11.bam"
+  eval $chr11ExtractCall
+  chr11IndexCall="$samtoolsLocation index ${rawDataOutputDirectory}${i}.chr11.bam"
+  eval $chr11IndexCall
+done
+```
+
+The last thing I did was to delete the sam files. They are massive, so I didn't want to keep them.
 
 
 

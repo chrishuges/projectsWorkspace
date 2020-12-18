@@ -1,37 +1,29 @@
 ## Reprocessing some RNAseq data
 
-This document describes the reprocessing of some RNAseq data from a previous publication. Specifically:
-
-"Cancer-Specific Retargeting of BAF Complexes by a Prion-like Domain"
-Cell, 2017, Pubmed ID: 28844694, GEO: GSE94278
+This document describes the reprocessing of some RNAseq data from a the CCLE database, or DepMap. The data are all located in SRA: PRJNA523380.
 
 ### Getting the raw data
 
-I am first interested in just the data for the A673 and SKNMC cell lines where it is +/-EWS-FLI1. As far as I can tell, there is just a single replicate run for these samples with a GFP vector used as a control. The data are detailed below:
+I am interested in all of the Ewing sarcoma data, to start. Later I would like to compare with brain tissue if I can find data. The data are detailed below:
 
 ```
-SRX2527813: GSM2472190: RNA-seq in A673 cell line infected with shEWSFLI1; Homo sapiens; RNA-Seq
-SRR5217667
+SRX5415038: RNAseq of A673_BONE
+SRR8616012
 
-SRX2527814: GSM2472191: RNA-seq in A673 cell line infected with shGFP; Homo sapiens; RNA-Seq
-SRR5217668
-
-SRX2527815: GSM2472217: RNA-seq in SKNMC cell line infected with shEWSFLI1; Homo sapiens; RNA-Seq
-SRR5217669
-
-SRX2527816: GSM2472218: RNA-seq in SKNMC cell line infected with shGFP; Homo sapiens; RNA-Seq
-SRR5217670
+SRX5414256: RNAseq of SKNMC_BONE
+SRR8615497
 ```
 
-I am going to use SRATools to get at these data. I am going to save them in the directory `/projects/ptx_results/Sequencing/publishedStudies/201709BoulayCellPmid28844694`. There is a nice little tutorial on using SRATools to get raw data [here](https://www.biostars.org/p/111040/). On the proteomics-svr02 system, SRATools is stored in `/projects/ptx_analysis/chughes/software/sratoolkit.2.9.6-1-centos_linux64/bin`. To download the files, I wrote a small shell script called `sraPreFetch.sh`.
+I am going to use SRATools to get at these data. I am going to save them in the directory `/projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData`. There is a nice little tutorial on using SRATools to get raw data [here](https://www.biostars.org/p/111040/). On the proteomics-svr02 system, SRATools is stored in `/projects/ptx_analysis/chughes/software/sratoolkit.2.9.6-1-centos_linux64/bin`. To download the files, I wrote a small shell script called `sraPreFetch.sh`.
 
 ```shell
 #!/bin/bash
 sraToolsLocation="/projects/ptx_analysis/chughes/software/sratoolkit.2.9.6-1-centos_linux64/bin/prefetch"
-for i in SRR5217667 SRR5217668 SRR5217669 SRR5217670
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/"
+for i in SRR8616012 SRR8615497
 do
   echo $i
-  eval $sraToolsLocation -v $i
+  eval $sraToolsLocation -O ${rawDataOutputDirectory} -v $i
 done
 ```
 
@@ -46,12 +38,13 @@ For all of these files, I want to get the raw fastq data for each of the reads. 
 ```shell
 #!/bin/bash
 fastqDumpLocation="/projects/ptx_analysis/chughes/software/sratoolkit.2.9.6-1-centos_linux64/bin/fastq-dump"
-rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201709BoulayCellPmid28844694/"
-for i in SRR5217667 SRR5217668 SRR5217669 SRR5217670
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/"
+for i in SRR8616012 SRR8615497
 do
   echo $i
-  fastqCall="$fastqDumpLocation --gzip --outdir $rawDataOutputDirectory --split-files /home/chughes/ncbi/public/sra/${i}.sra"
+  fastqCall="$fastqDumpLocation --gzip --outdir $rawDataOutputDirectory --split-files ${rawDataOutputDirectory}${i}.sra"
   eval $fastqCall
+  eval "rm *.sra"
 done
 ```
 
@@ -59,9 +52,9 @@ I will parse these downloaded raw files for quality and adapter sequences using 
 
 ```shell
 #!/bin/bash
-rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201709BoulayCellPmid28844694/"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/"
 bbdukLocation="/projects/ptx_analysis/chughes/software/bbmap_v38_87/bbduk.sh"
-for i in SRR5217667 SRR5217668 SRR5217669 SRR5217670
+for i in SRR8616012 SRR8615497
 do
   echo $i
   bbdukCall="bbdukLocation in1=${rawDataOutputDirectory}${i}_1.fastq.gz in2=${rawDataOutputDirectory}${i}_2.fastq.gz ref=adapters out1=${rawDataOutputDirectory}${i}_1.clean.fastq.gz out2=${rawDataOutputDirectory}${i}_2.clean.fastq.gz ktrim=r k=23 mink=11 hdist=1 tpe tbo"
@@ -100,11 +93,11 @@ Prepare to do the alignment by creating a shell script to run it for all of the 
 
 ```shell
 #!/bin/bash
-rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201709BoulayCellPmid28844694/"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/"
 bbmapLocation="/projects/ptx_analysis/chughes/software/bbmap_v38_87/bbmap.sh"
 referenceLocation="/projects/ptx_analysis/chughes/databases/HomoSapiensEnsemblGRCh38_rel102/Homo_sapiens.GRCh38.dna.primary_assembly.fa"
 ###########################################
-for i in SRR5217667 SRR5217668 SRR5217669 SRR5217670
+for i in SRR8616012 SRR8615497
 do
   echo $i
   bbmapCall="$bbmapLocation in1=${rawDataOutputDirectory}${i}_1.clean.fastq.gz in2=${rawDataOutputDirectory}${i}_2.clean.fastq.gz out=${rawDataOutputDirectory}${i}.clean.sam ref=$referenceLocation trimreaddescriptions=t"
@@ -116,11 +109,11 @@ Now we can run [featurecounts](http://bioinf.wehi.edu.au/featureCounts/) on the 
 
 ```shell
 #!/bin/bash
-rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201709BoulayCellPmid28844694/"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/"
 featureCountsLocation="/projects/ptx_analysis/chughes/software/subread-2.0.1-Linux-x86_64/bin/featureCounts"
 gtfLocation="/projects/ptx_analysis/chughes/databases/HomoSapiensEnsemblGRCh38_rel102/Homo_sapiens.GRCh38.102.gtf"
 #########################################
-for i in SRR5217667 SRR5217668 SRR5217669 SRR5217670
+for i in SRR8616012 SRR8615497
 do
   echo $i
   featureCountsCall="$featureCountsLocation -t exon -g gene_id -a $gtfLocation -o ${rawDataOutputDirectory}${i}_counts.txt ${rawDataOutputDirectory}${i}.clean.sam"
@@ -132,10 +125,10 @@ I want to create bam files so I can look at the reads aligning with DLG2. To do 
 
 ```shell
 #!/bin/bash
-rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201709BoulayCellPmid28844694/"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/"
 samtoolsLocation="/projects/ptx_analysis/chughes/software/samtools-1.9/samtools"
 #########################################
-for i in SRR5217667 SRR5217668 SRR5217669 SRR5217670
+for i in SRR8616012 SRR8615497
 do
   echo $i
   bamCreateCall="$samtoolsLocation view -b ${rawDataOutputDirectory}${i}.clean.sam > ${rawDataOutputDirectory}${i}.clean.bam"
@@ -151,10 +144,10 @@ These files are pretty large, so I will just extract DLG2 at the end. The locati
 
 ```shell
 #!/bin/bash
-rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201709BoulayCellPmid28844694/"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/"
 samtoolsLocation="/projects/ptx_analysis/chughes/software/samtools-1.9/samtools"
 #########################################
-for i in SRR5217667 SRR5217668 SRR5217669 SRR5217670
+for i in SRR8616012 SRR8615497
 do
   echo $i
   chr11ExtractCall="$samtoolsLocation view -b ${rawDataOutputDirectory}${i}.sorted.bam 11 > ${rawDataOutputDirectory}${i}.chr11.bam"

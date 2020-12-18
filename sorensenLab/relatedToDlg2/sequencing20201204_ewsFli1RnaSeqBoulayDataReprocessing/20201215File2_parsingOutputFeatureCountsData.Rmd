@@ -1,0 +1,166 @@
+---
+title: "EWS-FLI1 gene regulated genes"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of RNAseq data from different scenarios carried out in the Boulay 2017 paper at PMID28844694. I reprocessed the raw read data from SRA as described elsewhere in this directory. I will be working with the featureCounts output files here.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('vroom')
+library('GenomicFeatures')
+library('org.Hs.eg.db')
+library('GenomicRanges')
+library('RMariaDB')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Get the list of raw data files and process them into a more usable data frame format.
+
+```{r}
+##########################################################################################
+countFiles = list.files(paste(baseRepository, '/sequencing20201204_ewsFli1RnaSeqBoulayDataReprocessing/', sep = ''), pattern = '_counts.txt$', full.names = TRUE)
+countFiles
+
+##write a function to process the raw data files
+parseCountsData = function(countInputFile){
+  countTemp1 = vroom(countInputFile, skip = 1) %>%
+    dplyr::select(Geneid, 7) %>%
+    dplyr::rename(readCounts = 2) %>%
+    dplyr::filter(readCounts >= 5) %>%
+    dplyr::mutate(dataset = sub('.*Reprocessing\\/(.*)_counts\\.txt$', '\\1', countInputFile))
+  return(countTemp1)
+}
+
+##now apply the function to the data files
+countData = do.call(rbind, lapply(countFiles, parseCountsData))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to add some annotation to the data. For this, I need to create a txdb from the Ensembl database. 
+
+```{r}
+##########################################################################################
+txdbEnsembl = makeTxDbFromEnsembl(organism = 'Homo sapiens',
+                                  release = 102,
+                                  server = 'useastdb.ensembl.org')
+#now save the txdb for later use
+saveDb(txdbEnsembl, file = paste(generalDatasets, 
+                                 '/transcriptomeDatabases/TxDb.Hsapiens.ENSEMBL.hg38.v102.sqlite', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We should only have to run the code above once. From here, we will just read in the created database and use it. 
+
+```{r}
+##########################################################################################
+txdbEnsembl = loadDb(file = paste(generalDatasets, '/transcriptomeDatabases/TxDb.Hsapiens.ENSEMBL.hg38.v102.sqlite', sep = ''))
+
+##convert the ensembl gene id column to gene symbols using this txdb
+##actually, we don't even need the txdb for this, I can just use org.Hs.eg.db
+txdbAnnotation = select(org.Hs.eg.db, 
+                        keys = as.character(unique(countData$Geneid)), 
+                        columns = c('ENSEMBL','SYMBOL'), 
+                        keytype = 'ENSEMBL')
+colnames(txdbAnnotation) = c('Geneid', 'symbol')
+
+##now we can map these data back to the original count data
+countDataAnnotated = countData %>%
+  left_join(txdbAnnotation) %>%
+  filter(!is.na(symbol))
+
+##I also want to annotate the datasets, as the SRA names aren't informative
+countDataAnnotated$experiment = ifelse(countDataAnnotated$dataset == 'SRR5217667', 'shEF1',
+                                       ifelse(countDataAnnotated$dataset == 'SRR5217668', 'shGFP',
+                                              ifelse(countDataAnnotated$dataset == 'SRR5217669', 'shEF1', 'shGFP')))
+countDataAnnotated$experiment = factor(countDataAnnotated$experiment, levels = c('shGFP','shEF1'))
+
+##and the cell line used
+countDataAnnotated$cellLine = ifelse(countDataAnnotated$dataset == 'SRR5217667', 'A673',
+                                       ifelse(countDataAnnotated$dataset == 'SRR5217668', 'A673',
+                                              ifelse(countDataAnnotated$dataset == 'SRR5217669', 'SKNMC', 'SKNMC')))
+countDataAnnotated$cellLine = factor(countDataAnnotated$cellLine, levels = c('A673','SKNMC'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Do a diagnostic plot of these data for some genes we know should behave in a certain way just to check that everything is Ok. 
+
+```{r}
+##########################################################################################
+goi = c('PRKCB')
+geneSet = countDataAnnotated %>%
+  filter(symbol %in% goi)
+
+##make the plot
+ggplot(geneSet, aes(cellLine, readCounts, fill = experiment, group = experiment)) +
+  geom_col(position = 'dodge') +
+  labs(x = 'Cell Line', y = 'Read Counts', title = 'PRKCB RNAseq') +
+  scale_fill_manual(values = brewer.pal(8,'Spectral')[c(1,8)]) +
+  theme_classic()
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Remake the fold change plot from the data they provided with the manuscript.
+
+```{r}
+##########################################################################################
+goi = countDataAnnotated %>%
+  dplyr::select(Geneid:symbol) %>%
+  pivot_wider(names_from = dataset, values_from = readCounts) %>%
+  mutate(a673Fc = log2(SRR5217667/SRR5217668)) %>%
+  mutate(sknmcFc = log2(SRR5217669/SRR5217670)) %>%
+  filter(!is.na(a673Fc) & !is.na(sknmcFc) & !is.infinite(a673Fc) & !is.infinite(sknmcFc))
+
+##now make the plots
+targetGenes = c('STAG2','DLG2','IL1RAP','PRKCB')
+for (i in 1:length(targetGenes)){
+  goi$pText = ifelse(goi$symbol %in% targetGenes[i], goi$symbol, '')
+  goi$pColors = ifelse(goi$a673Fc <= -1 & goi$sknmcFc <= -1, brewer.pal(8,'RdBu')[8],
+                              ifelse(goi$a673Fc >= 1 & goi$sknmcFc >= 1, brewer.pal(8,'RdBu')[1],
+                                     brewer.pal(8,'Greys')[6]))
+  ggplot(goi, aes(a673Fc, sknmcFc)) +
+    geom_point(size = 1, color = goi$pColors, alpha = 0.5) +
+    geom_text_repel(label = goi$pText) +
+    labs(x = 'log2(shEWS-FLI1 vs shGFP in A673)', y = 'log2(shEWS-FLI1 vs shGFP in SKNMC)', title = paste(targetGenes[i], 'expression in Ewing sarcoma')) +
+    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+    scale_y_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+    scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+    theme_classic()
+  ggsave(paste(baseRepository, '/sequencing20201204_ewsFli1RnaSeqBoulayDataReprocessing/scatter_',targetGenes[i],'RnaExpressionShEwsfli1.pdf', sep = ''),
+        height = 4, width = 4, useDingbats = FALSE)
+}
+```
+
+
