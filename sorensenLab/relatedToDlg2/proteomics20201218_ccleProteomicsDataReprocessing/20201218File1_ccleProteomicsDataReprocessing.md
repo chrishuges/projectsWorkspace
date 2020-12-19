@@ -14,15 +14,15 @@ We already have some good scripts for processing the actual data, but there are 
 Batch names:
 
 ```
-Prot_1
-Prot_2
-Prot_3
-Prot_4
-Prot_5
-Prot_6
-Prot_7
-Prot_8
-Prot_9
+Prot_01
+Prot_02
+Prot_03
+Prot_04
+Prot_05
+Prot_06
+Prot_07
+Prot_08
+Prot_09
 Prot_10
 Prot_11
 Prot_12
@@ -68,7 +68,7 @@ I guess one way to do this is to just loop over these accessions with our normal
 #!/bin/bash
 rawDataDirectory="/projects/ptx_results/OtherDataSets/dataset20201217_ccleProteomicsPmid31978347/"
 ############################################
-for j in Prot_{1..42}  
+for j in Prot_{01..42}  
 do
   echo $j
   ##############################################################
