@@ -1867,6 +1867,18 @@ rna$day = factor(rna$day, levels = c(&#39;d7&#39;,&#39;d7+2&#39;,&#39;d7+3&#39;,
 <p>Make a quick test plot to make sure our processed data is OK. They use PRKCB in the paper.</p>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
+<!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjXG5nb2kgPSBmaWx0ZXIocm5hLCBzeW1ib2wgPT0gJ1BSS0NCJylcbmdncGxvdChnb2ksIGFlcyhkYXksIGxvZzEwKGNvdW50cyksIGNvbG9yID0gZGF5KSkgK1xuICBnZW9tX2JveHBsb3Qoc2l6ZSA9IDEsIG91dGxpZXIuc2hhcGUgPSBOQSwgd2lkdGggPSAwLjI1LCBjb2xvciA9IGJyZXdlci5wYWwoOCwnR3JleXMnKVs3XSkgK1xuICBnZW9tX3BvaW50KHNpemUgPSAyLCBwb3NpdGlvbiA9IHBvc2l0aW9uX2ppdHRlcmRvZGdlKGppdHRlci53aWR0aCA9IDEpKSArXG4gIGxhYnMoeCA9ICdUaW1lcG9pbnQnLCB5ID0gJ2xvZzEwKHJuYSBjb3VudHMpJywgdGl0bGUgPSAnc2NSTkFzZXEgY291bnRzJykgK1xuICBzY2FsZV9jb2xvcl9tYW51YWwodmFsdWVzID0gYyhicmV3ZXIucGFsKDksJ1JlZHMnKVszOjldLCBicmV3ZXIucGFsKDgsJ0JsdWVzJylbYyg1LDgpXSkpICtcbiAgZ2VvbV92bGluZSh4aW50ZXJjZXB0ID0gNy41LCBsaW5ldHlwZSA9ICdkYXNoZWQnKSArXG4gIHRoZW1lX2NsYXNzaWMoKSArXG4gIHRoZW1lKGxlZ2VuZC5wb3NpdGlvbiA9ICdub25lJylcbmBgYCJ9 -->
+<pre class="r"><code>##########################################################################################
+goi = filter(rna, symbol == &#39;PRKCB&#39;)
+ggplot(goi, aes(day, log10(counts), color = day)) +
+  geom_boxplot(size = 1, outlier.shape = NA, width = 0.25, color = brewer.pal(8,&#39;Greys&#39;)[7]) +
+  geom_point(size = 2, position = position_jitterdodge(jitter.width = 1)) +
+  labs(x = &#39;Timepoint&#39;, y = &#39;log10(rna counts)&#39;, title = &#39;scRNAseq counts&#39;) +
+  scale_color_manual(values = c(brewer.pal(9,&#39;Reds&#39;)[3:9], brewer.pal(8,&#39;Blues&#39;)[c(5,8)])) +
+  geom_vline(xintercept = 7.5, linetype = &#39;dashed&#39;) +
+  theme_classic() +
+  theme(legend.position = &#39;none&#39;)</code></pre>
+<!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
 <div style="margin-bottom:50px;">
