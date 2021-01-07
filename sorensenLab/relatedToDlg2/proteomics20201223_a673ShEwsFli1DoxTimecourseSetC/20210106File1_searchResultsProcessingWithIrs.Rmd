@@ -1,0 +1,170 @@
+---
+title: "Analysis of A673 EF1 samples with IRS"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to look at A673 cells in 2D growth conditions with modulation of EWS-FLI1 across a timecourse. We want to make comparisons between batches, so we need to do some sort of normalization to facilitate that. The purpose of the work below is to use the Internal Reference Scaling method. This method is discussed in great detail on the [GitHub page](https://github.com/pwilmart/IRS_normalization) of Phil Wilmart. I strongly encourage you to visit his site, as it is a fantastic resource for all things proteomics!
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('limma')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the protein annotation details.
+
+```{r}
+##########################################################################################
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetC/uniprotHumanJan2021.fasta.annotated.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read in the psm data and process into a peptide set.
+
+```{r}
+##########################################################################################
+psm = read_tsv(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetC/20201223_A673ShEwsFli1DoxTimecourseSetC_TMT16_HpH_Default_PSM_Report.txt', sep = '')) %>%
+  dplyr::select(`Protein(s)`, Sequence, `Modified Sequence`, `Spectrum File`, `Spectrum Title`) %>%
+  mutate(fraction = factor(sub('.*HpH_(.*)\\.raw$', '\\1', `Spectrum File`), levels = seq(1,36,1))) %>%
+  mutate(accession = sapply(strsplit(`Protein(s)`, ','), '[', 1)) %>%
+  mutate(scan = as.numeric(sub('Spectrum_(.*)', '\\1', `Spectrum Title`))) %>%
+  mutate(sequence = Sequence) %>%
+  mutate(modSequence = `Modified Sequence`) %>%
+  left_join(proteinAnnotation) %>%
+  dplyr::select(fraction, scan, accession, gene, detectablePeptides, sequence, modSequence)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we need the quantification data. I will use a function to process these data.
+
+```{r}
+#######################################################################
+#######################################################################
+##this function goes through the provided quant files and returns
+##a parsed object for each. It returns signal to noise ratio for quant
+#######################################################################
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`134NIntensity`)
+  colnames(quantData) = c('scan','tmt16plex_126C','tmt16plex_127N','tmt16plex_127C','tmt16plex_128N',
+                  'tmt16plex_128C','tmt16plex_129N','tmt16plex_129C','tmt16plex_130N','tmt16plex_130C','tmt16plex_131N',
+                  'tmt16plex_131C','tmt16plex_132N','tmt16plex_132C','tmt16plex_133N','tmt16plex_133C','tmt16plex_134N')
+  ##
+  fraction = sub('.*HpH_(.*)\\.raw_Matrix\\.txt$', '\\1', filePath)
+  quantData$fraction = fraction
+  print(paste('Processing file for fraction ', fraction, '.', sep = ''))
+  ##
+  return(quantData)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We can use this function to parse the quant data into a single object.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+quantFiles = as.list(list.files(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetC/quantFiles/', sep = ''),
+           pattern = '_Matrix.txt', full.names = TRUE))
+##
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now combine the quant data into a single data frame and with the previously processed PSM data.
+
+```{r}
+##########################################################################################
+allQuantData = do.call('rbind', quantDataSet)
+psmQuant = psm %>%
+  left_join(allQuantData)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we will filter the expression data to discard any entries where the signal is just too low to be confident in the data. I generally will use a cutoff of a minimum signal of 10 per TMT channel. In this case we have 10 channels, so we will use a sum signal of 100 as a cutoff. 
+
+Our sample layout is:
+
+* 126C - pool
+* 127N - empty
+* 127C - empty
+* 128N - day0
+* 128C - day7
+* 129N - day9
+* 129C - day10
+* 130N - day11
+* 130C - day14
+* 131N - day17
+* 131C - day22
+* 132N - empty
+* 132C - empty
+* 133N - pool
+* 133C - empty
+* 134N - empty
+
+```{r}
+##########################################################################################
+psmQuant$sampleSignal = rowSums(psmQuant[,c(8,11:18,21)])
+psmQuantFiltered = subset(psmQuant, psmQuant$sampleSignal >= 100 & !is.na(psmQuant$gene) & !grepl('-', psmQuant$gene))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we want to roll the data up into proteins. There are a couple of ways of doing this with TMT data (e.g. a median or a sum). I will calculate both a median and a sum of the values because I am not certain which will work best in the downstream analysis. 
+
+```{r}
+##########################################################################################
+proteinSet = psmQuantFiltered[,c(3,8,11:18,21)] %>%
+  rename(pool.a3 = tmt16plex_126C,
+         day0.3 = tmt16plex_128N, day7.3 = tmt16plex_128C, day9.3 = tmt16plex_129N, 
+         day10.3 = tmt16plex_129C, day11.3 = tmt16plex_130N, day14.3 = tmt16plex_130C, 
+         day17.3 = tmt16plex_131N, day22.3 = tmt16plex_131C,
+         pool.b3 = tmt16plex_133N) %>%
+  mutate(psmSetC = 1) %>%
+  group_by(accession) %>%
+  summarise(across(where(is.double), list(sum = sum, med = median)))
+##save data
+saveRDS(proteinSet, paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetC/dataset_proteinSetC.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```
+
+
+
+

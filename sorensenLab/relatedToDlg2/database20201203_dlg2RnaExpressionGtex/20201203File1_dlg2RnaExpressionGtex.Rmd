@@ -69,7 +69,7 @@ ggplot(rna, aes(x = reorder(SMTS, log2Tpm, median, na.rm = TRUE), log2Tpm)) +
   labs(x = 'Tissue Specification in GTEx', y = 'log2(Transcripts per million)', title = 'DLG2 RNA expression in GTEx') +
   scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
   theme_classic() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  theme(axis.text.x = element_blank())
 ggsave(paste(baseRepository, '/database20201203_dlg2RnaExpressionGtex/boxplot_dlg2RnaExpressionSmtsGtex.pdf', sep = ''),
        height = 4, width = 6, useDingbats = FALSE)
 ```

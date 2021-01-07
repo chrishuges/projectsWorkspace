@@ -1,0 +1,132 @@
+---
+title: "Plotting the IRS normalized data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details downstream analysis of the A673 timecourse data after normalization.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the protein data sets. There are two sets in total for this experiment.
+
+```{r}
+##########################################################################################
+#read in the normalized data and reshape it for plotting
+pro = readRDS(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/dataset_proteinSetABCIrsNormalized.rds', sep = '')) %>%
+  pivot_longer(cols = day0.1_sum:day22.3_sum, names_to = 'timepoint', values_to = 'proteinSignal') %>%
+  dplyr::select(accession, gene, timepoint, proteinSignal) %>%
+  mutate(day = factor(sub('day(.*)\\.[1-3]_sum$', '\\1', timepoint), levels = c(0,7,9,10,11,14,17,22))) %>%
+  mutate(replicate = factor(sub('day[0-9]+\\.(.*)_sum$', '\\1', timepoint), levels = c(1,2,3))) %>%
+  mutate(logProteinSignal = log2(proteinSignal))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot of a positive control gene, such as PRKCB.
+
+```{r}
+##########################################################################################
+targetGeneSet = c('PRKCB','IL1RAP','DLG2','FLI1')
+#loop over the genes of interest and make plots for them
+for (i in 1:length(targetGeneSet)){
+  geneOfInterest = pro[grepl(targetGeneSet[i], pro$gene),]
+  ##
+  ggplot(geneOfInterest, aes(day, logProteinSignal, color = day)) +
+    geom_boxplot(size = 0.5, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[6]) +
+    geom_point(size = 2, position = position_jitterdodge(jitter.width = 1)) +
+    labs(x = 'Time (days)', y = 'log2(Protein abundance)', title = paste(targetGeneSet[i],' protein abundance', sep = '')) +
+    scale_color_manual(values = c(brewer.pal(8,'Greys')[7], brewer.pal(9,'Reds')[3:9])) +
+    #scale_y_continuous(limits = c(10,27), breaks = seq(0,30,3)) +
+    theme_classic() +
+    theme(legend.position = 'none')
+  ##
+  ggsave(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/scatterplot_',targetGeneSet[i],'_a673ShEwsFli1Abundance.pdf', sep = ''),
+         height = 4, width = 3, useDingbats = FALSE)
+}
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This is not completely ideal because it is a bit hard to visualize the scale relative to the original parental expression (d0). So, re-scale the data relative to the d0 timepoint, for each replicate, and use these values instead.
+
+```{r}
+##########################################################################################
+proInput = readRDS(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/dataset_proteinSetABCIrsNormalized.rds', sep = ''))
+##make an expression matrix for each replicate
+exp1Scaled = apply(proInput[,2:9], 2, function(x) x/proInput$day0.1_sum)
+exp2Scaled = apply(proInput[,10:17], 2, function(x) x/proInput$day0.2_sum)
+exp3Scaled = apply(proInput[,18:25], 2, function(x) x/proInput$day0.3_sum)
+expScaled = cbind(exp1Scaled, exp2Scaled, exp3Scaled)
+##
+proScaled = tibble(cbind(proInput[,c('accession','gene')], expScaled)) %>%
+  pivot_longer(cols = day0.1_sum:day22.3_sum, names_to = 'timepoint', values_to = 'proteinSignal') %>%
+  dplyr::select(accession, gene, timepoint, proteinSignal) %>%
+  mutate(day = factor(sub('day(.*)\\.[1-3]_sum$', '\\1', timepoint), levels = c(0,7,9,10,11,14,17,22))) %>%
+  mutate(replicate = factor(sub('day[0-9]+\\.(.*)_sum$', '\\1', timepoint), levels = c(1,2,3)))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Remake the plots as before, but with the new scaled data.
+
+```{r}
+##########################################################################################
+targetGeneSet = c('PRKCB','IL1RAP','DLG2','FLI1','TDO2')
+#loop over the genes of interest and make plots for them
+for (i in 1:length(targetGeneSet)){
+  geneOfInterest = proScaled[grepl(targetGeneSet[i], proScaled$gene),]
+  ##
+  ggplot(geneOfInterest, aes(day, proteinSignal, color = day)) +
+    geom_boxplot(size = 0.5, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[6]) +
+    geom_point(size = 1.5, position = position_jitterdodge(jitter.width = 1)) +
+    labs(x = 'Time (days)', y = 'log2(Scaled protein abundance)', title = paste(targetGeneSet[i],' protein abundance', sep = '')) +
+    scale_color_manual(values = c(brewer.pal(8,'Greys')[7], brewer.pal(9,'Reds')[3:9])) +
+    scale_y_continuous(limits = c(0,max(geneOfInterest$proteinSignal, na.rm = TRUE)+0.1), breaks = seq(-1,20,0.2)) +
+    theme_classic() +
+    theme(legend.position = 'none')
+  ##
+  ggsave(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/scatterplot_',targetGeneSet[i],'_a673ShEwsFli1AbundanceScaled.pdf', sep = ''),
+         height = 4, width = 3, useDingbats = FALSE)
+}
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+That looks nicer. Easier to visualize comparisons between genes like this.
+
+
+
+
+
+

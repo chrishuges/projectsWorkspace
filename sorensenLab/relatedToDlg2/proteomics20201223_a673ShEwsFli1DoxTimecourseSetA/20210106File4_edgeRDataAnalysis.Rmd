@@ -1,0 +1,239 @@
+---
+title: "edgeR analysis of A673 data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details comparisons between the time points in the A673 data to extract differential expression information.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('limma')
+library('edgeR')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the normalized data.
+
+```{r}
+##########################################################################################
+dataIrsRaw = as.data.frame(readRDS(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/dataset_proteinSetABCIrsNormalized.rds', sep = '')))
+row.names(dataIrsRaw) = dataIrsRaw$accession
+dataIrsRaw = dataIrsRaw[complete.cases(dataIrsRaw),]
+dataIrs = dataIrsRaw[,c(2,10,18,3,11,19)] #I only keep the two time points I want to compare here
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Need to set up the experimental design.
+
+```{r}
+##########################################################################################
+# set up the sample mapping
+group = rep(c('day0','day7'), each = 3)
+
+# make group into factors and set the order
+group = factor(group, levels = c('day0','day7'))
+str(group)
+
+# create a DGEList object with our data
+yIrs = DGEList(counts = dataIrs, group = group)
+
+# y_sl is a list: y_sl$counts is the data, and y_sl$samples has interesting content
+yIrs$samples
+
+# we will skip applying TMM normalization (using the calcNormFactors function)
+# we need to estimate the dispersion terms (global and local)
+test = estimateCommonDisp(yIrs, verbose=T)
+yIrs = estimateDisp(yIrs)
+plotBCV(yIrs, main = 'Biological variation')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Check what this looks like from a differential expression standpoint.
+
+```{r}
+##########################################################################################
+# the exact test object has columns like fold-change, CPM, and p-values
+groupOfInterestA = 'day7'
+groupOfInterestB = 'day0'
+etIrs = exactTest(yIrs, pair = c(groupOfInterestA, groupOfInterestB))
+
+# this counts up, down, and unchanged genes
+summary(decideTestsDGE(etIrs))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This looks mostly as expected, a lot of significant genes. Assign some FDR values and look at the overall results.
+
+```{r}
+##########################################################################################
+# the topTags function adds the BH FDR values to an exactTest data frame. Make sure we do not change the row order!
+ttIrs = topTags(etIrs, n = Inf, sort.by = "none")
+ttIrs = ttIrs$table #We just need the data frame table
+
+# add the default value as a new column
+ttIrs$candidate = "no"
+ttIrs[which(ttIrs$FDR <= 0.10 & ttIrs$FDR > 0.05), dim(ttIrs)[2]] = "low"
+ttIrs[which(ttIrs$FDR <= 0.05 & ttIrs$FDR > 0.01), dim(ttIrs)[2]] = "med"
+ttIrs[which(ttIrs$FDR <= 0.01), dim(ttIrs)[2]] = "high"
+ttIrs$candidate = factor(ttIrs$candidate, levels = c("high", "med", "low", "no"))
+
+# what does ttIrs look like?
+head(ttIrs)
+
+# what does the test p-value distribution look like?
+ggplot(ttIrs, aes(PValue)) + 
+  geom_histogram(bins = 100, fill = "white", color = "black") + 
+  geom_hline(yintercept = mean(hist(ttIrs$PValue, breaks = 100, plot = FALSE)$counts[26:100])) +
+  ggtitle("IRS data p-value distribution")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make some plots of the results.
+
+```{r}
+##########################################################################################
+samplesA = c(which(grepl(groupOfInterestA, colnames(dataIrs))))
+samplesB = c(which(grepl(groupOfInterestB, colnames(dataIrs))))
+deIrs = data.frame(rowMeans(dataIrs[samplesA]), rowMeans(dataIrs[samplesB]), ttIrs$candidate)
+colnames(deIrs) = c('samplesA','samplesB', 'candidate')
+head(deIrs)
+
+# we need the transformed data for the volcano plot
+volcanoIrs = data.frame(-1*ttIrs$logFC, -1*log10(ttIrs$FDR), ttIrs$candidate)
+colnames(volcanoIrs) = c("FoldChange", "FDR", "candidate")
+head(volcanoIrs)
+
+# start with MA plot
+temp = data.frame(log2((deIrs$samplesA + deIrs$samplesB)/2), log2(deIrs$samplesB/deIrs$samplesA), deIrs$candidate)
+colnames(temp) = c("Ave", "FC", "candidate")
+ggplot(temp, aes(x = Ave, y = FC)) +
+  geom_point(aes(color = candidate, shape = candidate)) +
+  scale_y_continuous("FC (samplesA / samplesB)") +
+  scale_x_continuous("Ave_intensity") +
+  ggtitle("Sample comparison (MA plot)") + 
+  geom_hline(yintercept = 0.0, color = "black") + # one-to-one line
+  geom_hline(yintercept = 1.0, color = "black", linetype = "dotted") + # 2-fold up
+  geom_hline(yintercept = -1.0, color = "black", linetype = "dotted") # 2-fold down
+
+# make separate MA plots
+ggplot(temp, aes(x = Ave, y = FC)) +
+  geom_point(aes(color = candidate, shape = candidate)) +
+  scale_y_continuous("FC (samplesA / samplesB)") +
+  scale_x_continuous("Ave_intensity") +
+  geom_hline(yintercept = 0.0, color = "black") + # one-to-one line
+  geom_hline(yintercept = 1.0, color = "black", linetype = "dotted") + # 2-fold up
+  geom_hline(yintercept = -1.0, color = "black", linetype = "dotted") + # 2-fold down
+  facet_wrap(~ candidate) +
+  ggtitle("After IRS MA plots, separated by candidate")
+
+# make the combined candidate corelation plot
+ggplot(deIrs, aes(x = samplesA, y = samplesB)) +
+  geom_point(aes(color = candidate, shape = candidate)) +
+  scale_y_log10() +
+  scale_x_log10() +
+  ggtitle("After IRS samplesA vs samplesB (scatter plot)") + 
+  geom_abline(intercept = 0.0, slope = 1.0, color = "black") + # one-to-one line
+  geom_abline(intercept = 0.301, slope = 1.0, color = "black", linetype = "dotted") + # 2-fold up
+  geom_abline(intercept = -0.301, slope = 1.0, color = "black", linetype = "dotted") # 2-fold down
+
+# make separate corelation plots
+ggplot(deIrs, aes(x = samplesA, y = samplesB)) +
+  geom_point(aes(color = candidate, shape = candidate)) +
+  scale_y_log10() +
+  scale_x_log10() +
+  geom_abline(intercept = 0.0, slope = 1.0, color = "black") + # one-to-one line
+  geom_abline(intercept = 0.301, slope = 1.0, color = "black", linetype = "dotted") + # 2-fold up
+  geom_abline(intercept = -0.301, slope = 1.0, color = "black", linetype = "dotted") + # 2-fold down
+  facet_wrap(~ candidate) +
+  ggtitle("IRS scatter plots, separated by candidate")
+
+# make a volcano plot
+ggplot(volcanoIrs, aes(x = FoldChange, y = FDR)) +
+  geom_point(aes(color = candidate, shape = candidate)) +
+  xlab("Fold-Change (Log2)") +
+  ylab("-Log10 FDR") +
+  ggtitle("After IRS Volcano Plot")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Reassign some of he annotation.
+
+```{r}
+##########################################################################################
+volcanoIrs$accession = dataIrsRaw$accession
+volcanoIrs$gene = dataIrsRaw$gene
+##
+volcanoIrs[grepl('^IL1RAP$', volcanoIrs$gene),]
+volcanoIrs[grepl('^DLG2$', volcanoIrs$gene),]
+##save the data
+write.table(volcanoIrs, 
+            paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/dataset_edgerIrs_',groupOfInterestA,'-',groupOfInterestB,'.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+```{r}
+##########################################################################################
+volcanoIrs$pColors = ifelse(volcanoIrs$FoldChange <= -0.5 & volcanoIrs$FDR >= 3, brewer.pal(8,'RdBu')[8],
+                              ifelse(volcanoIrs$FoldChange >= 0.5 & volcanoIrs$FDR >= 3, brewer.pal(8,'RdBu')[1],
+                                     brewer.pal(8,'Greys')[6]))
+volcanoIrs$pText = ifelse(grepl('DLG2$',volcanoIrs$gene), volcanoIrs$gene, '')
+##
+ggplot(volcanoIrs, aes(FoldChange, FDR)) +
+  geom_point(size = 1, color = volcanoIrs$pColors, alpha = 0.5) +
+  geom_text_repel(label = volcanoIrs$pText, nudge_x = -2) +
+  labs(x = 'log2(day7 - day0)', y = '-log10(FDR)', title = 'Day7 vs day 0 protein abundance') +
+  #scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
+  scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = 3, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/scatter_edgeRIrsDay7-Day0.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This is giving me quite a few Inf values for FDR, I guess because they are so significant. The dataset appears to have relatively low variability (possibly due to the strength of the IRS normalization). I want to try deqMS and see how it does.
+
+## Session info
+
+```{r}
+sessionInfo()
+```
+
+
+

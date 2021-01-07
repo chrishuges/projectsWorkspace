@@ -1,0 +1,238 @@
+---
+title: "IRS analysis of the A673 timecourse data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to look at A673 cells in 2D growth conditions with modulation of EWS-FLI1 across a timecourse. We want to make comparisons between batches, so we need to do some sort of normalization to facilitate that. The purpose of the work below is to use the Internal Reference Scaling method. This method is discussed in great detail on the [GitHub page](https://github.com/pwilmart/IRS_normalization) of Phil Wilmart. I strongly encourage you to visit his site, as it is a fantastic resource for all things proteomics!
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('limma')
+library('edgeR')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the protein data sets. There are two sets in total for this experiment.
+
+```{r}
+##########################################################################################
+proteinSet1 = readRDS(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/dataset_proteinSetA.rds', sep = ''))
+proteinSet2 = readRDS(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetB/dataset_proteinSetB.rds', sep = ''))
+proteinSet3 = readRDS(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetC/dataset_proteinSetC.rds', sep = ''))
+proteinSet = proteinSet1 %>%
+  left_join(proteinSet2) %>%
+  left_join(proteinSet3)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Start with the sum data and work through the IRS analysis. 
+
+```{r}
+##########################################################################################
+rawData = proteinSet[,c(which(grepl('_sum', colnames(proteinSet))))]
+rawData = rawData[,c(1,10,12,21,23,32,2:9,13:20,24:31)]
+rawData[rawData == 0] = NA
+rawData$accession = proteinSet$accession
+rawData = subset(rawData, rowSums(is.na(rawData[,7:14])) < 5 & rowSums(is.na(rawData[,15:22])) < 5 & rowSums(is.na(rawData[,23:30])) < 5)
+#rawData[is.na(rawData)] = 1
+##
+boxplot(log2(rawData[,7:30]), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+        notch = TRUE, main = 'RAW data: rep1 (red), rep2 (green), rep3 (blue)',
+        xlab = 'TMT Samples', ylab = 'log2 of Intensity')
+##
+plotDensities(log2(rawData[,7:30]), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+              main = 'Raw data')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+The data actually look pretty tight already. Check for column totals.
+
+```{r}
+##########################################################################################
+format(round(colSums(rawData[,7:30], na.rm = TRUE), digits = 0), big.mark = ",")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Start off with the sample loading 'SL' normalization.
+
+```{r}
+##########################################################################################
+# separate the TMT data by experiment
+# we do not need to do this for the normalization factor calculation here,
+# but we will need these data frames for the IRS step below.
+exp1Raw = rawData[c(7:14)]
+exp2Raw = rawData[c(15:22)]
+exp3Raw = rawData[c(23:30)]
+
+# first basic normalization is to adjust each TMT experiment to equal signal per channel
+# figure out the global scaling value
+target = mean(c(colSums(exp1Raw, na.rm = TRUE), colSums(exp2Raw, na.rm = TRUE), colSums(exp3Raw, na.rm = TRUE)))
+
+# do the sample loading normalization before the IRS normalization
+# there is a different correction factor for each column
+normFacs = target / colSums(exp1Raw, na.rm = TRUE)
+exp1Sl = sweep(exp1Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp2Raw, na.rm = TRUE)
+exp2Sl = sweep(exp2Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp3Raw, na.rm = TRUE)
+exp3Sl = sweep(exp3Raw, 2, normFacs, FUN = "*")
+
+# make a pre-IRS data frame after sample loading normalizations
+dataSl = cbind(exp1Sl, exp2Sl, exp3Sl)
+
+# see what the SL normalized data look like
+boxplot(log2(dataSl), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+        notch = TRUE, main = "Sample Loading (SL) normalized data: \nrep1 (red), rep2 (green), rep3 (blue)",
+        xlab = 'TMT Sample', ylab = 'log2 of Intensity')
+
+# can also look at density plots (like a distribution histogram)
+plotDensities(log2(dataSl), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), main = "SL normalization")
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+They look even tighter now. I think we can move onto IRS normalization now. 
+
+```{r}
+##########################################################################################
+# make new data frame with row sums from each frame
+irs = tibble(rowSums(rawData[,1:2], na.rm = TRUE), rowSums(rawData[,3:4], na.rm = TRUE), rowSums(rawData[,5:6], na.rm = TRUE))
+colnames(irs) = c('sum1','sum2','sum3')
+
+# get the geometric average intensity for each protein
+irs$average = apply(irs, 1, function(x) exp(mean(log(x),na.rm = TRUE)))
+
+# compute the scaling factor vectors
+irs$fac1 = irs$average / irs$sum1
+irs$fac2 = irs$average / irs$sum2
+irs$fac3 = irs$average / irs$sum3
+
+# make new data frame with IRS normalized data
+dataIrs = exp1Sl * irs$fac1
+dataIrs = cbind(dataIrs, exp2Sl * irs$fac2)
+dataIrs = cbind(dataIrs, exp3Sl * irs$fac3)
+    
+# see what the IRS data look like
+boxplot(log2(dataIrs), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+        main = "Internal Reference Scaling (IRS) normalized data: \nrep1 (red), rep2 (green), rep3 (blue)",
+        xlab = 'TMT Sample', ylab = 'log2 of Intensity', notch = TRUE)
+
+# can also look at density plots (like a distribution histogram)    
+plotDensities(log2(dataIrs), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), main = "IRS data")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now check the column totals again.
+
+```{r}
+##########################################################################################
+format(round(colSums(dataIrs, na.rm = TRUE), digits = 0), big.mark = ",")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Take a quick look at the clustering to see how the data looks in terms of batch effects.
+
+```{r}
+##########################################################################################
+# see how things cluster after IRS 
+colVec = c(rep('red',8),rep('blue',8),rep('green',8))
+plotMDS(log2(dataIrs), col = colVec, main = "IRS clusters group by condition")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+See if we can make this plot a bit nicer. I used [this](https://uofabioinformaticshub.github.io/DataVisualisaton_BIS2016/DataVisualisation.html) page to help with the code.
+
+```{r}
+##########################################################################################
+#original plot
+colVec = rep(c(brewer.pal(8,'Greys')[7], brewer.pal(9,'Reds')[3:9]),3)
+symVec = rep(c(0,1,2), each = 8)
+plotMDS(log2(dataIrs), 
+        col = colVec,
+        pch = symVec,
+        main = "IRS clusters group by condition",
+        )
+
+#extract the data for the MDS analysis itself
+mdsPlot = plotMDS(log2(dataIrs))
+mdsRawData = as.data.frame(mdsPlot@.Data[[3]])
+mdsPlotData = tibble(mdsRawData) %>%
+  rename(dim1 = V1, dim2 = V2) %>%
+  mutate(sampleData = row.names(mdsRawData)) %>%
+  mutate(day = factor(sub('day(.*)\\.[1-3]_sum$', '\\1', sampleData), levels = c(0,7,9,10,11,14,17,22))) %>%
+  mutate(replicate = factor(sub('day[0-9]+\\.(.*)_sum$', '\\1', sampleData), levels = c(1,2,3)))
+
+#make the ggplot
+ggplot(mdsPlotData, aes(dim1, dim2, color = day, shape = replicate)) +
+  geom_point(size = 3, alpha = 0.75) +
+  scale_color_manual(values = rep(c(brewer.pal(8,'Greys')[7], brewer.pal(9,'Reds')[3:9]),3)) +
+  scale_x_continuous(limits = c(-1,1.2), breaks = seq(-2,2,0.3)) +
+  scale_y_continuous(limits = c(-1,1.2), breaks = seq(-2,2,0.3)) +
+  labs(x = 'Dimension 1', y = 'Dimension 2', title = 'A673 proteomic data grouping') +
+  theme_classic()
+#save the plot
+  ggsave(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/mdsplot_a673ShEwsFli1AbundanceIrs.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+So the data look great. There is doesn't appear to be any batch/replicate effect (y-axis), and the individual days themselves seem to be driving the biggest difference (x-axis)
+
+Recombine the data with the accessions and look at a few target proteins.
+
+```{r}
+##########################################################################################
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/uniprotHumanJan2021.fasta.annotated.rds', sep = ''))
+finalIrsData = as_tibble(cbind(rawData$accession, dataIrs)) %>%
+  rename(accession = `rawData$accession`) %>%
+  left_join(proteinAnnotation) %>%
+  left_join(proteinSet[,c(1,22,44,66)])
+finalIrsData[grepl('DLG2', finalIrsData$gene),]
+##save data
+saveRDS(finalIrsData, paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/dataset_proteinSetABCIrsNormalized.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```
+
+
+

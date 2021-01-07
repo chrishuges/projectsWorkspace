@@ -65,13 +65,42 @@ ggplot(goi, aes(x = reorder(lineage_subtype, log2Tpm, median, na.rm = TRUE), log
   geom_boxplot(size = 0.5, outlier.shape = NA) +
   labs(x = 'Lineage subtype in DepMap', y = 'log2(Transcripts per million)', title = 'DLG2 RNA expression in DepMap') +
   scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
+  geom_hline(yintercept = 2, linetype = 'dashed') +
   theme_classic() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 8))
+  theme(axis.text.x = element_blank())
 ggsave(paste(baseRepository, '/database20201202_dlg2RnaExpressionDepMap/boxplot_dlg2RnaExpressionLineageSubtypeDepmap.pdf', sep = ''),
        height = 4, width = 6, useDingbats = FALSE)
 ```
 
+<div style="margin-bottom:50px;"></div>
 
+I also want to make a plot of both fusions.
+
+```{r}
+##########################################################################################
+goi = rna %>%
+  filter(grepl('^DLG2$', gene)) %>%
+  filter(lineage_subtype == 'Ewing_sarcoma') %>%
+  filter(!is.na(lineage_molecular_subtype) & !grepl('FEV', lineage_molecular_subtype))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot for DLG2 across the lineage_molecular_subtype column.
+
+```{r}
+##########################################################################################
+ggplot(goi, aes(x = reorder(lineage_molecular_subtype, log2Tpm, median, na.rm = TRUE), log2Tpm)) +
+  geom_boxplot(size = 0.5, outlier.shape = NA, width = 0.5) +
+  geom_point(aes(color = lineage_molecular_subtype), size = 2, position = position_jitterdodge(jitter.width = 0.25)) +
+  labs(x = 'Lineage subtype in DepMap', y = 'log2(Transcripts per million)', title = 'DLG2 RNA expression by fusion') +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
+  geom_hline(yintercept = 2, linetype = 'dashed') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/database20201202_dlg2RnaExpressionDepMap/boxplot_dlg2RnaExpressionByFusionDepmap.pdf', sep = ''),
+       height = 4, width = 2, useDingbats = FALSE)
+```
 
 <div style="margin-bottom:50px;"></div>
 
