@@ -93,7 +93,7 @@ Reads Processed:        124m    1069.67k reads/sec
 Bases Processed:       4665m    40.16m bases/sec
 ```
 
-Because I want to look at junction reads, I am going to do an alignment with STAR. There is a good manual [here](https://github.com/alexdobin/STAR) that I am following for the most part. The first thing I want to do is get an index for STAR. To this, I am going to use a pre-built index from refgenie following the instructions outlined on [this page](http://refgenie.databio.org/en/latest/install/). To see the list of available indexes, use the command `refgenie listr`. Pull the Salmon index with the command `refgenie pull hg38/star_index`. You don't need to do this every time, just when you need to update your index. 
+Because I want to look at junction reads, I am going to do an alignment with STAR. There is a good manual [here](https://github.com/alexdobin/STAR) that I am following for the most part. The first thing I want to do is get an index for STAR. To this, I am going to use a pre-built index from refgenie following the instructions outlined on [this page](http://refgenie.databio.org/en/latest/install/). To see the list of available indexes, use the command `refgenie listr`. Pull the STAR index with the command `refgenie pull hg38/star_index`. You don't need to do this every time, just when you need to update your index. 
 
 We can now run STAR. We will do this using a script called `starAlignment.sh`.
 

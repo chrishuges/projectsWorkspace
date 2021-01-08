@@ -113,3 +113,9 @@ Or, on my desktop running locally.
 ```
 python3 /mnt/c/Users/chughes/Documents/bccrc/softwareRepository/ggSashimi/sashimi-plot.py -b /mnt/c/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1RnaSeqBoulayDataReprocessing/SRR5217668.chr11.bam -c 11:83455012-84317339 -g /mnt/c/Users/chughes/Documents/bccrc/databases/HomoSapiensEnsemblGRCh38_rel102/gencode.v36.annotation.gtf --shrink
 ```
+
+Note, none of the above actually worked. But, I went back and re-did the alignment with STAR and ran the command below and it works.
+
+```shell
+/projects/ptx_analysis/chughes/software/ggSashimi/sashimi-plot.py -b ./SRR5217668_Aligned.sortedByCoord.out.bam -c chr11:83455012-84317339 -g /projects/ptx_analysis/chughes/databases/HomoSapiensEnsemblGRCh38_rel102/Homo_sapiens.GRCh38.102.gtf --shrink
+```

@@ -1,0 +1,220 @@
+---
+title: "DLG2 coverage in Ewing proteomic data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired from Ewing sarcoma cells in order to look at coverage of DLG2.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('Biostrings')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Need to read data in from multiple data sets and compile into a single frame. First, read in and process the individual data.
+
+```{r}
+##########################################################################################
+##a673 timecourse, set A
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/uniprotHumanJan2021.fasta.annotated.rds', sep = ''))
+psmDataset1 = read_tsv(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/20201223_A673ShEwsFli1DoxTimecourseSetA_TMT16_HpH_Default_PSM_Report.txt', sep = '')) %>%
+  dplyr::select(`Protein(s)`, Sequence, `Modified Sequence`, `Spectrum File`, `Spectrum Title`) %>%
+  mutate(fraction = factor(sub('.*HpH_(.*)\\.raw$', '\\1', `Spectrum File`), levels = seq(1,36,1))) %>%
+  mutate(accession = sapply(strsplit(`Protein(s)`, ','), '[', 1)) %>%
+  mutate(scan = as.numeric(sub('Spectrum_(.*)', '\\1', `Spectrum Title`))) %>%
+  mutate(sequence = Sequence) %>%
+  mutate(modSequence = `Modified Sequence`) %>%
+  mutate(dataset = 'timecourseSetA') %>%
+  left_join(proteinAnnotation) %>%
+  dplyr::select(dataset, fraction, scan, accession, gene, detectablePeptides, sequence, modSequence)
+
+##a673 timecourse, set B
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetB/uniprotHumanJan2021.fasta.annotated.rds', sep = ''))
+psmDataset2 = read_tsv(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetB/20201223_A673ShEwsFli1DoxTimecourseSetB_TMT16_HpH_Default_PSM_Report.txt', sep = '')) %>%
+  dplyr::select(`Protein(s)`, Sequence, `Modified Sequence`, `Spectrum File`, `Spectrum Title`) %>%
+  mutate(fraction = factor(sub('.*HpH_(.*)\\.raw$', '\\1', `Spectrum File`), levels = seq(1,36,1))) %>%
+  mutate(accession = sapply(strsplit(`Protein(s)`, ','), '[', 1)) %>%
+  mutate(scan = as.numeric(sub('Spectrum_(.*)', '\\1', `Spectrum Title`))) %>%
+  mutate(sequence = Sequence) %>%
+  mutate(modSequence = `Modified Sequence`) %>%
+  mutate(dataset = 'timecourseSetB') %>%
+  left_join(proteinAnnotation) %>%
+  dplyr::select(dataset, fraction, scan, accession, gene, detectablePeptides, sequence, modSequence)
+
+##a673 timecourse, set C
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetC/uniprotHumanJan2021.fasta.annotated.rds', sep = ''))
+psmDataset3 = read_tsv(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetC/20201223_A673ShEwsFli1DoxTimecourseSetC_TMT16_HpH_Default_PSM_Report.txt', sep = '')) %>%
+  dplyr::select(`Protein(s)`, Sequence, `Modified Sequence`, `Spectrum File`, `Spectrum Title`) %>%
+  mutate(fraction = factor(sub('.*HpH_(.*)\\.raw$', '\\1', `Spectrum File`), levels = seq(1,36,1))) %>%
+  mutate(accession = sapply(strsplit(`Protein(s)`, ','), '[', 1)) %>%
+  mutate(scan = as.numeric(sub('Spectrum_(.*)', '\\1', `Spectrum Title`))) %>%
+  mutate(sequence = Sequence) %>%
+  mutate(modSequence = `Modified Sequence`) %>%
+  mutate(dataset = 'timecourseSetC') %>%
+  left_join(proteinAnnotation) %>%
+  dplyr::select(dataset, fraction, scan, accession, gene, detectablePeptides, sequence, modSequence)
+
+##a673 set from Haifeng, 2d growth
+baseRepositoryTemp = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+proteinAnnotation = readRDS(paste(baseRepositoryTemp, '/proteomics20201115_haifengA673Dox2d3dSetA/uniprotHumanNov2020.fasta.annotated.rds', sep = ''))
+psmDataset4 = read_tsv(paste(baseRepositoryTemp, '/proteomics20201115_haifengA673Dox2d3dSetA/20201115_HaifengA673Dox2d3dSetA_TMT16_HpH_Default_PSM_Report.txt', sep = '')) %>%
+  dplyr::select(`Protein(s)`, Sequence, `Modified Sequence`, `Spectrum File`, `Spectrum Title`) %>%
+  mutate(fraction = factor(sub('.*HpH_(.*)\\.raw$', '\\1', `Spectrum File`), levels = seq(1,36,1))) %>%
+  mutate(accession = sapply(strsplit(`Protein(s)`, ','), '[', 1)) %>%
+  mutate(scan = as.numeric(sub('Spectrum_(.*)', '\\1', `Spectrum Title`))) %>%
+  mutate(sequence = Sequence) %>%
+  mutate(modSequence = `Modified Sequence`) %>%
+  mutate(dataset = 'twoDimensionalCulture') %>%
+  left_join(proteinAnnotation) %>%
+  dplyr::select(dataset, fraction, scan, accession, gene, detectablePeptides, sequence, modSequence)
+
+##a673 set from Haifeng, 3d growth
+proteinAnnotation = readRDS(paste(baseRepositoryTemp, '/proteomics20201115_haifengA673Dox2d3dSetB/uniprotHumanNov2020.fasta.annotated.rds', sep = ''))
+psmDataset5 = read_tsv(paste(baseRepositoryTemp, '/proteomics20201115_haifengA673Dox2d3dSetB/20201115_HaifengA673Dox2d3dSetB_TMT16_HpH_Default_PSM_Report.txt', sep = '')) %>%
+  dplyr::select(`Protein(s)`, Sequence, `Modified Sequence`, `Spectrum File`, `Spectrum Title`) %>%
+  mutate(fraction = factor(sub('.*HpH_(.*)\\.raw$', '\\1', `Spectrum File`), levels = seq(1,36,1))) %>%
+  mutate(accession = sapply(strsplit(`Protein(s)`, ','), '[', 1)) %>%
+  mutate(scan = as.numeric(sub('Spectrum_(.*)', '\\1', `Spectrum Title`))) %>%
+  mutate(sequence = Sequence) %>%
+  mutate(modSequence = `Modified Sequence`) %>%
+  mutate(dataset = 'threeDimensionalCulture') %>%
+  left_join(proteinAnnotation) %>%
+  dplyr::select(dataset, fraction, scan, accession, gene, detectablePeptides, sequence, modSequence)
+
+##combine all sets to one
+psmSet = rbind(psmDataset1, psmDataset2, psmDataset3, psmDataset4, psmDataset5)
+saveRDS(psmSet, paste(baseRepository, '/proteomics20201215_huntingForDlg2Isoforms/dataset_compiledPeptides.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+From these compiled data, we just want to look for DLG2 peptides.
+
+```{r}
+##########################################################################################
+dlg2Set = readRDS(paste(baseRepository, '/proteomics20201215_huntingForDlg2Isoforms/dataset_compiledPeptides.rds', sep = '')) %>%
+  filter(grepl('DLG2$', gene)) %>%
+  mutate(psm = 1) %>%
+  dplyr::select(accession, gene, sequence, psm) %>%
+  group_by(accession, gene, sequence) %>%
+  summarise(across(where(is.double), list(sum = sum)))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Want to make a plot of the canonical DLG2 sequence. I might be able to do this with ggplot.
+
+```{r}
+##########################################################################################
+dlg2Fasta = readAAStringSet(paste(baseRepository, '/proteomics20201215_huntingForDlg2Isoforms/dlg2MainIsoformSequenceUniprot.txt', sep = ''))
+
+#find the matched peptide positions
+matchPositionVector = vector()
+for (i in 1:nrow(dlg2Set)){
+  peptideSequence = as.character(dlg2Set[i,'sequence'])
+  matchPositions = as.data.frame(vmatchPattern(peptideSequence, dlg2Fasta))[,c('start','end')]
+  matchPositionVector = c(unique(matchPositionVector), seq(matchPositions$start, matchPositions$end, 1))
+}
+
+#create a data frame where the matched positions are annotated
+xPosVector = c(rep(seq(1,50,1),17), seq(1,20,1))
+yPosVector = c(rep(seq(1,17,1), each = 50), rep(18, 20))
+dlg2Seq = tibble(as.data.frame(dlg2Fasta[[1]])) %>%
+  dplyr::rename(aminoAcid = x) %>%
+  mutate(position = seq(1,length(dlg2Fasta[[1]]),1)) %>%
+  mutate(isDetected = ifelse(position %in% matchPositionVector, 'yes', 'no')) %>%
+  mutate(xPos = xPosVector, yPos = yPosVector)
+
+#make the plot
+ggplot(dlg2Seq, aes(xPos, -yPos, color = isDetected)) +
+  geom_tile(fill = brewer.pal(6,'Greys')[2], width = 0.7, height = 0.6, size = 0.25) +
+  geom_text(aes(label = aminoAcid), size = 1, color = 'black') +
+  scale_color_manual(values = c(brewer.pal(6,'Greys')[3], brewer.pal(8,'RdBu')[1])) +
+  labs(title = 'DLG2 protein coverage') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/proteomics20201215_huntingForDlg2Isoforms/tileplot_dlg2PeptideCoverageMap.pdf', sep = ''),
+       height = 5, width = 5, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+What if I want to add theoretical peptides on here as well?
+
+```{r}
+##########################################################################################
+library('OrgMassSpecR')
+
+#digest DLG2
+peptideDigest = tibble(OrgMassSpecR::Digest(toString(dlg2Fasta[[1]]), missed = 0)) %>%
+  mutate(width = nchar(peptide)) %>%
+  filter(width >= 8)
+
+#redo the matching
+theoreticalPositionVector = vector()
+for (i in 1:nrow(peptideDigest)){
+  peptideSequence = as.character(peptideDigest[i,'peptide'])
+  matchPositions = as.data.frame(vmatchPattern(peptideSequence, dlg2Fasta))[,c('start','end')]
+  theoreticalPositionVector = c(unique(theoreticalPositionVector), seq(matchPositions$start, matchPositions$end, 1))
+}
+
+
+#create a data frame where the matched positions are annotated
+xPosVector = c(rep(seq(1,50,1),17), seq(1,20,1))
+yPosVector = c(rep(seq(1,17,1), each = 50), rep(18, 20))
+dlg2Seq = tibble(as.data.frame(dlg2Fasta[[1]])) %>%
+  dplyr::rename(aminoAcid = x) %>%
+  mutate(position = seq(1,length(dlg2Fasta[[1]]),1)) %>%
+  mutate(isDetected = ifelse(position %in% matchPositionVector, 'yes', 'no')) %>%
+  mutate(isPossible = ifelse(position %in% theoreticalPositionVector, 'yes', 'no')) %>%
+  mutate(xPos = xPosVector, yPos = yPosVector)
+
+#make the plot
+ggplot(dlg2Seq, aes(xPos, -yPos, color = isDetected)) +
+  geom_tile(aes(fill = isPossible), width = 0.7, height = 0.6, size = 0.25) +
+  geom_text(aes(label = aminoAcid), size = 1, color = 'black') +
+  scale_fill_manual(values = c(brewer.pal(6,'Greys')[3], brewer.pal(8,'Blues')[2])) +
+  scale_color_manual(values = c(brewer.pal(6,'Greys')[3], brewer.pal(8,'Reds')[6])) +
+  labs(title = 'DLG2 protein coverage') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/proteomics20201215_huntingForDlg2Isoforms/tileplot_dlg2PeptideCoverageMapWithTheoretical.pdf', sep = ''),
+       height = 5, width = 5, useDingbats = FALSE)
+```
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+

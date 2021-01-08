@@ -1,6 +1,6 @@
 ## Reprocessing some RNAseq data
 
-This document describes the reprocessing of some RNAseq data from a the CCLE database, or DepMap. The data are all located in SRA: PRJNA523380.
+This document describes the reprocessing of some RNAseq data from a the CCLE database, or DepMap. The data are all located in SRA: [PRJNA523380](https://www.ncbi.nlm.nih.gov/bioproject?term=PRJNA523380).
 
 ### Getting the raw data
 

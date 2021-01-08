@@ -1,0 +1,80 @@
+---
+title: "Coverage maps for DGL2"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with aligned RNAseq data to create coverage maps for DLG2.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('Rsamtools')
+library('rtracklayer')
+library('GenomicAlignments')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+I think the easiest way to do this might be to create a BamViews object. First we need to get the genomic range for DLG2.
+
+```{r}
+##########################################################################################
+gtf = rtracklayer::import('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf')
+dlg2Gtf = as.data.frame(gtf) %>%
+  filter(grepl('ENST00000398309.6', transcript_id)) %>%
+  filter(grepl('transcript', type))
+dlg2Range = makeGRangesFromDataFrame(dlg2Gtf)
+seqlevels(dlg2Range) = "chr11"
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now lets see if we can assemble a bamviews object using these ranges.
+
+```{r}
+##########################################################################################
+bamInputFiles = list.files(paste(baseRepository, '/sequencing20200107_humanProteinAtlasData/', sep = ''), pattern = '*.bam$', full.names = TRUE)
+
+##
+dlg2BamView = BamViews(bamPaths = bamInputFiles, 
+                       bamIndicies = bamInputFiles,
+                       bamRanges = dlg2Range)
+
+
+which <- dlg2Range
+what <- c("rname", "strand", "pos", "qwidth", "seq")
+param <- ScanBamParam(which = which, what = what)     
+bamFile <- bamInputFiles[1]
+bam <- scanBam(bamFile, param=param)   
+
+
+```
+
+
+
+
+
