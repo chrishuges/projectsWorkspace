@@ -155,21 +155,103 @@ ggplot(exons, aes(index, score)) +
   
 ```
 
+<div style="margin-bottom:50px;"></div>
 
+I ended up doing this in mosdepth as described elsewhere in the associated analysis. The below reads in these mosdepth data and combines them with annotation.
 
+```{r}
+##########################################################################################
+mosdepthCounts = read_tsv(paste(baseRepository, '/sequencing20200107_humanProteinAtlasData/mosdepthAnalysis/ERR315455.regions.bed.gz', sep = ''), 
+                col_names = c('seqnameMos','startMos','endMos','geneMos','coverageMos')) %>%
+  mutate(startJoin = factor(-(startMos + 1)))
+##
+regions = as.data.frame(rtracklayer::import.gff(paste(baseRepository, '/sequencing20200107_humanProteinAtlasData/mosdepthAnalysis/targetTranscriptList.gtf', sep = ''))) %>%
+  filter(grepl('exon', type)) %>%
+  mutate(startJoin = factor(-start)) %>%
+  dplyr::select(startJoin, transcript_id, exon_number) %>%
+  mutate(exon_number = factor(exon_number, levels = seq(1,30,1))) %>%
+  left_join(mosdepthCounts)
+```
 
+<div style="margin-bottom:50px;"></div>
 
+I want to make a plot of these so I can visualize each transcript and its exons separately, but in the same plot. I think a geom_tile would be best for this, using the middle location of the exon perhaps?
 
+```{r}
+##########################################################################################
+ggplot(regions, aes(startJoin, transcript_id)) +
+  geom_tile(aes(fill = coverageMos))
+```
 
+<div style="margin-bottom:50px;"></div>
 
+This seems to work OK, but is a bit confusing with all of the isoforms plotted. These are the main isoforms in ENSEMBL, so we can try and start with them: ENST00000398309.6, ENST00000280241.12, ENST00000426717.6, ENST00000376104.6, ENST00000418306.6.
 
+```{r}
+##########################################################################################
+isoforms = c('ENST00000398309.6', 'ENST00000280241.12', 'ENST00000426717.6', 'ENST00000376104.6', 'ENST00000418306.6')
+#isoforms = c('ENST00000426717.6','ENST00000280241.12')
+isoformRegions = regions[regions$transcript_id %in% isoforms, ]
+#isoformRegions = regions
+ggplot(isoformRegions, aes(as.numeric(startJoin), transcript_id)) +
+  geom_tile(aes(fill = coverageMos), color = 'white', size = 0.5) +
+  labs(x = 'Exon', title = 'DLG2 isoform expression') +
+  scale_fill_gradient2(low = brewer.pal(6,'RdBu')[6], mid = brewer.pal(6,'RdBu')[4], high = brewer.pal(6,'RdBu')[1],
+                       midpoint = (max(isoformRegions$coverageMos) - min(isoformRegions$coverageMos))/2) +
+  coord_fixed(ratio = 1) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+        panel.grid.major.y = element_line(size = 0.5, color = brewer.pal(6,'Greys')[4]),
+        legend.position = 'none',
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 3))
+ggsave(paste(baseRepository, '/sequencing20200107_humanProteinAtlasData/mosdepthAnalysis/tileplot_brainIsoformExpression.pdf', sep = ''),
+       height = 4, width = 6, useDingbats = FALSE)
+```
 
+<div style="margin-bottom:50px;"></div>
 
+What about by exon number.
 
+```{r}
+##########################################################################################
+isoforms = c('ENST00000398309.6', 'ENST00000280241.12', 'ENST00000426717.6', 'ENST00000376104.6', 'ENST00000418306.6')
+isoformRegions = regions[regions$transcript_id %in% isoforms, ]
+ggplot(isoformRegions, aes(exon_number, transcript_id)) +
+  geom_tile(aes(fill = coverageMos), color = 'white', size = 0.5) +
+  labs(x = 'Exon', title = 'DLG2 isoform expression') +
+  scale_fill_gradient2(low = brewer.pal(6,'RdBu')[6], mid = brewer.pal(6,'RdBu')[4], high = brewer.pal(6,'RdBu')[1],
+                       midpoint = (max(isoformRegions$coverageMos) - min(isoformRegions$coverageMos))/2) +
+  coord_fixed(ratio = 1) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size = 6),
+        panel.grid.major.y = element_line(size = 0.5, color = brewer.pal(6,'Greys')[4]),
+        legend.position = 'none',
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 3))
+ggsave(paste(baseRepository, '/sequencing20200107_humanProteinAtlasData/mosdepthAnalysis/tileplot_brainIsoformExpressionExons.pdf', sep = ''),
+       height = 4, width = 6, useDingbats = FALSE)
 
+```
 
+<div style="margin-bottom:50px;"></div>
 
+What if we do it as a path instead?
 
+```{r}
+##########################################################################################
+isoforms = c('ENST00000398309.6', 'ENST00000280241.12', 'ENST00000426717.6', 'ENST00000376104.6', 'ENST00000418306.6')
+isoformRegions = regions[regions$transcript_id %in% isoforms, ]
+ggplot(isoformRegions, aes(as.numeric(startJoin), transcript_id)) +
+  geom_tile(aes(fill = coverageMos), color = 'white', size = 0.5) +
+
+  
+  
+  
+  
+ggsave(paste(baseRepository, '/sequencing20200107_humanProteinAtlasData/mosdepthAnalysis/lineplot_brainIsoformExpression.pdf', sep = ''),
+       height = 4, width = 6, useDingbats = FALSE)
+```
 
 
 

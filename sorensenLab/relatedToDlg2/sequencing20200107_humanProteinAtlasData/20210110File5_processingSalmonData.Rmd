@@ -1,0 +1,94 @@
+---
+title: "Isoform determination for DLG2"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with Salmon data obtained from analysis of brain RNAseq data from the Human Protein Atlas.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('tximport')
+library('TxDb.Hsapiens.UCSC.hg38.knownGene')
+library('GenomicFeatures')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+The first thing to do is to make a sample annotation table.
+
+```{r}
+##########################################################################################
+hpaSamples = tibble('tissue' = c(rep('brain',3)), 'sample' = c('ERR315432', 'ERR315455', 'ERR315477'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Next we point at our quant files.
+
+```{r}
+##########################################################################################
+hpaFiles = file.path(paste(baseRepository, '/sequencing20200107_humanProteinAtlasData', sep = ''), paste(hpaSamples$sample, '_quant', sep = ''), 'quant.sf')
+names(hpaFiles) = hpaSamples$sample
+all(file.exists(hpaFiles))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Build the transcriptome index.
+
+```{r}
+##########################################################################################
+txdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf')
+k = keys(txdb, keytype = "TXNAME")
+tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read the transcript data.
+
+```{r}
+##########################################################################################
+txi = tximport(hpaFiles, type = 'salmon', txOut = TRUE, countsFromAbundance = 'scaledTPM')
+names(txi)
+txiAnnotated = tibble(as.data.frame(txi$counts)) %>%
+  mutate('TXNAME' = row.names(txi$counts)) %>%
+  left_join(tx2gene) %>%
+  filter(grepl('ENSG00000150672', GENEID)) %>%
+  mutate('width' = TXEND - TXSTART) %>%
+  arrange(-width)
+  
+  
+```
+
+
+
+
+
+
+
