@@ -1,0 +1,189 @@
+---
+title: "Analysis of Sonya translatome data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to look at the translatome of cells from Sonya. All samples were run with targeted mass difference.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the protein annotation details.
+
+```{r}
+##########################################################################################
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20201119_SonyaTranslationSet1Tmd/uniprotHumanNov2020.fasta.annotated.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read in the psm data and process into a peptide set.
+
+```{r}
+##########################################################################################
+psm = read_tsv(paste(baseRepository, '/proteomics20201119_SonyaTranslationSet1Tmd/20201119_SonyaTranslationSet1Tmd_silac10R8K-TMT10_HpH_Default_PSM_Report.txt', sep = '')) %>%
+  dplyr::select(`Protein(s)`, Sequence, `Modified Sequence`, `Spectrum File`, `Spectrum Title`, `Variable Modifications`) %>%
+  mutate(fraction = factor(sub('.*HpH_(.*)\\.raw$', '\\1', `Spectrum File`), levels = seq(1,36,1))) %>%
+  mutate(accession = sapply(strsplit(`Protein(s)`, ','), '[', 1)) %>%
+  mutate(scan = as.numeric(sub('Spectrum_(.*)', '\\1', `Spectrum Title`))) %>%
+  mutate(sequence = Sequence) %>%
+  mutate(modSequence = `Modified Sequence`) %>%
+  mutate(varMods = `Variable Modifications`) %>%
+  left_join(proteinAnnotation) %>%
+  dplyr::select(fraction, scan, accession, gene, detectablePeptides, sequence, modSequence, varMods)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we need the quantification data. I will use a function to process these data.
+
+```{r}
+#######################################################################
+#######################################################################
+##this function goes through the provided quant files and returns
+##a parsed object for each. It returns signal to noise ratio for quant
+#######################################################################
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`131CIntensity`)
+  colnames(quantData) = c('scan','tmt10plex_126','tmt10plex_127N','tmt10plex_127C','tmt10plex_128N',
+                  'tmt10plex_128C','tmt10plex_129N','tmt10plex_129C','tmt10plex_130N','tmt10plex_130C','tmt10plex_131N','tmt10plex_131C')
+  ##
+  fraction = sub('.*HpH_(.*)\\.raw_Matrix\\.txt$', '\\1', filePath)
+  quantData$fraction = fraction
+  print(paste('Processing file for fraction ', fraction, '.', sep = ''))
+  ##
+  return(quantData)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We can use this function to parse the quant data into a single object.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+quantFiles = as.list(list.files(paste(baseRepository, '/proteomics20201119_SonyaTranslationSet1Tmd/quantFiles/', sep = ''),
+           pattern = '_Matrix.txt', full.names = TRUE))
+##
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now combine the quant data into a single data frame and with the previously processed PSM data.
+
+```{r}
+##########################################################################################
+allQuantData = do.call('rbind', quantDataSet)
+psmQuant = psm %>%
+  left_join(allQuantData)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Add light and heavy annotation.
+
+```{r}
+##########################################################################################
+psmQuant$label = ifelse(grepl('Arginine', psmQuant$varMods), 'heavy',
+                        ifelse(grepl('K\\+8', psmQuant$varMods), 'heavy', 'light'))
+##
+table(psmQuant$label)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Our sample layout is:
+
+* 126C - dmso1
+* 127N - isrib1
+* 127C - dmso2
+* 128N - isrib2
+* 128C - dmso3
+* 129N - isrib3
+* 129C - empty
+* 130N - empty
+* 130C - heavySpike1
+* 131N - lightSpike
+* 131C - heavySpike2
+
+In the original manuscript, the data are not filtered at all. They average all modification forms of peptides, subtract the non-SILAC channel signal (setting negative values to zero), and divide each value by the booster spike. Peptides are rolled into proteins using a median of all values. I do want to do some filtering, but I will be very lenient and just require a signal intensity of at least 3 per channel. 
+
+
+```{r}
+##########################################################################################
+psmQuant$sampleSignal = rowSums(psmQuant[,c(9:14)])
+psmQuantFiltered = psmQuant %>%
+  filter(grepl('heavy', label)) %>%
+  filter(sampleSignal >= 30) %>%
+  filter(!is.na(gene)) %>%
+  filter(!grepl('-', gene))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can process the data relative to the non-SILAC channel and the booster.
+
+```{r}
+##########################################################################################
+expSet1 = psmQuantFiltered[,c(9,11,13,10,12,14,17:19)]
+expSet1$boostMean = rowMeans(expSet1[,c('tmt10plex_130C','tmt10plex_131C')], na.rm = TRUE)
+expSet2 = apply(expSet1[,1:6], 2, function(x) x - expSet1$tmt10plex_131N)
+expSet2[expSet2 < 0] = 0
+expSet3 = apply(expSet2, 2, function(x) x / expSet1$boostMean)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can roll this in to a protein set using a median.
+
+```{r}
+##########################################################################################
+proteinSet = tibble(cbind(psmQuantFiltered[,3], expSet3)) %>%
+  group_by(accession) %>%
+  summarise(across(where(is.double), list(med = median)))
+```
+
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
