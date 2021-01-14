@@ -41,6 +41,13 @@ P015161_SalivaryGland_fullproteome_RNAseq_txt.zip
 P015424_AdrenalGland_fullproteome_RNAseq_txt.zip
 ```
 
+Just the identifiers:
+
+```
+P012502 P013114 P013128 P013129 P013163 P013164 P013187 P013188 P013196 P013197 P013198 P013201 P013385 P013386 P013387 P013559 P013560 P013562 P013675 P013677 P013678 P013679 P013680 P013681 P015159 P015160 P015161 P015424
+```
+
+
 I am just going to do this download and directory organization using a shell script. 
 
 
