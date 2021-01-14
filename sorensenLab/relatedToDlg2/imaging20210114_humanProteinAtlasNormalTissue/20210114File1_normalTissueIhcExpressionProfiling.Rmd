@@ -1,0 +1,92 @@
+---
+title: "DLG2 expression in normal brain IHC"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with IHC data from the Human Protein Atlas to look for DLG2 expression in normal tissues.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+#generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+#baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the data from Human Protein Atlas.
+
+```{r}
+##########################################################################################
+hpaData = read_tsv(paste(generalDatasets, '/humanProteinAtlas/normal_tissue.tsv', sep = '')) %>%
+  filter(grepl('ENSG00000150672', Gene))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Assign a numerical value to the expression level to make plotting a bit easier. 
+
+```{r}
+##########################################################################################
+table(hpaData$Level)
+##
+hpaData$numericalExpression = ifelse(grepl('High', hpaData$Level), 3,
+                                     ifelse(grepl('Medium', hpaData$Level), 2,
+                                            ifelse(grepl('Low', hpaData$Level), 1, 0)))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can make the plot.
+
+```{r}
+##########################################################################################
+hpaData$pText = ifelse(hpaData$numericalExpression >= 1, hpaData$Tissue, '')
+ggplot(hpaData, aes(Gene, numericalExpression, fill = Gene)) +
+  geom_point(size = 2, position = position_jitterdodge(jitter.width = 0.25)) +
+  geom_text_repel(label = hpaData$pText, size = 3) +
+  labs(x = 'Gene', y = 'HPA abundance annotation', title = 'HPA normal') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(generalDatasets, '/humanProteinAtlas/boxplot_dlg2ProteinExpressionTissueHpa.pdf', sep = ''),
+      height = 4, width = 2, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+That looks good! Most of the tissues where there is a reported value for DLG2 are brain. We can move on to looking at some proteomic data now in other datasets.
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
