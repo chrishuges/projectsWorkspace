@@ -25,12 +25,12 @@ I want to set a base directory that we can use as a link to the directory where 
 
 ```{r}
 ##########################################################################################
-#generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
-#baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
-#baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
-generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
-baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
-baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -71,7 +71,7 @@ ggplot(hpaData, aes(Gene, numericalExpression, fill = Gene)) +
   labs(x = 'Gene', y = 'HPA abundance annotation', title = 'HPA normal') +
   theme_classic() +
   theme(legend.position = 'none')
-ggsave(paste(generalDatasets, '/humanProteinAtlas/boxplot_dlg2ProteinExpressionTissueHpa.pdf', sep = ''),
+ggsave(paste(baseRepository, '/imaging20210114_humanProteinAtlasNormalTissue/boxplot_dlg2ProteinExpressionTissueHpa.pdf', sep = ''),
       height = 4, width = 2, useDingbats = FALSE)
 ```
 
