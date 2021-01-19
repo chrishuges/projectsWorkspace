@@ -1,0 +1,290 @@
+---
+title: "ChipSeq coverage maps for DLG2"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with aligned ChIPseq data to look at coverage patterns for DLG2.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('wiggleplotr')
+library('GenomicRanges')
+library('GenomicFeatures')
+library('biomaRt')
+library('org.Hs.eg.db')
+library('TxDb.Hsapiens.UCSC.hg38.knownGene')
+library('gggenes')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First get the gtf file we used for alignment and will use for annotation below.
+
+```{r}
+##########################################################################################
+totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+The wiggleplot R package has some nice tools for plotting coverage data from bigwig files, which is what we have from deeptools. See an example below for the transcripts for DLG2 that have an annotated CCDS entry.
+
+```{r}
+##########################################################################################
+plotTranscriptsFromUCSC(orgdb = org.Hs.eg.db, txdb = TxDb.Hsapiens.UCSC.hg38.knownGene, 
+                        gene_names = 'DLG2', transcript_ids = c('ENST00000398309.6','ENST00000280241.12','ENST00000426717.6','ENST00000376104.6',
+                                                                'ENST00000418306.6','ENST00000532653.5'),
+                        rescale_introns = TRUE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I think this might be more flexible in the future if we extract this directly from the GTF.
+
+```{r}
+##########################################################################################
+dlg2Gtf = totalGtf %>%
+  filter(grepl('ENST00000398309.6', transcript_id))
+##
+dlg2Meta = dlg2Gtf %>%
+  filter(grepl('transcript', type)) %>%
+  dplyr::select(transcript_id, gene_id, gene_name, strand)
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Lets try plotting with these data.
+
+```{r}
+##########################################################################################
+plotTranscripts(dlg2Exons, dlg2Cds, dlg2Meta, rescale_introns = TRUE, )
+ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/rectangly_dlg2GeneLayout.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+The plot is messy, but it works. Now add some coverage data from our bigwig files that we generated previously. You need to keep the names as underscores here because that is what the tool is expecting.
+
+```{r}
+##########################################################################################
+sampleData = tibble(sample_id = c('day7','day17'), 
+                    condition = factor(c('ewsLow','ewsHigh'), levels = c('ewsLow','ewsHigh')),
+                    scaling_factor = 1)
+##
+bigwigFiles = c(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832669.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832674.chr11.bw', sep = ''))
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we are ready to make the plot.
+
+```{r}
+##########################################################################################
+selectedTranscripts = c('ENST00000376104.6')
+plotCoverage(dlg2Exons[selectedTranscripts], dlg2Cds[selectedTranscripts], 
+             dlg2Meta, trackData,
+             heights = c(2,1), fill_palette = getGenotypePalette(),
+             rescale_introns = FALSE, region_coords = c(83716153, 83827719))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I think I will just plot this manually because it is a bit tricky with the way the DLG2 gene is.
+
+
+```{r}
+##########################################################################################
+##get the exons for the primary isoform in Ensembl
+dlg2Exons = totalGtf %>%
+  filter(grepl('DLG2', gene_name)) %>%
+  filter(grepl('exon', type) | grepl('UTR', type)) %>%
+  filter(grepl('ENST00000398309.6', transcript_id)) %>%
+  arrange(-start)
+##
+##get the widths of the different exons
+dlg2Widths = dlg2Exons[c(1:23,25),] %>%
+  arrange(-start) %>%
+  dplyr::select(width)
+##
+##collapse introns to a set length of 50
+newStarts = 1
+for(i in 2:nrow(dlg2Widths)){
+  baseStart = 84923119
+  totalWidth = (sum(dlg2Widths$width[1:(i-1)]) + 50)
+  newStarts[i] = totalWidth
+}
+dlg2ExonsMod = dlg2Exons[c(1:23,25),] %>%
+  arrange(-start) %>%
+  mutate(newStarts = newStarts) %>%
+  mutate(newEnds = newStarts + (width - 1))
+##
+##make a plot of the gene layout
+ggplot(dlg2ExonsMod, aes(xmin = newStarts, xmax = newEnds, y = gene_name, fill = type)) +
+  geom_gene_arrow(arrowhead_height = unit(3, "mm"), arrowhead_width = unit(1, "mm"))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I don't really like the way this looks. I am wasting a bit too much time on this, it is kind of annoying. Just use the plotTranscripts from above. Move on to plotting the peak regions.
+
+```{r}
+##########################################################################################
+#the transcript with the closest 'exon' is ENST00000426717.6
+dlg2Gtf = totalGtf %>%
+  filter(grepl('DLG2', gene_name)) %>%
+  filter(grepl('gene', type)) %>%
+  mutate(end = end + 100000) #we add 100kb here to search beyond the annotated TSS
+##
+macsPeaks = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832674_peaks.xls', sep = ''), 
+                     skip = 30, 
+                     col_names = c('chr','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  filter(grepl('chr11', chr)) %>%
+  filter(start > dlg2Gtf$start & end < dlg2Gtf$end) %>%
+  mutate(midPoint = start + round(length / 2, 0)) %>%
+  filter(fold_enrichment >= 10)
+##
+#get the bigwig data
+macsBw = rtracklayer::import(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832674.chr11.bw', sep = ''))
+#make a new grange to subtract from these data
+peakGrange = makeGRangesFromDataFrame(data.frame('seqname' = macsPeaks$chr,
+                        'start' = macsPeaks$midPoint - 1000,
+                        'end' = macsPeaks$midPoint + 1000,
+                        'strand' = '*'))
+#find the overlaps with the bigwig data
+peakWindows = unlist(slidingWindows(peakGrange,1), use.names = TRUE)
+peakWindows$peak = rep(seq(5,1,-1), each = 2001)
+macsOverlaps = findOverlaps(peakWindows, macsBw, ignore.strand = TRUE)
+macsCounts = as.data.frame(macsBw)[subjectHits(macsOverlaps),]
+macsCounts$peakId = peakWindows$peak
+macsCounts$indexLocation = rep(seq(1,2001,1), 5)
+
+#make a test plot
+ggplot(macsCounts, aes(indexLocation, score)) +
+  geom_path() +
+  scale_y_continuous(limits = c(0,6), breaks = seq(0,8,2)) +
+  scale_x_continuous(limits = c(0,2005), breaks = seq(0,2000,1000)) +
+  labs(x = 'Peak position', y = 'Bins per million', title = 'EWS-FLI1 peaks in DLG2') +
+  theme_classic() +
+  facet_wrap(~peakId, nrow = 1)
+
+##looks good, so make a plot for each
+accessions = c('SRR8832669','SRR8832670','SRR8832671','SRR8832672','SRR8832673','SRR8832674')
+for(i in 1:length(accessions)){
+  macsBw = rtracklayer::import(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/',accessions[i],'.chr11.bw', sep = ''))
+  macsOverlaps = findOverlaps(peakWindows, macsBw, ignore.strand = TRUE)
+  macsCounts = as.data.frame(macsBw)[subjectHits(macsOverlaps),]
+  macsCounts$peakId = peakWindows$peak
+  macsCounts$indexLocation = rep(seq(1,2001,1), 5)
+  ##
+  ggplot(macsCounts, aes(indexLocation, score)) +
+    geom_path() +
+    scale_y_continuous(limits = c(0,6), breaks = seq(0,8,2)) +
+    scale_x_continuous(limits = c(0,2005), breaks = seq(0,2000,1000)) +
+    labs(x = 'Peak position', y = 'Bins per million', title = 'EWS-FLI1 peaks in DLG2') +
+    theme_classic() +
+    theme(panel.border = element_rect(size = 1, fill = NA)) +
+    facet_wrap(~peakId, nrow = 1)
+  ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/lineplot_dlg2ChipPeaks',accessions[i],'.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This looks good, but I think it might be better to plot all of the peaks in a single graph.
+
+```{r}
+##########################################################################################
+#you need to run the code in the previous chunk before this because it relies on some of the objects from it
+accessions = c('SRR8832669','SRR8832670','SRR8832671','SRR8832672','SRR8832673','SRR8832674')
+combinedPeaks = list()
+for(i in 1:length(accessions)){
+  macsBw = rtracklayer::import(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/',accessions[i],'.chr11.bw', sep = ''))
+  macsOverlaps = findOverlaps(peakWindows, macsBw, ignore.strand = TRUE)
+  macsCounts = as.data.frame(macsBw)[subjectHits(macsOverlaps),]
+  macsCounts$peakId = peakWindows$peak
+  macsCounts$indexLocation = rep(seq(1,2001,1), 5)
+  macsCounts$dataset = accessions[i]
+  ##
+  combinedPeaks[[i]] = macsCounts
+}
+combinedPeaksCollapse = do.call('rbind', combinedPeaks)
+
+
+##now try making the plot again
+ggplot(combinedPeaksCollapse, aes(indexLocation, score)) +
+  geom_path(color = brewer.pal(8,'RdBu')[8], size = 1) +
+  scale_y_continuous(limits = c(0,6), breaks = seq(0,8,2)) +
+  scale_x_continuous(limits = c(0,2005), breaks = seq(0,2000,1000)) +
+  labs(x = 'Peak position', y = 'Bins per million', title = 'EWS-FLI1 peaks in DLG2') +
+  facet_wrap(~dataset + peakId, nrow = 6, ncol = 5) +
+  theme_classic() +
+  theme(panel.border = element_rect(size = 1, fill = NA),
+        strip.background = element_blank(),
+        strip.text.x = element_blank(),
+        axis.text.x = element_blank())
+ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/lineplot_dlg2ChipPeaksAll.pdf', sep = ''),
+       height = 8, width = 8, useDingbats = FALSE)
+
+
+
+
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+

@@ -34,4 +34,20 @@ done
 
 If you wanted to make single bp regions and count that way (this will eliminate the binning from mosdepth), you could use bedtools with the command `/projects/ptx_analysis/chughes/software/bedtools2/bin/bedtools.static.binary makewindows -b targetTranscriptList.bed -w 1 -i src > targetTranscriptsSingleBase.bed`. 
 
+I am adding to this after the fact. I want to create bigwig files that I can use for coverage analysis downstream. I can do this directly from the chr11 bam files that I created in the above code.
+
+```shell
+#!/bin/bash
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/humanProteinAtlasRnaSequencingData/starResults/"
+targetGeneGtf="/projects/ptx_results/Sequencing/publishedStudies/humanProteinAtlasRnaSequencingData/starResults/targetTranscriptList.gtf"
+#########################################
+for i in ERR315455 ERR315477 ERR315432
+do
+  echo $i
+  coverageCall="bamCoverage -b ${rawDataOutputDirectory}${i}.chr11.bam -o ${rawDataOutputDirectory}${i}.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --centerReads -p 6"
+  eval $coverageCall
+done
+```
+
+I use these files in the `20210113File6_creatingDlg2CoverageMapsRevisited.Rmd` analysis file.
 

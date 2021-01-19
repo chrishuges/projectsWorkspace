@@ -117,3 +117,19 @@ done
 ```
 Now we can transfer these files to our local machine and look through the bam alignments in IGV.
 
+I am adding to this after the fact. I want to create bigwig files that I can use for coverage analysis downstream. I can do this directly from the chr11 bam files that I created in the above code.
+
+```shell
+#!/bin/bash
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/starResults/"
+#########################################
+for i in SRR8616012 SRR8615497
+do
+  echo $i
+  coverageCall="bamCoverage -b ${rawDataOutputDirectory}${i}.chr11.bam -o ${rawDataOutputDirectory}${i}.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --centerReads -p 6"
+  eval $coverageCall
+done
+```
+
+I use these files in the `20210113File4_creatingDlg2CoverageMaps.Rmd` analysis file.
+

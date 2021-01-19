@@ -95,6 +95,12 @@ do
 done
 ```
 
+This script didn't completely work. The removing of duplicates command wasn't working, I think because of a text error. It just didn't like the quotes in the command. So, I had to go through the files manually just because I didn't really want to get into a big thing about fixing it. 
+
+```shell
+/projects/ptx_analysis/chughes/software/sambamba-0.8.0/sambamba-0.8.0 view -h -t 6 -f bam -F '[XS] == null and not unmapped and not duplicate' ./SRR8832667.sorted.bam > ./SRR8832667.filtered.bam
+```
+
 Now we move on to peak calling using [MACS](https://github.com/macs3-project/MACS). There is a great walkthrough of this process [here](https://hbctraining.github.io/Intro-to-ChIPseq/lessons/05_peak_calling_macs.html). Also [here](https://deeptools.readthedocs.io/en/develop/content/tools/bamCoverage.html) for discussion of deepTools, specifically bamCoverage.
 
 ```shell
@@ -108,4 +114,37 @@ do
 done
 ```
 
-Now we are ready for visualization. There is a good walkthrough of visualization [here](https://hbctraining.github.io/Intro-to-ChIPseq/lessons/10_data_visualization.html). 
+For the H3K27ac data, I rand MACS3 using the --broad tag as well as this is how it was done in the original manuscript. Now we are ready for visualization. There is a good walkthrough of visualization [here](https://hbctraining.github.io/Intro-to-ChIPseq/lessons/10_data_visualization.html). First, I ran [deeptools](https://deeptools.readthedocs.io/en/develop/) on the bam files to create coverage maps:
+
+```shell
+ bamCoverage -b ./SRR8832666.filtered.bam -o ./deeptools/SRR8832666.chr11.bw --binSize 20 --region chr11 --normalizeUsing BPM --smoothLength 60 --extendReads 150 --centerReads -p 6
+
+bamCoverage -b ./$i.filtered.bam -o ./deeptools/$i.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --extendReads 150 --centerReads -p 6
+```
+
+Now, I want to create a heatmap around the TSS for genes on chromosome 11. First I need to create a bed file with the chr11 gene regions in it. I can do this using the command line:
+
+```shell
+cat /projects/ptx_analysis/chughes/databases/refgenieIndexes/hg38/gencode_gtf/default/hg38.gtf |  awk 'OFS="\t" {if ($3=="gene" && $1=="chr11") {print $1,$4-1,$5,$10,$16,$7}}' | tr -d '";' > ./chr11Hg38GeneRegions.bed
+```
+
+Now I can run computeMatrix from deeptools.
+
+```shell
+computeMatrix reference-point --referencePoint TSS -b 1000 -a 1000 -R /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/chr11Hg38GeneRegions.bed -S /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/SRR88326[67][901234]*.bw --skipZeros -o /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/ewsFli1ChipSeqTssMatrixChr11.gz -p 6 --outFileSortedRegions /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/regionsTssChr11.bed
+```
+
+We can create a profile plot from these data.
+
+```shell
+plotProfile -m /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/ewsFli1ChipSeqTssMatrixChr11.gz --outFileName /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/regionsTssChr11Profile.pdf --perGroup --refPointLabel "TSS"
+```
+
+Alternatively, we can show this as a heatmap.
+
+```shell
+plotHeatmap -m /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/ewsFli1ChipSeqTssMatrixChr11.gz --outFileName /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/regionsTssChr11Heatmap.pdf --colorMap RdBu
+```
+
+I think for the rest of the visualization, we will carry this out in R.
+
