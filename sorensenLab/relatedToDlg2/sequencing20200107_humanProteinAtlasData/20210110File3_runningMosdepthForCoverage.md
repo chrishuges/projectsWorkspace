@@ -44,7 +44,7 @@ targetGeneGtf="/projects/ptx_results/Sequencing/publishedStudies/humanProteinAtl
 for i in ERR315455 ERR315477 ERR315432
 do
   echo $i
-  coverageCall="bamCoverage -b ${rawDataOutputDirectory}${i}.chr11.bam -o ${rawDataOutputDirectory}${i}.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --centerReads -p 6"
+  coverageCall="bamCoverage -b ${rawDataOutputDirectory}${i}.sorted.bam -o ${rawDataOutputDirectory}${i}.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --centerReads -p 6"
   eval $coverageCall
 done
 ```

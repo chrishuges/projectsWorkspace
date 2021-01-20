@@ -126,7 +126,7 @@ rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/ccleRn
 for i in SRR8616012 SRR8615497
 do
   echo $i
-  coverageCall="bamCoverage -b ${rawDataOutputDirectory}${i}.chr11.bam -o ${rawDataOutputDirectory}${i}.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --centerReads -p 6"
+  coverageCall="bamCoverage -b ${rawDataOutputDirectory}${i}.sorted.bam -o ${rawDataOutputDirectory}${i}.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --centerReads -p 6"
   eval $coverageCall
 done
 ```

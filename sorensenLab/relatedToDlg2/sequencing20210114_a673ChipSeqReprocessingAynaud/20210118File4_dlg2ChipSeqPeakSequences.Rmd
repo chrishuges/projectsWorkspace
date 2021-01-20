@@ -92,12 +92,51 @@ Count the number of GGAA mSats in each.
 
 ```{r}
 ##########################################################################################
-mSats = vcountPattern('GGAA', peakSequences)
-
+macsPeaksExpanded$mSats = vcountPattern('GGAAGGAAGGAAGGAA', peakSequences)
 ```
 
+<div style="margin-bottom:50px;"></div>
 
+Read the FIMO results and add the p-values.
 
+```{r}
+##########################################################################################
+ma0149 = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/fimo/fimo_MA0149.1/fimo.txt', sep = '')) %>%
+  dplyr::select(sequence_name, `p-value`) %>%
+  group_by(sequence_name) %>%
+  summarise(across(where(is.double), list(min = min))) %>%
+  dplyr::rename('name' = sequence_name, 'ma0149pVal' = `p-value_min`)
+#p < 0.0005 was cutoff in the manuscript
+
+ma0475 = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/fimo/fimo_MA0475.1/fimo.txt', sep = '')) %>%
+  dplyr::select(sequence_name, `p-value`) %>%
+  group_by(sequence_name) %>%
+  summarise(across(where(is.double), list(min = min))) %>%
+  dplyr::rename('name' = sequence_name, 'ma0475pVal' = `p-value_min`)
+#p < 0.1 was the cutoff in the manuscript
+
+##
+motifPeaks = macsPeaksExpanded %>%
+  left_join(ma0149) %>%
+  left_join(ma0475) %>%
+  mutate(peak = factor(seq(5,1,-1), levels = seq(1,5,1)))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot of the calculated values.
+
+```{r}
+##########################################################################################
+ggplot(motifPeaks, aes(peak, mSats)) +
+  geom_col(width = 0.75) +
+  labs(x = 'Peak index', y = 'Number of GGAA mSats', title = 'DLG2 peak motif enrichment') +
+  scale_y_continuous(limits = c(0,15), breaks = seq(0,20,4)) +
+  theme_classic() +
+  theme(aspect.ratio = 2/1)
+ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/fimo/barplot_dlg2ChipSeqPeakMotifEnrichment.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
 
 
 <div style="margin-bottom:50px;"></div>

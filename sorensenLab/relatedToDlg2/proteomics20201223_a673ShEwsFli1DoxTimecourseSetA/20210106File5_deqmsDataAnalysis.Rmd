@@ -163,11 +163,79 @@ ggsave(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA
        height = 4, width = 4, useDingbats = FALSE)
 ```
 
+<div style="margin-bottom:50px;"></div>
+
 These data look better than the edgeR output. I am not sure how confident I am using edgeR on continuous data like this.
+
+Compare with the RNAseq data from Boulay et al. 
+
+```{r}
+##########################################################################################
+pro = read_csv(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/dataset_deqms_day7-day0.csv', sep = ''))
+rna = read_csv(paste(baseRepository, '/sequencing20201204_ewsFli1RnaSeqBoulayDataReprocessing/dataset_boulaySalmonRnaSeqProcessedData.csv', sep = '')) %>%
+  dplyr::select(symbol, a673Fc) %>%
+  dplyr::rename('gene' = symbol) %>%
+  left_join(pro)
+##
+geneExpData = rna
+targetGenes = c('STAG2','DLG2','IL1RAP','PRKCB','TDO2')
+geneExpData$pText = ifelse(geneExpData$gene %in% targetGenes, geneExpData$gene, '')
+geneExpData$pColors = ifelse(geneExpData$a673Fc <= -1 & geneExpData$logFC <= -1, brewer.pal(8,'RdBu')[8],
+                            ifelse(geneExpData$a673Fc >= 1 & geneExpData$logFC >= 1, brewer.pal(8,'RdBu')[1],
+                                    brewer.pal(8,'Greys')[6]))
+ggplot(geneExpData, aes(a673Fc, logFC)) +
+  geom_point(size = 1, color = geneExpData$pColors, alpha = 0.5) +
+  geom_text_repel(label = geneExpData$pText, nudge_x = -4) +
+  labs(x = 'log2(shEWS-FLI1 vs shGFP RNA)', y = 'log2(shEWS-FLI1 vs shGFP protein)', title = 'RNA vs proteomics') +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  scale_y_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
+  scale_x_continuous(limits = c(-8,8), breaks = seq(-8,8,2)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/scatter_rnaExpressionVsProteinAbundanceBoulay.pdf', sep = ''),
+      height = 4, width = 4, useDingbats = FALSE)
+##
+cor(geneExpData$a673Fc, geneExpData$logFC, use = 'pairwise.complete.obs', method = 'pearson')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Compare with the RNAseq data from Riggi et al. 
+
+```{r}
+##########################################################################################
+pro = read_csv(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/dataset_deqms_day7-day0.csv', sep = ''))
+rna = read_csv(paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/dataset_riggiSalmonRnaSeqProcessedData.csv', sep = '')) %>%
+  dplyr::select(symbol, a673Fc) %>%
+  dplyr::rename('gene' = symbol) %>%
+  left_join(pro)
+##
+geneExpData = rna
+targetGenes = c('STAG2','DLG2','IL1RAP','PRKCB','TDO2')
+geneExpData$pText = ifelse(geneExpData$gene %in% targetGenes, geneExpData$gene, '')
+geneExpData$pColors = ifelse(geneExpData$a673Fc <= -1 & geneExpData$logFC <= -1, brewer.pal(8,'RdBu')[8],
+                            ifelse(geneExpData$a673Fc >= 1 & geneExpData$logFC >= 1, brewer.pal(8,'RdBu')[1],
+                                    brewer.pal(8,'Greys')[6]))
+ggplot(geneExpData, aes(a673Fc, logFC)) +
+  geom_point(size = 1, color = geneExpData$pColors, alpha = 0.5) +
+  geom_text_repel(label = geneExpData$pText, nudge_x = -4) +
+  labs(x = 'log2(shEWS-FLI1 vs shGFP RNA)', y = 'log2(shEWS-FLI1 vs shGFP protein)', title = 'RNA vs proteomics') +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  scale_y_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
+  scale_x_continuous(limits = c(-8,8), breaks = seq(-8,8,2)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20201223_a673ShEwsFli1DoxTimecourseSetA/scatter_rnaExpressionVsProteinAbundanceRiggi.pdf', sep = ''),
+      height = 4, width = 4, useDingbats = FALSE)
+##
+cor(geneExpData$a673Fc, geneExpData$logFC, use = 'pairwise.complete.obs', method = 'pearson')
+```
+
 
 ## Session info
 
 ```{r}
+##########################################################################################
 sessionInfo()
 ```
 

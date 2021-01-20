@@ -136,7 +136,15 @@ ggsave(paste(baseRepository, '/sequencing20201204_ewsFli1RnaSeqBoulayDataReproce
 
 <div style="margin-bottom:50px;"></div>
 
-Alright this looks good.
+Alright this looks good. Write the data to a file for use later on.
+
+```{r}
+##########################################################################################
+write.table(geneExpData, paste(baseRepository, '/sequencing20201204_ewsFli1RnaSeqBoulayDataReprocessing/dataset_boulaySalmonRnaSeqProcessedData.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
 
 ## Session info
 
