@@ -1,0 +1,95 @@
+---
+title: "Normal tissue proteomics data processing"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with the processed search results from the proteomics data for the 29 healthy human tissue manuscript.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the maxquant results data. It looks like we can filter it based on the gene identifier, ENSG00000150672, in the fasta header column.
+
+```{r, warning = FALSE, message = FALSE}
+##########################################################################################
+maxquantFiles = list.files(paste(baseRepository, '/proteomics20210112_normalTissueProteomicsPmid30777892/', sep = ''), 
+                           pattern = '.*_proteinGroups.txt', full.names = TRUE)
+##
+maxquantProcessing = function(inputFile, ...){
+  rawFile1 = read_tsv(inputFile) %>%
+    filter(!grepl('CON_', `Protein IDs`) & !grepl('REV_', `Protein IDs`)) %>%
+    filter(grepl('ENSG00000150672', `Fasta headers`)) %>%
+    dplyr::select(`Protein IDs`, `Fasta headers`, `Razor + unique peptides`, iBAQ) %>%
+    rename('accession' = `Protein IDs`, 'gene' = `Fasta headers`, 'peptides' = `Razor + unique peptides`) %>%
+    mutate(dataset = sub('.*30777892\\/(.*)_proteinGroups\\.txt$', '\\1', inputFile)) %>%
+    filter(peptides > 1)
+  return(rawFile1)
+}
+##
+proteinData = do.call('rbind', lapply(maxquantFiles, maxquantProcessing))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+So there appears to be very little expression of DLG2, aside from in brain tissue. We can plot this. 
+
+```{r}
+##########################################################################################
+proteinPlot = proteinData %>%
+  mutate(symbol = 'DLG2') %>%
+  dplyr::select(peptides:symbol)
+##
+ggplot(proteinPlot, aes(symbol, log10(iBAQ))) +
+  geom_point(size = 3) +
+  scale_y_continuous(limits = c(2, 9), breaks = seq(0,10,2)) +
+  labs(x = 'gene', y = 'log10(iBAQ)', title = 'Proteomics') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20210112_normalTissueProteomicsPmid30777892/boxplot_dlg2ProteinExpressionProteomics.pdf', sep = ''),
+      height = 4, width = 2, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+

@@ -20,6 +20,7 @@ library('Rsamtools')
 library('rtracklayer')
 library('GenomicAlignments')
 library('bamsignals')
+library('wiggleplotr')
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -108,7 +109,7 @@ ggplot(coverageSet, aes(exon, relativeCoverage, group = exon)) +
   geom_point(data = coverageSummary, aes(exon, mean.cov, group = 1), color = brewer.pal(6,'Spectral')[1], size = 0.5) +
   geom_path(data = coverageSummary, aes(exon, mean.cov, group = 1), color = brewer.pal(6,'Spectral')[1], size = 0.5) +
   scale_y_continuous(limits = c(0,1.2), breaks = seq(0,2,0.25)) +
-  labs(x = 'Exon number', y = 'Coverage', title = 'DLG2 coverage, Brain') +
+  labs(x = 'Exon number', y = 'Coverage', title = 'DLG2 coverage, Ewing') +
   theme_classic()
 ggsave(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/mosdepthAnalysis/boxplot_dlg2CoverageEwingRna.pdf', sep = ''),
          height = 4, width = 4, useDingbats = FALSE)
@@ -173,6 +174,111 @@ ggplot(coverageSet, aes(exon, relativeCoverage, group = exon)) +
   labs(x = 'Exon number', y = 'Coverage', title = 'DLG2 coverage, SCLC') +
   theme_classic()
 ggsave(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/sclcLines/mosdepthAnalysis/boxplot_dlg2CoverageSclcRna.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I am going to revisit these plots. I think the boxplots are Ok, but they are a bit confusing. I think we should just pick an isoform and show coverage from a bigwig file because the important thing isn't that there are a bunch of isoforms, but rather that there is an N-terminal truncation. We want to highlight that.
+
+First, read the GTF file that we can use to get the DLG2 annotation details.
+
+```{r}
+##########################################################################################
+totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we will create the annotation matrix input required for the wiggleplot. We use a single transcript here (the main isoform for DLG2) just for simplicity.
+
+```{r}
+##########################################################################################
+dlg2Gtf = totalGtf %>%
+  filter(grepl('ENST00000398309.6', transcript_id))
+##
+dlg2Meta = dlg2Gtf %>%
+  filter(grepl('transcript', type)) %>%
+  dplyr::select(transcript_id, gene_id, gene_name, strand)
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+##
+sampleData = tibble(sample_id = c('ewing1','ewing2','ewing3','ewing4','ewing5','ewing6','ewing7','ewing8','ewing9','ewing10','ewing11'), 
+                    condition = factor(c(rep('ewing',11)), levels = c('ewing')),
+                    scaling_factor = 1)
+##
+bigwigFiles = c(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615497.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8616012.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8616213.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8616214.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615592.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615679.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615832.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615859.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615273.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615499.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615521.chr11.bw', sep = ''))
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+#trackData = dplyr::mutate(sampleData, track_id = sample_id, colour_group = condition)
+##
+plotCoverage(dlg2Exons, dlg2Cds, 
+             dlg2Meta, trackData,
+             heights = c(2,1), fill_palette = getGenotypePalette(),
+             rescale_introns = TRUE)
+ggsave(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/coverage_dlg2CoverageEwingRna.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+And now for SCLC.
+
+```{r}
+##########################################################################################
+dlg2Gtf = totalGtf %>%
+  filter(grepl('ENST00000398309.6', transcript_id))
+##
+dlg2Meta = dlg2Gtf %>%
+  filter(grepl('transcript', type)) %>%
+  dplyr::select(transcript_id, gene_id, gene_name, strand)
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+##
+sampleData = tibble(sample_id = c('sclc1','sclc2','sclc3','sclc4','sclc5'), 
+                    condition = factor(c(rep('sclc',5)), levels = c('sclc')),
+                    scaling_factor = 1)
+##
+bigwigFiles = c(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/sclcLines/SRR8616152.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/sclcLines/SRR8616161.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/sclcLines/SRR8616112.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/sclcLines/SRR8615423.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/sclcLines/SRR8615341.chr11.bw', sep = ''))
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+#trackData = dplyr::mutate(sampleData, track_id = sample_id, colour_group = condition)
+##
+plotCoverage(dlg2Exons, dlg2Cds, 
+             dlg2Meta, trackData,
+             heights = c(2,1), fill_palette = getGenotypePalette(),
+             rescale_introns = TRUE)
+ggsave(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/sclcLines/coverage_dlg2CoverageSclcRna.pdf', sep = ''),
          height = 4, width = 4, useDingbats = FALSE)
 ```
 

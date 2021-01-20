@@ -1,0 +1,119 @@
+---
+title: "ChipSeq peak sequence extraction"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working extraction of ChIPseq peak sequences for use with FIMO.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('GenomicRanges')
+library('BSgenome.Hsapiens.UCSC.hg38')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First get the gtf file we used for alignment and will use for annotation below.
+
+```{r}
+##########################################################################################
+totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can extract our peaks of interest from the data, all those that fall within DLG2 (+100Kb from the TSS). 
+
+```{r}
+##########################################################################################
+#the transcript with the closest 'exon' is ENST00000426717.6
+dlg2Gtf = totalGtf %>%
+  filter(grepl('DLG2', gene_name)) %>%
+  filter(grepl('gene', type)) %>%
+  mutate(end = end + 100000) #we add 100kb here to search beyond the annotated TSS
+##
+macsPeaks = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832674_peaks.xls', sep = ''), 
+                     skip = 30, 
+                     col_names = c('chr','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  filter(grepl('chr11', chr)) %>%
+  filter(start > dlg2Gtf$start & end < dlg2Gtf$end) %>%
+  mutate(midPoint = start + round(length / 2, 0)) %>%
+  filter(fold_enrichment >= 10)
+##
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now get the sequences. For this we use BSGenome and getseq.
+
+```{r}
+##########################################################################################
+##expand the peaks on both sides
+macsPeaksExpanded = macsPeaks %>%
+  mutate(start = start - 20) %>%
+  mutate(end = end + 20)
+##
+peaksGr = makeGRangesFromDataFrame(macsPeaksExpanded)
+strand(peaksGr)[] = '-'
+##
+peakSequences = getSeq(Hsapiens, peaksGr)
+names(peakSequences) = macsPeaks$name
+##
+writeXStringSet(peakSequences, 
+                file = paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/fimo/SRR8832674_peakSequences.fasta', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Count the number of GGAA mSats in each.
+
+```{r}
+##########################################################################################
+mSats = vcountPattern('GGAA', peakSequences)
+
+```
+
+
+
+
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+

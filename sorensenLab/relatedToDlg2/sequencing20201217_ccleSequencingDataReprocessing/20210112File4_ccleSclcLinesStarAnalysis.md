@@ -71,7 +71,7 @@ I am adding to this after the fact. I want to create bigwig files that I can use
 #!/bin/bash
 rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/sclcLines/starResults/"
 #########################################
-for i in SRR8616152 SRR8616161 SRR8616112 SRR8615423 SRR8615341 SRR8616003
+for i in SRR8616152 SRR8616161 SRR8616112 SRR8615423 SRR8615341
 do
   echo $i
   coverageCall="bamCoverage -b ${rawDataOutputDirectory}${i}.chr11.bam -o ${rawDataOutputDirectory}${i}.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --centerReads -p 6"
