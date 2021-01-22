@@ -119,7 +119,7 @@ Now we are ready to make the plot.
 
 ```{r}
 ##########################################################################################
-selectedTranscripts = c('ENST00000376104.6')
+selectedTranscripts = c('ENST00000398309.6')
 plotCoverage(dlg2Exons[selectedTranscripts], dlg2Cds[selectedTranscripts], 
              dlg2Meta, trackData,
              heights = c(2,1), fill_palette = getGenotypePalette(),

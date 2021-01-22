@@ -1,0 +1,109 @@
+---
+title: "Coverage maps for DGL2"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with aligned RNAseq data to create coverage maps for DLG2. The difference here is that I am expanding the search to less-annotated isoforms that are present in the refseq version of the Human genome. I downloaded a GTF for these annotations from [UCSC](http://hgdownload.soe.ucsc.edu/goldenPath/hg38/bigZips/genes/).
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('rtracklayer')
+library('wiggleplotr')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First, read the GTF file that we can use to get the DLG2 annotation details.
+
+```{r}
+##########################################################################################
+totalGtf = as.data.frame(rtracklayer::import.gff(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/isoformCoverageMapping/hg38.ncbiRefSeq.gtf.gz', sep = '')))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we will create the annotation matrix input required for the wiggleplot. We use a single transcript here (the main isoform for DLG2) just for simplicity.
+
+```{r}
+##########################################################################################
+dlg2Gtf = totalGtf %>%
+  filter(grepl('XM_017017289.1', transcript_id))
+##
+dlg2Meta = dlg2Gtf %>%
+  filter(grepl('transcript', type)) %>%
+  dplyr::select(transcript_id, gene_id, gene_name, strand)
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+##
+sampleData = tibble(sample_id = c('a673','sknmc'), 
+                    condition = factor(c('a673','sknmc'), levels = c('a673','sknmc')),
+                    scaling_factor = 1)
+##
+bigwigFiles = c(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8616012.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615497.chr11.bw', sep = ''))
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+#trackData = dplyr::mutate(sampleData, track_id = sample_id, colour_group = condition)
+##
+plotCoverage(dlg2Exons, dlg2Cds, 
+             dlg2Meta, trackData,
+             heights = c(2,1), fill_palette = getGenotypePalette(),
+             rescale_introns = TRUE)
+#ggsave(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/coverage_dlg2CoverageEwingRna.pdf', sep = ''),
+#         height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+
