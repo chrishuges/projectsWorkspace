@@ -1,0 +1,188 @@
+---
+title: "H3K27ac coverage maps for DLG2"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with aligned ChIPseq data for H3K27ac to look at coverage patterns for DLG2.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('GenomicRanges')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First get the gtf file we used for alignment and will use for annotation below.
+
+```{r}
+##########################################################################################
+totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read in the peaks from the MACS analysis of the ChipSeq data and filter for those present in the DLG2 gene region.
+
+```{r}
+##########################################################################################
+#the transcript with the closest 'exon' is ENST00000426717.6
+dlg2Gtf = totalGtf %>%
+  filter(grepl('DLG2', gene_name)) %>%
+  filter(grepl('gene', type)) %>%
+  mutate(end = end + 100000) #we add 100kb here to search beyond the annotated TSS
+
+##these are the original peaks from the DLG2 ChipSeq data
+dlg2Peaks = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832674_peaks.xls', sep = ''), 
+                     skip = 30, 
+                     col_names = c('chr','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  filter(grepl('chr11', chr)) %>%
+  filter(start > dlg2Gtf$start & end < dlg2Gtf$end) %>%
+  mutate(midPoint = start + round(length / 2, 0)) %>%
+  filter(fold_enrichment >= 10)
+
+##these are the peaks from the h3k27ac ChipSeq in the DLG2 region
+day0Peaks = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832667_peaks.xls', sep = ''), 
+                     skip = 30, 
+                     col_names = c('chr','start','end','length','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  filter(grepl('chr11', chr)) %>%
+  mutate(start = as.numeric(start), end = as.numeric(end), length = as.numeric(length)) %>%
+  filter(start > dlg2Gtf$start & end < dlg2Gtf$end) %>%
+  mutate(midPoint = start + round(length / 2, 0))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+To get the h3k peaks that overlap with the existing dlg2 ones, I will make a genomic range and overlap them and use the results to subset the original data.
+
+```{r}
+##########################################################################################
+dlg2Grange = makeGRangesFromDataFrame(dlg2Peaks)
+day0Grange = makeGRangesFromDataFrame(day0Peaks)
+
+##overlap granges
+peakOverlaps = findOverlaps(dlg2Grange, day0Grange, ignore.strand = TRUE)
+peakOverlaps
+
+##extract overlapped ranges
+dlg2Peaks[queryHits(peakOverlaps),]
+day0Peaks[subjectHits(peakOverlaps),]
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Alright this looks good. I think it would be best if we plot the fold enrichment for the original peaks alongside the H3K27ac values for all 5 of the original peaks.
+
+```{r}
+##########################################################################################
+dlg2Peaks$peakAnnotation = seq(5,1,-1)
+dlg2Peaks$day0AcetylEnrichment = 0
+dlg2Peaks[queryHits(peakOverlaps),'day0AcetylEnrichment'] = as.numeric(day0Peaks[subjectHits(peakOverlaps),'fold_enrichment']$fold_enrichment)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we need to repeat this to add the data for day7.
+
+```{r}
+##########################################################################################
+##these are the peaks from the h3k27ac ChipSeq in the DLG2 region
+day7Peaks = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832668_peaks.xls', sep = ''), 
+                     skip = 30, 
+                     col_names = c('chr','start','end','length','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  filter(grepl('chr11', chr)) %>%
+  mutate(start = as.numeric(start), end = as.numeric(end), length = as.numeric(length)) %>%
+  filter(start > dlg2Gtf$start & end < dlg2Gtf$end) %>%
+  mutate(midPoint = start + round(length / 2, 0))
+
+day7Grange = makeGRangesFromDataFrame(day7Peaks)
+peakOverlaps = findOverlaps(dlg2Grange, day7Grange, ignore.strand = TRUE)
+day7Peaks[subjectHits(peakOverlaps),]
+dlg2Peaks$day7AcetylEnrichment = 0
+dlg2Peaks[queryHits(peakOverlaps),'day7AcetylEnrichment'] = as.numeric(day7Peaks[subjectHits(peakOverlaps),'fold_enrichment']$fold_enrichment)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Last of all, I want to add the values for the day7 sample from the DLG2 chipseq.
+
+```{r}
+##########################################################################################
+day7Peaks = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832669_peaks.xls', sep = ''), 
+                     skip = 30, 
+                     col_names = c('chr','start','end','length','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  filter(grepl('chr11', chr)) %>%
+  mutate(start = as.numeric(start), end = as.numeric(end), length = as.numeric(length)) %>%
+  filter(start > dlg2Gtf$start & end < dlg2Gtf$end) %>%
+  mutate(midPoint = start + round(length / 2, 0))
+
+day7Grange = makeGRangesFromDataFrame(day7Peaks)
+peakOverlaps = findOverlaps(dlg2Grange, day7Grange, ignore.strand = TRUE)
+day7Peaks[subjectHits(peakOverlaps),]
+dlg2Peaks$day7Dlg2Enrichment = 0
+dlg2Peaks[queryHits(peakOverlaps),'day7Dlg2Enrichment'] = as.numeric(day7Peaks[subjectHits(peakOverlaps),'fold_enrichment']$fold_enrichment)
+
+##select the data we want for plotting later and assign some annotation details
+finalPeakData = dplyr::select(dlg2Peaks, peakAnnotation:day7Dlg2Enrichment, fold_enrichment) %>%
+  dplyr::rename('day17Dlg2Enrichment' = fold_enrichment) %>%
+  dplyr::select(peakAnnotation, day7Dlg2Enrichment, day17Dlg2Enrichment, day7AcetylEnrichment, day0AcetylEnrichment) %>%
+  pivot_longer(day7Dlg2Enrichment:day0AcetylEnrichment, names_to = 'sample', values_to = 'macsScore') %>%
+  mutate('timepoint' = sub('day(.*)[AD].*$', '\\1', sample)) %>%
+  mutate('target' = factor(sub('day[0-9]+(.*)Enrichment$', '\\1', sample), levels = c('Dlg2','Acetyl'))) %>%
+  mutate('expectedEws' = factor(ifelse(timepoint == 7, 'low', 'high'), levels = c('low','high'))) %>%
+  mutate('macsScore' = macsScore + 1)
+finalPeakData
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can make the plot.
+
+```{r}
+##########################################################################################
+ggplot(finalPeakData, aes(peakAnnotation, macsScore, group = expectedEws)) +
+  geom_col(width = 0.5, position = position_dodge(width = 0.7)) +
+  labs(x = 'Peak annotation', y = 'MACS Peak Score + 1', title = 'DLG2 ChIPseq peaks') +
+  facet_wrap(~target) +
+  scale_y_continuous(limits = c(0,30), breaks = seq(0,35,5)) +
+  theme_classic()
+  #theme(aspect.ratio = 2/1)
+ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/barplot_dlg2ChipAndAcetylPeakEnrichment.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
