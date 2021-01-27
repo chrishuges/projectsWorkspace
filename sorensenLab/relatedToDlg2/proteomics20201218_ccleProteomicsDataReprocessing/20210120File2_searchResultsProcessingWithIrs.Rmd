@@ -1,0 +1,333 @@
+---
+title: "Analysis of CCLE proteomics data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to look at proteome profiles for CCLE samples. I reprocessed the raw data and will read the search results here and work on normalizing the data with IRS. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('purrr')
+library('limma')
+library('edgeR')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+There are 42 analysis batches. Basically we need to loop over them and create a data object for each that we will read in later. First, create the function for this. The first function is for the quant files.
+
+```{r}
+#######################################################################
+#######################################################################
+##this function goes through the provided quant files and returns
+##a parsed object for each. It returns signal to noise ratio for quant
+#######################################################################
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`131NIntensity`)
+  colnames(quantData) = c('scan','tmt16plex_126C','tmt16plex_127N','tmt16plex_127C','tmt16plex_128N',
+                  'tmt16plex_128C','tmt16plex_129N','tmt16plex_129C','tmt16plex_130N','tmt16plex_130C','tmt16plex_131N')
+  ##
+  fraction = as.numeric(sub('.*_Prot_[0-9]+_(.*)\\.raw_Matrix\\.txt$', '\\1', filePath))
+  quantData$fraction = factor(fraction, levels = seq(1,12,1))
+  ##
+  return(quantData)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now a function for parsing the identification data.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+parseSearchResults = function(batchId, sampleAnnotation, ...){
+  
+  ##get the fasta database annotation data
+  annotationFilePath = list.files(paste(baseRepository, '/proteomics20210118_ccleProteomicsPmid31978347/',batchId, sep = ''), pattern = '*.rds', full.names = TRUE)
+  proteinAnnotation = readRDS(annotationFilePath)
+  print(paste('Processing batch ', batchId, '.', sep = ''))
+  
+  ##parse the peptide search results
+  psm = read_tsv(paste(baseRepository, '/proteomics20210118_ccleProteomicsPmid31978347/', batchId, '/', batchId, '_Default_PSM_Report.txt', sep = '')) %>%
+    dplyr::select(`Protein(s)`, Sequence, `Modified Sequence`, `Spectrum File`, `Spectrum Title`) %>%
+    mutate(fraction = factor(as.numeric(sub('.*Prot_[0-9]+_(.*)\\.raw$', '\\1', `Spectrum File`)), levels = seq(1,12,1))) %>%
+    mutate(batchId = batchId) %>%
+    mutate(accession = sapply(strsplit(`Protein(s)`, ','), '[', 1)) %>%
+    mutate(scan = as.numeric(sub('Spectrum_(.*)', '\\1', `Spectrum Title`))) %>%
+    mutate(sequence = Sequence) %>%
+    mutate(modSequence = `Modified Sequence`) %>%
+    left_join(proteinAnnotation) %>%
+    dplyr::select(batchId, fraction, scan, accession, gene, detectablePeptides, sequence, modSequence)
+  
+  ##parse the quantification files
+  quantFiles = list.files(paste(baseRepository, '/proteomics20210118_ccleProteomicsPmid31978347/',batchId,'/quantFiles/', sep = ''),
+                                  pattern = '_Matrix.txt', full.names = TRUE)
+  quantDataSet = do.call('rbind', lapply(quantFiles, combineQuantFiles))
+  
+  ##add cell line annotation to the quantification data
+  sampleBatch = as.numeric(sub('Prot_(.*)','\\1',batchId))
+  sampleAnnotation = filter(sampleAnnotation, batchNum == sampleBatch)
+  colnames(quantDataSet)[2:11] = c(sampleAnnotation$ccleCode, paste('bridge',batchId, sep = ''))
+  
+  ##
+  psmQuant = psm %>%
+    left_join(quantDataSet)
+  saveRDS(psmQuant, paste(baseRepository, '/proteomics20210118_ccleProteomicsPmid31978347/processedPeptideData/',batchId,'_processedPeptideData.rds', sep = ''))
+  
+  ##
+  psmQuant$sampleSignal = rowSums(psmQuant[,c(9:18)], na.rm = TRUE)
+  psmQuantFiltered = subset(psmQuant, psmQuant$sampleSignal >= 100 & !is.na(psmQuant$gene) & !grepl('-', psmQuant$gene))
+  proteinSet = psmQuantFiltered[,c(1,4,9:18)] %>%
+    mutate(psm = 1) %>%
+    group_by(batchId, accession) %>%
+    summarise(across(where(is.double), sum, na.rm = TRUE))
+  colnames(proteinSet)[13] = paste('psm',batchId,sep='')
+  proteinSet = proteinSet[,c(2,13,3:12)]
+  saveRDS(proteinSet, paste(baseRepository, '/proteomics20210118_ccleProteomicsPmid31978347/processedProteinData/',batchId,'_processedProteinData.rds', sep = ''))
+  
+  ##
+  print(paste('Done processing batch ', batchId, '.', sep = ''))
+  return(proteinSet)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can run this function over all of the data.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+batchIds = paste('Prot_', sprintf("%02d", 1:42), sep = '')
+sampleAnnotation = read_tsv(paste(baseRepository, '/proteomics20210118_ccleProteomicsPmid31978347/Table_S1_Sample_Information.txt', sep = '')) %>%
+  rename('cellLine' = `Cell Line`, 'ccleCode' = `CCLE Code`, 'tissue' = `Tissue of Origin`, 'batchNum' = `Protein 10-Plex ID`, 'label' = `Protein TMT Label`)
+
+##
+proteinData = lapply(batchIds[1:5], parseSearchResults, sampleAnnotation = sampleAnnotation)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Save the protein data list we just created.
+
+```{r}
+##########################################################################################
+saveRDS(proteinData, paste(baseRepository, '/proteomics20210118_ccleProteomicsPmid31978347/processedProteinData/completeProteinSetList.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Combine the protein files into a single large matrix.
+
+```{r}
+##########################################################################################
+proteinDataFile = readRDS(paste(baseRepository, '/proteomics20210118_ccleProteomicsPmid31978347/processedProteinData/completeProteinSetList.rds', sep = ''))
+joinedProteinFiles = purrr::reduce(proteinDataFile, dplyr::full_join, by = 'accession')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now 
+
+```{r}
+##########################################################################################
+rawData = joinedProteinFiles[,c(which(!grepl('bridge', colnames(joinedProteinFiles))
+                                      & !grepl('psm', colnames(joinedProteinFiles))))]
+rawData[rawData == 0] = NA
+rawDataFiltered = subset(rawData, rowSums(is.na(rawData[,2:379])) < 350)
+
+##
+batchStart = seq(2,371,9)
+batchFinish = seq(10,379,9)
+
+##
+boxplot(log2(rawDataFiltered[,batchStart]), 
+        notch = TRUE, main = 'raw data',
+        xlab = 'cellLine', ylab = 'log2 of Intensity')
+##
+plotDensities(log2(rawDataFiltered[,batchStart]), 
+              main = 'raw data',
+              legend = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Might be easier to just look at the column totals.
+
+```{r}
+##########################################################################################
+format(round(colSums(rawDataFiltered[,batchStart], na.rm = TRUE), digits = 0), big.mark = ",")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+So there is definitely some big variation here. Start off with the sample loading 'SL' normalization.
+
+```{r}
+##########################################################################################
+target = mean(colSums(rawDataFiltered[c(2:379)], na.rm = TRUE))
+
+##
+dataSl = tibble('accession' = rawDataFiltered$accession)
+for (i in 1:length(batchStart)){
+  expRaw = rawDataFiltered[,c(batchStart[i]:batchFinish[i])]
+  normFacs = target / colSums(expRaw, na.rm = TRUE)
+  expRawSl = sweep(expRaw, 2, normFacs, FUN = '*')
+  dataSl = cbind(dataSl, expRawSl)
+}
+
+# see what the SL normalized data look like
+boxplot(log2(dataSl[,batchStart]), notch = TRUE, main = 'SL normalization',
+        xlab = 'cellLine', ylab = 'log2 of Intensity')
+
+# can also look at density plots (like a distribution histogram)
+plotDensities(log2(dataSl[,batchStart]), main = 'SL normalization',
+              legend = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+They look much tighter now and we can move on and do the IRS normalization using the bridge samples.
+
+```{r}
+##########################################################################################
+bridgeData = joinedProteinFiles[,c(which(grepl('bridge', colnames(joinedProteinFiles))))]
+bridgeData[bridgeData == 0] = NA
+bridgeData = subset(bridgeData, rowSums(is.na(rawData[,2:379])) < 350)
+bridgeData$average = apply(bridgeData, 1, function(x) exp(mean(log(x),na.rm = TRUE)))
+
+##
+irsFactors = tibble('accession' = rawDataFiltered$accession)
+for (i in 1:(ncol(bridgeData) - 1)){
+  irsFac = bridgeData$average / bridgeData[,i]
+  irsFactors = cbind(irsFactors, irsFac)
+}
+
+
+##
+dataIrs = tibble('accession' = dataSl$accession)
+for (i in 1:length(batchStart)){
+  irsData = dataSl[,c(batchStart[i]:batchFinish[i])] * irsFactors[,(i+1)]
+  dataIrs = cbind(dataIrs, irsData)
+}
+
+# see what the IRS data look like
+boxplot(log2(dataIrs[,batchStart]), main = 'irs normalized',
+        xlab = 'cellLine', ylab = 'log2 of Intensity', notch = TRUE)
+
+# can also look at density plots (like a distribution histogram)    
+plotDensities(log2(dataIrs[,batchStart]), 
+              main = 'irs normalized',
+              legend = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now check the column totals again.
+
+```{r}
+##########################################################################################
+format(round(colSums(dataIrs[,batchStart], na.rm = TRUE), digits = 0), big.mark = ",")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Take a quick look at the clustering to see how the data looks in terms of batch effects.
+
+```{r}
+##########################################################################################
+# see how things cluster after IRS 
+plotMDS(log2(dataIrs[,grepl('BONE', colnames(dataIrs))
+                     | grepl('BREAST', colnames(dataIrs))
+                     | grepl('OVARY', colnames(dataIrs))]), 
+        main = "IRS clusters group by condition",
+        cex = 0.5)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This seems fine to me. What I am really interested in though is DLG2. We can filter these data to see where it is.
+
+```{r}
+##########################################################################################
+dlg2 = dataIrs[grepl('Q15700', dataIrs$accession),] %>%
+  pivot_longer(MDAMB468_BREAST:SNU1079_BILIARY_TRACT, names_to = 'cellLine', values_to = 'abundance') %>%
+  mutate('batch' = rep(seq(1,42,1), each = 9))
+
+##
+psmData = joinedProteinFiles[,c(which(grepl('psm', colnames(joinedProteinFiles))))]
+psmData[psmData == 0] = NA
+psmDataFiltered = subset(psmData, rowSums(is.na(rawData[,2:379])) < 350) %>%
+  mutate('accession' = rawDataFiltered$accession)
+dlg2Psm = psmDataFiltered[grepl('Q15700', dataIrs$accession),] %>%
+  pivot_longer(psmProt_01:psmProt_42, names_to = 'batch', values_to = 'psm')
+
+##
+depmapAnnotation = read_csv(paste(generalDatasets, '/depmap20Q4/sample_info.csv', sep = '')) %>%
+  rename('cellLine' = CCLE_Name) %>%
+  dplyr::select(DepMap_ID:cellLine, lineage:lineage_molecular_subtype)
+dlg2$psm = rep(dlg2Psm$psm, each = 9)
+dlg2Final = left_join(dlg2, depmapAnnotation) %>%
+  filter(!is.na(abundance) & !is.na(lineage_subtype)) %>%
+  mutate('logAbundance' = log2(abundance)) %>%
+  filter(!(lineage_subtype %in% names(which(table(lineage_subtype) <= 3))))
+
+
+##
+ggplot(dlg2Final, aes(reorder(lineage_subtype, logAbundance, median, na.rm = TRUE), logAbundance)) +
+  geom_boxplot(size = 0.5) +
+  labs(x = 'Lineage subtype in DepMap', y = 'log2(Normalized protein abundance)', title = 'DLG2 protein abundance in DepMap') +
+  scale_y_continuous(limits = c(10,30), breaks = seq(10,40,5)) +
+  geom_hline(yintercept = 15, linetype = 'dashed') +
+  theme_classic() +
+  theme(axis.text.x = element_text(size = 9, angle = 45, hjust = 1))
+```
+
+
+
+
+```{r}
+library('vroom')
+test = vroom(paste(baseRepository, '/proteomics20210118_ccleProteomicsPmid31978347/ccle_protein_quant_with_peptides_14745.tsv.gz', sep = ''))
+
+```
+
+
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+

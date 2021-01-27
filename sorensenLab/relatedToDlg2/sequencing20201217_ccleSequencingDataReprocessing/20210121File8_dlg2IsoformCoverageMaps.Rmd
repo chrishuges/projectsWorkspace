@@ -47,48 +47,114 @@ totalGtf = as.data.frame(rtracklayer::import.gff(paste(baseRepository, '/sequenc
 
 <div style="margin-bottom:50px;"></div>
 
-Now we will create the annotation matrix input required for the wiggleplot. We use a single transcript here (the main isoform for DLG2) just for simplicity.
+I think the way we want to do this is to query each of the possible transcripts individually. So, we first need to get the set of possible accessions.
 
 ```{r}
 ##########################################################################################
 dlg2Gtf = totalGtf %>%
-  filter(grepl('XM_017017289.1', transcript_id))
-##
-dlg2Meta = dlg2Gtf %>%
-  filter(grepl('transcript', type)) %>%
-  dplyr::select(transcript_id, gene_id, gene_name, strand)
-##
-dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
-  filter(grepl('exon', type)), split.field = 'transcript_id')
-##
-dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
-  filter(grepl('CDS', type)), split.field = 'transcript_id')
-##
-sampleData = tibble(sample_id = c('a673','sknmc'), 
-                    condition = factor(c('a673','sknmc'), levels = c('a673','sknmc')),
-                    scaling_factor = 1)
-##
-bigwigFiles = c(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8616012.chr11.bw', sep = ''),
-                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615497.chr11.bw', sep = ''))
-##
-sampleData = sampleData %>%
-  dplyr::mutate(bigWig = bigwigFiles)
-as.data.frame(sampleData)
-##
-trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
-#trackData = dplyr::mutate(sampleData, track_id = sample_id, colour_group = condition)
-##
-plotCoverage(dlg2Exons, dlg2Cds, 
-             dlg2Meta, trackData,
-             heights = c(2,1), fill_palette = getGenotypePalette(),
-             rescale_introns = TRUE)
-#ggsave(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/coverage_dlg2CoverageEwingRna.pdf', sep = ''),
-#         height = 4, width = 4, useDingbats = FALSE)
+  filter(grepl('^DLG2$', gene_name))
+#
+transcriptIds = unique(dlg2Gtf$transcript_id)
+transcriptIds
 ```
 
 <div style="margin-bottom:50px;"></div>
 
+Now walk across these transcripts and get coverage values for each of their exons.
 
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+sknmcFile = rtracklayer::import(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615497.chr11.bw', sep = ''))
+##
+#NM_001364.3 is ENST00000398309.6
+exonTable = data.frame()
+for (i in 1:length(transcriptIds)){
+  transcriptGtf = filter(dlg2Gtf, grepl(transcriptIds[i], transcript_id) & grepl('exon', type))
+  transcriptGr = makeGRangesFromDataFrame(transcriptGtf, keep.extra.columns = TRUE)
+  bwOverlaps = findOverlaps(transcriptGr, sknmcFile, ignore.strand = TRUE)
+  bwCounts = transcriptGtf[queryHits(bwOverlaps),]
+  bwCounts$coverage = as.data.frame(sknmcFile)[subjectHits(bwOverlaps), 'score']
+  finalCounts = as_tibble(bwCounts[,c('transcript_id','exon_number','coverage')]) %>%
+    mutate(exon_number = factor(exon_number, levels = seq(1,nrow(transcriptGtf),1))) %>%
+    group_by(transcript_id, exon_number) %>%
+    summarise(across(where(is.double), list(mean = mean)))
+  exonTable = rbind(exonTable, finalCounts)
+}
+
+##
+ggplot(exonTable, aes(x = reorder(transcript_id, coverage_mean, median, na.rm = TRUE), coverage_mean)) +
+  geom_boxplot() +
+  geom_point(size = 0.5, color = 'red') +
+  scale_y_continuous(limits = c(0,2), breaks = seq(0,3,0.5)) +
+  theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Based on the above analysis of the SKNMC data, there are only a handful of possible transcripts. Specifically:
+
+  * NM_001142702.1
+  * XM_017017287.1
+  * XM_017017291.1
+  * XM_017017292.1
+  * XM_017017288.1
+  * XM_017017289.1
+  * XM_017017290.1
+
+Filter the data for these and replot along with the a673 data, just to show consistency across cell lines.
+
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+##
+sknmcFile = rtracklayer::import(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615497.chr11.bw', sep = ''))
+sknmcTable = data.frame()
+for (i in 1:length(transcriptIds)){
+  transcriptGtf = filter(dlg2Gtf, grepl(transcriptIds[i], transcript_id) & grepl('exon', type))
+  transcriptGr = makeGRangesFromDataFrame(transcriptGtf, keep.extra.columns = TRUE)
+  bwOverlaps = findOverlaps(transcriptGr, sknmcFile, ignore.strand = TRUE)
+  bwCounts = transcriptGtf[queryHits(bwOverlaps),]
+  bwCounts$coverage = as.data.frame(sknmcFile)[subjectHits(bwOverlaps), 'score']
+  finalCounts = as_tibble(bwCounts[,c('transcript_id','exon_number','coverage')]) %>%
+    mutate(exon_number = factor(exon_number, levels = seq(1,nrow(transcriptGtf),1))) %>%
+    group_by(transcript_id, exon_number) %>%
+    summarise(across(where(is.double), list(mean = mean))) %>%
+    mutate(cellLine = 'sknmc')
+  sknmcTable = rbind(sknmcTable, finalCounts)
+}
+
+##
+a673File = rtracklayer::import(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8616012.chr11.bw', sep = ''))
+a673Table = data.frame()
+for (i in 1:length(transcriptIds)){
+  transcriptGtf = filter(dlg2Gtf, grepl(transcriptIds[i], transcript_id) & grepl('exon', type))
+  transcriptGr = makeGRangesFromDataFrame(transcriptGtf, keep.extra.columns = TRUE)
+  bwOverlaps = findOverlaps(transcriptGr, a673File, ignore.strand = TRUE)
+  bwCounts = transcriptGtf[queryHits(bwOverlaps),]
+  bwCounts$coverage = as.data.frame(a673File)[subjectHits(bwOverlaps), 'score']
+  finalCounts = as_tibble(bwCounts[,c('transcript_id','exon_number','coverage')]) %>%
+    mutate(exon_number = factor(exon_number, levels = seq(1,nrow(transcriptGtf),1))) %>%
+    group_by(transcript_id, exon_number) %>%
+    summarise(across(where(is.double), list(mean = mean))) %>%
+    mutate(cellLine = 'a673')
+  a673Table = rbind(a673Table, finalCounts)
+}
+
+##
+transcriptIdsFiltered = c('NM_001142702.1','XM_017017287.1','XM_017017291.1','XM_017017292.1','XM_017017288.1','XM_017017289.1','XM_017017290.1')
+exonTable = rbind(sknmcTable, a673Table) %>%
+  filter(transcript_id %in% transcriptIdsFiltered)
+ggplot(exonTable, aes(x = reorder(transcript_id, coverage_mean, median, na.rm = TRUE), coverage_mean)) +
+  geom_boxplot(outlier.shape = NA, color = brewer.pal(11,'RdGy')[9]) +
+  geom_point(size = 0.75, color = brewer.pal(8,'Spectral')[1]) +
+  labs(x = '', y = 'Mean coverage across feature', title = 'DLG2 isoform covearge') +
+  #scale_y_continuous(limits = c(0,2), breaks = seq(0,3,0.5)) +
+  theme_classic() +
+  theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1)) +
+  facet_wrap(~cellLine, scales = 'free')
+ggsave(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/isoformCoverageMapping/coverage_dlg2CoverageEwingRnaIsoforms.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+```
 
 <div style="margin-bottom:50px;"></div>
 

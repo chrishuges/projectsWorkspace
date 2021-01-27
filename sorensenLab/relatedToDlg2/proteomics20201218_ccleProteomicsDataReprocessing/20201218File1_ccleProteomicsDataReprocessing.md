@@ -245,3 +245,54 @@ done
 
 We can try this script and see how it works. I had to move the R2 and R3 sets and I will just process these after the fact on their own. 
 
+### Update
+
+I went through these data and I am getting far fewer peptide IDs for DLG2 specifically than what is originally reported in the manuscript. This seems odd. One error I found is that Comet is not working in the version of SearchGUI that I used, so this will need to be repeated. But, it makes me wonder if the search pipeline isn't the best. Below, I write a script for a new pipeline based on [Monocle](https://github.com/gygilab/Monocle), [Comet](http://comet-ms.sourceforge.net/release/release_202001/), and [Percolator](https://github.com/percolator).
+
+
+```shell
+#!/bin/bash
+rawDataDirectory="/projects/ptx_results/OtherDataSets/dataset20201217_ccleProteomicsPmid31978347/searchTest/"
+
+##software tools
+monoclePath="/projects/ptx_analysis/chughes/software/monocle-0.3.37.19/Monocle.CLI/Monocle.CLI"
+
+##processing files with Monocle
+for i in *.raw
+do
+  echo $i
+  eval $monoclePath -f $i -t "mzxml" -o ${rawDataDirectory}${i}.mzXML
+done
+```
+
+
+
+
+
+
+
+
+############################################
+for j in Prot_{01..42}  
+do
+  echo $j
+  ##############################################################
+  ##############################################################
+  #users must edit the below variables
+  #this is the text that will identify your files
+  sampleTag=$j
+  #this is the desired location for the output of the data processing process
+  desiredBaseLocation=$rawDataDirectory
+  #this is the base location where your raw data is stored
+  dataStorageLocation=$rawDataDirectory
+  #this is text that will be appended to your output folder that is created for this analysis
+  folderAdapter="dataProcessing_"
+  #users do not need to edit the statement below
+  folderToCreate="$desiredBaseLocation$folderAdapter$sampleTag"
+  #starting directory
+  startingDirectory="${PWD}"
+
+
+
+
+```

@@ -17,6 +17,8 @@ library('tidyverse')
 library('Biostrings')
 library('ggplot2')
 library('RColorBrewer')
+library('GenomicRanges')
+library('wiggleplotr')
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -207,6 +209,56 @@ ggplot(dlg2Seq, aes(xPos, -yPos, color = isDetected)) +
 ggsave(paste(baseRepository, '/proteomics20201215_huntingForDlg2Isoforms/tileplot_dlg2PeptideCoverageMapWithTheoretical.pdf', sep = ''),
        height = 5, width = 5, useDingbats = FALSE)
 ```
+
+<div style="margin-bottom:50px;"></div>
+
+Want to make a junction map for peptides across certain exons where we have evidence. We basically need to make a plot of the different exon patterns for this. Read in the refseq GTF.
+
+```{r}
+##########################################################################################
+totalGtf = as.data.frame(rtracklayer::import.gff(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/isoformCoverageMapping/hg38.ncbiRefSeq.gtf.gz', sep = '')))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Subset the GTF for DLG2 entries.
+
+```{r}
+##########################################################################################
+dlg2Gtf = totalGtf %>%
+  filter(grepl('^DLG2$', gene_name))
+#
+transcriptIds = unique(dlg2Gtf$transcript_id)
+transcriptIds
+```
+
+<div style="margin-bottom:50px;"></div>
+
+```{r}
+##########################################################################################
+dlg2Gtf = totalGtf %>%
+  filter(grepl('^NM_001364\\.3$', transcript_id) | grepl('^NM_001142702\\.1$', transcript_id) | grepl('^XM_017017289\\.1$', transcript_id))
+##
+dlg2Meta = dlg2Gtf %>%
+  filter(grepl('transcript', type)) %>%
+  dplyr::select(transcript_id, gene_id, gene_name, strand)
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+
+##
+plotTranscripts(dlg2Exons, dlg2Cds, dlg2Meta, 
+                rescale_introns = FALSE,
+                region_coords = c(83470736, 83484823))
+ggsave(paste(baseRepository, '/proteomics20201215_huntingForDlg2Isoforms/rectangle_dlg2GeneLayoutProteinJunctions.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+```
+
+
+
 
 ## Session info
 
