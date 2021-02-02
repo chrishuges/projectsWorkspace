@@ -1,0 +1,221 @@
+---
+title: "Super enhancer analysis for DLG2"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with aligned ChIPseq data for H3K27ac to look at super enhancers in the DLG2 region.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('GenomicRanges')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First get the gtf file we used for alignment and will use for annotation below.
+
+```{r}
+##########################################################################################
+totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read in the peaks from the MACS analysis of the ChipSeq data and filter for those present in the DLG2 gene region. The region I am interested in is chr11:83,706,228-83,763,514.
+
+```{r}
+##########################################################################################
+#the transcript with the closest 'exon' is ENST00000426717.6
+dlg2Gtf = totalGtf %>%
+  filter(grepl('DLG2', gene_name)) %>%
+  filter(grepl('gene', type)) %>%
+  mutate(end = end + 100000) #we add 100kb here to search beyond the annotated TSS
+
+##these are the original peaks from the DLG2 ChipSeq data
+dlg2Peaks = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832674_peaks.xls', sep = ''), 
+                     skip = 30, 
+                     col_names = c('chr','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  filter(grepl('chr11', chr)) %>%
+  filter(start > dlg2Gtf$start & end < dlg2Gtf$end) %>%
+  mutate(midPoint = start + round(length / 2, 0)) %>%
+  filter(fold_enrichment >= 10)
+
+##these are the peaks from the h3k27ac ChipSeq in the DLG2 region
+day0Peaks = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832667_peaks.xls', sep = ''), 
+                     skip = 30, 
+                     col_names = c('chr','start','end','length','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  filter(grepl('chr11', chr)) %>%
+  mutate(start = as.numeric(start), end = as.numeric(end), length = as.numeric(length)) %>%
+  filter(start > dlg2Gtf$start & end < dlg2Gtf$end) %>%
+  mutate(midPoint = start + round(length / 2, 0))
+
+##these are the super enhancers from ROSE analysis
+superE = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/roseDay0/SRR8832667_chr11Peaks_SuperEnhancers.table.txt', sep = ''), 
+                     skip = 5) %>%
+  filter(START > dlg2Gtf$start & STOP < dlg2Gtf$end)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+The first super enhancer in that set is the one we are most interested in because it contains the peaks from the ChIPseq data and H3K27ac peaks, as seen from the code below. 
+
+
+```{r}
+##########################################################################################
+superGrange = makeGRangesFromDataFrame(superE)
+dlg2Grange = makeGRangesFromDataFrame(dlg2Peaks)
+day0Grange = makeGRangesFromDataFrame(day0Peaks)
+
+##
+dlg2Overlaps = findOverlaps(dlg2Grange, superGrange, ignore.strand = TRUE)
+day0Overlaps = findOverlaps(day0Grange, superGrange, ignore.strand = TRUE)
+
+##
+superE[unique(subjectHits(dlg2Overlaps)),]
+superE[unique(subjectHits(day0Overlaps)),]
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Lets combine all the features in the range of the super enhancer of interest.
+
+```{r}
+##########################################################################################
+superInterest = superE[unique(subjectHits(dlg2Overlaps)),] %>%
+  mutate(start = START - 10000, stop = STOP + 10000) %>%
+  dplyr::select(CHROM, start, stop, enhancerRank) %>%
+  dplyr::rename(seqnames = CHROM)
+superInterestGrange = makeGRangesFromDataFrame(superInterest)
+superInterestBaseRange = as.data.frame(unlist(slidingWindows(superInterestGrange,1), use.names = TRUE))
+
+
+##
+superPeaksSub = superE[unique(subjectHits(dlg2Overlaps)),]
+superSignal = makeGRangesFromDataFrame(superPeaksSub)
+superWindows = unlist(slidingWindows(superSignal,1), use.names = TRUE)
+superWindowsOverlaps = findOverlaps(superSignal,superWindows, ignore.strand = TRUE)
+superWindows$score = superPeaksSub[queryHits(superWindowsOverlaps),'enhancerRank']
+superBaseRange = as.data.frame(superWindows)
+
+
+##
+dlg2PeaksSub = dlg2Peaks[queryHits(dlg2Overlaps),]
+dlg2Signal = makeGRangesFromDataFrame(dlg2PeaksSub)
+dlg2Windows = unlist(slidingWindows(dlg2Signal,1), use.names = TRUE)
+dlg2WindowsOverlaps = findOverlaps(dlg2Signal,dlg2Windows, ignore.strand = TRUE)
+dlg2Windows$score = dlg2PeaksSub[queryHits(dlg2WindowsOverlaps),'fold_enrichment']
+dlg2BaseRange = as.data.frame(dlg2Windows)
+
+
+##
+day0PeaksSub = day0Peaks[queryHits(day0Overlaps),]
+day0Signal = makeGRangesFromDataFrame(day0PeaksSub)
+day0Windows = unlist(slidingWindows(day0Signal,1), use.names = TRUE)
+day0WindowsOverlaps = findOverlaps(day0Signal,day0Windows, ignore.strand = TRUE)
+day0Windows$score = as.double(day0PeaksSub[queryHits(day0WindowsOverlaps),'fold_enrichment']$fold_enrichment)
+day0BaseRange = as.data.frame(day0Windows)
+
+
+##
+finalData = as_tibble(superInterestBaseRange) %>%
+  left_join(superBaseRange) %>%
+  dplyr::rename(seScore = enhancerRank) %>%
+  left_join(dlg2BaseRange) %>%
+  dplyr::rename(dlg2Signal = fold_enrichment) %>%
+  left_join(day0BaseRange) %>%
+  dplyr::rename(day0Signal = score) %>%
+  dplyr::select(start, seScore, dlg2Signal, day0Signal) %>%
+  pivot_longer(seScore:day0Signal, names_to = 'dataset', values_to = 'signal') %>%
+  mutate(dataset = factor(dataset, levels = c('dlg2Signal','day0Signal','seScore')))
+finalData[is.na(finalData)] = 0
+
+##
+ggplot(finalData, aes(-start, signal)) +
+  geom_path() +
+  labs(x = 'Chromosome 11 position', y = 'Signal', title = 'DLG2 super enhancer') +
+  theme_classic() +
+  facet_wrap(~dataset, nrow = 3, scales = 'free') +
+  theme(strip.background = element_blank(),
+        strip.text.x = element_blank())
+ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/roseDay0/lineplot_dlg2AllDatasetPeaks.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Last thing I want to do is to make a plot just depicting how many super enhancers are identified in the different samples. 
+
+```{r}
+##########################################################################################
+superDay0 = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/roseDay0/SRR8832667_chr11Peaks_SuperEnhancers.table.txt', sep = ''), 
+                     skip = 5)
+#
+superDay7 = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/roseDay7/SRR8832668_chr11Peaks_SuperEnhancers.table.txt', sep = ''), 
+                     skip = 5)
+
+##create a dataframe for holding the counts 
+superCounts = tibble('totalDay0' = nrow(superDay0),
+                     'totalDay7' = nrow(superDay7))
+
+##now find the super enhancers that overlap with the DLG2 gene
+superDay0Dlg2 = superDay0 %>%
+  filter(START >= dlg2Gtf$start, STOP <= dlg2Gtf$end)
+#
+superDay7Dlg2 = superDay7 %>%
+  filter(START >= dlg2Gtf$start, STOP <= dlg2Gtf$end)
+
+##add the the data frame
+superCounts$dlg2Day0 = nrow(superDay0Dlg2)
+superCounts$dlg2Day7 = nrow(superDay7Dlg2)
+
+##
+superCountsReshape = superCounts %>%
+  pivot_longer(totalDay0:dlg2Day7, names_to = 'dataset', values_to = 'counts') %>%
+  mutate(dataset = factor(dataset, levels = c('totalDay0','totalDay7','dlg2Day0','dlg2Day7'))) %>%
+  mutate(target = factor(sub('(.*)Day[07]$','\\1', dataset), levels = c('total','dlg2')))
+superCountsReshape
+
+##plot these data
+ggplot(superCountsReshape, aes(dataset, counts)) +
+  geom_col(width = 0.75) +
+  labs(x = 'dataset', y = 'Number of super enhancers', title = 'Super enhancer counts') +
+  theme_classic() +
+  facet_wrap(~target, scales = 'free')
+ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/roseDay0/barplot_dlg2DatasetSeCounts.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+

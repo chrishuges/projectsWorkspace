@@ -51,3 +51,22 @@ done
 
 I use these files in the `20210113File6_creatingDlg2CoverageMapsRevisited.Rmd` analysis file.
 
+I went back to this again. I wanted to use the refseq annotation instead. So, I downloaded it from [NCBI FTP](ftp://ftp.ncbi.nlm.nih.gov/refseq/H_sapiens/annotation/GRCh38_latest/refseq_identifiers/) to `/projects/ptx_analysis/chughes/databases/refgenieIndexes/hg38/refseq_gtf/default`. I processed it as I did above and ran the bamCoverage analysis in order to get the coverage data.
+
+
+```shell
+grep DLG2 /projects/ptx_analysis/chughes/databases/refgenieIndexes/hg38/refseq_gtf/default/GRCh38_latest_genomic_20210202.gtf > targetTranscriptList.gtf
+
+##script
+#!/bin/bash
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/humanProteinAtlasRnaSequencingData/starResults/"
+targetGeneGtf="/projects/ptx_analysis/chughes/databases/refgenieIndexes/hg38/refseq_gtf/default/targetTranscriptList.gtf"
+#########################################
+for i in ERR315455 ERR315477 ERR315432
+do
+  echo $i
+  coverageCall="bamCoverage -b ${rawDataOutputDirectory}${i}.sorted.bam -o ${rawDataOutputDirectory}${i}_refseq.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --centerReads -p 6"
+  eval $coverageCall
+done
+```
+
