@@ -1,0 +1,138 @@
+---
+title: "Analysis of MET500 data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of rna-seq data from the [MET500 project](https://met500.path.med.umich.edu/).
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('vroom')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the protein annotation details.
+
+```{r}
+##########################################################################################
+donorInfo = read_tsv(paste(generalDatasets, '/icgcJune2020/donor.tsv.gz', sep = ''))
+sampleInfo = read_tsv(paste(generalDatasets, '/icgcJune2020/sample.tsv.gz', sep = ''))
+specimenInfo = read_tsv(paste(generalDatasets, '/icgcJune2020/specimen.tsv.gz', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read in the rna data and reshape it. This is a huge dataset, so you just have to take your gene of interest individually.
+
+```{r}
+##########################################################################################
+rna = vroom(paste(generalDatasets, '/icgcJune2020/exp_seq.tsv.gz', sep = '')) %>%
+  filter(grepl('ENSG00000150672', gene_id)) %>%
+  mutate('expression' = log2(normalized_read_count + 1)) %>%
+  left_join(donorInfo)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make plots for the different variables.
+
+```{r}
+##########################################################################################\
+##sex
+ggplot(rna, aes(x = donor_sex, expression)) +
+  geom_boxplot(size = 0.5, outlier.shape = NA, width = 0.5, color = brewer.pal(11,'RdGy')[8]) +
+  geom_point(aes(color = donor_sex), size = 2, position = position_jitterdodge()) +
+  scale_color_manual(values = c(brewer.pal(8,'Spectral')[1], brewer.pal(8,'Spectral')[8])) +
+  labs(x = 'Variable', y = 'log2(FPKM + 1)', title = 'Sex') +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/database20210203_icgcEwingRnaExpressionDlg2/boxplot_dlg2RnaExpressionIcgcSex.pdf', sep = ''),
+       height = 4, width = 2, useDingbats = FALSE)
+table(rna$donor_sex)
+
+##vital status
+ggplot(rna, aes(x = donor_vital_status, expression)) +
+  geom_boxplot(size = 0.5, outlier.shape = NA, width = 0.5, color = brewer.pal(11,'RdGy')[8]) +
+  geom_point(aes(color = donor_vital_status), size = 2, position = position_jitterdodge()) +
+  scale_color_manual(values = c(brewer.pal(8,'Spectral')[1], brewer.pal(8,'Spectral')[8])) +
+  labs(x = 'Variable', y = 'log2(FPKM + 1)', title = 'Vital status') +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/database20210203_icgcEwingRnaExpressionDlg2/boxplot_dlg2RnaExpressionIcgcVitalStatus.pdf', sep = ''),
+       height = 4, width = 2, useDingbats = FALSE)
+table(rna$donor_vital_status)
+
+
+##tumor stage
+rnaSub = rna %>%
+  filter(!is.na(donor_tumour_stage_at_diagnosis))
+ggplot(rnaSub, aes(x = donor_tumour_stage_at_diagnosis, expression)) +
+  geom_boxplot(size = 0.5, outlier.shape = NA, width = 0.5, color = brewer.pal(11,'RdGy')[8]) +
+  geom_point(aes(color = donor_tumour_stage_at_diagnosis), size = 2, position = position_jitterdodge()) +
+  scale_color_manual(values = c(brewer.pal(8,'Spectral')[1], brewer.pal(8,'Spectral')[8])) +
+  labs(x = 'Variable', y = 'log2(FPKM + 1)', title = 'Tumour stage at diagnosis') +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/database20210203_icgcEwingRnaExpressionDlg2/boxplot_dlg2RnaExpressionIcgcTumorStage.pdf', sep = ''),
+       height = 4, width = 2, useDingbats = FALSE)
+table(rnaSub$donor_tumour_stage_at_diagnosis)
+
+
+##relapse
+rnaSub = rna %>%
+  mutate(relapse = ifelse(is.na(donor_relapse_type), disease_status_last_followup, donor_relapse_type)) %>%
+  filter(!is.na(relapse))
+ggplot(rnaSub, aes(x = relapse, expression)) +
+  geom_boxplot(size = 0.5, outlier.shape = NA, width = 0.5, color = brewer.pal(11,'RdGy')[8]) +
+  geom_point(aes(color = relapse), size = 2, position = position_jitterdodge()) +
+  #scale_color_manual(values = c(brewer.pal(8,'Spectral')[1], brewer.pal(8,'Spectral')[8])) +
+  labs(x = 'Variable', y = 'log2(FPKM + 1)', title = 'Tumour stage at diagnosis') +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/database20210203_icgcEwingRnaExpressionDlg2/boxplot_dlg2RnaExpressionIcgcTumorStage.pdf', sep = ''),
+       height = 4, width = 2, useDingbats = FALSE)
+table(rnaSub$relapse)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
