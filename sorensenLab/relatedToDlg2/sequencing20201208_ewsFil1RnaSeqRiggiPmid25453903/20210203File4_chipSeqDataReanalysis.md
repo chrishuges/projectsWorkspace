@@ -33,6 +33,9 @@ curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR159/007/SRR1593977/SRR1593977.fast
 curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR159/008/SRR1593978/SRR1593978.fastq.gz -o SRR1593978_GSM1517555_FLI1_ChIP-seq_in_SKMNC_96hrs_shFLI1_Homo_sapiens_ChIP-Seq.fastq.gz
 curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR159/002/SRR1593982/SRR1593982.fastq.gz -o SRR1593982_GSM1517559_GABPA_ChIP-seq_in_SKMNC_96hrs_shFLI1_Homo_sapiens_ChIP-Seq.fastq.gz
 curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR159/009/SRR1593979/SRR1593979.fastq.gz -o SRR1593979_GSM1517556_H3K27ac_ChIP-seq_in_SKMNC_96hrs_shFLI1_Homo_sapiens_ChIP-Seq.fastq.gz
+
+
+
 curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR159/006/SRR1593986/SRR1593986.fastq.gz -o SRR1593986_GSM1517563_H3K27ac_ChIP-Seq_in_A673_Homo_sapiens_ChIP-Seq.fastq.gz
 curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR159/008/SRR1593988/SRR1593988.fastq.gz -o SRR1593988_GSM1517565_H3K27me3_ChIP-Seq_in_A673_Homo_sapiens_ChIP-Seq.fastq.gz
 curl -L ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR159/009/SRR1593989/SRR1593989.fastq.gz -o SRR1593989_GSM1517566_H3K4me3_ChIP-Seq_in_A673_Homo_sapiens_ChIP-Seq.fastq.gz
@@ -128,4 +131,85 @@ The run command in a screen session was:
 ./downloadAndAlignment.sh |& tee -a downloadAndAlignmentLog.txt
 ```
 
-Now we can transfer these files to our local machine and look through the bam alignments in IGV. I use these files in the `20210113File5_creatingDlg2CoverageMaps.Rmd` analysis file.
+The next thing we need to do is the peak calling and the coverage mapping. We will do this with MACS as we have done before. This is the SKNMC histone data.
+
+```shell
+#!/bin/bash
+annotationLocation="/projects/ptx_analysis/chughes/databases/refgenieIndexes/hg38/gencode_gtf/default/hg38.gtf"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201411RiggiCancerCellPmid25453903/chipSeq/"
+for i in SRR1593963 SRR1593961 SRR1593964 SRR1593962 SRR1593970 SRR1593968 SRR1593971 SRR1593972 SRR1593980 SRR1593981 SRR1593977 SRR1593979
+do
+  echo $i
+  eval macs3 callpeak -t ${rawDataOutputDirectory}${i}.filtered.bam -c ${rawDataOutputDirectory}SRR1593966.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+```
+
+These are the A673 histone data.
+
+```shell
+#!/bin/bash
+annotationLocation="/projects/ptx_analysis/chughes/databases/refgenieIndexes/hg38/gencode_gtf/default/hg38.gtf"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201411RiggiCancerCellPmid25453903/chipSeq/"
+for i in SRR1593986 SRR1593988 SRR1593989 SRR1593987 SRR1593993 SRR1593994 SRR1593996 SRR1593997
+do
+  echo $i
+  eval macs3 callpeak -t ${rawDataOutputDirectory}${i}.filtered.bam -c ${rawDataOutputDirectory}SRR1593991.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+```
+
+This is the SKNMC target protein data.
+
+```shell
+#!/bin/bash
+annotationLocation="/projects/ptx_analysis/chughes/databases/refgenieIndexes/hg38/gencode_gtf/default/hg38.gtf"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201411RiggiCancerCellPmid25453903/chipSeq/"
+for i in SRR1593965 SRR1593960 SRR1593967 SRR1593969 SRR1593974 SRR1593973 SRR1593975 SRR1593976 SRR1593978 SRR1593982
+do
+  echo $i
+  eval macs3 callpeak -t ${rawDataOutputDirectory}${i}.filtered.bam -c ${rawDataOutputDirectory}SRR1593966.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01
+done
+```
+
+This is the A673 target protein data
+
+```shell
+#!/bin/bash
+annotationLocation="/projects/ptx_analysis/chughes/databases/refgenieIndexes/hg38/gencode_gtf/default/hg38.gtf"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201411RiggiCancerCellPmid25453903/chipSeq/"
+for i in SRR1593990 SRR1593983 SRR1593992 SRR1593985 SRR1593984 SRR1593995
+do
+  echo $i
+  eval macs3 callpeak -t ${rawDataOutputDirectory}${i}.filtered.bam -c ${rawDataOutputDirectory}SRR1593991.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01
+done
+```
+
+Script to call them all.
+
+```shell
+#!/bin/bash
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201411RiggiCancerCellPmid25453903/chipSeq/"
+eval "cd ${rawDataOutputDirectory}"
+eval "./macsPeakCall_sknmcHistones.sh |& tee macsPeakCall_sknmcHistonesLog.txt"
+eval "./macsPeakCall_a673Histones.sh |& tee macsPeakCall_a673HistonesLog.txt"
+eval "./macsPeakCall_sknmcTargets.sh |& tee macsPeakCall_sknmcTargetsLog.txt"
+eval "./macsPeakCall_a673Targets.sh |& tee macsPeakCall_a673TargetsLog.txt"
+```
+
+Last thing to do is to run deeptools to get the coverage values.
+
+```shell
+#!/bin/bash
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201411RiggiCancerCellPmid25453903/chipSeq/"
+for i in SRR1593965 SRR1593963 SRR1593961 SRR1593964 SRR1593962 SRR1593960 SRR1593967 SRR1593969 SRR1593970 SRR1593966 SRR1593968 SRR1593971 SRR1593974 SRR1593972 SRR1593973 SRR1593975 SRR1593980 SRR1593981 SRR1593976 SRR1593977 SRR1593978 SRR1593982 SRR1593979 SRR1593986 SRR1593988 SRR1593989 SRR1593990 SRR1593991 SRR1593983 SRR1593992 SRR1593985 SRR1593984 SRR1593987 SRR1593993 SRR1593994 SRR1593996 SRR1593997 SRR1593995
+do
+  echo $i
+  eval bamCoverage -b ./$i.filtered.bam -o ./$i.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --extendReads 150 --centerReads -p 6
+done
+```
+
+That is finished. I will use these data files in a downstream Rmd analysis file. 
+
+
+
+
+

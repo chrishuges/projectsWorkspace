@@ -1,0 +1,249 @@
+---
+title: "ChIPseq data analysis from Riggi"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with aligned ChIPseq data from the Riggi paper, looking for DLG2 patterns.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('GenomicRanges')
+library('ggplot2')
+library('wiggleplotr')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First get the gtf file we used for alignment and will use for annotation below.
+
+```{r}
+##########################################################################################
+totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/hg38/refseq_gtf/GRCh38_latest_genomic_feb2021.gtf.gz'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We want to look at H3K4me3 signal in the region of the potential new DLG2 start site. So, we will look through these data for both cell lines. I ended up modifying the plots generated below in Illustrator after the fact just to make the data a bit nicer to visualize. If you want to have the gene actually plotted, you need to not output the plots to the list using the 'return_subplots_list' trigger in the plotCoverage command.
+
+```{r}
+##########################################################################################
+transOfInterest = c('NM_001377978.1')
+dlg2Gtf = totalGtf %>%
+  filter(transcript_id %in% transOfInterest) %>%
+  dplyr::rename(gene_name = gene_id, gene_id = seqnames) %>%
+  mutate('seqnames' = 'chr11')
+##
+dlg2Meta = tibble('transcript_id' = unique(dlg2Gtf$transcript_id),
+                  'gene_id' = unique(dlg2Gtf$gene_id),
+                  'gene_name' = 'DLG2',
+                  'strand' = '-')
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+##
+sampleData = tibble(sample_id = factor(c('a673a','a673b','a673c','a673d','a673e')), 
+                    condition = factor(c('h3k4me3','h3k27ac','h3k4me1','h3k27me3','wce'), levels = c('h3k4me3','h3k27ac','h3k4me1','h3k27me3','wce')),
+                    scaling_factor = 1)
+##
+bigwigFiles = c(paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq/SRR1593989.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq/SRR1593986.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq/SRR1593987.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq/SRR1593988.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq/SRR1593991.chr11.bw', sep = ''))
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+#trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = sample_id)
+##
+covPlot = plotCoverage(dlg2Exons, dlg2Cds, 
+             dlg2Meta, trackData,
+             heights = c(2,0.5),
+             rescale_introns = FALSE, 
+             fill_palette = c(rep(brewer.pal(8,'Spectral')[1],4), brewer.pal(8,'Spectral')[8]),
+             region_coords = c(83626956, 83760000),
+             coverage_type = 'both',
+             return_subplots_list = TRUE)
+##
+covPlot$coverage_plot +
+  scale_y_continuous(limits = c(0,4), breaks = seq(0,6,1))
+##
+ggsave(paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq/coverage_dlg2RefseqChipSeqHistonesA673.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+
+
+
+#############################################
+sampleData = tibble(sample_id = factor(c('sknmca','sknmcb','sknmcc','sknmcd','sknmce')), 
+                    condition = factor(c('h3k4me3','h3k27ac','h3k4me1','h3k27me3','wce'), levels = c('h3k4me3','h3k27ac','h3k4me1','h3k27me3','wce')),
+                    scaling_factor = 1)
+##
+bigwigFiles = c(paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq/SRR1593964.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq/SRR1593961.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq/SRR1593962.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq/SRR1593963.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq/SRR1593966.chr11.bw', sep = ''))
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+#trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = sample_id)
+##
+covPlot = plotCoverage(dlg2Exons, dlg2Cds, 
+             dlg2Meta, trackData,
+             heights = c(2,0.5),
+             rescale_introns = FALSE, 
+             fill_palette = c(rep(brewer.pal(8,'Spectral')[1],4), brewer.pal(8,'Spectral')[8]),
+             region_coords = c(83626956, 83760000),
+             coverage_type = 'both',
+             return_subplots_list = TRUE)
+##
+covPlot$coverage_plot +
+  scale_y_continuous(limits = c(0,2), breaks = seq(0,6,1))
+##
+ggsave(paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq/coverage_dlg2RefseqChipSeqHistonesSknmc.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+To get the h3k peaks that overlap with the existing dlg2 ones, I will make a genomic range and overlap them and use the results to subset the original data.
+
+```{r}
+##########################################################################################
+dlg2Grange = makeGRangesFromDataFrame(dlg2Peaks)
+day0Grange = makeGRangesFromDataFrame(day0Peaks)
+
+##overlap granges
+peakOverlaps = findOverlaps(dlg2Grange, day0Grange, ignore.strand = TRUE)
+peakOverlaps
+
+##extract overlapped ranges
+dlg2Peaks[queryHits(peakOverlaps),]
+day0Peaks[subjectHits(peakOverlaps),]
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Alright this looks good. I think it would be best if we plot the fold enrichment for the original peaks alongside the H3K27ac values for all 5 of the original peaks.
+
+```{r}
+##########################################################################################
+dlg2Peaks$peakAnnotation = seq(5,1,-1)
+dlg2Peaks$day0AcetylEnrichment = 0
+dlg2Peaks[queryHits(peakOverlaps),'day0AcetylEnrichment'] = as.numeric(day0Peaks[subjectHits(peakOverlaps),'fold_enrichment']$fold_enrichment)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we need to repeat this to add the data for day7.
+
+```{r}
+##########################################################################################
+##these are the peaks from the h3k27ac ChipSeq in the DLG2 region
+day7Peaks = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832668_peaks.xls', sep = ''), 
+                     skip = 30, 
+                     col_names = c('chr','start','end','length','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  filter(grepl('chr11', chr)) %>%
+  mutate(start = as.numeric(start), end = as.numeric(end), length = as.numeric(length)) %>%
+  filter(start > dlg2Gtf$start & end < dlg2Gtf$end) %>%
+  mutate(midPoint = start + round(length / 2, 0))
+
+day7Grange = makeGRangesFromDataFrame(day7Peaks)
+peakOverlaps = findOverlaps(dlg2Grange, day7Grange, ignore.strand = TRUE)
+day7Peaks[subjectHits(peakOverlaps),]
+dlg2Peaks$day7AcetylEnrichment = 0
+dlg2Peaks[queryHits(peakOverlaps),'day7AcetylEnrichment'] = as.numeric(day7Peaks[subjectHits(peakOverlaps),'fold_enrichment']$fold_enrichment)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Last of all, I want to add the values for the day7 sample from the DLG2 chipseq.
+
+```{r}
+##########################################################################################
+day7Peaks = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832669_peaks.xls', sep = ''), 
+                     skip = 30, 
+                     col_names = c('chr','start','end','length','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  filter(grepl('chr11', chr)) %>%
+  mutate(start = as.numeric(start), end = as.numeric(end), length = as.numeric(length)) %>%
+  filter(start > dlg2Gtf$start & end < dlg2Gtf$end) %>%
+  mutate(midPoint = start + round(length / 2, 0))
+
+day7Grange = makeGRangesFromDataFrame(day7Peaks)
+peakOverlaps = findOverlaps(dlg2Grange, day7Grange, ignore.strand = TRUE)
+day7Peaks[subjectHits(peakOverlaps),]
+dlg2Peaks$day7Dlg2Enrichment = 0
+dlg2Peaks[queryHits(peakOverlaps),'day7Dlg2Enrichment'] = as.numeric(day7Peaks[subjectHits(peakOverlaps),'fold_enrichment']$fold_enrichment)
+
+##select the data we want for plotting later and assign some annotation details
+finalPeakData = dplyr::select(dlg2Peaks, peakAnnotation:day7Dlg2Enrichment, fold_enrichment) %>%
+  dplyr::rename('day17Dlg2Enrichment' = fold_enrichment) %>%
+  dplyr::select(peakAnnotation, day7Dlg2Enrichment, day17Dlg2Enrichment, day7AcetylEnrichment, day0AcetylEnrichment) %>%
+  pivot_longer(day7Dlg2Enrichment:day0AcetylEnrichment, names_to = 'sample', values_to = 'macsScore') %>%
+  mutate('timepoint' = sub('day(.*)[AD].*$', '\\1', sample)) %>%
+  mutate('target' = factor(sub('day[0-9]+(.*)Enrichment$', '\\1', sample), levels = c('Dlg2','Acetyl'))) %>%
+  mutate('expectedEws' = factor(ifelse(timepoint == 7, 'low', 'high'), levels = c('low','high'))) %>%
+  mutate('macsScore' = macsScore + 1)
+finalPeakData
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can make the plot.
+
+```{r}
+##########################################################################################
+ggplot(finalPeakData, aes(peakAnnotation, macsScore, group = expectedEws)) +
+  geom_col(width = 0.5, position = position_dodge(width = 0.7)) +
+  labs(x = 'Peak annotation', y = 'MACS Peak Score + 1', title = 'DLG2 ChIPseq peaks') +
+  facet_wrap(~target) +
+  scale_y_continuous(limits = c(0,30), breaks = seq(0,35,5)) +
+  theme_classic()
+  #theme(aspect.ratio = 2/1)
+ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/barplot_dlg2ChipAndAcetylPeakEnrichment.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+

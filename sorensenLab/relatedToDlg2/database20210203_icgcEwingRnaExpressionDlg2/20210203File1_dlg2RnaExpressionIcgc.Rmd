@@ -115,12 +115,12 @@ ggplot(rnaSub, aes(x = relapse, expression)) +
   geom_boxplot(size = 0.5, outlier.shape = NA, width = 0.5, color = brewer.pal(11,'RdGy')[8]) +
   geom_point(aes(color = relapse), size = 2, position = position_jitterdodge()) +
   #scale_color_manual(values = c(brewer.pal(8,'Spectral')[1], brewer.pal(8,'Spectral')[8])) +
-  labs(x = 'Variable', y = 'log2(FPKM + 1)', title = 'Tumour stage at diagnosis') +
+  labs(x = 'Variable', y = 'log2(FPKM + 1)', title = 'Relapse type') +
   scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
   theme_classic() +
   theme(legend.position = 'none')
-ggsave(paste(baseRepository, '/database20210203_icgcEwingRnaExpressionDlg2/boxplot_dlg2RnaExpressionIcgcTumorStage.pdf', sep = ''),
-       height = 4, width = 2, useDingbats = FALSE)
+ggsave(paste(baseRepository, '/database20210203_icgcEwingRnaExpressionDlg2/boxplot_dlg2RnaExpressionIcgcRelapse.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
 table(rnaSub$relapse)
 ```
 

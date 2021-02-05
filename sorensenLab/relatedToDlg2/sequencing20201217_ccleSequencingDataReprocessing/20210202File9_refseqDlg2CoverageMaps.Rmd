@@ -194,6 +194,111 @@ ggsave(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing
 
 <div style="margin-bottom:50px;"></div>
 
+For the Ewing data, I want to display that there are short isoforms annotated and show the coverage for these, as well as the junctions beyond what I think is the first coding exon. 
+
+```{r}
+##########################################################################################
+transOfInterest = c('NM_001377978.1', 'NM_001377977.1', 'XM_017017289.1')
+dlg2Gtf = totalGtf %>%
+  filter(transcript_id %in% transOfInterest) %>%
+  dplyr::rename(gene_name = gene_id, gene_id = seqnames) %>%
+  mutate('seqnames' = 'chr11')
+##
+dlg2Meta = tibble('transcript_id' = unique(dlg2Gtf$transcript_id),
+                  'gene_id' = unique(dlg2Gtf$gene_id),
+                  'gene_name' = 'DLG2',
+                  'strand' = '-') %>%
+  mutate(transcript_id = factor(transcript_id, levels = c('NM_001377977.1', 'NM_001377978.1', 'XM_017017289.1')))
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+##
+sampleData = tibble(sample_id = c('ewing1','ewing2','ewing3','ewing4','ewing5','ewing6','ewing7','ewing8','ewing9','ewing10','ewing11'), 
+                    condition = factor(c(rep('ewing',11)), levels = c('ewing')),
+                    scaling_factor = 1)
+##
+bigwigFiles = c(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615497_refseq.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8616012_refseq.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8616213_refseq.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8616214_refseq.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615592_refseq.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615679_refseq.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615832_refseq.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615859_refseq.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615273_refseq.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615499_refseq.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615521_refseq.chr11.bw', sep = ''))
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+#trackData = dplyr::mutate(sampleData, track_id = sample_id, colour_group = condition)
+##
+plotCoverage(dlg2Exons, dlg2Cds, 
+             dlg2Meta, trackData,
+             heights = c(2,1), fill_palette = getGenotypePalette(),
+             rescale_introns = TRUE)
+ggsave(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/coverage_dlg2ShortCoverageRefseqEwingRna.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to remake the plot for junctions with these refseq annotations.
+
+```{r}
+##########################################################################################
+transOfInterest = c('NM_001377978.1', 'NM_001377977.1', 'XM_017017289.1')
+dlg2Gtf = totalGtf %>%
+  filter(transcript_id %in% transOfInterest) %>%
+  dplyr::rename(gene_name = gene_id, gene_id = seqnames) %>%
+  mutate('seqnames' = 'chr11')
+##
+dlg2Meta = tibble('transcript_id' = unique(dlg2Gtf$transcript_id),
+                  'gene_id' = unique(dlg2Gtf$gene_id),
+                  'gene_name' = 'DLG2',
+                  'strand' = '-') %>%
+  mutate(transcript_id = factor(transcript_id, levels = c('NM_001377977.1', 'NM_001377978.1', 'XM_017017289.1')))
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+##
+sampleData = tibble(sample_id = factor(c('a673','sknmc','mhhes1'), levels = c('a673','sknmc','mhhes1')), 
+                    condition = factor(c(rep('ewing',3)), levels = c('ewing')),
+                    scaling_factor = c(1,0.4,0.4))
+##
+bigwigFiles = c(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8616012_refseq.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615497_refseq.chr11.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615521_refseq.chr11.bw', sep = ''))
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+#trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+trackData = dplyr::mutate(sampleData, track_id = sample_id, colour_group = condition)
+##
+plotCoverage(dlg2Exons, dlg2Cds, 
+             dlg2Meta, trackData,
+             heights = c(2,1), fill_palette = getGenotypePalette(),
+             rescale_introns = FALSE, 
+             region_coords = c(83626956, 83760000),
+             coverage_type = 'both')
+ggsave(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/sashimi/coverage_dlg2RefseqForJunctionsEwingRna.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+```
+
+
+<div style="margin-bottom:50px;"></div>
+
 ## Session info
 
 ```{r}
