@@ -1,0 +1,184 @@
+---
+title: "Looking for EWS-FLI1 regulated isoforms"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis ChIPseq data from the Aynaud paper to look for isoforms that are regulated by EWS-FLI1 expression.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('rtracklayer')
+library('GenomicRanges')
+library('metagene2')
+library('ggplot2')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the annotation data.
+
+```{r}
+##########################################################################################
+totalGtf = rtracklayer::readGFF('C:/Users/chughes/Documents/bccrc/databases/hg38/refseq_gtf/GRCh38_latest_genomic_feb2021.gtf.gz')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read the bed file from the MACS analysis.
+
+```{r}
+##########################################################################################
+ewsPeaks = read_tsv(paste(baseRepository, '/sequencing20210209_differentialEwingIsoformExpressionHunting/diff_d17_vs_d7_c3.0_cond1.bed', sep = ''),
+                    skip = 1, col_names = c('seqnames','start','end','condition','score')) 
+#score is a log10 likelihood ratio
+ewsPeaks
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Since we are primarily interested in peaks that fall in EWS-FLI1 regulated genes, we will read in a gene set for this. 
+
+```{r}
+##########################################################################################
+ewsGenes = read_tsv(paste(baseRepository, '/sequencing20210209_differentialEwingIsoformExpressionHunting/icEwsSignatureTable.txt', sep = ''),
+                    skip = 1, col_names = c('rank','symbol','direct'))
+#a score of 1 is a direct candidate, 0 is indirect
+ewsGenes
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can extract these genes from our GTF and use these ranges to filter our peaks file.
+
+```{r}
+##########################################################################################
+ewsGeneRanges = tibble()
+#for (i in 1:nrow(ewsGenes)){
+#  candidateGene = totalGtf %>%
+#    dplyr::filter(grepl(paste('^',ewsGenes[i,'symbol'],'$', sep = ''), gene_name)) %>%
+#    dplyr::filter(grepl('transcript', type)) %>%
+#    dplyr::filter(grepl('protein_coding', transcript_type)) %>%
+#    dplyr::filter(!is.na(ccdsid)) %>%
+#    dplyr::mutate(width = end - start) %>%
+#    dplyr::arrange(-width)
+  ##
+#  ewsGeneRanges = rbind(ewsGeneRanges, candidateGene[1,])
+#}
+#ewsGeneRangesSub = dplyr::filter(ewsGeneRanges, !is.na(seqid))
+
+##redo this with refseq annotation instead
+for (i in 1:nrow(ewsGenes)){
+  candidateGene = totalGtf %>%
+    dplyr::filter(grepl(paste('^',ewsGenes[i,'symbol'],'$', sep = ''), gene_id)) %>%
+    dplyr::filter(grepl('gene', type)) %>%
+    dplyr::rename(ncbi_acc = seqid) %>%
+    dplyr::mutate(seqid = paste('chr', as.numeric(sub('NC_0000(.*)\\..*','\\1', ncbi_acc)), sep = '')) %>%
+    dplyr::select(seqid, start, end, strand, gene_id)
+  ##
+  ewsGeneRanges = rbind(ewsGeneRanges, candidateGene)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can overlap these gene and peak sets.
+
+```{r}
+##########################################################################################
+ewsGeneGr = makeGRangesFromDataFrame(ewsGeneRanges)
+ewsPeakGr = makeGRangesFromDataFrame(ewsPeaks)
+
+##
+peakOverlaps = GenomicRanges::findOverlaps(ewsPeakGr, ewsGeneGr, ignore.strand = TRUE)
+
+##
+ewsPeakGeneSet = ewsGeneRanges[subjectHits(peakOverlaps),]
+ewsPeakGeneSet$score = ewsPeaks[queryHits(peakOverlaps),]$score
+saveRDS(ewsPeakGeneSet, paste(baseRepository, '/sequencing20210209_differentialEwingIsoformExpressionHunting/dataset_calledGenesOfInterest.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Alright this works. The next thing would be to build metagene plots for these genes. DAB1 is interesting (just putting this here so I don't forget). There are a total of 112 genes in the dataset.
+
+```{r}
+##########################################################################################
+ewsSet = readRDS(paste(baseRepository, '/sequencing20210209_differentialEwingIsoformExpressionHunting/dataset_calledGenesOfInterest.rds', sep = ''))
+
+##
+ewsBamFiles = c(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8616012.sorted.bam', sep = ''),
+                paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615497.sorted.bam', sep = ''))
+names(ewsBamFiles) = c('a673','sknmc')
+ewsBamFiles
+
+
+##
+testRegion = totalGtf %>%
+  dplyr::filter(grepl('DLG2', gene_id)) %>%
+  dplyr::filter(source == 'BestRefSeq' & gbkey == 'mRNA') %>%
+  dplyr::mutate(ncbi_acc = seqid, seqid = 'chr11')
+ewsRegions = makeGRangesListFromDataFrame(testRegion, split.field = 'transcript_id')
+#ewsRegions = makeGRangesFromDataFrame(subset(ewsGeneRanges, ewsGeneRanges$gene_id %in% unique(ewsSet$gene_id)))[1:2]
+
+
+
+mg <- metagene2$new(regions = ewsRegions[1:2],
+                   bam_files = ewsBamFiles,
+                   assay='rnaseq',
+                   normalization='RPM')
+mg$plot(facet_by=~region, group_by="design")
+
+
+
+
+
+
+##
+test = metagene$new(regions = ewsRegions[1:2], bam_files = ewsBamFiles[1])
+test$plot(title = 'test plot')
+
+
+
+test = rtracklayer::import(paste(baseRepository, '/sequencing20201217_ccleSequencingDataReprocessing/SRR8615273_refseq.chr11.bw',sep = ''))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

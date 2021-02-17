@@ -1,0 +1,122 @@
+---
+title: "Looking in TCGA for DLG2"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of RNAseq data from TCGA.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('TCGAutils')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the annotation data.
+
+```{r}
+##########################################################################################
+tcgaClinical = read_tsv(paste(generalDatasets, '/tcga_20210203/clinical.cases_selection.2021-02-03.tar.gz', sep = '')) %>%
+  dplyr::rename(case_id = clinical.tsv) %>%
+  dplyr::select(case_id:project_id)
+#tcgaBiospecimen = read_tsv(paste(generalDatasets, '/tcga_20210203/biospecimen.cases_selection.2021-02-03.tar.gz', sep = ''))
+tcgaManifest = read_tsv(paste(generalDatasets, '/tcga_20210203/gdc_manifest.2021-02-03.txt', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Need to convert the manifest file UUIDs to the TCGA barcodes.
+
+```{r}
+##########################################################################################
+tcgaCaseId = UUIDtoUUID(tcgaManifest$id, to_type = 'case_id') %>%
+  dplyr::rename(id = file_id, case_id = cases.case_id)
+tcgaManifestJoin = tcgaManifest %>%
+  left_join(tcgaCaseId) %>%
+  left_join(tcgaClinical)
+tcgaManifestJoin = unique(tcgaManifestJoin)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we need to run through these files and grab all of the DLG2 data.
+
+```{r, message = FALSE}
+##########################################################################################
+dlg2Data = tibble()
+for (i in 1:nrow(tcgaManifestJoin)){
+  rnaData = read_tsv(paste(generalDatasets, '/tcga_20210203/', tcgaManifestJoin[i,'id'], '/', tcgaManifestJoin[i,'filename'], sep = ''),
+                     col_names = c('gene','fpkm')) %>%
+    dplyr::filter(grepl('ENSG00000150672', gene)) %>%
+    dplyr::mutate(log2Fpkm = log2(fpkm), cohort = tcgaManifestJoin[i, 'project_id']$project_id)
+  ##
+  dlg2Data = rbind(dlg2Data, rnaData)
+  print(paste('done ', i, ' files'))
+  flush.console()
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This took a little while to run, so lets save the data so we don't have to do it again.
+
+```{r}
+##########################################################################################
+saveRDS(dlg2Data, paste(baseRepository, '/database20210208_tcgaDlg2Expression/dataset_dlg2RnaExpressionTcgaAll.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can make a plot of the data.
+
+```{r}
+##########################################################################################
+goi = readRDS(paste(baseRepository, '/database20210208_tcgaDlg2Expression/dataset_dlg2RnaExpressionTcgaAll.rds', sep = '')) %>%
+  dplyr::mutate(log2Fpkm = log2(fpkm + 1)) %>%
+  dplyr::filter(!is.na(cohort))
+
+##     
+ggplot(goi, aes(x = reorder(cohort, log2Fpkm, median, na.rm = TRUE), log2Fpkm)) +
+  geom_boxplot(size = 0.5, outlier.shape = NA) +
+  labs(x = 'Project ID in TCGA', y = 'log2(FPKM + 1)', title = 'DLG2 RNA expression in TCGA') +
+  scale_y_continuous(limits = c(0,6), breaks = seq(0,6,2)) +
+  geom_hline(yintercept = 1, linetype = 'dashed') +
+  theme_classic() +
+  theme(axis.text.x = element_text(size = 6, angle = 45, hjust = 1))
+  #theme(axis.text.x = element_blank())
+ggsave(paste(baseRepository, '/database20210208_tcgaDlg2Expression/boxplot_dlg2RnaExpressionProjectId.pdf', sep = ''),
+       height = 4, width = 6, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```

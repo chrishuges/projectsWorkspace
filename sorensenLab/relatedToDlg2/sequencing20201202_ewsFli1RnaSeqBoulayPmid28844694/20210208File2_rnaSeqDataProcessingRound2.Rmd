@@ -1,0 +1,195 @@
+---
+title: "Looking for DLG2 in MSCs"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of data from the Riggi paper to look at MSCs that have been induced with different types of FLI1 constructs.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('rtracklayer')
+library('wiggleplotr')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the annotation data.
+
+```{r}
+##########################################################################################
+totalGtf = rtracklayer::readGFF('C:/Users/chughes/Documents/bccrc/databases/hg19/refseq_gtf/GRCh37_latest_genomic.gtf.gz')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+First lets work with the RNAseq data.
+
+```{r}
+##########################################################################################
+rna = read_tsv(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/rnaSeq/GSE94277_counts_matrix.txt.gz', sep = '')) %>%
+  dplyr::select(gene, MSC1.control.RNAseq:MSC1b.FLI1.RNAseq) %>%
+  dplyr::filter(grepl('DLG2', gene)) %>%
+  pivot_longer(MSC1.control.RNAseq:MSC1b.FLI1.RNAseq, names_to = 'sample', values_to = 'counts') %>%
+  mutate(treatment = factor(sub('.*\\.(.*)\\.RNAseq$', '\\1', sample), levels = c('control','FLI1','EWSFLI1')))
+
+##
+ggplot(rna, aes(treatment, counts, color = treatment)) +
+  geom_point(size = 3, position = position_jitterdodge(dodge.width = 0.5)) +
+  labs(x = 'Sample', y = 'RNAseq counts', title = 'DLG2 in MSCs') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/rnaSeq/scatter_dlg2RnaExpressionMscNormal.pdf', sep = ''),
+       height = 4, width = 2, useDingbats = FALSE)
+
+
+##########################################################################################
+rna = read_tsv(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/rnaSeq/GSE94277_counts_matrix.txt.gz', sep = '')) %>%
+  dplyr::select(gene, MSC5.shGFP.control.RNAseq:MSC5b.shBRG1.EWSFLI1.RNAseq) %>%
+  dplyr::filter(grepl('DLG2', gene)) %>%
+  pivot_longer(MSC5.shGFP.control.RNAseq:MSC5b.shBRG1.EWSFLI1.RNAseq, names_to = 'sample', values_to = 'counts') %>%
+  mutate(treatment = factor(rep(c('shGFP.control','shGFP.EWSFLI1','shBRG1.EWSFLI1'), 2), levels = c('shGFP.control','shGFP.EWSFLI1','shBRG1.EWSFLI1')))
+
+##
+ggplot(rna, aes(treatment, counts, color = treatment)) +
+  geom_point(size = 3, position = position_jitterdodge(dodge.width = 0.5)) +
+  labs(x = 'Sample', y = 'RNAseq counts', title = 'DLG2 in MSCs') +
+  scale_y_continuous(limits = c(0,200), breaks = seq(0,200,50)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/rnaSeq/scatter_dlg2RnaExpressionMscShrna.pdf', sep = ''),
+       height = 4, width = 2, useDingbats = FALSE)
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Move on to chromatin data.
+
+```{r}
+##########################################################################################
+transOfInterest = c('NM_001142702.2')
+dlg2Gtf = totalGtf %>%
+  filter(transcript_id %in% transOfInterest) %>%
+  dplyr::rename(gene_name = gene_id, gene_id = seqid) %>%
+  mutate('seqnames' = 11)
+##
+dlg2Meta = tibble('transcript_id' = unique(dlg2Gtf$transcript_id),
+                  'gene_id' = unique(dlg2Gtf$gene_id),
+                  'gene_name' = 'DLG2',
+                  'strand' = '-')
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+##
+sampleData = tibble(sample_id = factor(c('sample1','sample2','sample3','sample4')), 
+                    condition = factor(c('FLI1','BAF155','H3K27ac','wce'), levels = c('FLI1','BAF155','H3K27ac','wce')),
+                    scaling_factor = 1)
+##
+bigwigFiles = c(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/msc/GSM2472084_MSC1.control.FLI1.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/msc/GSM2472083_MSC1.control.BAF155.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/msc/GSM2472085_MSC1.control.H3K27ac.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/msc/GSM2472086_MSC1.control.INPUT.bw', sep = ''))
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+#trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = sample_id)
+##:83,339,476-83,477,345
+plotCoverage(dlg2Exons, dlg2Cds, 
+             dlg2Meta, trackData,
+             heights = c(2,0.5),
+             rescale_introns = FALSE, 
+             fill_palette = c(rep(brewer.pal(8,'Spectral')[1],3), brewer.pal(8,'Spectral')[8]),
+             region_coords = c(83339476, 83477345),
+             coverage_type = 'both',
+             return_subplots_list = FALSE)
+##
+#covPlot$coverage_plot +
+#  scale_y_continuous(limits = c(0,4), breaks = seq(0,6,1))
+##
+ggsave(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/msc/coverage_dlg2RefseqChipSeqMscControl.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+
+
+
+##########################################################################################
+sampleData = tibble(sample_id = factor(c('sample1','sample2','sample3','sample4')), 
+                    condition = factor(c('FLI1','BAF155','H3K27ac','wce'), levels = c('FLI1','BAF155','H3K27ac','wce')),
+                    scaling_factor = 12)
+##
+bigwigFiles = c(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/msc/GSM2472088_MSC1.EWSFLI1.FLI1.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/msc/GSM2472087_MSC1.EWSFLI1.BAF155.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/msc/GSM2472089_MSC1.EWSFLI1.H3K27ac.bw', sep = ''),
+                paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/msc/GSM2472090_MSC1.EWSFLI1.INPUT.bw', sep = ''))
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+#trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = sample_id)
+##:83,339,476-83,477,345
+plotCoverage(dlg2Exons, dlg2Cds, 
+             dlg2Meta, trackData,
+             heights = c(2,0.5),
+             rescale_introns = FALSE, 
+             fill_palette = c(rep(brewer.pal(8,'Spectral')[1],3), brewer.pal(8,'Spectral')[8]),
+             region_coords = c(83339476, 83477345),
+             coverage_type = 'both',
+             return_subplots_list = FALSE)
+ggsave(paste(baseRepository, '/sequencing20201202_ewsFli1RnaSeqBoulayPmid28844694/msc/coverage_dlg2RefseqChipSeqMscEwsFli1.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
