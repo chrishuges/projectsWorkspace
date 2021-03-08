@@ -1,0 +1,70 @@
+---
+title: "Ribosome interaction data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details processing of the data from the published paper of Simsek et al PMID: 28575669. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Get the ribosome interaction data provided with the manuscript.
+
+```{r, message = FALSE}
+##########################################################################################
+riboInt = read_tsv(paste(baseRepository, '/proteomics20210305_ribosomeInteractionsSimsek/Simsek_PMID28575669_RiboInteractors_1.txt', sep = '')) %>%
+  dplyr::select(`Uniprot Accession`, `Symbol`, `maxSAINTprob_eL36_eS17`, `log2MaxFoldChange_eL36_eS17`) %>%
+  dplyr::rename(accession = `Uniprot Accession`, symbol = `Symbol`) %>%
+  dplyr::filter(!is.na(maxSAINTprob_eL36_eS17))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make the plot.
+
+```{r}
+##########################################################################################
+goi = c('Ybx1','Ybx3')
+riboInt$pColor = ifelse(riboInt$symbol %in% goi, brewer.pal(8,'Spectral')[1], brewer.pal(11,'RdGy')[10])
+riboInt$pText = ifelse(riboInt$symbol %in% goi, riboInt$symbol, '')
+ggplot(riboInt, aes(log2MaxFoldChange_eL36_eS17, maxSAINTprob_eL36_eS17)) +
+  geom_point(size = 3, color = riboInt$pColor, alpha = 0.75) +
+  geom_text_repel(label = riboInt$pText, nudge_y = -0.5) +
+  labs(x = 'log2(Bait vs. GFP)', y = 'SAINT probability of Interaction', title = 'Ribosome interactions') +
+  scale_x_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2)) +
+  geom_vline(xintercept = 2, linetype = 'dashed') +
+  geom_hline(yintercept = 0.8, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20210305_ribosomeInteractionsSimsek/scatter_ribosomeProteinInteractions.pdf', sep = ''),
+       width = 4, height = 4, useDingbats = FALSE)
+```

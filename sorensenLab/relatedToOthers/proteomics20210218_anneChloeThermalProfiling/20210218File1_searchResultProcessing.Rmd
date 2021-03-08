@@ -1,0 +1,314 @@
+---
+title: "Thermo profiling data processing"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of thermal proteome profiling data. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('NPARC')
+library('magrittr')
+library('broom')
+library('knitr')
+library('BiocParallel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+The data are stored in folders, each with a psm file. The psm file is called psm.tsv and I want to read this in for each sample set. To do this, I will build some annotation and then read it in.
+
+
+```{r, message = FALSE}
+##########################################################################################
+sampleNames = list.dirs(paste(baseRepository, '/proteomics20210218_anneChloeThermalProfiling', sep = ''), full.names = FALSE)[2:5]
+
+##
+rawPsmData = tibble()
+for (i in 1:length(sampleNames)){
+  fileData = read_tsv(paste(baseRepository, '/proteomics20210218_anneChloeThermalProfiling/', sampleNames[i], '/psm.tsv', sep = '')) %>%
+    dplyr::mutate(sampleId = sampleNames[i]) %>%
+    dplyr::select(sampleId, Peptide, `Is Unique`, `Is Used`, `Protein ID`, Gene, temp37:temp67) %>%
+    dplyr::rename(sequence = Peptide, 
+                  unique = `Is Unique`,
+                  used = `Is Used`,
+                  accession = `Protein ID`,
+                  gene = Gene) %>%
+    dplyr::filter(unique == TRUE) %>%
+    dplyr::rowwise(sequence, accession, gene) %>%
+    dplyr::mutate(totalSignal = sum(c_across(temp37:temp67), na.rm = TRUE)) %>%
+    dplyr::filter(totalSignal >= 100)
+  fileData[,7:16][fileData[,7:16] == 0] <- NA
+  fileData = subset(fileData, rowSums(is.na(fileData[,7:16])) < 1)
+  ##
+  plotData = fileData %>%
+    pivot_longer(cols = temp37:temp67, names_to = 'temperature', values_to = 'signal') %>%
+    dplyr::filter(signal > 0)
+  ggplot(plotData, aes(temperature, log10(signal), color = temperature)) +
+    geom_boxplot(outlier.shape = NA) +
+    scale_color_manual(values = rev(brewer.pal(10,'RdBu'))) +
+    labs(x = 'temperature', y = 'log10(tmt signal)', title = paste(sampleNames[i])) +
+    theme_classic() +
+    theme(legend.position = 'none',
+          axis.text.x = element_text(size = 6, angle = 45, hjust = 1))
+  ggsave(paste(baseRepository, '/proteomics20210218_anneChloeThermalProfiling/boxplot_rawSignals', sampleNames[i], '.pdf', sep = ''),
+         width = 4, height = 4, useDingbats = FALSE)
+  ##
+  rawPsmData = rbind(rawPsmData, fileData)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+For the upcoming analysis I am going to follow the guide posted [here](https://bioconductor.org/packages/release/bioc/vignettes/NPARC/inst/doc/NPARC.html). The data needs to be in a somewhat specific format described on that page, so I will reshape it to suit. I think it wants to work with protein data, so I will first collapse the peptides into proteins.
+
+```{r}
+##########################################################################################
+##
+proteinData = as_tibble(rawPsmData) %>%
+  dplyr::mutate('uniquePeptideMatches' = 1) %>%
+  dplyr::group_by(sampleId, accession, gene) %>%
+  dplyr::summarise(across(where(is.double), sum, na.rm = TRUE)) %>%
+  dplyr::mutate(uniqueId = paste(accession,'_',gene, sep = ''), dataset = 'mysteryDrug') %>%
+  dplyr::mutate(compoundConcentration = factor(ifelse(grepl('control', sampleId), 0, 50))) %>%
+  dplyr::mutate(replicate = factor(sub('.*Rep(.*)$', '\\1', sampleId))) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(dataset, uniqueId, compoundConcentration, replicate, uniquePeptideMatches, temp37:temp67)
+
+proteinData[,6:15] = apply(proteinData[,6:15], 2, function(x) x / proteinData$temp37) #normalize to the lowest temperature
+proteinData = proteinData %>%
+  tidyr::pivot_longer(cols = temp37:temp67, names_to = 'temperature', values_to = 'relAbundance') %>%
+  dplyr::mutate(temperature = sub('temp(.*)$', '\\1', temperature)) %>%
+  dplyr::filter(!is.na(relAbundance) & !is.infinite(relAbundance))
+
+##
+summary(proteinData)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now that we are in the format that the NPARC package requires, we can just follow their walkthrough.
+
+```{r}
+##########################################################################################
+# Count full curves per protein
+proteinData %<>%
+  group_by(dataset, uniqueId) %>%
+  mutate(n = n()) %>%
+  group_by(dataset) %>%
+  mutate(max_n = max(n)) %>% 
+  ungroup
+##
+table(distinct(proteinData, uniqueId, n)$n)
+
+
+# Filter for full curves per protein:
+proteinData %<>% 
+  filter(n == max_n) %>%
+  dplyr::select(-n, -max_n)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+For running the next part, I may need to do this on the linux server because it seems like it uses BiocParallel that doesn't really play nice on Windows machines. We can try it first and see what happens.
+
+```{r}
+##########################################################################################
+BPPARAM = BiocParallel::SerialParam(progressbar = FALSE)
+fits = NPARCfit(x = proteinData$temperature, 
+                 y = proteinData$relAbundance, 
+                 id = proteinData$uniqueId, 
+                 groupsNull = NULL, 
+                 groupsAlt = proteinData$compoundConcentration, 
+                 BPPARAM = BPPARAM,
+                 returnModels = FALSE)
+
+
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Ok that gave an error and I am not sure why. I am going to try it on the linux server just to be sure this isn't a windows thing. The code below is for that.
+
+```{r}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('NPARC')
+library('magrittr')
+library('broom')
+library('knitr')
+
+########################
+baseRepository = '/projects/ptx_results/msFraggerDataOutput'
+
+
+########################
+sampleNames = list.dirs(paste(baseRepository, '/anneChloeTppSearchOutput', sep = ''), full.names = FALSE)[2:5]
+##
+rawPsmData = tibble()
+for (i in 1:length(sampleNames)){
+  fileData = read_tsv(paste(baseRepository, '/anneChloeTppSearchOutput/', sampleNames[i], '/psm.tsv', sep = '')) %>%
+    dplyr::mutate(sampleId = sampleNames[i]) %>%
+    dplyr::select(sampleId, Peptide, `Is Unique`, `Is Used`, `Protein ID`, Gene, temp37:temp67) %>%
+    dplyr::rename(sequence = Peptide, 
+                  unique = `Is Unique`,
+                  used = `Is Used`,
+                  accession = `Protein ID`,
+                  gene = Gene) %>%
+    dplyr::filter(unique == TRUE) %>%
+    dplyr::rowwise(sequence, accession, gene) %>%
+    dplyr::mutate(totalSignal = sum(c_across(temp37:temp67), na.rm = TRUE)) %>%
+    dplyr::filter(totalSignal >= 100)
+  fileData[,7:16][fileData[,7:16] == 0] <- NA
+  fileData = subset(fileData, rowSums(is.na(fileData[,7:16])) < 1)
+  ##
+  rawPsmData = rbind(rawPsmData, fileData)
+}
+
+
+
+########################
+##
+proteinData = rawPsmData %>%
+  dplyr::mutate(uniquePeptideMatches = 1) %>%
+  dplyr::group_by(sampleId, accession, gene) %>%
+  dplyr::summarise(across(where(is.double), sum, na.rm = TRUE)) %>%
+  dplyr::mutate(uniqueId = paste(accession,'_',gene, sep = ''), dataset = 'mysteryDrug') %>%
+  dplyr::mutate(compoundConcentration = factor(ifelse(grepl('control', sampleId), 0, 50))) %>%
+  dplyr::mutate(replicate = factor(sub('.*Rep(.*)$', '\\1', sampleId))) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(dataset, uniqueId, compoundConcentration, replicate, uniquePeptideMatches, temp37:temp67) %>%
+  tidyr::pivot_longer(cols = temp37:temp67, names_to = 'temperature', values_to = 'relAbundance') %>%
+  dplyr::mutate(temperature = sub('temp(.*)$', '\\1', temperature)) %>%
+  dplyr::filter(!is.na(relAbundance) & !is.infinite(relAbundance))
+
+
+
+# Count full curves per protein
+proteinData %<>%
+  group_by(dataset, uniqueId) %>%
+  mutate(n = n()) %>%
+  group_by(dataset) %>%
+  mutate(max_n = max(n)) %>% 
+  ungroup
+##
+table(distinct(proteinData, uniqueId, n)$n)
+
+
+# Filter for full curves per protein:
+proteinData %<>% 
+  filter(n == max_n) %>%
+  dplyr::select(-n, -max_n)
+
+
+BPPARAM = BiocParallel::SerialParam(progressbar = FALSE)
+fits = NPARCfit(x = proteinData$temperature, 
+                 y = proteinData$relAbundance, 
+                 id = proteinData$uniqueId, 
+                 groupsNull = NULL, 
+                 groupsAlt = proteinData$compoundConcentration, 
+                 BPPARAM = BPPARAM,
+                 returnModels = FALSE)
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This gives me the same error. What about if we look at a single protein, just to see how the data is?
+
+```{r}
+data("stauro_TPP_data_tidy")
+df <- stauro_TPP_data_tidy
+df %>% 
+  mutate(compoundConcentration = factor(compoundConcentration), 
+         replicate = factor(replicate), 
+         dataset = factor(dataset)) %>% 
+  summary()
+df %<>% filter(uniquePeptideMatches >= 1)
+df %<>% filter(!is.na(relAbundance))
+df %<>%
+  group_by(dataset, uniqueID) %>%
+  mutate(n = n()) %>%
+  group_by(dataset) %>%
+  mutate(max_n = max(n)) %>% 
+  ungroup
+table(distinct(df, uniqueID, n)$n)
+df %<>% 
+  filter(n == max_n) %>%
+  dplyr::select(-n, -max_n)
+
+
+
+stk4 <- filter(df, uniqueID == "STK4_IPI00011488")
+stk4 %>% filter(compoundConcentration == 50, replicate == 1) %>% 
+  dplyr::select(-dataset) %>% kable(digits = 2)
+
+stk4_plot_orig <- ggplot(stk4, aes(x = temperature, y = relAbundance)) +
+  geom_point(aes(shape = factor(replicate), color = factor(compoundConcentration)), size = 2) +
+  theme_bw() +
+  ggtitle("STK4") +
+  scale_color_manual("staurosporine (mu M)", values = c("#808080", "#da7f2d")) +
+  scale_shape_manual("replicate", values = c(19, 17))
+
+print(stk4_plot_orig)
+nullFit <- NPARC:::fitSingleSigmoid(x = stk4$temperature, y = stk4$relAbundance)
+summary(nullFit)
+nullPredictions <- broom::augment(nullFit)
+nullPredictions %>% filter(x %in% c(46, 49)) %>% kable()
+stk4$nullPrediction <- nullPredictions$.fitted
+stk4$nullResiduals <- nullPredictions$.resid
+
+stk4_plot <- stk4_plot_orig + geom_line(data = stk4, aes(y = nullPrediction))
+
+print(stk4_plot)
+BPPARAM <- BiocParallel::SerialParam(progressbar = FALSE)
+fits <- NPARCfit(x = df$temperature, 
+                 y = df$relAbundance, 
+                 id = df$uniqueID, 
+                 groupsNull = NULL, 
+                 groupsAlt = df$compoundConcentration, 
+                 BPPARAM = BPPARAM,
+                 returnModels = FALSE)
+fits$metrics %>% 
+  mutate(modelType = factor(modelType), nCoeffs = factor(nCoeffs), nFitted = factor(nFitted), group = factor((group))) %>% 
+  summary
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I looked at a few candidates using that code, and it seems like maybe there is a normalization issue and this is why it isn't working. Maybe it can't come up with a model. We have normalized data from MSFragger, so perhaps we can try this. Actually, lets try and do our own normalization because the MSFragger one looks like it has removed any variation. 
+
+
+
+
+
+
+

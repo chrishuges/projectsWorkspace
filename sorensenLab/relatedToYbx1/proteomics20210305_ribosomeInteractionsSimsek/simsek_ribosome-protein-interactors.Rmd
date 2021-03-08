@@ -1,0 +1,182 @@
+---
+title: "Processing of the data from the published paper of Simsek et al PMID: 28575669. "
+output: html_notebook
+---
+
+```{r, include = FALSE}
+#Load in the libraries
+###################################################################################################################################################################
+library(ggplot2)
+library(cowplot)
+library(ggrepel)
+library(RColorBrewer)
+library(dplyr)
+library(data.table)
+library(reshape2)
+library(viridis)
+library(gplots)
+library(UpSetR)
+
+######select the directory depending on your location
+base_dir = '/Users/chughes/Documents/chughes_bitbucket/'
+#base_dir = '/projects/ptx_analysis/chughes/projects-current/'
+```
+
+<br>
+
+First we can work with the interaction data.
+
+
+```{r}
+ribo_int = read.table(paste(base_dir, 'projects-current/sorensen_yb1-interactome/published-data/Simsek_PMID28575669_RiboInteractome/Simsek_PMID28575669_RiboInteractors_1.txt', sep = ''), header = TRUE, sep = '\t')
+
+########I think just plotting the SAINT scores will work best here
+
+######first add some annotation
+ribo_int = subset(ribo_int, ribo_int$log2MaxFoldChange_eL36_eS17 > 0)
+goi = c('Ybx1','Ybx3','Actb','Serbp1','Pabpc1','Npm1')
+ribo_int$riboColors = ifelse(ribo_int$Symbol %in% goi, brewer.pal(6,'Set3')[4], NA)
+ribo_int$gene = ifelse(ribo_int$Symbol %in% goi, as.character(ribo_int$Symbol), '')
+
+
+###########make the plot
+output_plot = ggplot(ribo_int, aes(log2MaxFoldChange_eL36_eS17, maxSAINTprob_eL36_eS17)) +
+  geom_point(size = 2.5, alpha = 0.75, color = 'grey60') +
+  geom_text_repel(data = ribo_int, aes(x = log2MaxFoldChange_eL36_eS17, y = maxSAINTprob_eL36_eS17, label = gene), color = 'black', size = 2.75, nudge_x = 6, nudge_y = -0.5, direction = 'y', hjust = 1) +
+  geom_point(size = 2.5, alpha = 0.75, color = ribo_int$riboColors) +
+  labs(x='log2(Fold Change to GFP)', y='SAINT Interaction Probability', title = 'Ribosome Protein Interactions') +
+  scale_y_continuous(limits = c(0,1), breaks = seq(0,1,0.2)) +
+  scale_x_continuous(limits = c(0,50), breaks = seq(0,50,1)) +
+  geom_vline(xintercept = 1, linetype = 'dashed') +
+  geom_hline(yintercept = 0.75, linetype = 'dashed') +
+  theme(axis.text.x = element_text(size = 9), axis.text.y = element_text(size = 9), legend.position = 'none')
+output_plot
+save_plot(paste(base_dir, 'projects-current/sorensen_yb1-interactome/published-data/Simsek_PMID28575669_RiboInteractome/Ranalysis/simsek_ribosome-interactome_scatter.pdf', sep = ''), output_plot)
+
+saveRDS(ribo_int, paste(base_dir, 'projects-current/sorensen_yb1-interactome/published-data/Simsek_PMID28575669_RiboInteractome/Simsek_PMID28575669_RiboInteractors_1.rds', sep = ''))
+```
+
+<br>
+
+Now look at the RNase treated data.
+
+```{r}
+ribo_int = read.table(paste(base_dir, 'projects-current/sorensen_yb1-interactome/published-data/Simsek_PMID28575669_RiboInteractome/Simsek_PMID28575669_RiboInteractors_3.txt', sep = ''), header = TRUE, sep = '\t')
+
+########I think just plotting the SAINT scores will work best here
+
+######first add some annotation
+goi = c('Ybx1','Ybx3','Igf2bp1','Dhx9','Hnrnpu','Ncl','Stau1')
+ribo_int$riboColors = ifelse(ribo_int$Symbol %in% goi, brewer.pal(6,'Set3')[4], NA)
+ribo_int$gene = ifelse(ribo_int$Symbol %in% goi, as.character(ribo_int$Symbol), '')
+
+###########make the plot
+output_plot = ggplot(ribo_int, aes(Change.RNase, -log10(Left.P.value.RNase))) +
+  geom_point(size = 2.5, alpha = 0.75, pch = 21, color = 'grey40', fill = ribo_int$riboColors) +
+  geom_text_repel(data = ribo_int, aes(x = Change.RNase, y = -log10(Left.P.value.RNase), label = gene), color = 'black', size = 2, nudge_x = 1, nudge_y = -0.25) +
+  labs(x='log2(Fold Change +/-RNase)', y='SAINT Interaction Probability', title = 'Interactors - RNase Treatment') +
+  scale_y_continuous(limits = c(0,10), breaks = seq(0,10,2)) +
+  scale_x_continuous(limits = c(-3,3), breaks = seq(-3,4,1)) +
+  geom_hline(yintercept = -log10(0.05)) +
+  geom_vline(xintercept = 0) +
+  theme(axis.text.x = element_text(size = 9), axis.text.y = element_text(size = 9), legend.position = 'none')
+output_plot
+save_plot(paste(base_dir, 'projects-current/sorensen_yb1-interactome/published-data/Simsek_PMID28575669_RiboInteractome/Ranalysis/simsek_ribosome-interactome_RNase_scatter.pdf', sep = ''), output_plot)
+
+###########make the plot
+output_plot = ggplot(ribo_int, aes(Change.Puro, -log10(Left.P.value.Puro))) +
+  geom_point(size = 2.5, alpha = 0.75, pch = 21, color = 'grey40', fill = ribo_int$riboColors) +
+  geom_text_repel(data = ribo_int, aes(x = Change.Puro, y = -log10(Left.P.value.Puro), label = gene), color = 'black', size = 2, nudge_x = -1, nudge_y = -0.25) +
+  labs(x='log2(Fold Change +/-RNase)', y='SAINT Interaction Probability', title = 'Interactors - Puromycin Treatment') +
+  scale_y_continuous(limits = c(0,6), breaks = seq(0,6,1)) +
+  scale_x_continuous(limits = c(-3,3), breaks = seq(-3,4,1)) +
+  geom_hline(yintercept = -log10(0.05)) +
+  geom_vline(xintercept = 0) +
+  theme(axis.text.x = element_text(size = 9), axis.text.y = element_text(size = 9), legend.position = 'none')
+output_plot
+save_plot(paste(base_dir, 'projects-current/sorensen_yb1-interactome/published-data/Simsek_PMID28575669_RiboInteractome/Ranalysis/simsek_ribosome-interactome_Puro_scatter.pdf', sep = ''), output_plot)
+
+saveRDS(ribo_int, paste(base_dir, 'projects-current/sorensen_yb1-interactome/published-data/Simsek_PMID28575669_RiboInteractome/Simsek_PMID28575669_RiboInteractors_3.rds', sep = ''))
+
+```
+
+
+<br>
+
+What is the overlap between the different interaction sets, and can we use these data to subset the YB-1 data?
+
+```{r}
+yb1_poly = readRDS('/projects/ptx_analysis/chughes/projects-current/sorensen_polysome-ips/ms-analysis_22Mar2019_ch-yb1-poly-interactome_293a-nucRed_arsenite-0-50uM_SILACkr/Ranalysis/yb1-polysome-interactome-earlyfrac_pro-quant-set.rds')
+yb1_int = readRDS('/projects/ptx_analysis/chughes/projects-current/sorensen_yb1-interactome/ms-analysis_22Mar2019_ch-yb1-interactome_293a-nucRed_arsenite-0-50uM_SILACkr/Ranalysis/yb1-interactome-cyto-yesRNase_noIgG_Escores.rds')
+ribo_int1 = read.table('/projects/ptx_analysis/chughes/projects-current/sorensen_yb1-interactome/published-data/Simsek_PMID28575669_RiboInteractome/Simsek_PMID28575669_RiboInteractors_1.txt', header = TRUE, sep = '\t')
+ribo_int2 = read.table('/projects/ptx_analysis/chughes/projects-current/sorensen_yb1-interactome/published-data/Simsek_PMID28575669_RiboInteractome/Simsek_PMID28575669_RiboInteractors_3.txt', header = TRUE, sep = '\t')
+
+
+#######subset these data to only keep the columns we need
+yb1_poly_sub1 = yb1_poly[,c(2,8:9)]
+yb1_int_sub1 = yb1_int[,c(2,15,17)]
+ribo_int1_sub1 = ribo_int1[,c(2,30)]
+
+#######filter down the yb1 data a bit
+yb1_poly_sub1$TotalAbundance = log2(rowMeans(yb1_poly_sub1[,2:3], na.rm = TRUE))
+yb1_poly_sub2 = subset(yb1_poly_sub1, !grepl('^na$', yb1_poly_sub1$gene))
+yb1_poly_set = subset(yb1_poly_sub2, yb1_poly_sub2$TotalAbundance > 15)
+#
+yb1_int_sub2 = subset(yb1_int_sub1, (!grepl('^na$', yb1_int_sub1$gene)) & (!is.infinite(yb1_int_sub1$light_target_score)))
+yb1_int_set = subset(yb1_int_sub2, yb1_int_sub2$light_target_score > 15)
+
+
+#######process the ribosome interactome data a bit
+colnames(ribo_int1_sub1)[1] = 'gene'
+ribo_int1_sub1$gene = toupper(ribo_int1_sub1$gene)
+ribo_int1_sub2 = subset(ribo_int1_sub1, !is.na(ribo_int1_sub1$maxSAINTprob_eL36_eS17))
+
+
+########find the genes that are either rnase or puromycin dependent
+ribo_int2_sub1 = ribo_int2[,c(2,15:18)]
+colnames(ribo_int2_sub1)[1] = 'gene'
+ribo_int2_sub1$gene = toupper(ribo_int2_sub1$gene)
+rnase_set = subset(ribo_int2_sub1, (ribo_int2_sub1$Change.RNase < 0) & (ribo_int2_sub1$Left.P.value.RNase < 0.01))
+puro_set = subset(ribo_int2_sub1, (ribo_int2_sub1$Change.Puro < 0) & (ribo_int2_sub1$Left.P.value.Puro < 0.01))
+
+
+########assign these data to the ribo interactome
+ribo_int1_sub3 = subset(ribo_int1_sub2, !(as.character(ribo_int1_sub2$gene) %in% as.character(rnase_set$gene)) & !(as.character(ribo_int1_sub2$gene) %in% as.character(puro_set$gene)))
+ribo_set = subset(ribo_int1_sub3, ribo_int1_sub3$maxSAINTprob_eL36_eS17 > 0.75)
+
+
+##########now make a plot of the data
+listInput = list(yb1_int = yb1_int_set$gene, yb1_poly = yb1_poly_set$gene, ribo = ribo_set$gene)
+upset(fromList(listInput), mb.ratio = c(0.55, 0.45), order.by = "freq")
+#pdf('/projects/ptx_analysis/chughes/projects-current/sorensen_yb1-interactome/published-data/Simsek_PMID28575669_RiboInteractome/Ranalysis/simsek_ribosome-interactome_yb1-upset-plot.pdf', onefile = FALSE) #upset(fromList(listInput), mb.ratio = c(0.55, 0.45), order.by = "freq")
+#dev.off()
+
+
+############get the sets out
+ribo1 = intersect(yb1_int_set$gene, yb1_poly_set$gene)
+ribo2 = intersect(ribo1, ribo_set$gene)
+
+ribo1 = intersect(yb1_int_set$gene, yb1_poly_set$gene)
+ribo2 = setdiff(ribo1, ribo_set$gene)
+ribo3 = ribo2[!grepl('^KRT', ribo2)]
+write.table(ribo3, '/projects/ptx_analysis/chughes/projects-current/sorensen_yb1-interactome/published-data/Simsek_PMID28575669_RiboInteractome/Ranalysis/yb1-poly-global-overlap_ribo-sub.txt', col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+ribo1 = union(ribo_set$gene, yb1_poly_set$gene)
+ribo2 = setdiff(yb1_int_set$gene, ribo1)
+ribo3 = ribo2[!grepl('^KRT', ribo2)]
+write.table(ribo3, '/projects/ptx_analysis/chughes/projects-current/sorensen_yb1-interactome/published-data/Simsek_PMID28575669_RiboInteractome/Ranalysis/yb1-global-unique-set.txt', col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+ribo1 = union(ribo_set$gene, yb1_int_set$gene)
+ribo2 = setdiff(yb1_poly_set$gene, ribo1)
+ribo3 = ribo2[!grepl('^KRT', ribo2)]
+write.table(ribo3, '/projects/ptx_analysis/chughes/projects-current/sorensen_yb1-interactome/published-data/Simsek_PMID28575669_RiboInteractome/Ranalysis/yb1-poly-unique-set.txt', col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+
+
+```
+
+
+
+
+
