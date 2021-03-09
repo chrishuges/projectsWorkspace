@@ -1,0 +1,68 @@
+---
+title: "YBX1 as a high copy protein"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details analysis of HeLa copy number data from the iST paper, PMID: 24487582.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the data and make the plot.
+
+```{r, message = FALSE}
+##########################################################################################
+copyNum = read_tsv(paste(baseRepository, '/proteomics20210308_istPaperProteinCopyNumbers/table_helaCopyNumbers.txt', sep = '')) %>%
+  dplyr::rename(copyNumber = `Copy number`, symbol = `Gene names`) %>%
+  dplyr::select(symbol, copyNumber) %>%
+  dplyr::mutate(logCopyNumber = log10(copyNumber), dataset = 'hela') %>%
+  dplyr::arrange(-logCopyNumber)
+copyNum$rank = seq(1,nrow(copyNum),1)
+
+##
+yb1Data = copyNum[grepl('YBX1', copyNum$symbol),][1,]
+
+##
+ggplot(copyNum, aes(dataset, logCopyNumber, group = 1)) +
+  geom_boxplot(size = 1, outlier.shape = NA, width = 0.2) +
+  geom_point(data = yb1Data, aes(dataset, logCopyNumber), size = 3, color = brewer.pal(8,'Spectral')[1]) +
+  labs(x = 'HeLa cells', y = 'log10(Protein copy number)', title = 'YB-1 copy number') +
+  geom_text_repel(data = yb1Data, aes(dataset, logCopyNumber), label = yb1Data$symbol, nudge_x = 0.5) +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20210308_istPaperProteinCopyNumbers/boxplot_ybx1CopyNumberHela.pdf', sep = ''), 
+       width = 2, height = 4, useDingbats = FALSE)
+
+##
+yb1Data
+dim(copyNum)
+copyNum
+```

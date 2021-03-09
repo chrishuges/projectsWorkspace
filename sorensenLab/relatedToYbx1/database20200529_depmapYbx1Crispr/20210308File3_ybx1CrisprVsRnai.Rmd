@@ -1,0 +1,67 @@
+---
+title: "YBX1 as an essential gene"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details analysis of DepMap data to show YBX1 is an essential gene.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the data and make the plot.
+
+```{r, message = FALSE}
+##########################################################################################
+rnai = read_csv(paste(generalDatasets, '/depmap21Q1/ybx1CombinedRnai.csv', sep = '')) %>%
+  dplyr::rename(depmapId = `Depmap ID`, score =  `Combined RNAi (Broad, Novartis, Marcotte)`) %>%
+  dplyr::select(depmapId, score) %>%
+  mutate(dataset = 'rnai')
+crispr = read_csv(paste(generalDatasets, '/depmap21Q1/ybx1CrisprAvana.csv', sep = '')) %>%
+  dplyr::rename(depmapId = `Depmap ID`, score = `CRISPR (Avana) Public 21Q1`) %>%
+  dplyr::select(depmapId, score) %>%
+  mutate(dataset = 'crispr')
+
+##
+ybx1Data = rbind(crispr, rnai)
+
+##
+ggplot(ybx1Data, aes(score, fill = dataset)) +
+  geom_density() +
+  labs(x = 'Gene effect', y = 'Density', title = 'YBX1 dependency') +
+  scale_fill_manual(values = brewer.pal(8, 'Spectral')[c(1,8)]) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/database20200529_depmapYbx1Crispr/density_ybx1CrisprRnaiDepmapData.pdf', sep = ''), 
+       width = 4, height = 4, useDingbats = FALSE)
+
+##
+table(ybx1Data$dataset)
+```
