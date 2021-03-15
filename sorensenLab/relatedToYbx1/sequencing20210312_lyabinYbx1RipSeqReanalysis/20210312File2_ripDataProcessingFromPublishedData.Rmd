@@ -1,0 +1,74 @@
+---
+title: "YB1 RIPseq analysis"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of sequencing data from the Lyabin study for RIP-YB1. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('DEqMS')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Combine the replicate data for one of the antibody treatments.
+
+```{r, message = FALSE}
+##########################################################################################
+rep1 = read_tsv(paste(baseRepository, '/sequencing20210312_lyabinYbx1RipSeqReanalysis/GSM3753540_Bethyl1_YB1_run1.tsv', sep = '')) %>%
+  dplyr::filter(grepl('protein_coding', gene_type)) %>%
+  dplyr::mutate(dataset = 'rep1')
+##
+rep2 = read_tsv(paste(baseRepository, '/sequencing20210312_lyabinYbx1RipSeqReanalysis/GSM3753541_Bethyl1_YB1_run2.tsv', sep = '')) %>%
+  dplyr::filter(grepl('protein_coding', gene_type)) %>%
+  dplyr::mutate(dataset = 'rep2')
+
+##
+ripData = rbind(rep1, rep2) %>%
+  dplyr::mutate(read_count = log2(read_count + 1)) %>%
+  pivot_wider(names_from = dataset, values_from = read_count)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+```{r}
+##########################################################################################
+ggplot(ripData, aes(rep1, rep2)) +
+  geom_point(size = 2, color = brewer.pal(8,'Spectral')[1]) +
+  labs(x = 'Replicate 1, log2(Read count + 1)', y = 'Replicate 2, log2(Read count + 1)', title = 'YB-1 RIP-seq') +
+  scale_x_continuous(limits = c(0,20), breaks = seq(0,20,5)) +
+  scale_y_continuous(limits = c(0,20), breaks = seq(0,20,5)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210312_lyabinYbx1RipSeqReanalysis/scatter_yb1BethylRipDataPublished.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+##
+dim(ripData[ripData$rep1 > log2(11),])
+dim(ripData[ripData$rep2 > log2(11),])
+```
