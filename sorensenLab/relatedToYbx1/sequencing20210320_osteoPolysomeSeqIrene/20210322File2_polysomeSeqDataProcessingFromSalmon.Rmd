@@ -1,0 +1,164 @@
+---
+title: "Arsenite polysomeSeq analysis"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of sequencing data from the Irene to study polysome changes in arsenite. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('tximport')
+library('GenomicFeatures')
+library('DESeq2')
+library('org.Hs.eg.db')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Make the samples data frame.
+
+```{r, message = FALSE}
+##########################################################################################
+samples = tibble('sample' = c('CTTTTG','GCGGAC','AAACCT',
+                              'GCTGTA','CGGCCT','TACAAG',
+                              'TATCGT','GCCATG','ATGGCA',
+                              'TCCGTC','AGATGT','CAGCAG'),
+                 'experiment' = c('control_1','control_2','control_3',
+                                  'entinostat_1','entinostat_2','entinostat_3',
+                                  'arsenite_1','arsenite_2','arsenite_3',
+                                  'combo_1','combo_2','combo_3'),
+                 'treatment' = c('control','control','control',
+                                  'entinostat','entinostat','entinostat',
+                                  'arsenite','arsenite','arsenite',
+                                  'combo','combo','combo'))
+
+##
+files = file.path(baseRepository, 'sequencing20210322_ireneOsteoPolysomeSeq', paste(samples$sample, '_quant', sep = ''), 'quant.sf')
+all(file.exists(files))
+
+##
+myTxdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.gtf.gz')
+k = keys(myTxdb, keytype = 'TXNAME')
+tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now import the data.
+
+```{r}
+##########################################################################################
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+names(txi)
+head(txi$counts)
+```
+<div style="margin-bottom:50px;"></div>
+
+Now we can construct the DESeq2 dataset and output a report.
+
+```{r}
+##########################################################################################
+datasetFirst = 'control'
+datasetSecond = 'combo'
+
+##
+ddsTxi = DESeqDataSetFromTximport(txi,
+                                  colData = samples,
+                                  design = ~ treatment)
+##
+dds = DESeq(ddsTxi)
+keep = rowSums(counts(dds)) >= 10
+dds = dds[keep,]
+res = results(dds, contrast = c('treatment', datasetFirst, datasetSecond))
+ens.str = substr(rownames(res), 1, 15)
+res$symbol = mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+resOrdered = res[order(res$pvalue),]
+
+##
+saveRDS(as.data.frame(resOrdered), 
+        paste(baseRepository, '/sequencing20210322_ireneOsteoPolysomeSeq/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.rds', sep = ''))
+write.csv(as.data.frame(resOrdered), 
+          file = paste(baseRepository, '/sequencing20210322_ireneOsteoPolysomeSeq/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.csv', sep = ''))
+
+##
+#resLFC = lfcShrink(dds, coef = paste('treatment_',datasetFirst,'_vs_',datasetSecond, sep = ''), type = "apeglm")
+#resLFC
+#plotMA(resLFC, ylim = c(-2,2))
+rnaExp = as.data.frame(resOrdered)
+rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & abs(rnaExp$log2FoldChange) >= 1, 'red', 'grey')
+ggplot(rnaExp, aes(log2FoldChange, -log10(padj))) +
+  geom_point(size = 1, color = rnaExp$pColors, alpha = 0.75) +
+  #labs(x = 'Replicate 1, log2(TPM + 1)', y = 'Replicate 2, log2(TPM + 1)', title = 'YB-1 RIP-seq') +
+  #geom_text_repel(label = ipData$pText, nudge_x = 2, nudge_y = -1) +
+  scale_x_continuous(limits = c(-12,12), breaks = seq(-12,12,2)) +
+  #scale_y_continuous(limits = c(0,5), breaks = seq(0,6,2)) +
+  theme_classic()
+##
+ggsave(paste(baseRepository, '/sequencing20210322_ireneOsteoPolysomeSeq/scatter_deseq2_', datasetFirst, '-', datasetSecond, '.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Lets cross reference these data with some of the CLIPseq data that we have from Chen et al.
+
+```{r}
+##########################################################################################
+tempData = readRDS(paste(baseRepository, '/sequencing20210322_ireneOsteoPolysomeSeq/dataset_deseq2_control-combo.rds', sep = ''))
+##
+clip = read_csv(paste(baseRepository, '/sequencing20200527_ybx1ParclipChen/dataset_yb1ParclipAnnotatedPeakSet.csv',sep = '')) %>%
+  dplyr::select(txdbSymbol, region, readCountSum) %>%
+  dplyr::rename(symbol = txdbSymbol) %>%
+  dplyr::left_join(tempData)
+
+
+
+ggplot(clip, aes(region, log2FoldChange)) +
+  geom_boxplot()
+
+table(clip$region)
+```
+
+
+
+
+
+
+
+
+
+
+
+
