@@ -1,0 +1,113 @@
+---
+title: "Acetyl pulldown proteomics"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired for comparison of acetyl IP samples from Renata. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('matrixStats')
+library('DEqMS')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+This is just a single batch, so we only have a single file we need to read in and process.
+
+```{r, message = FALSE}
+##########################################################################################
+dfProt = read_tsv(paste(baseRepository, '/proteomics20200824_acetylPulldownRenata/combined_protein.tsv', sep = '')) %>%
+  dplyr::select(`Protein ID`, `Gene Names`, 
+                `DMSOa_1 Razor Intensity`, `DMSOb_2 Razor Intensity`, `DMSOc_3 Razor Intensity`,
+                `ARSa_1 Razor Intensity`, `ARSb_2 Razor Intensity`, `ARSc_3 Razor Intensity`) %>%
+  dplyr::rename(accession = `Protein ID`, symbol = `Gene Names`, 
+                dmso1 = `DMSOa_1 Razor Intensity`, dmso2 = `DMSOb_2 Razor Intensity`, dmso3 = `DMSOc_3 Razor Intensity`,
+                ars1 = `ARSa_1 Razor Intensity`, ars2 = `ARSb_2 Razor Intensity`, ars3 = `ARSc_3 Razor Intensity`) %>%
+  dplyr::filter(!grepl('CONT', accession))
+
+##
+dfProt = as.data.frame(dfProt)
+dfLfq = dfProt[,3:8]
+dfLfq[dfLfq == 0] <- NA
+###if you want to set a min intensity
+#dfLfq[is.na(dfLfq)] <- min(dfLfq, na.rm = TRUE)
+rownames(dfLfq) = dfProt$accession
+dfLfq$naDmso = apply(dfLfq, 1 ,function(x) sum(is.na(x[1:3])))
+dfLfq$naArs = apply(dfLfq, 1 ,function(x) sum(is.na(x[4:6])))
+# Filter protein table. DEqMS require minimum two values for each group.
+dfLfqSub = dfLfq[dfLfq$naDmso < 2 & dfLfq$naArs < 2, 1:6]
+
+
+##
+dfCounts = read_tsv(paste(baseRepository, '/proteomics20200824_acetylPulldownRenata/combined_protein.tsv', sep = '')) %>%
+  dplyr::select(`Protein ID`, `Gene Names`, 
+                `DMSOa_1 Razor Spectral Count`, `DMSOb_2 Razor Spectral Count`, `DMSOc_3 Razor Spectral Count`,
+                `ARSa_1 Razor Spectral Count`, `ARSb_2 Razor Spectral Count`, `ARSc_3 Razor Spectral Count`) %>%
+  dplyr::rename(accession = `Protein ID`, symbol = `Gene Names`, 
+                dmso1 = `DMSOa_1 Razor Spectral Count`, dmso2 = `DMSOb_2 Razor Spectral Count`, dmso3 = `DMSOc_3 Razor Spectral Count`,
+                ars1 = `ARSa_1 Razor Spectral Count`, ars2 = `ARSb_2 Razor Spectral Count`, ars3 = `ARSc_3 Razor Spectral Count`) %>%
+  dplyr::filter(!grepl('CONT', accession))
+pepCountTable = data.frame(count = rowMins(as.matrix(dfCounts[,3:8])),
+                             row.names = dfCounts$accession)
+pepCountTable$count = pepCountTable$count+1
+
+
+##
+proteinMatrix = log2(as.matrix(dfLfqSub))
+class = as.factor(c('dmso','dmso','dmso','ars','ars','ars'))
+design = model.matrix(~0+class)
+fit1 = lmFit(proteinMatrix, design = design)
+cont = makeContrasts(classars-classdmso, levels = design)
+fit2 = contrasts.fit(fit1, contrasts = cont)
+fit3 = eBayes(fit2)
+fit3$count = pepCountTable[rownames(fit3$coefficients), "count"]
+
+#check the values in the vector fit3$count
+#if min(fit3$count) return NA or 0, you should troubleshoot the error first
+min(fit3$count)
+fit4 = spectraCounteBayes(fit3)
+VarianceBoxplot(fit4, n=20, main = "Label-free dataset", xlab = "peptide count + 1")
+deqmsResults = outputResult(fit4, coef_col = 1)
+# Add Gene names to the data frame
+rownames(dfProt) = dfProt$accession
+deqmsResults$symbol = dfProt[deqmsResults$gene,]$symbol
+head(deqmsResults)
+write.table(deqmsResults,
+            paste(baseRepository, '/proteomics20200824_acetylPulldownRenata/dataset_deqmsAnalysisArs-Dmso.tsv', sep = ''), 
+            row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+

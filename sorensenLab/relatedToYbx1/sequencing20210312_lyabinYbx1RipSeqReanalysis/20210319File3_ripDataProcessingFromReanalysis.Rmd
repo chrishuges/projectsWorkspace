@@ -1,0 +1,143 @@
+---
+title: "YB1 RIPseq analysis"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of sequencing data from the Lyabin study for RIP-YB1. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('tximport')
+library('org.Hs.eg.db')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Make the samples data frame.
+
+```{r, message = FALSE}
+##########################################################################################
+samples = tibble('sample' = c('SRR9019705','SRR9019706','SRR9019707','SRR9019708','SRR9019722','SRR9019723'),
+                 'experiment' = c('polyaYB1a','polyaYB1b','totYB1a','totYB1b','bethylYB1a','bethylYB1b'))
+
+##
+files = file.path(baseRepository, 'sequencing20210312_lyabinYbx1RipSeqReanalysis', paste(samples$sample, '_quant', sep = ''), 'quant.sf')
+all(file.exists(files))
+
+##
+myTxdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz')
+k = keys(myTxdb, keytype = 'TXNAME')
+tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now import the data.
+
+```{r}
+##########################################################################################
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+names(txi)
+head(txi$counts)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+```{r}
+##########################################################################################
+ipData = as.data.frame(txi$abundance)
+colnames(ipData) = samples$experiment
+ipData$ensembl = row.names(ipData)
+row.names(ipData) = NULL
+
+##
+ens.str = substr(ipData$ensembl, 1, 15)
+ipData$symbol = mapIds(org.Hs.eg.db,
+                     keys = ens.str,
+                     column = "SYMBOL",
+                     keytype = "ENSEMBL",
+                     multiVals = "first")
+
+##
+ipDataPlot = as_tibble(ipData) %>%
+  dplyr::filter(polyaYB1a > 0,
+                polyaYB1b > 0,
+                totYB1a > 0,
+                totYB1b > 0,
+                bethylYB1a > 0,
+                bethylYB1b > 0)
+summary(ipDataPlot)
+
+##
+goi = c('YBX3','G3BP1','HIF1a','NFE2L2')
+ipData$pColors = ifelse(ipData$bethylYB1a >= 1, brewer.pal(8,'Spectral')[1],
+                        ifelse(ipData$bethylYB1b >= 1, brewer.pal(9,'Spectral')[1], brewer.pal(11,'RdGy')[8]))
+ipData$pText = ifelse(ipData$symbol %in% goi, ipData$symbol, '')
+ggplot(ipData, aes(log10(bethylYB1a + 1), log10(bethylYB1b + 1))) +
+  geom_point(color = ipData$pColors, alpha = 0.75) +
+  labs(x = 'Replicate 1, log2(TPM + 1)', y = 'Replicate 2, log2(TPM + 1)', title = 'YB-1 RIP-seq') +
+  geom_text_repel(label = ipData$pText, nudge_x = 2, nudge_y = -1) +
+  scale_x_continuous(limits = c(0,5), breaks = seq(0,6,2)) +
+  scale_y_continuous(limits = c(0,5), breaks = seq(0,6,2)) +
+  theme_classic()
+##
+ggsave(paste(baseRepository, '/sequencing20210312_lyabinYbx1RipSeqReanalysis/scatter_yb1BethylRipDataReanalysis.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r}
+##########################################################################################
+ggplot(ripData, aes(rep1, rep2)) +
+  geom_point(size = 2, color = brewer.pal(8,'Spectral')[1]) +
+  labs(x = 'Replicate 1, log2(Read count + 1)', y = 'Replicate 2, log2(Read count + 1)', title = 'YB-1 RIP-seq') +
+  scale_x_continuous(limits = c(0,20), breaks = seq(0,20,5)) +
+  scale_y_continuous(limits = c(0,20), breaks = seq(0,20,5)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210312_lyabinYbx1RipSeqReanalysis/scatter_yb1BethylRipDataPublished.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+##
+dim(ripData[ripData$rep1 > log2(11),])
+dim(ripData[ripData$rep2 > log2(11),])
+```
