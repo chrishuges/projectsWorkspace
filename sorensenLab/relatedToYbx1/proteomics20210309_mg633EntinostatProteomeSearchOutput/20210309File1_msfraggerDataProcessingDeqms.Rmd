@@ -105,7 +105,7 @@ Now we can build the Limma model.
 ##########################################################################################
 geneMatrix = as.matrix(quantInputNormalized)
 limmaFit1 = lmFit(geneMatrix, design)
-limmaContrasts = c('drug5 - control', 'drug25 - control', 'drug25 - drug5')
+limmaContrasts = c('control - drug5', 'control - drug25', 'drug25 - drug5')
 limmaContrastDesign =  makeContrasts(contrasts = limmaContrasts, levels = design)
 limmaFit2 = eBayes(contrasts.fit(limmaFit1, contrasts = limmaContrastDesign))
 ```
@@ -125,13 +125,13 @@ head(limmaFit3$coefficients)
 deqmsResults = outputResult(limmaFit3, coef_col = 1)
 dim(deqmsResults)
 write.table(deqmsResults, 
-            paste(baseRepository, '/proteomics20210309_mg633EntinostatProteomeSearchOutput/dataset_deqms_drug5-control.csv', sep = ''),
+            paste(baseRepository, '/proteomics20210309_mg633EntinostatProteomeSearchOutput/dataset_deqms_control-drug5.csv', sep = ''),
             sep = ',', row.names = FALSE, quote = FALSE)
 ##
 deqmsResults = outputResult(limmaFit3, coef_col = 2)
 dim(deqmsResults)
 write.table(deqmsResults, 
-            paste(baseRepository, '/proteomics20210309_mg633EntinostatProteomeSearchOutput/dataset_deqms_drug25-control.csv', sep = ''),
+            paste(baseRepository, '/proteomics20210309_mg633EntinostatProteomeSearchOutput/dataset_deqms_control-drug25.csv', sep = ''),
             sep = ',', row.names = FALSE, quote = FALSE)
 ##
 deqmsResults = outputResult(limmaFit3, coef_col = 3)
@@ -158,59 +158,62 @@ This looks as it should. Now let us make a volcano plot to show the data.
 ##########################################################################################
 deqmsResults = outputResult(limmaFit3, coef_col = 1)
 deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
-deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
-                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
-                                     brewer.pal(8,'Greys')[6]))
+deqmsResults$plotPValueScaled = ifelse(deqmsResults$plotPValue > 12, 12, deqmsResults$plotPValue)
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'Spectral')[8],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'Spectral')[1],
+                                     brewer.pal(11,'RdGy')[8]))
 deqmsResults$pText = ifelse(grepl('YBX1$',deqmsResults$gene), deqmsResults$gene, '')
 ##
-ggplot(deqmsResults, aes(logFC, plotPValue)) +
+ggplot(deqmsResults, aes(logFC, plotPValueScaled)) +
   geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
-  geom_text_repel(label = deqmsResults$pText, nudge_x = -2) +
-  labs(x = 'log2(drug5 - control)', y = '-log10(P-value)', title = 'drug5 vs control protein abundance') +
-  scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
-  scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = 3, nudge_y = 2) +
+  labs(x = 'log2(control - entinostat)', y = '-log10(P-value)', title = 'control vs drug5 protein abundance') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,12,2)) +
+  scale_x_continuous(limits = c(-5,5), breaks = seq(-6,6,2)) +
   geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
   geom_hline(yintercept = 3, linetype = 'dashed') +
   theme_classic()
-ggsave(paste(baseRepository, '/proteomics20210309_mg633EntinostatProteomeSearchOutput/scatter_deqms_drug5-control.pdf', sep = ''),
+ggsave(paste(baseRepository, '/proteomics20210309_mg633EntinostatProteomeSearchOutput/scatter_deqms_control-drug5.pdf', sep = ''),
        height = 4, width = 4, useDingbats = FALSE)
 
 
 ##########################################################################################
 deqmsResults = outputResult(limmaFit3, coef_col = 2)
 deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
-deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
-                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
-                                     brewer.pal(8,'Greys')[6]))
+deqmsResults$plotPValueScaled = ifelse(deqmsResults$plotPValue > 12, 12, deqmsResults$plotPValue)
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'Spectral')[8],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'Spectral')[1],
+                                     brewer.pal(11,'RdGy')[8]))
 deqmsResults$pText = ifelse(grepl('YBX1',deqmsResults$gene), deqmsResults$gene, '')
 ##
-ggplot(deqmsResults, aes(logFC, plotPValue)) +
+ggplot(deqmsResults, aes(logFC, plotPValueScaled)) +
   geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
-  geom_text_repel(label = deqmsResults$pText, nudge_x = -2) +
-  labs(x = 'log2(drug25 - control)', y = '-log10(P-value)', title = 'drug25 vs control protein abundance') +
-  scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
-  scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = 3, nudge_y = 2) +
+  labs(x = 'log2(control - entinostat)', y = '-log10(P-value)', title = 'control vs drug25 protein abundance') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,12,2)) +
+  scale_x_continuous(limits = c(-5,5), breaks = seq(-6,6,2)) +
   geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
   geom_hline(yintercept = 3, linetype = 'dashed') +
   theme_classic()
-ggsave(paste(baseRepository, '/proteomics20210309_mg633EntinostatProteomeSearchOutput/scatter_deqms_drug25-control.pdf', sep = ''),
+ggsave(paste(baseRepository, '/proteomics20210309_mg633EntinostatProteomeSearchOutput/scatter_deqms_control-drug25.pdf', sep = ''),
        height = 4, width = 4, useDingbats = FALSE)
 
 
 ##########################################################################################
 deqmsResults = outputResult(limmaFit3, coef_col = 3)
 deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
-deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
-                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
-                                     brewer.pal(8,'Greys')[6]))
+deqmsResults$plotPValueScaled = ifelse(deqmsResults$plotPValue > 12, 12, deqmsResults$plotPValue)
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'Spectral')[8],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'Spectral')[1],
+                                     brewer.pal(11,'RdGy')[8]))
 deqmsResults$pText = ifelse(grepl('YBX1$',deqmsResults$gene), deqmsResults$gene, '')
 ##
-ggplot(deqmsResults, aes(logFC, plotPValue)) +
+ggplot(deqmsResults, aes(logFC, plotPValueScaled)) +
   geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
-  geom_text_repel(label = deqmsResults$pText, nudge_x = -2) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = 3, nudge_y = 2) +
   labs(x = 'log2(drug25 - drug5)', y = '-log10(P-value)', title = 'drug25 vs drug5 protein abundance') +
-  scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
-  scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,12,2)) +
+  scale_x_continuous(limits = c(-5,5), breaks = seq(-6,6,2)) +
   geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
   geom_hline(yintercept = 3, linetype = 'dashed') +
   theme_classic()
