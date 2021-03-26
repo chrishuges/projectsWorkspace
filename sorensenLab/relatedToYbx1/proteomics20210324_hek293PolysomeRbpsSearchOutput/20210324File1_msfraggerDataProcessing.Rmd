@@ -1,0 +1,351 @@
+---
+title: "Polysome RBPs"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired for comparison of RBPs in polysomes. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('ggrepel')
+library('matrixStats')
+library('DEqMS')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the peptide data. This is a SILAC experiment with the light channel as an untreated, and the heavy as an arsenite treated sample. 
+
+```{r, message = FALSE}
+##########################################################################################
+samples = tibble('sampleName' = paste('polyRbp_',seq(1,3,1),sep=''),
+                 'samplePrefix' = 'polyRbp')
+
+##
+peptideFiles = file.path(baseRepository, 'proteomics20210324_hek293PolysomeRbpsSearchOutput', samples$sampleName, 'ion_label_quant.tsv')
+all(file.exists(peptideFiles))
+
+
+##
+peptideSet = data.frame()
+for (i in 1:length(peptideFiles)){
+  tempPeptides = read_tsv(peptideFiles[i]) %>%
+    dplyr::select(`Protein ID`, `Gene`, `Peptide Sequence`, `Light Intensity`, `Heavy Intensity`) %>%
+    dplyr::rename(accession = `Protein ID`, symbol = `Gene`, sequence = `Peptide Sequence`, 
+                  noCL = `Light Intensity`, 
+                  CL = `Heavy Intensity`) %>%
+    dplyr::mutate(dataset = samples[i,'sampleName']$sampleName) %>%
+    dplyr::filter(noCL > 0 | CL > 0)
+  ##
+  peptideSet = rbind(peptideSet, tempPeptides)
+}
+saveRDS(peptideSet, 
+        paste(baseRepository, '/proteomics20210324_hek293PolysomeRbpsSearchOutput/dataset_allPeptideData.rds', sep = ''))
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now work the peptide set through deqms.
+
+```{r, message = FALSE}
+##########################################################################################
+pep = readRDS(paste(baseRepository, '/proteomics20210324_hek293PolysomeRbpsSearchOutput/dataset_allPeptideData.rds', sep = '')) %>%
+  dplyr::select(sequence, symbol, noCL, CL, dataset) %>%
+  dplyr::group_by(sequence, symbol, dataset) %>%
+  dplyr::summarise(meanNoCL = mean(noCL, na.rm = TRUE), meanCL = mean(CL, na.rm = TRUE)) %>%
+  pivot_longer(cols = meanNoCL:meanCL, names_to = 'treatment', values_to = 'intensity') %>%
+  pivot_wider(names_from = c(dataset, treatment), values_from = intensity) %>%
+  dplyr::select(sequence, symbol, c(3,5,7,4,6,8)) %>%
+  dplyr::filter(!is.na(symbol))
+
+##
+pepSub = subset(pep, rowSums(is.na(pep[,3:8])) < 3)
+pepSub[,3:8] = log2(pepSub[,3:8])
+pepSubNorm = medianSweeping(pepSub, group_col = 2)
+boxplot(pepSubNorm, las=2, ylab='log2 ratio', main='normalized data')
+
+##
+geneMatrix = as.matrix(pepSubNorm)
+cond = as.factor(rep(c('noCL','CL'), each = 3))
+design = model.matrix(~0+cond) 
+colnames(design) = gsub('cond', '', colnames(design))
+fit1 = lmFit(geneMatrix, design)
+forContrast = c('noCL-CL')
+contrast =  makeContrasts(contrasts = forContrast, levels = design)
+fit2 = eBayes(contrasts.fit(fit1, contrasts = contrast))
+psmCountTable = as.data.frame(table(pepSub$symbol))
+rownames(psmCountTable) = psmCountTable$Var1
+
+fit2$count = psmCountTable[rownames(fit2$coefficients),2]
+fit3 = spectraCounteBayes(fit2)
+deqmsResults = outputResult(fit3,coef_col = 1) 
+head(deqmsResults)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Plot some of the results.
+
+```{r, message = FALSE}
+##########################################################################################
+plotData = as.data.frame(deqmsResults)
+write.table(plotData, paste(baseRepository, '/proteomics20210324_hek293PolysomeRbpsSearchOutput/dataset_deqmsAnalysis_noCL-CL.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+plotData$logPValue = -log10(plotData$P.Value)
+plotData$logPValueScaled = ifelse(plotData$logPValue > 10, 10, plotData$logPValue)
+plotData$logFCScaled = ifelse(plotData$logFC > 6, 6, plotData$logFC)
+plotData$logFCScaled = ifelse(plotData$logFC < -6, -6, plotData$logFC)
+plotData$pColors = ifelse(plotData$P.Value <= 0.001 & plotData$logFC >= 1, brewer.pal(8,'Spectral')[1], 
+                        ifelse(plotData$P.Value <= 0.001 & plotData$logFC <= -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8]))
+goi = c('YBX1','RPL26','IGF2BP1','ELAVL1','DHX9','SYNCRIP','RPS6','STAU1','HNRNPU')
+plotData$pText = ifelse(plotData$gene %in% goi, plotData$gene, '')
+##
+ggplot(plotData, aes(logFCScaled, logPValueScaled)) +
+  geom_point(size = 1, color = plotData$pColors, alpha = 0.75) +
+  labs(x = 'log2(noCL - CL)', y = '-log10(P-value)', title = 'Polysome RBPs') +
+  geom_text_repel(label = plotData$pText, nudge_x = 2, nudge_y = 2) +
+  scale_x_continuous(limits = c(-6,3), breaks = seq(-10,10,2)) +
+  scale_y_continuous(limits = c(0,10), breaks = seq(0,10,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  theme_classic()
+##
+ggsave(paste(baseRepository, '/proteomics20210324_hek293PolysomeRbpsSearchOutput/scatter_deqmsAnalysis_noCL-CL.pdf', sep = ''),
+      height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Process the membrane polysome data just as above.
+
+```{r, message = FALSE}
+##########################################################################################
+samplePrefix = c('memEdta','memTime0','memTime30','memTime60','memTime120','memTime240')
+samples = tibble('sampleName' = paste(rep(samplePrefix,each=3),'_',seq(1,3,1),sep=''),
+                 'samplePrefix' = rep(samplePrefix, each=3),
+                 'treatment' = c(rep('edta',3),rep('dmso',3),rep('arsenite',12)))
+
+##
+peptideFiles = file.path(baseRepository, 'proteomics20210309_hek293ArseniteTimecourseSearchOutput/fraction3', samples$sampleName, 'peptide_label_quant.tsv')
+all(file.exists(peptideFiles))
+
+
+##
+peptideSet = data.frame()
+for (i in 1:length(peptideFiles)){
+  tempPeptides = read_tsv(peptideFiles[i]) %>%
+    dplyr::select(`Protein ID`, `Gene`, `Peptide Sequence`, `Light Intensity`, `Heavy Intensity`) %>%
+    dplyr::rename(accession = `Protein ID`, symbol = `Gene`, sequence = `Peptide Sequence`, 
+                  light = `Light Intensity`, 
+                  heavy = `Heavy Intensity`) %>%
+    dplyr::mutate(dataset = samples[i,'sampleName']$sampleName) %>%
+    dplyr::filter(light > 0 | heavy > 0)
+  ##
+  peptideSet = rbind(peptideSet, tempPeptides)
+}
+saveRDS(peptideSet, 
+        paste(baseRepository, '/proteomics20210309_hek293ArseniteTimecourseSearchOutput/fraction3/dataset_allPeptideDataMembrane.rds', sep = ''))
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now work the peptide set through deqms.
+
+```{r, message = FALSE}
+##########################################################################################
+pep = readRDS(paste(baseRepository, '/proteomics20210309_hek293ArseniteTimecourseSearchOutput/fraction3/dataset_allPeptideDataMembrane.rds', sep = '')) %>%
+  dplyr::select(sequence, symbol, light, dataset) %>%
+  dplyr::group_by(sequence, symbol, dataset) %>%
+  dplyr::summarise(mean = mean(light, na.rm = TRUE)) %>%
+  pivot_wider(names_from = dataset, values_from = mean) %>%
+  dplyr::select(sequence, symbol, samples$sampleName[c(1:3,4:6)]) %>%
+  dplyr::filter(!is.na(symbol))
+
+##
+pepSub = subset(pep, rowSums(is.na(pep[,3:8])) < 3)
+pepSub[,3:8] = log2(pepSub[,3:8])
+pepSubNorm = medianSweeping(pepSub, group_col = 2)
+boxplot(pepSubNorm, las=2, ylab='log2 ratio', main='normalized data')
+
+##
+geneMatrix = as.matrix(pepSubNorm)
+cond = as.factor(rep(c('edta','time0'), each = 3))
+design = model.matrix(~0+cond) 
+colnames(design) = gsub('cond', '', colnames(design))
+fit1 = lmFit(geneMatrix, design)
+forContrast = c('edta-time0')
+contrast =  makeContrasts(contrasts = forContrast, levels = design)
+fit2 = eBayes(contrasts.fit(fit1, contrasts = contrast))
+psmCountTable = as.data.frame(table(pepSub$symbol))
+rownames(psmCountTable) = psmCountTable$Var1
+
+fit2$count = psmCountTable[rownames(fit2$coefficients),2]
+fit3 = spectraCounteBayes(fit2)
+deqmsResults = outputResult(fit3,coef_col = 1) 
+head(deqmsResults)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Plot some of the results.
+
+```{r, message = FALSE}
+##########################################################################################
+plotData = as.data.frame(deqmsResults)
+write.table(plotData, paste(baseRepository, '/proteomics20210309_hek293ArseniteTimecourseSearchOutput/fraction3/dataset_deqmsAnalysisMembrane_edta-time0.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+plotData$logPValue = -log10(plotData$P.Value)
+plotData$logPValueScaled = ifelse(plotData$logPValue > 10, 10, plotData$logPValue)
+plotData$logFCScaled = ifelse(plotData$logFC > 6, 6, plotData$logFC)
+plotData$logFCScaled = ifelse(plotData$logFC < -6, -6, plotData$logFC)
+plotData$pColors = ifelse(plotData$P.Value <= 0.001 & plotData$logFC >= 1, brewer.pal(8,'Spectral')[1], 
+                        ifelse(plotData$P.Value <= 0.001 & plotData$logFC <= -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8]))
+plotData$pText = ifelse(grepl('YBX1',plotData$gene), plotData$gene, '')
+##
+ggplot(plotData, aes(logFCScaled, logPValueScaled)) +
+  geom_point(size = 1, color = plotData$pColors, alpha = 0.75) +
+  labs(x = 'log2(edta - time0)', y = '-log10(P-value)', title = 'Polysome background') +
+  geom_text_repel(label = plotData$pText, nudge_x = 2, nudge_y = -1) +
+  scale_x_continuous(limits = c(-6,6), breaks = seq(-10,10,2)) +
+  scale_y_continuous(limits = c(0,10), breaks = seq(0,10,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  theme_classic()
+##
+ggsave(paste(baseRepository, '/proteomics20210309_hek293ArseniteTimecourseSearchOutput/fraction3/scatter_deqmsAnalysisMembrane_edta-time0.pdf', sep = ''),
+      height = 4, width = 4, useDingbats = FALSE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div style="margin-bottom:50px;"></div>
+
+Now do it for one of the arsenite samples.
+
+```{r, message = FALSE}
+##########################################################################################
+pep = readRDS(paste(baseRepository, '/proteomics20210309_hek293ArseniteTimecourseSearchOutput/fraction3/dataset_allPeptideData.rds', sep = '')) %>%
+  dplyr::select(sequence, symbol, light, heavy, dataset) %>%
+  dplyr::group_by(sequence, symbol, dataset) %>%
+  dplyr::summarise(mean_light = mean(light, na.rm = TRUE), mean_heavy = mean(heavy, na.rm = TRUE)) %>%
+  dplyr::filter(grepl('cytoTime120',dataset)) %>%
+  pivot_wider(names_from = dataset, values_from = mean_light:mean_heavy) %>%
+  dplyr::filter(!is.na(symbol))
+
+##
+pepSub = subset(pep, rowSums(is.na(pep[,3:8])) < 3)
+pepSub[,3:8] = log2(pepSub[,3:8])
+pepSubNorm = medianSweeping(pepSub, group_col = 2)
+boxplot(pepSubNorm, las=2, ylab='log2 ratio', main='normalized data')
+
+##
+geneMatrix = as.matrix(pepSubNorm)
+cond = as.factor(rep(c('time120dmso','time120arsenite'), each = 3))
+design = model.matrix(~0+cond) 
+colnames(design) = gsub('cond', '', colnames(design))
+fit1 = lmFit(geneMatrix, design)
+forContrast = c('time120dmso-time120arsenite')
+contrast =  makeContrasts(contrasts = forContrast, levels = design)
+fit2 = eBayes(contrasts.fit(fit1, contrasts = contrast))
+psmCountTable = as.data.frame(table(pepSub$symbol))
+rownames(psmCountTable) = psmCountTable$Var1
+
+fit2$count = psmCountTable[rownames(fit2$coefficients),2]
+fit3 = spectraCounteBayes(fit2)
+deqmsResults = outputResult(fit3,coef_col = 1) 
+head(deqmsResults)
+
+##
+plotData = as.data.frame(deqmsResults)
+write.table(plotData, paste(baseRepository, '/proteomics20210309_hek293ArseniteTimecourseSearchOutput/fraction3/dataset_deqmsAnalysis_time120dmso-arsenite.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+plotData$logPValue = -log10(plotData$P.Value)
+plotData$logPValueScaled = ifelse(plotData$logPValue > 10, 10, plotData$logPValue)
+plotData$logFCScaled = ifelse(plotData$logFC > 6, 6, plotData$logFC)
+plotData$logFCScaled = ifelse(plotData$logFC < -6, -6, plotData$logFC)
+plotData$pColors = ifelse(plotData$P.Value <= 0.001 & plotData$logFC >= 1, brewer.pal(8,'Spectral')[1], 
+                        ifelse(plotData$P.Value <= 0.001 & plotData$logFC <= -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8]))
+##
+ggplot(plotData, aes(logFCScaled, logPValueScaled)) +
+  geom_point(size = 1, color = plotData$pColors, alpha = 0.75) +
+  labs(x = 'log2(dmso - control)', y = '-log10(P-value)', title = 'Arsenite polysomes') +
+  #geom_text_repel(label = ipData$pText, nudge_x = 2, nudge_y = -1) +
+  scale_x_continuous(limits = c(-6,6), breaks = seq(-10,10,2)) +
+  scale_y_continuous(limits = c(0,10), breaks = seq(0,10,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  theme_classic()
+##
+ggsave(paste(baseRepository, '/proteomics20210309_hek293ArseniteTimecourseSearchOutput/fraction3/scatter_deqmsAnalysis_time120dmso-arsenite.pdf', sep = ''),
+      height = 4, width = 4, useDingbats = FALSE)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+

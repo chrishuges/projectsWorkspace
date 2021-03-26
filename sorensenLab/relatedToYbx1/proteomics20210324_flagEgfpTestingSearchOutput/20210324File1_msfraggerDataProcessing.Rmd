@@ -1,0 +1,117 @@
+---
+title: "Ybx1 Flag IP proteomics"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired for analysis of YBX1 interactions using the FLAG constructs in MG63.3 cells. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the peptide data. This is a SILAC experiment with the light channel as an untreated, and the heavy as an arsenite treated sample. 
+
+```{r, message = FALSE}
+##########################################################################################
+samplePrefix = c('flagEgfp','nFlagYbx1','cFlagYbx1')
+samples = tibble('sampleName' = paste(rep(samplePrefix,each=1),'_1',sep=''),
+                 'samplePrefix' = rep(samplePrefix, each=1))
+
+##
+peptideFiles = file.path(baseRepository, 'proteomics20210324_flagEgfpTestingSearchOutput', samples$sampleName, 'peptide.tsv')
+all(file.exists(peptideFiles))
+
+
+##
+peptideSet = data.frame()
+for (i in 1:length(peptideFiles)){
+  tempPeptides = read_tsv(peptideFiles[i]) %>%
+    dplyr::select(`Protein ID`, `Gene`, `Peptide`, `Intensity`) %>%
+    dplyr::rename(accession = `Protein ID`, symbol = `Gene`, sequence = `Peptide`, intensity = `Intensity`) %>%
+    dplyr::mutate(dataset = samples[i,'sampleName']$sampleName) %>%
+    dplyr::filter(intensity > 0)
+  ##
+  peptideSet = rbind(peptideSet, tempPeptides)
+}
+saveRDS(peptideSet, 
+        paste(baseRepository, '/proteomics20210324_flagEgfpTestingSearchOutput/dataset_allPeptideData.rds', sep = ''))
+
+##
+proteinSet = peptideSet %>%
+  dplyr::group_by(accession, symbol, dataset) %>%
+  dplyr::summarise(sumIntensity = sum(intensity, na.rm = TRUE)) %>%
+  pivot_wider(names_from = dataset, values_from = sumIntensity) %>%
+  dplyr::filter(!grepl('CONT', accession)) %>%
+  dplyr::mutate(cYb1Log = log2(cFlagYbx1_1), gfpLog = log2(flagEgfp_1), nYb1Log = log2(nFlagYbx1_1))
+proteinSet$gfpLog = ifelse(is.na(proteinSet$gfpLog), min(proteinSet$gfpLog,na.rm=TRUE), proteinSet$gfpLog)
+proteinSet$nRatio = proteinSet$nYb1Log - proteinSet$gfpLog
+proteinSet$cRatio = proteinSet$cYb1Log - proteinSet$gfpLog
+proteinSet$nRatio = ifelse(is.na(proteinSet$nRatio), 0, proteinSet$nRatio)
+proteinSet$cRatio = ifelse(is.na(proteinSet$cRatio), 0, proteinSet$cRatio)
+proteinSet$nRatio = ifelse(proteinSet$nRatio < 0, 0, proteinSet$nRatio)
+proteinSet$cRatio = ifelse(proteinSet$cRatio < 0, 0, proteinSet$cRatio)
+saveRDS(proteinSet, 
+        paste(baseRepository, '/proteomics20210324_flagEgfpTestingSearchOutput/dataset_allProteinData.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Plot the protein data.
+
+```{r, message = FALSE}
+##########################################################################################
+pro = readRDS(paste(baseRepository, '/proteomics20210324_flagEgfpTestingSearchOutput/dataset_allProteinData.rds', sep = ''))
+pro$pColors = ifelse(grepl('YBX1',pro$symbol), brewer.pal(8,'Spectral')[1],
+                     ifelse(grepl('^RPL',pro$symbol) | grepl('^RPS',pro$symbol), brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8]))
+pro$nRatio = ifelse(pro$nRatio > 6, 6, pro$nRatio)
+pro$cRatio = ifelse(pro$cRatio > 6, 6, pro$cRatio)
+goi = c('YBX1','C1QBP','YBX3','HDAC1','ELAVL1')
+pro$pText = ifelse(pro$symbol %in% goi, pro$symbol, '')
+
+##
+ggplot(pro, aes(nRatio, cRatio)) +
+  geom_point(color = pro$pColors, size = 1) +
+  geom_text_repel(label = pro$pText, nudge_x = 2) +
+  labs(x = 'log2(N-Flag - GFP)', y = 'log2(C-Flag - GFP)', title = 'YB-1 IP-MS') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20210324_flagEgfpTestingSearchOutput/scatter_ybx1FlagIpmsVsGfp.pdf', sep = ''),
+      height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
