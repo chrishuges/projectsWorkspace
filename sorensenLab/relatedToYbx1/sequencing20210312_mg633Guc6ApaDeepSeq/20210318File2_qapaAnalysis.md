@@ -16,7 +16,7 @@ Then generate the salmon index.
 /projects/ptx_analysis/chughes/software/salmon-1.4/bin/salmon index -t ./output_sequences.fa -i utr_library
 ```
 
-Then we need to run Salmon itself.
+Then we need to run Salmon itself. The alignment rates might be a bit low here (around 30%), but remember you are using a library that only contains 3'UTRs, so this is not unexpected.
 
 ```shell
 #!/bin/bash
@@ -29,9 +29,13 @@ for i in ATCACG CGATGT
 do
   echo $i
   ##
-  salmonCall="$salmonLocation quant -i $indexLocation -l A -1 ${rawDataOutputDirectory}${i}_1.clean.fastq.gz -2 ${rawDataOutputDirectory}${i}_2.clean.fastq.gz -o ${rawDataOutputDirectory}${i}qapa_quant"
+  salmonCall="$salmonLocation quant -i $indexLocation -l A -1 ${rawDataOutputDirectory}${i}_1.clean.fastq.gz -2 ${rawDataOutputDirectory}${i}_2.clean.fastq.gz -o ${rawDataOutputDirectory}qapa${i}"
   eval $salmonCall
 done
 ```
 
+Now we run QAPA to quantify the sites. For the annotation, I downloaded it from [BioMart](http://www.ensembl.org/biomart/martview) as they suggest on the QAPA page. Pay attention to the columns they want included.
 
+```shell
+qapa quant --db /projects/ptx_analysis/chughes/databases/qapa/ensemblIdentifiersHg38p13.txt /projects/ptx_results/Sequencing/2021/sequencing20210312_mg633Ybx1Guc6ApaDeepSeq/qapa*/quant.sf > /projects/ptx_results/Sequencing/2021/sequencing20210312_mg633Ybx1Guc6ApaDeepSeq/pau_results.txt
+```
