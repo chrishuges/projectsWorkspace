@@ -1,0 +1,99 @@
+---
+title: "Sanger plotting"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the plotting of Sanger data from YBX1 GUC cloens. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the data.
+
+```{r}
+##########################################################################################
+wt = read_tsv(paste(baseRepository, '/sanger20200701_mg633CrisprYbx1GucClones/Mg633Parent-Ybx1Guc2.tsv', sep = '')) %>%
+  dplyr::rename(baseCall = `Base Call`, qualityScore = `Quality Score`, scoreA = `A Value`, scoreC = `C Value`, scoreG = `G Value`, scoreT = `T Value`) %>%
+  pivot_longer(cols = scoreA:scoreT, names_to = 'scoredBase', values_to = 'baseScore') %>%
+  dplyr::mutate(scoredBase = sub('score(.*)','\\1',scoredBase)) %>%
+  dplyr::filter(Position > 109 & Position < 161)
+
+ggplot(wt, aes(Position, baseScore, color = scoredBase)) +
+  geom_line()
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This is not ideal. Lets try a package instead.
+
+```{r}
+##########################################################################################
+library('sangerseqR')
+##
+wt = readsangerseq(paste(baseRepository, '/sanger20200701_mg633CrisprYbx1GucClones/Mg633Parent-Ybx1Guc2.ab1', sep = ''))
+
+chromatogram(wt, 
+             width = 52, 
+             height = 4, 
+             trim5 = 109, 
+             trim3 = 145, 
+             showcalls = 'primary',
+             filename = paste(baseRepository, '/sanger20200701_mg633CrisprYbx1GucClones/sangerPlot_Mg633Parent-Ybx1Guc2.pdf', sep = ''))
+
+####
+wt = readsangerseq(paste(baseRepository, '/sanger20200701_mg633CrisprYbx1GucClones/Mg633Ybx1GucKo6-Ybx1Guc2.ab1', sep = ''))
+
+chromatogram(wt, 
+             width = 52, 
+             height = 4, 
+             trim5 = 106, 
+             trim3 = 144, 
+             showcalls = 'primary',
+             filename = paste(baseRepository, '/sanger20200701_mg633CrisprYbx1GucClones/sangerPlot_Mg633Guc6-Ybx1Guc2.pdf', sep = ''))
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
