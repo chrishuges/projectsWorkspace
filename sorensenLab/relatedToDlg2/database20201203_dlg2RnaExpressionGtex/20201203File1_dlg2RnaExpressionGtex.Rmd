@@ -69,9 +69,30 @@ ggplot(rna, aes(x = reorder(SMTS, log2Tpm, median, na.rm = TRUE), log2Tpm)) +
   labs(x = 'Tissue Specification in GTEx', y = 'log2(Transcripts per million)', title = 'DLG2 RNA expression in GTEx') +
   scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
   theme_classic() +
-  theme(axis.text.x = element_blank())
+  #theme(axis.text.x = element_blank())
+  theme(axis.text.x = element_text(angle = 45, size = 6, hjust = 1))
 ggsave(paste(baseRepository, '/database20201203_dlg2RnaExpressionGtex/boxplot_dlg2RnaExpressionSmtsGtex.pdf', sep = ''),
        height = 4, width = 6, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Consolidate all low expression cases into a single box.
+
+```{r}
+##########################################################################################
+tissuesOfInterest = c('Brain', 'Pituitary', 'Skin')
+rnaSubset = rna %>%
+  dplyr::mutate(tissueClass = ifelse(SMTS %in% tissuesOfInterest, SMTS, 'Other'))
+
+##
+ggplot(rnaSubset, aes(x = reorder(tissueClass, -log2Tpm, median, na.rm = TRUE), log2Tpm)) +
+  geom_boxplot(size = 0.5, outlier.shape = NA) +
+  labs(x = 'Tissue Specification in GTEx', y = 'log2(Transcripts per million)', title = 'DLG2 RNA expression in GTEx') +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/database20201203_dlg2RnaExpressionGtex/boxplot_dlg2RnaExpressionSmtsGtexSubset.pdf', sep = ''),
+       height = 4, width = 3, useDingbats = FALSE)
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -79,6 +100,7 @@ ggsave(paste(baseRepository, '/database20201203_dlg2RnaExpressionGtex/boxplot_dl
 ## Session info
 
 ```{r}
+##########################################################################################
 sessionInfo()
 ```
 

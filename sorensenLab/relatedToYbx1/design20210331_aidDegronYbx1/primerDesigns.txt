@@ -1,0 +1,79 @@
+
+
+These ones are for the N-terminal hygro
+
+
+puc19_ybx1_fwd (62C)
+cctgcaggtcgactctagagctcgggtactctatggtttt
+
+ybx1_hygro_rev
+gtgagttcaggctttttcatggttgcggtgatggtga
+
+
+
+ybx1_hygro_fwd (57C)
+cagtcaccatcaccgcaaccatgaaaaagcctgaactcac
+
+hygro_flag_rev
+TCATGATCCTTGTAGTCCATtttatacatcctcaaatcgatt
+
+
+
+hygro_flag_fwd (60C)
+tcgatttgaggatgtataaaATGGACTACAAGGATCATGA
+
+flag_ybx1_rev
+gtctcggcctcgctgctcatCTTGTCGTCATCATCCTTAT
+
+
+
+flag_ybx1_fwd (72C)
+ATAAGGATGATGACGACAAGatgagcagcgaggccgagac
+
+ybx1_puc19_rev
+aaaacgacggccagtgaattccgtcgcacacgcggtcg
+
+
+
+ybx1_bsd_rev (62C)
+tgagacaaaggcttggccatggttgcggtgatggtga
+
+
+ybx1_bsd_fwd (57C)
+cagtcaccatcaccgcaaccatggccaagcctttg
+
+
+
+ostir1_qpcrFwd
+ACGTGATGAACGGGTGTAAG
+
+ostir1_qpcrRev
+GCTCCTCATTGTCTCGTATCTG
+
+m13_sangerRev
+CAGGAAACAGCTATGAC
+
+m13_sangerFwd
+TGTAAAACGACGGCCAGT
+
+anti_sangerFwd
+GGCCTAGTTACCATCACACC
+
+p2a_sangerFwd
+tgctgaagcaggctggagac
+
+yb1Insert_gDnaFwd
+TATGGTTTTCGTGGCCGACT
+
+yb1Insert_gDnaRev
+CTCGCTGCTCATCTTGTCGT
+
+erbb4_qpcrFwd
+GGCCTTCCAACTTGACTCTT
+
+erbb4_qpcrRev
+ACGGCCAGTACAGGACTTAT
+
+
+
+

@@ -15,6 +15,7 @@ These are packages you will need for this notebook. For exact versions used, ple
 ##########################################################################################
 library('tidyverse')
 library('DEqMS')
+library('limma')
 library('ggplot2')
 library('RColorBrewer')
 library('ggrepel')
@@ -151,6 +152,7 @@ psmQuantFiltered = psmQuant %>%
   filter(sampleSignal >= 60) %>%
   filter(!is.na(gene)) %>%
   filter(!grepl('-', gene))
+boxplot(log2(psmQuantFiltered[,c(9:14)]))
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -245,6 +247,65 @@ ggplot(deqmsResults, aes(logFC, plotPValue)) +
 ggsave(paste(baseRepository, '/proteomics20201119_SonyaTranslationSet3Tmd/scatter_deqms_24h_isrib-dmso.pdf', sep = ''),
        height = 4, width = 4, useDingbats = FALSE)
 ```
+<div style="margin-bottom:50px;"></div>
+
+Try with a more simplistic approach.
+
+```{r}
+##########################################################################################
+psm = readRDS(paste(baseRepository, '/proteomics20201119_SonyaTranslationSet3Tmd/dataset_peptideQuantDataPreDEqMS.rds', sep = ''))
+psm$meanDmso = rowMeans(psm[,c(8,10,12)], na.rm = TRUE)
+psm$meanIsrib = rowMeans(psm[,c(9,11,13)], na.rm = TRUE)
+pro = psm %>%
+  dplyr::select(accession, gene, meanDmso, meanIsrib) %>%
+  group_by(accession, gene) %>%
+  summarise(dmso = median(meanDmso, na.rm = TRUE), isrib = median(meanIsrib, na.rm = TRUE)) %>%
+  mutate(dmso_isrib = log2(dmso/isrib))
+
+##
+ggplot(pro, aes(log10(dmso), dmso_isrib)) +
+  geom_point()
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Do DEqMS again but with non-normalized data.
+
+```{r}
+##########################################################################################
+psmQuantData = as.data.frame(log2(apply(psmQuantFiltered[,c(9:14)], 2, function(x) x / psmQuantFiltered$tmt10plex_131C)))
+psmQuantData$accession = psmQuantFiltered$accession
+proQuantData = psmQuantData %>%
+  group_by(accession) %>%
+  summarise(across(tmt10plex_126:tmt10plex_129N, list(median = median)))
+
+fit = lmFit(proQuantData[,2:7], design)
+limmaContrasts = c('isrib-dmso')
+limmaContrastDesign =  makeContrasts(contrasts = limmaContrasts, levels = design)
+fit2 = eBayes(contrasts.fit(fit, contrasts = limmaContrastDesign))
+proQuantData$logFC = fit2$coefficients
+proQuantData$pVal = fit2$p.value
+
+##
+proQuantData$pColors = ifelse(proQuantData$pVal < 0.001 & proQuantData$logFC > 1, brewer.pal(8,'Spectral')[1], brewer.pal(11,'RdGy')[8])
+ggplot(proQuantData, aes(logFC, -log10(pVal))) +
+  geom_point(size = 1, color = proQuantData$pColors) +
+  labs(x = 'log2(isrib - dmso)', y = '-log10(Adjusted p-value)', title = 'Hypoxia 24hr') +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  scale_x_continuous(limits = c(-2,2), breaks = seq(-2,2,0.5)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20201119_SonyaTranslationSet3Tmd/scatter_limmaComparison_isrib-dmso.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+
+##
+annotatedProtein = proQuantData %>%
+  left_join(proteinAnnotation)
+write.table(annotatedProtein, paste(baseRepository, '/proteomics20201119_SonyaTranslationSet3Tmd/dataset_limmaComparison_isrib-dmso.tsv', sep = ''),
+            quote = FALSE, col.names = TRUE, row.names = FALSE, sep = '\t')
+```  
+  
+<div style="margin-bottom:50px;"></div>
 
 ## Session info
 

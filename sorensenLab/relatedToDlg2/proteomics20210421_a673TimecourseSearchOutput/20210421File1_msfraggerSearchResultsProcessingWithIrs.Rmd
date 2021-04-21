@@ -1,0 +1,362 @@
+---
+title: "Analysis of A673 EF1 samples with IRS"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to look at A673 cells in 2D growth conditions with modulation of EWS-FLI1 across a timecourse. We want to make comparisons between batches, so we need to do some sort of normalization to facilitate that. The purpose of the work below is to use the Internal Reference Scaling method. This method is discussed in great detail on the [GitHub page](https://github.com/pwilmart/IRS_normalization) of Phil Wilmart. I strongly encourage you to visit his site, as it is a fantastic resource for all things proteomics!
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('limma')
+library('edgeR')
+library('DEqMS')
+library('matrixStats')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the peptide spectral match data.
+
+```{r}
+##########################################################################################
+sampleInfo = c('setA','setB','setC')
+annotation = c('a','b','c')
+psmFiles = file.path(baseRepository, 'proteomics20210421_a673TimecourseSearchOutput', sampleInfo, 'psm.tsv')
+all(file.exists(psmFiles))
+
+##
+for (i in 1:length(sampleInfo)){
+  ##
+  psmId = read_tsv(psmFiles[i]) %>%
+    dplyr::select(Peptide, `Is Unique`, `Is Used`, `Protein ID`, Gene, day0:day22, pool, pool_1) %>%
+    dplyr::rename(sequence = Peptide, 
+                unique = `Is Unique`,
+                used = `Is Used`,
+                accession = `Protein ID`,
+                gene = Gene,
+                pool1 = pool,
+                pool2 = pool_1) %>%
+    dplyr::mutate(unique = ifelse(grepl('DLG2', gene), TRUE, unique)) %>% #need to change this for DLG2 because we put some redundant isoforms in the database
+    dplyr::filter(unique == TRUE, used == TRUE, !grepl('CONT', accession), !is.na(gene), !grepl('-', gene)) %>%
+    dplyr::rowwise(sequence, accession, gene) %>%
+    dplyr::mutate(totalSignal = sum(c_across(day0:day22), na.rm = TRUE)) %>%
+    dplyr::filter(totalSignal >= 100)
+  saveRDS(psmId, paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_rawPeptideData', sampleInfo[i], '.rds', sep = ''))
+  
+  ##
+  proteinId = psmId %>%
+    dplyr::mutate(psm = 1) %>%
+    dplyr::select(accession, gene, psm, day0:pool2) %>%
+    group_by(accession, gene) %>%
+    summarise(across(psm:pool2, sum, na.rm = TRUE))
+  colnames(proteinId)[3:13] = paste(colnames(proteinId)[3:13], annotation[i], sep = '')
+  saveRDS(proteinId, paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_rawProteinData', sampleInfo[i], '.rds', sep = ''))
+} 
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Perform the IRS normalization.
+
+```{r}
+##########################################################################################
+proteinSet1 = readRDS(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_rawProteinDatasetA.rds', sep = ''))
+proteinSet2 = readRDS(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_rawProteinDatasetB.rds', sep = ''))
+proteinSet3 = readRDS(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_rawProteinDatasetC.rds', sep = ''))
+proteinSet = proteinSet1 %>%
+  left_join(proteinSet2) %>%
+  left_join(proteinSet3)
+
+##raw data check
+targetSamples = proteinSet[,c(1:2, which(grepl('day', colnames(proteinSet))))]
+pooledSamples = proteinSet[,c(which(grepl('pool', colnames(proteinSet))))]
+psmSamples = proteinSet[,c(which(grepl('psm', colnames(proteinSet))))]
+rawData = cbind(targetSamples, pooledSamples, psmSamples)
+rawData[rawData == 0] = NA
+rawData = subset(rawData, rowSums(is.na(rawData[,3:10])) < 5 & rowSums(is.na(rawData[,11:18])) < 5 & rowSums(is.na(rawData[,19:26])) < 5)
+boxplot(log2(rawData[,3:26]), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+        notch = TRUE, main = 'Raw data: setA (red), setB (green), setC (blue)',
+        xlab = 'TMT Samples', ylab = 'log2 of Intensity')
+plotDensities(log2(rawData[,3:26]), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+              main = 'Raw data')
+format(round(colSums(rawData[,3:26], na.rm = TRUE), digits = 0), big.mark = ",")
+
+##sample loading normalization
+exp1Raw = rawData[c(3:10)]
+exp2Raw = rawData[c(11:18)]
+exp3Raw = rawData[c(19:26)]
+target = mean(c(colSums(exp1Raw, na.rm = TRUE), colSums(exp2Raw, na.rm = TRUE), colSums(exp3Raw, na.rm = TRUE)))
+normFacs = target / colSums(exp1Raw, na.rm = TRUE)
+exp1Sl = sweep(exp1Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp2Raw, na.rm = TRUE)
+exp2Sl = sweep(exp2Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp3Raw, na.rm = TRUE)
+exp3Sl = sweep(exp3Raw, 2, normFacs, FUN = "*")
+dataSl = cbind(exp1Sl, exp2Sl, exp3Sl)
+boxplot(log2(dataSl), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+        notch = TRUE, main = "Sample Loading (SL) normalized data: \nsetA (red), setB (green), setC (blue)",
+        xlab = 'TMT Sample', ylab = 'log2 of Intensity')
+plotDensities(log2(dataSl), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), main = "SL normalization")
+
+##IRS normalization
+irs = tibble(rowSums(rawData[,27:28], na.rm = TRUE), rowSums(rawData[,29:30], na.rm = TRUE), rowSums(rawData[,31:32], na.rm = TRUE))
+colnames(irs) = c('sum1','sum2','sum3')
+irs$average = apply(irs, 1, function(x) exp(mean(log(x),na.rm = TRUE)))
+irs$fac1 = irs$average / irs$sum1
+irs$fac2 = irs$average / irs$sum2
+irs$fac3 = irs$average / irs$sum3
+dataIrs = exp1Sl * irs$fac1
+dataIrs = cbind(dataIrs, exp2Sl * irs$fac2)
+dataIrs = cbind(dataIrs, exp3Sl * irs$fac3)
+boxplot(log2(dataIrs), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+        main = "Internal Reference Scaling (IRS) normalized data: \nsetA (red), setB (green), setC (blue)",
+        xlab = 'TMT Sample', ylab = 'log2 of Intensity', notch = TRUE)
+plotDensities(log2(dataIrs), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), main = "IRS data")
+format(round(colSums(dataIrs, na.rm = TRUE), digits = 0), big.mark = ",")
+
+
+##post-normalization clustering
+colVec = c(rep('red',8),rep('blue',8),rep('green',8))
+plotMDS(log2(dataIrs), col = colVec, main = "IRS clusters group by condition")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+See if we can make this plot a bit nicer. I used [this](https://uofabioinformaticshub.github.io/DataVisualisaton_BIS2016/DataVisualisation.html) page to help with the code.
+
+```{r}
+##########################################################################################
+#original plot
+colVec = rep(c(brewer.pal(8,'Greys')[7], brewer.pal(9,'Reds')[3:9]),3)
+symVec = rep(c(0,1,2), each = 8)
+plotMDS(log2(dataIrs), 
+        col = colVec,
+        pch = symVec,
+        main = "IRS clusters group by condition",
+        )
+
+#extract the data for the MDS analysis itself
+mdsPlot = plotMDS(log2(dataIrs))
+mdsRawData = as.data.frame(mdsPlot@.Data[[3]])
+mdsPlotData = tibble(mdsRawData) %>%
+  rename(dim1 = V1, dim2 = V2) %>%
+  mutate(sampleData = row.names(mdsRawData)) %>%
+  mutate(day = factor(sub('day(.*)[abc]$', '\\1', sampleData), levels = c(0,7,9,10,11,14,17,22))) %>%
+  mutate(replicate = factor(sub('day[0-9]+(.*)$', '\\1', sampleData), levels = c('a','b','c')))
+
+#make the ggplot
+ggplot(mdsPlotData, aes(dim1, dim2, color = day, shape = replicate)) +
+  geom_point(size = 3, alpha = 0.75) +
+  scale_color_manual(values = rep(c(brewer.pal(8,'Greys')[7], brewer.pal(9,'Reds')[3:9]),3)) +
+  scale_x_continuous(limits = c(-1,1.2), breaks = seq(-2,2,0.2)) +
+  scale_y_continuous(limits = c(-1,1), breaks = seq(-2,2,0.2)) +
+  labs(x = 'Dimension 1', y = 'Dimension 2', title = 'A673 proteomic data grouping') +
+  theme_classic()
+#save the plot
+  ggsave(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/mdsplot_a673ShEwsFli1AbundanceIrs.pdf', sep = ''),
+         height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+So the data look great. There is doesn't appear to be any batch/replicate effect (y-axis), and the individual days themselves seem to be driving the biggest difference (x-axis)
+
+Recombine the data with the accessions and look at a few target proteins.
+
+```{r}
+##########################################################################################
+finalIrsData = as_tibble(cbind(rawData[,c(1:2,33:35)], dataIrs))
+finalIrsData[grepl('DLG2', finalIrsData$gene),]
+##save data
+saveRDS(finalIrsData, paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_proteinSetABCIrsNormalized.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make some plots of the normalized data.
+
+```{r}
+##########################################################################################
+#read in the normalized data and reshape it for plotting
+pro = readRDS(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_proteinSetABCIrsNormalized.rds', sep = '')) %>%
+  pivot_longer(cols = day0a:day22c, names_to = 'timepoint', values_to = 'proteinSignal') %>%
+  dplyr::select(accession, gene, timepoint, proteinSignal) %>%
+  mutate(day = factor(sub('day(.*)[abc]$', '\\1', timepoint), levels = c(0,7,9,10,11,14,17,22))) %>%
+  mutate(replicate = factor(sub('day[0-9]+(.*)$', '\\1', timepoint), levels = c('a','b','c'))) %>%
+  mutate(logProteinSignal = log2(proteinSignal))
+
+##
+targetGeneSet = c('PRKCB','IL1RAP','DLG2','FLI1')
+#loop over the genes of interest and make plots for them
+for (i in 1:length(targetGeneSet)){
+  geneOfInterest = pro[grepl(targetGeneSet[i], pro$gene),]
+  ##
+  ggplot(geneOfInterest, aes(day, logProteinSignal, color = day)) +
+    geom_boxplot(size = 0.5, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[6]) +
+    geom_point(size = 2, position = position_jitterdodge(jitter.width = 1)) +
+    labs(x = 'Time (days)', y = 'log2(Protein abundance)', title = paste(targetGeneSet[i],' protein abundance', sep = '')) +
+    scale_color_manual(values = c(brewer.pal(8,'Greys')[7], brewer.pal(9,'Reds')[3:9])) +
+    #scale_y_continuous(limits = c(10,27), breaks = seq(0,30,3)) +
+    theme_classic() +
+    theme(legend.position = 'none')
+  ##
+  ggsave(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/scatterplot_',targetGeneSet[i],'_a673ShEwsFli1Abundance.pdf', sep = ''),
+         height = 4, width = 3, useDingbats = FALSE)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This is not completely ideal because it is a bit hard to visualize the scale relative to the original parental expression (d0). So, re-scale the data relative to the d0 timepoint, for each replicate, and use these values instead.
+
+```{r}
+##########################################################################################
+proInput = readRDS(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_proteinSetABCIrsNormalized.rds', sep = ''))
+
+##
+exp1Scaled = apply(proInput[,3:10], 2, function(x) x/proInput$day0a)
+exp2Scaled = apply(proInput[,11:18], 2, function(x) x/proInput$day0b)
+exp3Scaled = apply(proInput[,19:26], 2, function(x) x/proInput$day0c)
+expScaled = cbind(exp1Scaled, exp2Scaled, exp3Scaled)
+proScaled = tibble(cbind(proInput[,c('accession','gene')], expScaled)) %>%
+  pivot_longer(cols = day0a:day22c, names_to = 'timepoint', values_to = 'proteinSignal') %>%
+  dplyr::select(accession, gene, timepoint, proteinSignal) %>%
+  mutate(day = factor(sub('day(.*)[abc]$', '\\1', timepoint), levels = c(0,7,9,10,11,14,17,22))) %>%
+  mutate(replicate = factor(sub('day[0-9]+(.*)$', '\\1', timepoint), levels = c('a','b','c')))
+
+##
+targetGeneSet = c('PRKCB','IL1RAP','DLG2','FLI1','TDO2')
+for (i in 1:length(targetGeneSet)){
+  geneOfInterest = proScaled[grepl(targetGeneSet[i], proScaled$gene),]
+  ##
+  ggplot(geneOfInterest, aes(day, proteinSignal, color = day)) +
+    geom_boxplot(size = 0.5, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[6]) +
+    geom_point(size = 1.5, position = position_jitterdodge(jitter.width = 1)) +
+    labs(x = 'Time (days)', y = 'log2(Scaled protein abundance)', title = paste(targetGeneSet[i],' protein abundance', sep = '')) +
+    scale_color_manual(values = c(brewer.pal(8,'Greys')[7], brewer.pal(9,'Reds')[3:9])) +
+    scale_y_continuous(limits = c(0,max(geneOfInterest$proteinSignal, na.rm = TRUE)+0.1), breaks = seq(-1,20,0.2)) +
+    theme_classic() +
+    theme(legend.position = 'none')
+  ##
+  ggsave(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/scatterplot_',targetGeneSet[i],'_a673ShEwsFli1AbundanceScaled.pdf', sep = ''),
+         height = 4, width = 3, useDingbats = FALSE)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Perform a differential expression analysis using DEqMS between specific timepoints.
+
+```{r}
+##########################################################################################
+dataIrsRaw = as.data.frame(readRDS(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_proteinSetABCIrsNormalized.rds', sep = '')))
+row.names(dataIrsRaw) = dataIrsRaw$accession
+dataIrs = dataIrsRaw[,c(which(grepl('day0', colnames(dataIrsRaw)) | grepl('day7', colnames(dataIrsRaw))))] #I only keep the two time points I want to compare here
+dataIrsLog = log2(dataIrs)
+dataIrsLog = na.omit(dataIrsLog)
+
+##make the design table and fit the model
+cond = as.factor(rep(c('day0','day7'),3))
+design = model.matrix(~0+cond) # 0 means no intercept for the linear model
+colnames(design) = gsub('cond','',colnames(design))
+contrast =  makeContrasts(contrasts = 'day7-day0', levels = design)
+fit1 = lmFit(dataIrsLog, design)
+fit2 = contrasts.fit(fit1,contrasts = contrast)
+fit3 = eBayes(fit2)
+
+##DEqMS analysis
+count_columns = seq(3,5,1)
+psm.count.table = data.frame(count = rowMins(as.matrix(dataIrsRaw[,count_columns])), row.names =  dataIrsRaw$accession)
+fit3$count = psm.count.table[rownames(fit3$coefficients),'count']
+fit4 = spectraCounteBayes(fit3)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Outputs of spectraCounteBayes:
+object is augmented form of “fit” object from eBayes in Limma, with the additions being:
+sca.t - Spectra Count Adjusted posterior t-value
+sca.p - Spectra Count Adjusted posterior p-value
+sca.dfprior - DEqMS estimated prior degrees of freedom
+sca.priorvar- DEqMS estimated prior variance
+sca.postvar - DEqMS estimated posterior variance
+model - fitted model
+
+Visualize the fit curve.
+
+```{r}
+##########################################################################################
+# n=30 limits the boxplot to show only proteins quantified by <= 30 PSMs.
+VarianceBoxplot(fit4, n = 30, main = 'A673 IRS data', xlab = 'PSM count')
+VarianceScatterplot(fit4,main = 'A673 IRS data')
+
+##
+deqmsResults = tibble(outputResult(fit4,coef_col = 1)) %>%
+  rename(accession  = gene) %>%
+  left_join(dataIrsRaw[,c('accession','gene')])
+#if you are not sure which coef_col refers to the specific contrast,type
+head(fit4$coefficients)
+head(deqmsResults)
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_deqms_day7-day0.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+
+
+##volcano plot in our usualy style
+deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
+                                     brewer.pal(8,'Greys')[6]))
+goi = c('FLI1','PRKCB','IL1RAP','DLG2','TDO2')
+deqmsResults$pText = ifelse(deqmsResults$gene %in% goi, deqmsResults$gene, '')
+##
+ggplot(deqmsResults, aes(logFC, plotPValue)) +
+  geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = -2) +
+  labs(x = 'log2(day7 - day0)', y = '-log10(P-value)', title = 'Differential protein abundance') +
+  scale_y_continuous(limits = c(0,14), breaks = seq(0,18,3)) +
+  scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = 3, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/scatter_deqmsIrsDay7-Day0.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```
+
+
+
+

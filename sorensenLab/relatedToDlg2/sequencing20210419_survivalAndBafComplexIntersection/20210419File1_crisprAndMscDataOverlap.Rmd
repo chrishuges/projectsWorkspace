@@ -1,0 +1,155 @@
+---
+title: "Comparing MSC data with CRISPR survival"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of data from the Riggi paper to look at MSCs that have been induced with different types of FLI1 constructs in comparison to the survival data from DepMap for EwS cells.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('vroom')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the gene set of interest from the Aynaud single cell RNAseq paper.
+
+```{r}
+##########################################################################################
+ewsSet = read_tsv(paste(baseRepository, '/sequencing20210419_survivalAndBafComplexIntersection/aynaud_ewsSignatureSet.txt', sep = ''))
+ewsSet
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read in the RNAseq data from the MSCs. Get the CRISPR data and combine with the RNA information. Make a plot of the data.
+
+```{r}
+##########################################################################################
+rna = read_tsv(paste(baseRepository, '/sequencing20210419_survivalAndBafComplexIntersection/GSE94277_counts_matrix.txt.gz', sep = '')) %>%
+  dplyr::select(gene, MSC1.control.RNAseq:MSC1b.FLI1.RNAseq) %>%
+  dplyr::rename(symbol = gene) %>%
+  dplyr::filter(symbol %in% ewsSet$symbol) %>%
+  dplyr::mutate(fli1RepA = (MSC1.EWSFLI1.RNAseq + 1) / (MSC1.FLI1.RNAseq + 1), fli1RepB = (MSC1b.EWSFLI1.RNAseq + 1) / (MSC1b.FLI1.RNAseq + 1)) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(fli1Mean = log2(mean(c(fli1RepA, fli1RepB), na.rm = TRUE))) %>%
+  dplyr::select(symbol, fli1Mean)
+
+##
+anno = read_csv(paste(generalDatasets, '/depmap21Q1/sample_info.csv', sep = '')) %>%
+  dplyr::select(DepMap_ID, stripped_cell_line_name, Subtype, lineage_subtype, lineage_molecular_subtype) %>%
+  dplyr::filter(grepl('Ewing', Subtype) | grepl('Ewing', lineage_subtype))
+crispr = vroom(paste(generalDatasets, '/depmap21Q1/Achilles_gene_effect.csv', sep = '')) %>%
+  dplyr::filter(DepMap_ID %in% anno$DepMap_ID) %>%
+  pivot_longer(cols = `A1BG (1)`:`ZZZ3 (26009)`, names_to = 'gene', values_to = 'rnaExp') %>%
+  dplyr::mutate('symbol' = sub('(.*) \\([0-9]+\\).*$', '\\1', gene)) %>%
+  dplyr::filter(symbol %in% rna$symbol) %>%
+  dplyr::select(symbol, rnaExp) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(medRnaExp = median(rnaExp, na.rm = TRUE)) %>%
+  left_join(rna)
+dim(crispr)
+
+##
+ggplot(crispr, aes(fli1Mean, medRnaExp)) +
+  geom_point(size = 2, color = brewer.pal(8,'Spectral')[1]) +
+  labs(x = 'log2(EWS-FLI1 vs FLI in MSCs)', y = 'CRISPR gene effect', title = 'EWS-FLI1 target fitness') +
+  scale_y_continuous(limits = c(-2.2, 1), breaks = seq(-2,1,0.5)) +
+  scale_x_continuous(limits = c(-2.5,12), breaks = seq(-2,12,2)) +
+  geom_hline(yintercept = -1, linetype = 'dashed') +
+  geom_vline(xintercept = 0, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210419_survivalAndBafComplexIntersection/scatter_mscFli1InductionFitnessSignature.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Do this process again, but instead for the BRG ratio.
+
+```{r}
+##########################################################################################
+rna = read_tsv(paste(baseRepository, '/sequencing20210419_survivalAndBafComplexIntersection/GSE94277_counts_matrix.txt.gz', sep = '')) %>%
+  dplyr::select(gene, MSC5.shGFP.control.RNAseq:MSC5b.shBRG1.EWSFLI1.RNAseq) %>%
+  dplyr::rename(symbol = gene) %>%
+  dplyr::filter(symbol %in% ewsSet$symbol) %>%
+  dplyr::mutate(fli1RepA = (MSC5.shBRG1.EWSFLI1.RNAseq + 1) / (MSC5.shGFP.EWSFLI1.RNAseq + 1), fli1RepB = (MSC5b.shBRG1.EWSFLI1.RNAseq + 1) / (MSC5b.shGFP.EWSFLI1.RNAseq + 1)) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(fli1Mean = log2(mean(c(fli1RepA, fli1RepB), na.rm = TRUE))) %>%
+  dplyr::select(symbol, fli1Mean)
+
+##
+anno = read_csv(paste(generalDatasets, '/depmap21Q1/sample_info.csv', sep = '')) %>%
+  dplyr::select(DepMap_ID, stripped_cell_line_name, Subtype, lineage_subtype, lineage_molecular_subtype) %>%
+  dplyr::filter(grepl('Ewing', Subtype) | grepl('Ewing', lineage_subtype))
+crispr = vroom(paste(generalDatasets, '/depmap21Q1/Achilles_gene_effect.csv', sep = '')) %>%
+  dplyr::filter(DepMap_ID %in% anno$DepMap_ID) %>%
+  pivot_longer(cols = `A1BG (1)`:`ZZZ3 (26009)`, names_to = 'gene', values_to = 'rnaExp') %>%
+  dplyr::mutate('symbol' = sub('(.*) \\([0-9]+\\).*$', '\\1', gene)) %>%
+  dplyr::filter(symbol %in% rna$symbol) %>%
+  dplyr::select(symbol, rnaExp) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(medRnaExp = median(rnaExp, na.rm = TRUE)) %>%
+  left_join(rna)
+dim(crispr)
+
+##
+ggplot(crispr, aes(fli1Mean, medRnaExp)) +
+  geom_point(size = 2, color = brewer.pal(8,'Spectral')[1]) +
+  labs(x = 'log2(shBRG1 vs shGFP in MSCs)', y = 'CRISPR gene effect', title = 'EWS-FLI1 target fitness') +
+  scale_y_continuous(limits = c(-2.2, 1), breaks = seq(-2,1,0.5)) +
+  scale_x_continuous(limits = c(-9,3), breaks = seq(-10,12,2)) +
+  geom_hline(yintercept = -1, linetype = 'dashed') +
+  geom_vline(xintercept = 0, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210419_survivalAndBafComplexIntersection/scatter_mscBrgInductionFitnessSignature.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

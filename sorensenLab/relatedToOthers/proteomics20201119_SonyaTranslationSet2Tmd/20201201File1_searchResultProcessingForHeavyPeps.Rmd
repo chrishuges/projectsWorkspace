@@ -151,6 +151,7 @@ psmQuantFiltered = psmQuant %>%
   filter(sampleSignal >= 60) %>%
   filter(!is.na(gene)) %>%
   filter(!grepl('-', gene))
+boxplot(log2(psmQuantFiltered[,c(9:14)]))
 ```
 
 <div style="margin-bottom:50px;"></div>
