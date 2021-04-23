@@ -1,0 +1,142 @@
+---
+title: "Comparing RNA and protein data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the comparative analysis of RNAseq and proteomics data from the A673 timecourse of EWS-FLI1 expression.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in and combine the protein and RNA data.
+
+```{r}
+##########################################################################################
+pro = read_csv(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_deqms_day7-day0.csv', sep = '')) %>%
+  dplyr::select(gene, logFC, sca.P.Value) %>%
+  dplyr::rename(proFC = logFC, proPVal = sca.P.Value)
+rna = read_csv(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day7-day0.csv', sep = '')) %>%
+  dplyr::select(symbol, log2FoldChange, pvalue) %>%
+  dplyr::rename(gene = symbol, rnaFC = log2FoldChange, rnaPVal = pvalue)
+
+##
+rnaPro = rna %>%
+  left_join(pro)
+rnaPro
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot of these combined data.
+
+```{r}
+##########################################################################################
+rnaPro$pColors = ifelse(rnaPro$rnaFC >= 1 & rnaPro$proFC >= 1, brewer.pal(8,'Spectral')[1], 
+                        ifelse(rnaPro$rnaFC <= -1 & rnaPro$proFC <= -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8]))
+rnaPro$pText = ifelse(grepl('DLG2', rnaPro$gene), rnaPro$gene, '')
+
+
+##
+ggplot(rnaPro, aes(rnaFC, proFC)) +
+  geom_point(size = 1, color = rnaPro$pColors) +
+  labs(x = 'log2(day7 - day0, RNA)', y = 'log2(day7 - day0, protein)', title = 'EWS-FL1 regulation') +
+  geom_text_repel(label = rnaPro$pText, nudge_x = -3, nudge_y = 3) +
+  scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+  scale_y_continuous(limits = c(-6,6), breaks = seq(-10,10,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatter_rnaVSpro_day7VSday0.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+
+##
+cor(rnaPro$rnaFC, rnaPro$proFC, use = 'pairwise.complete.obs', method = 'pearson')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Extract the genes that require EWS-FLI1 and map them to the MSC data.
+
+```{r}
+##########################################################################################
+rnaProSet = rnaPro %>%
+  dplyr::filter(rnaFC <= -1 & proFC <= -1)
+ewsSet = read_tsv(paste(baseRepository, '/sequencing20210419_survivalAndBafComplexIntersection/aynaud_ewsSignatureSet.txt', sep = ''))
+msc = read_tsv(paste(baseRepository, '/sequencing20210419_survivalAndBafComplexIntersection/GSE94277_counts_matrix.txt.gz', sep = '')) %>%
+  dplyr::select(gene, MSC1.control.RNAseq:MSC1b.FLI1.RNAseq, MSC5.shGFP.control.RNAseq:MSC5b.shBRG1.EWSFLI1.RNAseq) %>%
+  dplyr::rename(symbol = gene) %>%
+  dplyr::filter(symbol %in% rnaProSet$gene) %>%
+  dplyr::mutate(fli1RepA = (MSC1.EWSFLI1.RNAseq + 1) / (MSC1.FLI1.RNAseq + 1), fli1RepB = (MSC1b.EWSFLI1.RNAseq + 1) / (MSC1b.FLI1.RNAseq + 1)) %>%
+  dplyr::mutate(brg1RepA = (MSC5.shBRG1.EWSFLI1.RNAseq + 1) / (MSC5.shGFP.EWSFLI1.RNAseq + 1), brg1RepB = (MSC5b.shBRG1.EWSFLI1.RNAseq + 1) / (MSC5b.shGFP.EWSFLI1.RNAseq + 1)) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(fli1Mean = log2(mean(c(fli1RepA, fli1RepB), na.rm = TRUE)), brg1Mean = log2(mean(c(brg1RepA, brg1RepB), na.rm = TRUE))) %>%
+  dplyr::select(symbol, fli1Mean, brg1Mean) %>%
+  left_join(ewsSet) %>%
+  dplyr::mutate(pColors = ifelse(isDirect == 1, brewer.pal(8,'Spectral')[1],
+                                 ifelse(isDirect == 0, brewer.pal(8,'Spectral')[8], NA))) %>%
+  dplyr::mutate(pColors = ifelse(is.na(pColors), brewer.pal(11,'RdGy')[8], pColors)) %>%
+  dplyr::mutate(pText = ifelse(grepl('DLG2',symbol), symbol, ''))
+
+##
+ggplot(msc, aes(fli1Mean, brg1Mean)) +
+  geom_point(size = 1, color = msc$pColors) +
+  geom_text_repel(label = msc$pText, nudge_x = 1, nudge_y = -3) +
+  labs(x = 'log2(EWS-FLI1 vs FLI1 in MSCs)', y = 'log2(shBRG1 vs shGFP in MSCs)', title = 'Direct EWS-FLI1 regulation') +
+  geom_hline(yintercept = -1, linetype = 'dashed') +
+  geom_vline(xintercept = 1, linetype = 'dashed') +
+  scale_x_continuous(limits = c(-1,12.2), breaks = seq(0,14,2)) +
+  scale_y_continuous(limits = c(-9,2), breaks = seq(-10,2,2)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatter_rnaVSproVSmscs_directHits.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

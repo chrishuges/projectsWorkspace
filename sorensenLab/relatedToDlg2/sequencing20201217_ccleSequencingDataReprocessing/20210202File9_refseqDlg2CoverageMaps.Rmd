@@ -52,7 +52,7 @@ Subset the GTF. The main transcript I am going to use is NM_001142699.3.
 ```{r}
 ##########################################################################################
 dlg2Gtf = totalGtf %>%
-  filter(grepl('NM_001300983.1', transcript_id)) %>%
+  filter(grepl('NM_001300983.1$', transcript_id)) %>%
   dplyr::rename(gene_name = gene_id, gene_id = seqnames) %>%
   mutate('seqnames' = 'chr11')
 ##

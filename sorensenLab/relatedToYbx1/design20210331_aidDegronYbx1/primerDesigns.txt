@@ -44,6 +44,16 @@ cagtcaccatcaccgcaaccatggccaagcctttg
 
 
 
+
+ybx1_puc19_rev2 (72C)
+aaaacgacggccagtgaattGTGACGCGAACAACGGCGTG
+
+ybx1_puc19_rev3 (72C)
+aaaacgacggccagtgaattTGGGGGTGACGCGAACAACG
+
+
+
+
 ostir1_qpcrFwd
 ACGTGATGAACGGGTGTAAG
 
@@ -67,6 +77,12 @@ TATGGTTTTCGTGGCCGACT
 
 yb1Insert_gDnaRev
 CTCGCTGCTCATCTTGTCGT
+
+yb1Insert_gDnaRev2
+GTGGGGGTGACGCGAACAAC
+
+yb1Insert_gDnaRev3
+TGACGCGAACAACGGCGTG
 
 erbb4_qpcrFwd
 GGCCTTCCAACTTGACTCTT
