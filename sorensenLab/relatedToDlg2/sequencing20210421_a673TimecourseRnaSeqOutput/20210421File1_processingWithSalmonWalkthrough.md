@@ -32,7 +32,10 @@ done
 for i in ACAGTG_setA ACTTGA_setA ATCACG_setA CAGATC_setA CGATGT_setA GCCAAT_setA TGACCA_setA TTAGGC_setA ACAGTG_setB ACTTGA_setB ATCACG_setB CAGATC_setB CGATGT_setB GCCAAT_setB TGACCA_setB TTAGGC_setB ACAGTG_setC ACTTGA_setC ATCACG_setC CAGATC_setC CGATGT_setC GCCAAT_setC TGACCA_setC TTAGGC_setC
 do
   ###
-  bbdukCall="$bbdukLocation in1=${rawDataOutputDirectory}${i}_1.fastq.gz in2=${rawDataOutputDirectory}${i}_2.fastq.gz ref=adapters out1=${rawDataOutputDirectory}${i}_1.clean.fastq.gz out2=${rawDataOutputDirectory}${i}_2.clean.fastq.gz ktrim=r k=23 mink=11 hdist=1 tpe tbo"
+  umiToolsCall="umitools reformat_fastq -l ${rawDataOutputDirectory}${i}_1.fastq.gz -r ${rawDataOutputDirectory}${i}_2.fastq.gz -L ${rawDataOutputDirectory}${i}_1.umi.fastq.gz -R ${rawDataOutputDirectory}${i}_2.umi.fastq.gz"
+  eval $umiToolsCall
+  ###
+  bbdukCall="$bbdukLocation in1=${rawDataOutputDirectory}${i}_1.umi.fastq.gz in2=${rawDataOutputDirectory}${i}_2.umi.fastq.gz ref=adapters out1=${rawDataOutputDirectory}${i}_1.clean.fastq.gz out2=${rawDataOutputDirectory}${i}_2.clean.fastq.gz ktrim=r k=23 mink=11 hdist=1 tpe tbo"
   eval $bbdukCall
   ##
   salmonCall="$salmonLocation quant -i $indexLocation -l A -1 ${rawDataOutputDirectory}${i}_1.clean.fastq.gz -2 ${rawDataOutputDirectory}${i}_2.clean.fastq.gz --gcBias --validateMappings -o ${rawDataOutputDirectory}${i}_quant"
