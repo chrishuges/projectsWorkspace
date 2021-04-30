@@ -21,6 +21,7 @@ library('edgeR')
 library('DEqMS')
 library('matrixStats')
 library('ggrepel')
+library('DESeq2')
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -165,10 +166,10 @@ plotMDS(log2(dataIrs),
 mdsPlot = plotMDS(log2(dataIrs))
 mdsRawData = as.data.frame(mdsPlot@.Data[[3]])
 mdsPlotData = tibble(mdsRawData) %>%
-  rename(dim1 = V1, dim2 = V2) %>%
-  mutate(sampleData = row.names(mdsRawData)) %>%
-  mutate(day = factor(sub('day(.*)[abc]$', '\\1', sampleData), levels = c(0,7,9,10,11,14,17,22))) %>%
-  mutate(replicate = factor(sub('day[0-9]+(.*)$', '\\1', sampleData), levels = c('a','b','c')))
+  dplyr::rename(dim1 = V1, dim2 = V2) %>%
+  dplyr::mutate(sampleData = row.names(mdsRawData)) %>%
+  dplyr::mutate(day = factor(sub('day(.*)[abc]$', '\\1', sampleData), levels = c(0,7,9,10,11,14,17,22))) %>%
+  dplyr::mutate(replicate = factor(sub('day[0-9]+(.*)$', '\\1', sampleData), levels = c('a','b','c')))
 
 #make the ggplot
 ggplot(mdsPlotData, aes(dim1, dim2, color = day, shape = replicate)) +
@@ -185,7 +186,43 @@ ggplot(mdsPlotData, aes(dim1, dim2, color = day, shape = replicate)) +
 
 <div style="margin-bottom:50px;"></div>
 
-So the data look great. There is doesn't appear to be any batch/replicate effect (y-axis), and the individual days themselves seem to be driving the biggest difference (x-axis)
+So the data look great. There is doesn't appear to be any batch/replicate effect (y-axis), and the individual days themselves seem to be driving the biggest difference (x-axis). Remake this PCA plot to better correspond with the RNA data.
+
+```{r}
+##########################################################################################
+#need to build a DESeq object
+prepIrs = dataIrs
+prepIrs[prepIrs == 0] = NA
+row.names(prepIrs) = rawData$accession
+cts = log2(prepIrs[complete.cases(prepIrs),])
+cts = apply(cts, 2, function(x) as.integer(x))
+coldata = data.frame('sampleCol' = colnames(dataIrs),
+                     'sampleName' = rep(c('day0','day7','day9','day10','day11','day14','day17','day22'), 3),
+                     'batch' = rep(c('setA','setB','setC'),each = 8))
+dds = DESeqDataSetFromMatrix(countData = cts,
+                              colData = coldata,
+                              design = ~ sampleName)
+
+##
+mdsPlot = plotPCA(DESeqTransform(dds), intgroup = c('sampleName','batch'), returnData = TRUE)
+mdsPlot$sampleName = factor(mdsPlot$sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22'))
+percentVar = round(100 * attr(mdsPlot, 'percentVar'))
+#make the ggplot
+ggplot(mdsPlot, aes(PC1, PC2, color = sampleName, shape = batch)) +
+  geom_point(size = 6, alpha = 0.75) +
+  scale_color_manual(values = rep(c(brewer.pal(8,'Greys')[7], brewer.pal(9,'Reds')[3:9]),3)) +
+  scale_x_continuous(limits = c(-30,20), breaks = seq(-30,20,8)) +
+  scale_y_continuous(limits = c(-10,16), breaks = seq(-20,20,4)) +
+  labs(x = paste0('PC1: ', percentVar[1], '% variance'), 
+       y = paste0('PC2: ', percentVar[2], '% variance'), 
+       title = 'A673 protein groups') +
+  theme_classic()
+#save the plot
+ggsave(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/pcaplot_a673ShEwsFli1AbundanceLog.pdf', sep = ''), 
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
 
 Recombine the data with the accessions and look at a few target proteins.
 
@@ -317,8 +354,8 @@ VarianceBoxplot(fit4, n = 30, main = 'A673 IRS data', xlab = 'PSM count')
 VarianceScatterplot(fit4,main = 'A673 IRS data')
 
 ##
-deqmsResults = tibble(outputResult(fit4,coef_col = 1)) %>%
-  rename(accession  = gene) %>%
+deqmsResults = tibble(outputResult(fit4, coef_col = 1)) %>%
+  dplyr::rename(accession  = gene) %>%
   left_join(dataIrsRaw[,c('accession','gene')])
 #if you are not sure which coef_col refers to the specific contrast,type
 head(fit4$coefficients)
@@ -333,14 +370,14 @@ deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
 deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
                               ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
                                      brewer.pal(8,'Greys')[6]))
-goi = c('FLI1','PRKCB','IL1RAP','DLG2','TDO2')
+goi = c('PRKCB','IL1RAP','DLG2')
 deqmsResults$pText = ifelse(deqmsResults$gene %in% goi, deqmsResults$gene, '')
 ##
 ggplot(deqmsResults, aes(logFC, plotPValue)) +
   geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
   geom_text_repel(label = deqmsResults$pText, nudge_x = -2) +
   labs(x = 'log2(day7 - day0)', y = '-log10(P-value)', title = 'Differential protein abundance') +
-  scale_y_continuous(limits = c(0,14), breaks = seq(0,18,3)) +
+  scale_y_continuous(limits = c(0,18), breaks = seq(0,20,4)) +
   scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
   geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
   geom_hline(yintercept = 3, linetype = 'dashed') +

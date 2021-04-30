@@ -1,0 +1,443 @@
+---
+title: "EwS signature gene set"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the comparative analysis of RNAseq and proteomics data from the A673 timecourse of EWS-FLI1 expression in order to derive a signature set of EWS genes.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('corrr')
+library('vroom')
+library('ggplot2')
+library('RColorBrewer')
+library('ggrepel')
+library('ggraph')
+library('igraph')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in and combine the protein and RNA data.
+
+```{r}
+##########################################################################################
+pro = read_csv(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_deqms_day7-day0.csv', sep = '')) %>%
+  dplyr::select(gene, logFC, sca.P.Value) %>%
+  dplyr::rename(proFC = logFC, proPVal = sca.P.Value)
+rna = read_csv(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day7-day0.csv', sep = '')) %>%
+  dplyr::select(symbol, log2FoldChange, pvalue) %>%
+  dplyr::rename(gene = symbol, rnaFC = log2FoldChange, rnaPVal = pvalue)
+
+##
+rnaPro = rna %>%
+  left_join(pro)
+rnaPro
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read in and prepare the DepMap expression data.
+
+```{r}
+##########################################################################################
+ccle = readRDS(paste(generalDatasets, '/depmap20Q4/CCLE_expression_parsed.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Extract the set of EWS regulated genes from the combined RNA and protein data.
+
+```{r}
+##########################################################################################
+upSet = rnaPro %>%
+  dplyr::filter(rnaFC < -2 & rnaPVal <= 0.001) %>%
+  dplyr::filter(proFC < -2 & proPVal <= 0.001)
+
+##
+lineageOfInterest = c('Bone','Breast','Lung','Pancreas')
+upCcle = ccle %>%
+  #dplyr::filter(gene %in% upSet$gene & stripped_cell_line_name %in% testCells) %>%
+  dplyr::filter(gene %in% upSet$gene & grepl('bone', lineage)) %>% 
+  dplyr::select(gene, stripped_cell_line_name, log2Tpm) %>%
+  pivot_wider(names_from = stripped_cell_line_name, values_from = log2Tpm) %>%
+  dplyr::select(-gene) %>%
+  correlate() %>%
+  stretch()
+  #network_plot(min_cor = 0.7, repel = TRUE, legend = FALSE)
+
+graphCcle = upCcle %>%
+  filter(abs(r) > 0.7) %>% 
+  graph_from_data_frame(directed = FALSE)
+
+ggraph(graphCcle) +
+  geom_edge_link() +
+  geom_node_point() +
+  geom_node_text(aes(label = name), repel = TRUE) +
+  theme_graph()
+
+ggraph(graphCcle) +
+  geom_edge_link(aes(edge_alpha = abs(r), edge_width = abs(r), color = r)) +
+  guides(edge_alpha = "none", edge_width = "none") +
+  scale_edge_colour_gradientn(limits = c(-1, 1), colors = c("firebrick2", "dodgerblue2")) +
+  geom_node_point(color = "white", size = 5) +
+  geom_node_text(aes(label = name), repel = TRUE, size = 3) +
+  theme_classic() +
+  labs(title = "Correlations between cells")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+What if we instead do sampling of the correlation using different gene sets. For example, if we take genes up in RNA samples and sample the correlation values between Ewing sarcoma and all other cancers?
+
+```{r}
+##########################################################################################
+rna = read_csv(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day7-day0.csv', sep = '')) %>%
+  dplyr::select(symbol, log2FoldChange, pvalue) %>%
+  dplyr::rename(gene = symbol, rnaFC = log2FoldChange, rnaPVal = pvalue) %>%
+  dplyr::filter(rnaFC <= -2 & rnaPVal <= 0.001) %>%
+  left_join(ccle) %>%
+  dplyr::select(gene, rnaFC, rnaPVal, log2Tpm, stripped_cell_line_name, lineage, lineage_subtype) %>%
+  dplyr::filter(!is.na(stripped_cell_line_name))
+
+
+##
+ewsCells = unique(rna[grepl('Ewing', rna$lineage_subtype), 'stripped_cell_line_name']$stripped_cell_line_name)
+boneCells = unique(rna[grepl('bone', rna$lineage), 'stripped_cell_line_name']$stripped_cell_line_name)
+cellOutputData = data.frame()
+
+set.seed(13579)
+for (i in 1:10000){
+  #message(i)
+  ewsCellLocation = sample(seq(1,length(ewsCells)), 1)
+  otherCells = unique(rna[rna$stripped_cell_line_name != ewsCells[ewsCellLocation], 'stripped_cell_line_name']$stripped_cell_line_name)
+  otherCellLocation = sample(seq(1,length(otherCells)), 1)
+  ##
+  cellData = rna %>%
+    dplyr::filter(stripped_cell_line_name == ewsCells[ewsCellLocation] | stripped_cell_line_name == otherCells[otherCellLocation]) %>%
+    dplyr::select(gene, log2Tpm, stripped_cell_line_name) %>%
+    pivot_wider(names_from = stripped_cell_line_name, values_from = log2Tpm) %>%
+    dplyr::select(-gene)
+  ##
+  cellCorrelation = cor(cellData[,1], cellData[,2], use = 'pairwise.complete.obs', method = 'pearson')
+  isEwing = ifelse(otherCells[otherCellLocation] %in% ewsCells, TRUE, FALSE)
+  isBone = ifelse(otherCells[otherCellLocation] %in% boneCells, TRUE, FALSE)
+  ##
+  prepOutputData = data.frame('cellOne' = ewsCells[ewsCellLocation],
+                              'cellTwo' = otherCells[otherCellLocation],
+                              'correlation' = cellCorrelation[1],
+                              'isEwing' = isEwing,
+                              'isBone' = isBone)
+  cellOutputData = rbind(cellOutputData, prepOutputData)
+}
+saveRDS(cellOutputData, paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_correlationRnaOnly.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Plot these data.
+
+```{r}
+##########################################################################################
+corrData = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_correlationRnaOnly.rds', sep = ''))
+ggplot(corrData, aes(correlation, group = isEwing, fill = isEwing)) +
+  geom_density(color = brewer.pal(11,'RdGy')[10], size = 0.5) +
+  scale_fill_manual(values = brewer.pal(8,'Spectral')[c(1,8)]) +
+  labs(x = 'Pearson correlation', y = 'Density', title = 'RNA expression signature') +
+  geom_vline(xintercept = c(median(corrData[corrData$isEwing == TRUE, 'correlation'], na.rm = TRUE))) +
+  geom_vline(xintercept = c(median(corrData[corrData$isEwing == FALSE, 'correlation'], na.rm = TRUE))) +
+  scale_x_continuous(limits = c(-0.25,1), breaks = seq(-1,1,0.2)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/density_correlationRnaOnly.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+table(corrData$isEwing)
+median(corrData[corrData$isEwing == TRUE, 'correlation'], na.rm = TRUE)
+median(corrData[corrData$isEwing == FALSE, 'correlation'], na.rm = TRUE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Repeat this with a protein only signature.
+
+```{r}
+##########################################################################################
+pro = read_csv(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_deqms_day7-day0.csv', sep = '')) %>%
+  dplyr::select(gene, logFC, sca.P.Value) %>%
+  dplyr::rename(proFC = logFC, proPVal = sca.P.Value) %>%
+  dplyr::filter(proFC <= -2 & proPVal <= 0.001) %>%
+  left_join(ccle) %>%
+  dplyr::select(gene, proFC, proPVal, log2Tpm, stripped_cell_line_name, lineage, lineage_subtype) %>%
+  dplyr::filter(!is.na(stripped_cell_line_name))
+
+
+##
+ewsCells = unique(pro[grepl('Ewing', pro$lineage_subtype), 'stripped_cell_line_name']$stripped_cell_line_name)
+boneCells = unique(pro[grepl('bone', pro$lineage), 'stripped_cell_line_name']$stripped_cell_line_name)
+cellOutputData = data.frame()
+
+set.seed(13579)
+for (i in 1:10000){
+  #message(i)
+  ewsCellLocation = sample(seq(1,length(ewsCells)), 1)
+  otherCells = unique(pro[pro$stripped_cell_line_name != ewsCells[ewsCellLocation], 'stripped_cell_line_name']$stripped_cell_line_name)
+  otherCellLocation = sample(seq(1,length(otherCells)), 1)
+  ##
+  cellData = pro %>%
+    dplyr::filter(stripped_cell_line_name == ewsCells[ewsCellLocation] | stripped_cell_line_name == otherCells[otherCellLocation]) %>%
+    dplyr::select(gene, log2Tpm, stripped_cell_line_name) %>%
+    pivot_wider(names_from = stripped_cell_line_name, values_from = log2Tpm) %>%
+    dplyr::select(-gene)
+  ##
+  cellCorrelation = cor(cellData[,1], cellData[,2], use = 'pairwise.complete.obs', method = 'pearson')
+  isEwing = ifelse(otherCells[otherCellLocation] %in% ewsCells, TRUE, FALSE)
+  isBone = ifelse(otherCells[otherCellLocation] %in% boneCells, TRUE, FALSE)
+  ##
+  prepOutputData = data.frame('cellOne' = ewsCells[ewsCellLocation],
+                              'cellTwo' = otherCells[otherCellLocation],
+                              'correlation' = cellCorrelation[1],
+                              'isEwing' = isEwing,
+                              'isBone' = isBone)
+  cellOutputData = rbind(cellOutputData, prepOutputData)
+}
+saveRDS(cellOutputData, paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_correlationProteinOnly.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Plot these data.
+
+```{r}
+##########################################################################################
+corrData = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_correlationProteinOnly.rds', sep = ''))
+ggplot(corrData, aes(correlation, group = isEwing, fill = isEwing)) +
+  geom_density(color = brewer.pal(11,'RdGy')[10], size = 0.5) +
+  scale_fill_manual(values = brewer.pal(8,'Spectral')[c(1,8)]) +
+  labs(x = 'Pearson correlation', y = 'Density', title = 'Protein expression signature') +
+  geom_vline(xintercept = c(median(corrData[corrData$isEwing == TRUE, 'correlation'], na.rm = TRUE))) +
+  geom_vline(xintercept = c(median(corrData[corrData$isEwing == FALSE, 'correlation'], na.rm = TRUE))) +
+  scale_x_continuous(limits = c(-0.25,1), breaks = seq(-1,1,0.2)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/density_correlationProteinOnly.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+table(corrData$isEwing)
+median(corrData[corrData$isEwing == TRUE, 'correlation'], na.rm = TRUE)
+median(corrData[corrData$isEwing == FALSE, 'correlation'], na.rm = TRUE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Repeat this with a combined signature.
+
+```{r}
+##########################################################################################
+pro = read_csv(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_deqms_day7-day0.csv', sep = '')) %>%
+  dplyr::select(gene, logFC, sca.P.Value) %>%
+  dplyr::rename(proFC = logFC, proPVal = sca.P.Value)
+rna = read_csv(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day7-day0.csv', sep = '')) %>%
+  dplyr::select(symbol, log2FoldChange, pvalue) %>%
+  dplyr::rename(gene = symbol, rnaFC = log2FoldChange, rnaPVal = pvalue)
+
+##
+rnaPro = rna %>%
+  left_join(pro) %>%
+  dplyr::filter(proFC <= -2 & proPVal <= 0.001 & rnaFC <= -2 & rnaPVal <= 0.001) %>%
+  left_join(ccle) %>%
+  dplyr::select(gene, proFC, proPVal, rnaFC, rnaPVal, log2Tpm, stripped_cell_line_name, lineage, lineage_subtype) %>%
+  dplyr::filter(!is.na(stripped_cell_line_name))
+ length(unique(rnaPro$gene))
+  
+##
+ewsCells = unique(rnaPro[grepl('Ewing', rnaPro$lineage_subtype), 'stripped_cell_line_name']$stripped_cell_line_name)
+boneCells = unique(rnaPro[grepl('bone', rnaPro$lineage), 'stripped_cell_line_name']$stripped_cell_line_name)
+cellOutputData = data.frame()
+
+set.seed(13579)
+for (i in 1:10000){
+  #message(i)
+  ewsCellLocation = sample(seq(1,length(ewsCells)), 1)
+  otherCells = unique(rnaPro[rnaPro$stripped_cell_line_name != ewsCells[ewsCellLocation], 'stripped_cell_line_name']$stripped_cell_line_name)
+  otherCellLocation = sample(seq(1,length(otherCells)), 1)
+  ##
+  cellData = rnaPro %>%
+    dplyr::filter(stripped_cell_line_name == ewsCells[ewsCellLocation] | stripped_cell_line_name == otherCells[otherCellLocation]) %>%
+    dplyr::select(gene, log2Tpm, stripped_cell_line_name) %>%
+    pivot_wider(names_from = stripped_cell_line_name, values_from = log2Tpm) %>%
+    dplyr::select(-gene)
+  ##
+  cellCorrelation = cor(cellData[,1], cellData[,2], use = 'pairwise.complete.obs', method = 'pearson')
+  isEwing = ifelse(otherCells[otherCellLocation] %in% ewsCells, TRUE, FALSE)
+  isBone = ifelse(otherCells[otherCellLocation] %in% boneCells, TRUE, FALSE)
+  ##
+  prepOutputData = data.frame('cellOne' = ewsCells[ewsCellLocation],
+                              'cellTwo' = otherCells[otherCellLocation],
+                              'correlation' = cellCorrelation[1],
+                              'isEwing' = isEwing,
+                              'isBone' = isBone)
+  cellOutputData = rbind(cellOutputData, prepOutputData)
+}
+saveRDS(cellOutputData, paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_correlationCombined.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Plot these data.
+
+```{r}
+##########################################################################################
+corrData = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_correlationCombined.rds', sep = ''))
+ggplot(corrData, aes(correlation, group = isEwing, fill = isEwing)) +
+  geom_density(color = brewer.pal(11,'RdGy')[10], size = 0.5) +
+  scale_fill_manual(values = brewer.pal(8,'Spectral')[c(1,8)]) +
+  labs(x = 'Pearson correlation', y = 'Density', title = 'Combined signature') +
+  geom_vline(xintercept = c(median(corrData[corrData$isEwing == TRUE, 'correlation'], na.rm = TRUE))) +
+  geom_vline(xintercept = c(median(corrData[corrData$isEwing == FALSE, 'correlation'], na.rm = TRUE))) +
+  scale_x_continuous(limits = c(-0.25,1), breaks = seq(-1,1,0.2)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/density_correlationCombined.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+table(corrData$isEwing)
+median(corrData[corrData$isEwing == TRUE, 'correlation'], na.rm = TRUE)
+median(corrData[corrData$isEwing == FALSE, 'correlation'], na.rm = TRUE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+So it doesn't seem to improve much as you include more of these genes. But what is this tail that we see for the Ewing cases? Are there a subset of Ewing cells that just aren't like the others?
+
+```{r}
+##########################################################################################
+corrData = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_correlationCombined.rds', sep = ''))
+ewsCorr = corrData[corrData$isEwing == TRUE,]
+
+##
+pro = read_csv(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_deqms_day7-day0.csv', sep = '')) %>%
+  dplyr::select(gene, logFC, sca.P.Value) %>%
+  dplyr::rename(proFC = logFC, proPVal = sca.P.Value)
+rna = read_csv(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day7-day0.csv', sep = '')) %>%
+  dplyr::select(symbol, log2FoldChange, pvalue) %>%
+  dplyr::rename(gene = symbol, rnaFC = log2FoldChange, rnaPVal = pvalue)
+rnaPro = rna %>%
+  left_join(pro) %>%
+  dplyr::filter(proFC <= -2 & proPVal <= 0.001 & rnaFC <= -2 & rnaPVal <= 0.001) %>%
+  left_join(ccle) %>%
+  dplyr::filter(grepl('Ewing', lineage_subtype)) %>%
+  dplyr::select(gene, log2Tpm, stripped_cell_line_name) %>%
+  dplyr::filter(!is.na(stripped_cell_line_name)) %>%
+  pivot_wider(names_from = stripped_cell_line_name, values_from = log2Tpm) %>%
+  dplyr::select(-gene) %>%
+  correlate() %>%
+  network_plot(colors = brewer.pal(8,'Spectral')[c(8,1)], legend = FALSE, min_cor = 0.7) +
+  ggplot2::labs(title = 'Ewing cell correlations') +
+  ggplot2::geom_curve(size = 0.1) +
+  ggplot2::theme_classic() +
+  ggplot2::theme(legend.position = 'none') +
+  ggplot2::ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/network_ewingCellLinesCombinedSignature.pdf', sep = ''),
+                  height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+CHLA57 definitely seems to be different. Can we improve this score by including other information? Perhaps something where we include RNA/protein data with cell line specificity, FLI1 binding peaks, and MSC regulation.
+
+```{r}
+##########################################################################################
+##our protein data
+pro = read_csv(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_deqms_day7-day0.csv', sep = '')) %>%
+  dplyr::select(gene, logFC, sca.P.Value) %>%
+  dplyr::rename(proFC = logFC, proPVal = sca.P.Value) %>%
+  dplyr::filter(proFC <= -1 | proFC >= 1) %>%
+  dplyr::filter(proPVal <= 0.001) %>%
+  dplyr::mutate(ewsClass = ifelse(proFC > 0, 'dn', 'up'))
+##our rna data
+rna = read_csv(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day7-day0.csv', sep = '')) %>%
+  dplyr::select(symbol, log2FoldChange, pvalue) %>%
+  dplyr::rename(gene = symbol, rnaFC = log2FoldChange, rnaPVal = pvalue) %>%
+  dplyr::filter(rnaFC <= -1 | rnaFC >= 1) %>%
+  dplyr::filter(rnaPVal <= 0.001)
+##depmap cell line expression
+cells = ccle
+##fli1 peaks
+
+##msc regulation
+msc = read_tsv(paste(baseRepository, '/sequencing20210419_survivalAndBafComplexIntersection/GSE94277_counts_matrix.txt.gz', sep = '')) %>%
+  dplyr::select(gene, MSC1.control.RNAseq:MSC1b.FLI1.RNAseq, MSC5.shGFP.control.RNAseq:MSC5b.shBRG1.EWSFLI1.RNAseq) %>%
+  dplyr::rename(symbol = gene) %>%
+  dplyr::filter(symbol %in% rnaProSet$gene) %>%
+  dplyr::mutate(fli1RepA = (MSC1.EWSFLI1.RNAseq + 1) / (MSC1.FLI1.RNAseq + 1), fli1RepB = (MSC1b.EWSFLI1.RNAseq + 1) / (MSC1b.FLI1.RNAseq + 1)) %>%
+  dplyr::mutate(brg1RepA = (MSC5.shBRG1.EWSFLI1.RNAseq + 1) / (MSC5.shGFP.EWSFLI1.RNAseq + 1), brg1RepB = (MSC5b.shBRG1.EWSFLI1.RNAseq + 1) / (MSC5b.shGFP.EWSFLI1.RNAseq + 1)) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(fli1Mean = log2(mean(c(fli1RepA, fli1RepB), na.rm = TRUE)), brg1Mean = log2(mean(c(brg1RepA, brg1RepB), na.rm = TRUE))) %>%
+  dplyr::select(symbol, fli1Mean, brg1Mean)
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

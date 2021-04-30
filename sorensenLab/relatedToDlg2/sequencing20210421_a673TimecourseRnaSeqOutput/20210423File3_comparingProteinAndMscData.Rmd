@@ -62,7 +62,8 @@ Make a plot of these combined data.
 ##########################################################################################
 rnaPro$pColors = ifelse(rnaPro$rnaFC >= 1 & rnaPro$proFC >= 1, brewer.pal(8,'Spectral')[1], 
                         ifelse(rnaPro$rnaFC <= -1 & rnaPro$proFC <= -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8]))
-rnaPro$pText = ifelse(grepl('DLG2', rnaPro$gene), rnaPro$gene, '')
+goi = c('DLG2','PRKCB','IL1RAP')
+rnaPro$pText = ifelse(rnaPro$gene %in% goi, rnaPro$gene, '')
 
 
 ##
@@ -120,7 +121,102 @@ ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/sca
        height = 4, width = 4, useDingbats = FALSE)
 ```
 
+<div style="margin-bottom:50px;"></div>
 
+Compare with the different published gene signatures for EwS.
+
+```{r}
+##########################################################################################
+hancockSig = read_tsv(paste(generalDatasets, '/hancockEwsGeneSignaturePmid18256529/hancockEwsGeneSignatureSet.txt', sep = ''))
+expData = rnaPro %>%
+  dplyr::rename(symbol = gene) %>%
+  right_join(hancockSig) %>%
+  dplyr::filter(!is.na(rnaFC) & !is.na(proFC)) %>%
+  dplyr::mutate(pColors = ifelse(category == 'up', brewer.pal(8,'Spectral')[8], brewer.pal(8,'Spectral')[1]))
+
+ggplot(expData, aes(rnaFC, proFC)) +
+  geom_point(size = 1, color = expData$pColors) +
+  labs(x = 'log2(day7 - day0, RNA)', y = 'log2(day7 - day0, protein)', title = 'Hancock signature') +
+  geom_text_repel(label = expData$pText, nudge_x = -3, nudge_y = 3) +
+  scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+  scale_y_continuous(limits = c(-6,6), breaks = seq(-10,10,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatter_rnaVSpro_day7VSday0_hancock.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+
+
+
+############
+gordonSig = read_tsv(paste(generalDatasets, '/gordonEwsGeneSignaturePmid26455317/gordonEwsGeneSignatureSet.txt', sep = ''))
+expData = rnaPro %>%
+  dplyr::rename(symbol = gene) %>%
+  right_join(gordonSig) %>%
+  dplyr::filter(!is.na(rnaFC) & !is.na(proFC)) %>%
+  dplyr::mutate(pColors = ifelse(category == 'up', brewer.pal(8,'Spectral')[8], brewer.pal(8,'Spectral')[1]))
+
+##
+ggplot(expData, aes(rnaFC, proFC)) +
+  geom_point(size = 1, color = expData$pColors) +
+  labs(x = 'log2(day7 - day0, RNA)', y = 'log2(day7 - day0, protein)', title = 'Gordon signature') +
+  geom_text_repel(label = expData$pText, nudge_x = -3, nudge_y = 3) +
+  scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+  scale_y_continuous(limits = c(-6,6), breaks = seq(-10,10,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatter_rnaVSpro_day7VSday0_gordon.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+
+
+
+
+############
+kauerSig = read_tsv(paste(generalDatasets, '/kauerEwsGeneSignaturePmid19404404/kauerEwsGeneSignatureSet.txt', sep = ''))
+expData = rnaPro %>%
+  dplyr::rename(symbol = gene) %>%
+  right_join(kauerSig) %>%
+  dplyr::filter(!is.na(rnaFC) & !is.na(proFC)) %>%
+  dplyr::mutate(pColors = ifelse(category == 'up', brewer.pal(8,'Spectral')[8], brewer.pal(8,'Spectral')[1]))
+
+##
+ggplot(expData, aes(rnaFC, proFC)) +
+  geom_point(size = 1, color = expData$pColors) +
+  labs(x = 'log2(day7 - day0, RNA)', y = 'log2(day7 - day0, protein)', title = 'Kauer signature') +
+  geom_text_repel(label = expData$pText, nudge_x = -3, nudge_y = 3) +
+  scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+  scale_y_continuous(limits = c(-6,6), breaks = seq(-10,10,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatter_rnaVSpro_day7VSday0_kauer.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+
+
+
+
+############
+aynaudSig = read_tsv(paste(generalDatasets, '/aynaudEwsGeneSignaturePmid32049009/aynaudEwsGeneSignatureSet.txt', sep = ''))
+expData = rnaPro %>%
+  dplyr::rename(symbol = gene) %>%
+  right_join(aynaudSig) %>%
+  dplyr::filter(!is.na(rnaFC) & !is.na(proFC)) %>%
+  dplyr::mutate(pColors = brewer.pal(8,'Spectral')[8])
+
+##
+ggplot(expData, aes(rnaFC, proFC)) +
+  geom_point(size = 1, color = expData$pColors) +
+  labs(x = 'log2(day7 - day0, RNA)', y = 'log2(day7 - day0, protein)', title = 'Aynaud signature') +
+  geom_text_repel(label = expData$pText, nudge_x = -3, nudge_y = 3) +
+  scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+  scale_y_continuous(limits = c(-6,6), breaks = seq(-10,10,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatter_rnaVSpro_day7VSday0_aynaud.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
 
 
 

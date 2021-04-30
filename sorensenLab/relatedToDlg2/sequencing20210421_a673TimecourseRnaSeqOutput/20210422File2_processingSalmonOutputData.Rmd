@@ -91,7 +91,7 @@ Perform comparisons between samples.
 
 ```{r}
 ##########################################################################################
-datasetFirst = 'day22'
+datasetFirst = 'day7'
 datasetSecond = 'day0'
 res = results(dds, contrast = c('sampleName', datasetFirst, datasetSecond))
 ens.str = substr(rownames(res), 1, 15)
@@ -117,12 +117,13 @@ rnaExp$logPValue = -log10(rnaExp$padj)
 #rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 50, 50, rnaExp$logPValue)
 rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(8,'Spectral')[1], 
                         ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8]))
-rnaExp$pText = ifelse(grepl('DLG2',rnaExp$symbol), rnaExp$symbol, '')
+goi = c('DLG2','IL1RAP','PRKCB')
+rnaExp$pText = ifelse(rnaExp$symbol %in% goi, rnaExp$symbol, '')
 ##
 ggplot(rnaExp, aes(log2FoldChange, logPValue)) +
   geom_point(size = 1, color = rnaExp$pColors, alpha = 0.75) +
   labs(x = paste('log2(',datasetFirst,' - ',datasetSecond,')', sep = ''), y = '-log10(Adjusted p-value)', title = paste(datasetFirst,' vs ',datasetSecond, sep='')) +
-  geom_text_repel(label = rnaExp$pText, nudge_x = 3, nudge_y = 3) +
+  geom_text_repel(label = rnaExp$pText, nudge_x = -3, nudge_y = 100) +
   scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
   #scale_y_continuous(limits = c(0,20), breaks = seq(0,20,4)) +
   geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
@@ -132,5 +133,41 @@ ggplot(rnaExp, aes(log2FoldChange, logPValue)) +
 ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatter_deseq2_', datasetFirst, '-', datasetSecond, '.pdf', sep = ''),
        height = 4, width = 4, useDingbats = FALSE)
 ```
+
+<div style="margin-bottom:50px;"></div>
+
+Compare the different samples using a PCA. 
+
+```{r}
+##########################################################################################
+vsd = vst(dds, blind = FALSE) #variance stabilizing normalization of the data
+#extract the data for the MDS analysis itself
+mdsPlot = plotPCA(vsd, intgroup=c('sampleName','batch'), returnData = TRUE)
+mdsPlot$sampleName = factor(mdsPlot$sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22'))
+percentVar = round(100 * attr(mdsPlot, 'percentVar'))
+#make the ggplot
+ggplot(mdsPlot, aes(PC1, PC2, color = sampleName, shape = batch)) +
+  geom_point(size = 6, alpha = 0.75) +
+  scale_color_manual(values = rep(c(brewer.pal(8,'Greys')[7], brewer.pal(9,'Reds')[3:9]),3)) +
+  scale_x_continuous(limits = c(-15,13), breaks = seq(-20,20,4)) +
+  scale_y_continuous(limits = c(-5,15), breaks = seq(-20,20,4)) +
+  labs(x = paste0('PC1: ', percentVar[1], '% variance'), 
+       y = paste0('PC2: ', percentVar[2], '% variance'), 
+       title = 'A673 RNA-seq groups') +
+  theme_classic()
+#save the plot
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/pcaplot_a673ShEwsFli1AbundanceVsn.pdf', sep = ''), 
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
 
 

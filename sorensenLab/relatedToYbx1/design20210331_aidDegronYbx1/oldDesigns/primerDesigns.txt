@@ -72,9 +72,6 @@ GGCCTAGTTACCATCACACC
 p2a_sangerFwd
 tgctgaagcaggctggagac
 
-p2a_sangerRev
-tccagcctgcttcagcaggc
-
 yb1Insert_gDnaFwd
 TATGGTTTTCGTGGCCGACT
 
