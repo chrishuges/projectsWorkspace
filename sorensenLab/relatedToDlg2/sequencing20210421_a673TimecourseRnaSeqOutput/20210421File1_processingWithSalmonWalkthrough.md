@@ -52,6 +52,31 @@ do
 done
 ```
 
+I also want to do an alignment with STAR. The code for this is also included in the other script, but I decided to do this after the fact so I could do novel coding region discovery. 
+
+```shell
+#!/bin/bash
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/2021/sequencing20210421_a673EwsFli1Timecourse/"
+starLocation="/projects/ptx_analysis/chughes/software/STAR-2.7.1a/STAR-2.7.1a/bin/Linux_x86_64/STAR"
+referenceLocation="/projects/ptx_analysis/chughes/databases/refgenieIndexes/alias/hg38/star_index/default/"
+annotationLocation="/projects/ptx_analysis/chughes/databases/refgenieIndexes/alias/hg38/gencode_gtf/default/hg38.gtf.gz"
+samtoolsLocation="/projects/ptx_analysis/chughes/software/samtools-1.9/samtools"
+
+######################################
+for i in ACAGTG_setA ACTTGA_setA ATCACG_setA CAGATC_setA CGATGT_setA GCCAAT_setA TGACCA_setA TTAGGC_setA ACAGTG_setB ACTTGA_setB ATCACG_setB CAGATC_setB CGATGT_setB GCCAAT_setB TGACCA_setB TTAGGC_setB ACAGTG_setC ACTTGA_setC ATCACG_setC CAGATC_setC CGATGT_setC GCCAAT_setC TGACCA_setC TTAGGC_setC
+do
+  ##
+  starCall="$starLocation --runThreadN 12 --genomeDir ${referenceLocation} --readFilesIn ${rawDataOutputDirectory}${i}_1.clean.fastq.gz ${rawDataOutputDirectory}${i}_2.clean.fastq.gz --readFilesCommand zcat --sjdbGTFfile ${annotationLocation} --outFileNamePrefix ${rawDataOutputDirectory}${i}_ --outSAMtype BAM Unsorted"
+  eval $starCall
+  ##
+  bamSortCall="$samtoolsLocation sort ${rawDataOutputDirectory}${i}_Aligned.out.bam -o ${rawDataOutputDirectory}${i}.sorted.bam"
+  eval $bamSortCall
+  ##
+  bamIndexCall="$samtoolsLocation index ${rawDataOutputDirectory}${i}.sorted.bam"
+  eval $bamIndexCall
+done
+```
+
 For downstream analysis, file file layout is:
 
 sampleName | cell | treatment | barcode | experiment
