@@ -45,6 +45,23 @@ totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bcc
 
 <div style="margin-bottom:50px;"></div>
 
+Add counts for GGAA and TTCC within the peaks, as the enrichment score isn't entirely reliable.
+
+```{r}
+##########################################################################################
+macsPeaks = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832674_peaks.xls', sep = ''), 
+                     skip = 30, 
+                     col_names = c('chr','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name'))
+
+peaksGr = makeGRangesFromDataFrame(macsPeaks)
+peakSequences = getSeq(Hsapiens, peaksGr)
+names(peakSequences) = macsPeaks$name
+macsPeaks$ggaaCounts = vcountPattern('GGAAGGAAGGAAGGAA', peakSequences) + vcountPattern('TTCCTTCCTTCCTTCC', peakSequences)
+saveRDS(macsPeaks, paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832674_peaksGgaaAnnotated.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
 Now we can extract our peaks of interest from the data, all those that fall within DLG2 (+100Kb from the TSS). 
 
 ```{r}

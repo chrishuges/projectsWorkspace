@@ -19,6 +19,10 @@ library('vroom')
 library('ggplot2')
 library('RColorBrewer')
 library('ggrepel')
+library('BSgenome.Hsapiens.UCSC.hg38')
+library('survival')
+library('survminer')
+library('pheatmap')
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -366,13 +370,99 @@ CHLA57 definitely seems to be different. Can we improve this score by including 
 ```{r}
 ##########################################################################################
 totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz'))
+
+##
+#expressionData = esExpression
+#phenotypeData = esPhenotype
+#geneOfInterest = 'MYOM2'
+survivalData = function(expressionData, phenotypeData, geneOfInterest){
+  ##
+  geneOfInterestExprs = expressionData %>%
+    dplyr::filter(symbol == geneOfInterest)
+  
+  ##check for data
+  if (nrow(geneOfInterestExprs) >= 1){
+    #print('Gene found.')
+    geneOfInterestExprs$medExprs = apply(geneOfInterestExprs[,which(grepl('GS',colnames(geneOfInterestExprs)))[1]:ncol(geneOfInterestExprs)], 
+                                       1, function(x) mean(x, na.rm = TRUE))
+    geneOfInterestSort = geneOfInterestExprs %>%
+      dplyr::arrange(desc(medExprs))
+    ########
+    #keep the top probe for the gene, based on the expression calculated above
+    geneSurvivalInput = geneOfInterestSort[1,1:(ncol(geneOfInterestSort) - 1)] %>%
+      pivot_longer(cols = colnames(geneOfInterestSort)[which(grepl('GS',colnames(geneOfInterestSort)))[1]]:colnames(geneOfInterestSort)[(ncol(geneOfInterestSort) - 1)], 
+                 names_to = 'geo_accession', values_to = 'rnaExprs') %>%
+      right_join(phenotypeData) %>%
+      dplyr::arrange(rnaExprs)
+      ########
+    geneCutPoint = surv_cutpoint(geneSurvivalInput,
+                               time = 'ovs',
+                               event = 'status',
+                               variables = 'rnaExprs',
+                               minprop = 0.15)
+    geneSurvivalCat = surv_categorize(geneCutPoint)
+    geneSurvivalInput$geneLevel = geneSurvivalCat$rnaExprs
+    geneSurvivalInput$geneLevel = factor(geneSurvivalInput$geneLevel, levels = c('low','high'))
+    #calculation of the different survival metrics based on our data
+    survivalFit = survfit(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+    coxStats = coxph(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+    coxZScore = coef(coxStats)/sqrt(diag(vcov(coxStats)))
+    coxOutputValue = coxZScore
+  }
+  
+  
+  ###
+  if (nrow(geneOfInterestExprs) < 1){
+    #print('Gene not found in first pass, searching secondary identifier annotation.')
+    geneOfInterestExprs = expressionData %>%
+      dplyr::filter(arraySymbolOne == geneOfInterest)
+    
+    if (nrow(geneOfInterestExprs) < 1){
+      #print('Gene not found in second pass, searching third identifier annotation.')
+      geneOfInterestExprs = expressionData %>%
+        dplyr::filter(arraySymbolTwo == geneOfInterest)
+    }
+    
+    if (nrow(geneOfInterestExprs) < 1){
+      #print('Gene not found. Moving on to next entry.')
+      return(NA)
+    } else {
+      geneOfInterestExprs$medExprs = apply(geneOfInterestExprs[,which(grepl('GS',colnames(geneOfInterestExprs)))[1]:ncol(geneOfInterestExprs)], 
+                                       1, function(x) mean(x, na.rm = TRUE))
+      geneOfInterestSort = geneOfInterestExprs %>%
+        dplyr::arrange(desc(medExprs))
+      ########
+      #keep the top probe for the gene, based on the expression calculated above
+      geneSurvivalInput = geneOfInterestSort[1,1:(ncol(geneOfInterestSort) - 1)] %>%
+        pivot_longer(cols = colnames(geneOfInterestSort)[which(grepl('GS',colnames(geneOfInterestSort)))[1]]:colnames(geneOfInterestSort)[(ncol(geneOfInterestSort) - 1)], 
+                 names_to = 'geo_accession', values_to = 'rnaExprs') %>%
+        right_join(phenotypeData) %>%
+        dplyr::arrange(rnaExprs)
+        ########
+      geneCutPoint = surv_cutpoint(geneSurvivalInput,
+                               time = 'ovs',
+                               event = 'status',
+                               variables = 'rnaExprs',
+                               minprop = 0.15)
+      geneSurvivalCat = surv_categorize(geneCutPoint)
+      geneSurvivalInput$geneLevel = geneSurvivalCat$rnaExprs
+      geneSurvivalInput$geneLevel = factor(geneSurvivalInput$geneLevel, levels = c('low','high'))
+      #calculation of the different survival metrics based on our data
+      survivalFit = survfit(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+      coxStats = coxph(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+      coxZScore = coef(coxStats)/sqrt(diag(vcov(coxStats)))
+      coxOutputValue = coxZScore
+    }
+  }
+  return(coxOutputValue)
+}
 ```
 
 <div style="margin-bottom:50px;"></div>
 
 Now proceed with score definition.
 
-```{r}
+```{r, message = FALSE}
 ##########################################################################################
 ##
 ##our protein data
@@ -416,13 +506,12 @@ for (i in 1:length(rnaProGenes)){
     ewsSpecScores = rbind(ewsSpecScores, targetGeneScore)
   } else {
       targetGeneScore = data.frame('gene' = rnaProGenes[i],
-                               'medRna' = targetGene[targetGene$isEwing == 'yes', 'medRna'] - targetGene[targetGene$isEwing == 'no', 'medRna'])
+                               'medRna' = targetGene[targetGene$isEwing == 'no', 'medRna'] - targetGene[targetGene$isEwing == 'yes', 'medRna'])
       ewsSpecScores = rbind(ewsSpecScores, targetGeneScore)
   }
 }
 ewsCellScores = ewsSpecScores %>%
-  dplyr::rename(cellScore = medRna) %>%
-  dplyr::mutate(cellClass = ifelse(cellScore > 0, 'up', 'dn'))
+  dplyr::rename(cellScore = medRna)
 
 
 ##
@@ -430,47 +519,71 @@ ewsCellScores = ewsSpecScores %>%
 msc = read_tsv(paste(baseRepository, '/sequencing20210419_survivalAndBafComplexIntersection/GSE94277_counts_matrix.txt.gz', sep = '')) %>%
   dplyr::select(gene, MSC1.control.RNAseq:MSC1b.FLI1.RNAseq, MSC5.shGFP.control.RNAseq:MSC5b.shBRG1.EWSFLI1.RNAseq) %>%
   dplyr::filter(gene %in% rnaProGenes) %>%
-  dplyr::mutate(fli1RepA = (MSC1.EWSFLI1.RNAseq + 1) / (MSC1.FLI1.RNAseq + 1), fli1RepB = (MSC1b.EWSFLI1.RNAseq + 1) / (MSC1b.FLI1.RNAseq + 1)) %>%
+  dplyr::mutate(fli1RepA = (MSC1.FLI1.RNAseq + 1) / (MSC1.EWSFLI1.RNAseq + 1), fli1RepB = (MSC1b.FLI1.RNAseq + 1) / (MSC1b.EWSFLI1.RNAseq + 1)) %>%
   dplyr::mutate(brg1RepA = (MSC5.shBRG1.EWSFLI1.RNAseq + 1) / (MSC5.shGFP.EWSFLI1.RNAseq + 1), brg1RepB = (MSC5b.shBRG1.EWSFLI1.RNAseq + 1) / (MSC5b.shGFP.EWSFLI1.RNAseq + 1)) %>%
   dplyr::rowwise() %>%
   dplyr::mutate(fli1Score = log2(mean(c(fli1RepA, fli1RepB), na.rm = TRUE)), brg1Score = log2(mean(c(brg1RepA, brg1RepB), na.rm = TRUE))) %>%
-  dplyr::mutate(fli1Class = ifelse(fli1Score > 0, 'up', 'dn')) %>%
-  dplyr::mutate(brg1Class = ifelse(brg1Score < 0, 'up', 'dn')) %>%
-  dplyr::select(gene, fli1Score, fli1Class, brg1Score, brg1Class)
+  dplyr::select(gene, fli1Score, brg1Score)
 
 
 
 
 ##
 ##fli1 peaks
-macsHighPeaks = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832674_peaks.xls', sep = ''), 
-                     skip = 30, 
-                     col_names = c('chr','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+macsHighPeaks = readRDS(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832674_peaksGgaaAnnotated.rds', sep = '')) %>%
   dplyr::mutate(midPoint = start + round(length / 2, 0)) %>%
-  dplyr::filter(fold_enrichment >= 10)
+  dplyr::filter(fold_enrichment >= 1 & ggaaCounts > 0)
 highPeaks = data.frame()
 for (i in 1:length(rnaProGenes)){
   goiGtf = totalGtf %>%
     dplyr::filter(grepl(paste('^',rnaProGenes[i],'$',sep=''), gene_name)) %>%
-    dplyr::filter(grepl('gene', type)) %>%
-    dplyr::mutate(start = ifelse(strand == '+', abs(start - 10000), start)) %>%
-    dplyr::mutate(end = ifelse(strand == '-', abs(end + 10000), end))
+    dplyr::filter(grepl('gene', type) & grepl('protein_coding', gene_type)) %>%
+    dplyr::mutate(modStart = ifelse(strand == '+', abs(start - 100000), start)) %>%
+    dplyr::mutate(modEnd = ifelse(strand == '-', abs(end + 100000), end))
   goiPeaks = macsHighPeaks %>%
     dplyr::filter(chr == goiGtf$seqnames[1]) %>%
-    dplyr::filter(start > goiGtf$start & end < goiGtf$end) %>%
-    dplyr::arrange(-fold_enrichment)
+    dplyr::filter(start > goiGtf$modStart & end < goiGtf$modEnd) %>%
+    dplyr::arrange(-ggaaCounts)
   ##
   if(nrow(goiPeaks) < 1){
     #message('no value for ', rnaProGenes[i])
     ewsPeaks = data.frame('gene' = rnaProGenes[i],
-                        'highFli1PeakScore' = NA)
+                          'strand' = as.character(goiGtf$strand[1]),
+                          'chromosome' = as.character(goiGtf$seqnames[1]),
+                          'geneSize' = goiGtf$width[1] / 1000,
+                          'highFli1PeakScore' = 0,
+                          'highOutsidePeakScore' = 0,
+                          'highInsidePeakScore' = 0,
+                          'outsideMsat' = 0,
+                          'outsidePeakName' = NA,
+                          'insideMsat' = 0,
+                          'insidePeakName' = NA,
+                          'numberOfGgaaPeaks' = 0)
     highPeaks = rbind(highPeaks, ewsPeaks)
   } else {
+    ##
+    beforeGene = goiPeaks %>%
+      dplyr::filter(abs_summit <= min(goiGtf$start) | abs_summit >= max(goiGtf$end))
+    ##
+    insideGene = goiPeaks %>%
+      dplyr::filter(abs_summit >= min(goiGtf$start) & abs_summit <= max(goiGtf$end))
+    ##
     ewsPeaks = data.frame('gene' = rnaProGenes[i],
-                        'highFli1PeakScore' = goiPeaks$fold_enrichment[1])
+                          'strand' = as.character(goiGtf$strand[1]),
+                          'chromosome' = as.character(goiGtf$seqnames[1]),
+                          'geneSize' = goiGtf$width[1] / 1000,
+                          'highFli1PeakScore' = goiPeaks$fold_enrichment[1],
+                          'highOutsidePeakScore' = ifelse(nrow(beforeGene) >= 1, beforeGene$fold_enrichment[1], 0),
+                          'highInsidePeakScore' = ifelse(nrow(insideGene) >= 1, insideGene$fold_enrichment[1], 0),
+                          'outsideMsat' = ifelse(nrow(beforeGene) >= 1, beforeGene$ggaaCounts[1], 0),
+                          'outsidePeakName' = ifelse(nrow(beforeGene) >= 1, beforeGene$name[1], NA),
+                          'insideMsat' = ifelse(nrow(insideGene) >= 1, insideGene$ggaaCounts[1], 0),
+                          'insidePeakName' = ifelse(nrow(insideGene) >= 1, insideGene$name[1], NA),
+                          'numberOfGgaaPeaks' = nrow(goiPeaks))
     highPeaks = rbind(highPeaks, ewsPeaks)
   }
 }
+
 
 ##
 macsLowPeaks = read_tsv(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/SRR8832669_peaks.xls', sep = ''), 
@@ -482,25 +595,59 @@ lowPeaks = data.frame()
 for (i in 1:length(rnaProGenes)){
   goiGtf = totalGtf %>%
     dplyr::filter(grepl(paste('^',rnaProGenes[i],'$',sep=''), gene_name)) %>%
-    dplyr::filter(grepl('gene', type)) %>%
-    dplyr::mutate(start = ifelse(strand == '+', abs(start - 10000), start)) %>%
-    dplyr::mutate(end = ifelse(strand == '-', abs(end + 10000), end))
+    dplyr::filter(grepl('gene', type) & grepl('protein_coding', gene_type)) %>%
+    dplyr::mutate(modStart = ifelse(strand == '+', abs(start - 100000), start)) %>%
+    dplyr::mutate(modEnd = ifelse(strand == '-', abs(end + 100000), end))
   goiPeaks = macsLowPeaks %>%
     dplyr::filter(chr == goiGtf$seqnames[1]) %>%
-    dplyr::filter(start > goiGtf$start & end < goiGtf$end) %>%
+    dplyr::filter(start > goiGtf$modStart & end < goiGtf$modEnd) %>%
     dplyr::arrange(-fold_enrichment)
   ##
   if(nrow(goiPeaks) < 1){
     #message('no value for ', rnaProGenes[i])
     ewsPeaks = data.frame('gene' = rnaProGenes[i],
-                        'lowFli1PeakScore' = NA)
+                        'lowFli1PeakScore' = 0,
+                        'lowOutsidePeakScore' = 0,
+                        'lowInsidePeakScore' = 0)
     lowPeaks = rbind(lowPeaks, ewsPeaks)
   } else {
+    beforeGene = goiPeaks %>%
+      dplyr::filter(abs_summit <= min(goiGtf$start) | abs_summit >= max(goiGtf$end))
+    insideGene = goiPeaks %>%
+      dplyr::filter(abs_summit >= min(goiGtf$start) & abs_summit <= max(goiGtf$end))
     ewsPeaks = data.frame('gene' = rnaProGenes[i],
-                        'lowFli1PeakScore' = goiPeaks$fold_enrichment[1])
+                        'lowFli1PeakScore' = goiPeaks$fold_enrichment[1],
+                        'lowOutsidePeakScore' = ifelse(nrow(beforeGene) >= 1, beforeGene$fold_enrichment[1], 0),
+                        'lowInsidePeakScore' = ifelse(nrow(insideGene) >= 1, insideGene$fold_enrichment[1], 0))
     lowPeaks = rbind(lowPeaks, ewsPeaks)
   }
 }
+
+
+
+##
+##survival data, Savola
+esExpression = readRDS(paste(baseRepository, '/microarray20201203_dlg2SavolaSurvival/dataset_savolaExpression.rds', sep = ''))
+esPhenotype = readRDS(paste(baseRepository, '/microarray20201203_dlg2SavolaSurvival/dataset_savolaPhenotype.rds', sep = ''))
+savolaSurvival = data.frame()
+for (i in 1:length(rnaProGenes)){
+  survivalScore = data.frame('gene' = rnaProGenes[i],
+                             'savolaScore' = survivalData(esExpression, esPhenotype, rnaProGenes[i]))
+  row.names(survivalScore) = NULL
+  savolaSurvival = rbind(savolaSurvival, survivalScore)
+}
+
+##survival data, Postel-Vinay
+esExpression = readRDS(paste(baseRepository, '/microarray20201203_dlg2PostelVinaySurvival/dataset_postelVinayExpression.rds', sep = ''))
+esPhenotype = readRDS(paste(baseRepository, '/microarray20201203_dlg2PostelVinaySurvival/dataset_postelVinayPhenotype.rds', sep = ''))
+postelVinaySurvival = data.frame()
+for (i in 1:length(rnaProGenes)){
+  survivalScore = data.frame('gene' = rnaProGenes[i],
+                             'postelVinayScore' = survivalData(esExpression, esPhenotype, rnaProGenes[i]))
+  row.names(survivalScore) = NULL
+  postelVinaySurvival = rbind(postelVinaySurvival, survivalScore)
+}
+
 
 ##
 rnaProCells = rna %>%
@@ -508,10 +655,15 @@ rnaProCells = rna %>%
   left_join(ewsCellScores) %>%
   left_join(msc) %>%
   left_join(highPeaks) %>%
-  left_join(lowPeaks)
+  left_join(lowPeaks) %>%
+  left_join(savolaSurvival) %>%
+  left_join(postelVinaySurvival) %>%
+  dplyr::mutate(aggregateSurvival = savolaScore + postelVinayScore)
 
 ##
-saveRDS(rnaProCells, paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_signatureRnaProCellScores.rds', sep = ''))
+saveRDS(rnaProCells, paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureRawData.rds', sep = ''))
+write.table(rnaProCells, paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureRawData.csv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = ',')
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -520,22 +672,22 @@ Now that we have our dataset, make some example plots of key genes just to demon
 
 ```{r}
 ##########################################################################################  
-sigData = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_signatureRnaProCellScores.rds', sep = ''))
+sigData = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureRawData.rds', sep = ''))
 
 
 ##
 goi = sigData %>%
   dplyr::filter(gene == 'DLG2') %>%
-  dplyr::select(rnaFC, proFC, cellScore, fli1Score, brg1Score, highFli1PeakScore, lowFli1PeakScore) %>%
+  dplyr::select(rnaFC, proFC, cellScore, fli1Score, brg1Score, highFli1PeakScore, lowFli1PeakScore, savolaScore, postelVinayScore) %>%
   dplyr::mutate(highFli1PeakScore = log2(highFli1PeakScore), lowFli1PeakScore = log2(lowFli1PeakScore)) %>%
-  pivot_longer(cols = rnaFC:lowFli1PeakScore, names_to = 'category', values_to = 'scores') %>%
+  pivot_longer(cols = rnaFC:postelVinayScore, names_to = 'category', values_to = 'scores') %>%
   dplyr::mutate(category = factor(category, levels = category)) %>%
   dplyr::mutate(scores = ifelse(is.na(scores), 0, scores))
 ##
 ggplot(goi, aes(category, scores)) +
   geom_bar(stat = 'identity', width = 0.8) +
   labs(x = 'Category', y = 'Score', title = 'DLG2 EwS scores') +
-  scale_y_continuous(limits = c(-4,6), breaks = seq(-4,6,2)) +
+  scale_y_continuous(limits = c(-5,6), breaks = seq(-6,6,2)) +
   theme_classic()
 ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/barplot_ewsScoresDlg2.pdf', sep = ''),
                   height = 4, width = 3, useDingbats = FALSE)
@@ -545,16 +697,16 @@ ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/bar
 ##
 goi = sigData %>%
   dplyr::filter(gene == 'MGLL') %>%
-  dplyr::select(rnaFC, proFC, cellScore, fli1Score, brg1Score, highFli1PeakScore, lowFli1PeakScore) %>%
+  dplyr::select(rnaFC, proFC, cellScore, fli1Score, brg1Score, highFli1PeakScore, lowFli1PeakScore, savolaScore, postelVinayScore) %>%
   dplyr::mutate(highFli1PeakScore = log2(highFli1PeakScore), lowFli1PeakScore = log2(lowFli1PeakScore)) %>%
-  pivot_longer(cols = rnaFC:lowFli1PeakScore, names_to = 'category', values_to = 'scores') %>%
+  pivot_longer(cols = rnaFC:postelVinayScore, names_to = 'category', values_to = 'scores') %>%
   dplyr::mutate(category = factor(category, levels = category)) %>%
   dplyr::mutate(scores = ifelse(is.na(scores), 0, scores))
 ##
 ggplot(goi, aes(category, scores)) +
   geom_bar(stat = 'identity', width = 0.8) +
   labs(x = 'Category', y = 'Score', title = 'MGLL EwS scores') +
-  scale_y_continuous(limits = c(-4,6), breaks = seq(-4,6,2)) +
+  scale_y_continuous(limits = c(-5,6), breaks = seq(-6,6,2)) +
   theme_classic()
 ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/barplot_ewsScoresMgll.pdf', sep = ''),
                   height = 4, width = 3, useDingbats = FALSE)
@@ -566,36 +718,61 @@ What if we sum these scores up to calculate the strongest EwS signature genes?
 
 ```{r}
 ##########################################################################################  
-sigData = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_signatureRnaProCellScores.rds', sep = '')) %>%
-  dplyr::mutate(highFli1PeakScore = log2(highFli1PeakScore), lowFli1PeakScore = log2(lowFli1PeakScore)) %>%
-  dplyr::mutate(highFli1PeakScore = ifelse(is.na(highFli1PeakScore), 0, highFli1PeakScore)) %>%
-  dplyr::mutate(lowFli1PeakScore = ifelse(is.na(lowFli1PeakScore), 0, lowFli1PeakScore))
-sigData$ewsScore = rowSums(abs(sigData[,c(2,5,8,10,12,14)]), na.rm = TRUE) - sigData$lowFli1PeakScore
+sigData = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureRawData.rds', sep = '')) %>%
+  dplyr::mutate(rnaFC = scale(rnaFC), proFC = scale(proFC), fli1Score = scale(fli1Score), brg1Score = scale(brg1Score), aggregateSurvival = scale(aggregateSurvival), cellScore = scale(cellScore)) %>%
+  dplyr::mutate(highFli1PeakScore = log2(highFli1PeakScore + 1), lowFli1PeakScore = log2(lowFli1PeakScore + 1))
+sigData$ewsScore = rowSums(sigData[,c(2,5,8,9,10,27)], na.rm = TRUE)
 
 ##
-goi = c('STEAP1','STEAP2','IL1RAP')
+goi = c('STEAP1','STEAP2','IL1RAP','PRKCB','DLG2')
 ewsScoreData = sigData %>%
-  dplyr::select(gene, rnaClass, ewsScore) %>%
   dplyr::arrange(-ewsScore) %>%
-  dplyr::mutate(rank = seq(1,nrow(sigData),1)) %>%
-  dplyr::mutate(pText = ifelse(gene %in% goi, gene, '')) %>%
-  dplyr::filter(ewsScore >= 10)
-dim(ewsScoreData[ewsScoreData$ewsScore >= 20,])
-saveRDS(ewsScoreData, paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureGeneScores.rds', sep = ''))
+  dplyr::mutate(ewsRank = seq(1,nrow(sigData),1)) %>%
+  dplyr::mutate(pText = ifelse(gene %in% goi, gene, ''))
+saveRDS(ewsScoreData, paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureScoredData.rds', sep = ''))
 write.table(ewsScoreData, 
-            paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureGeneScores.csv', sep = ''),
+            paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureScoredData.csv', sep = ''),
             sep = ',', quote = FALSE, col.names = TRUE, row.names = FALSE)
 
 
 ##
-ggplot(ewsScoreData, aes(rank, ewsScore)) +
-  geom_point(size = 3) +
-  geom_text_repel(label = ewsScoreData$pText, nudge_y = 5, nudge_x = 50) +
+ggplot(ewsScoreData, aes(ewsRank, ewsScore)) +
+  geom_point(size = 3, pch = 21, color = brewer.pal(11,'RdGy')[10], fill = brewer.pal(8,'Spectral')[1], alpha = 0.75) +
+  geom_text_repel(label = ewsScoreData$pText, nudge_y = -5, nudge_x = 50, max.overlaps = 200) +
   labs(x = 'Gene rank', y = 'EwS score', title = 'EwS signature genes') +
-  geom_hline(yintercept = 20, linetype = 'dashed') +
+  geom_hline(yintercept = 10, linetype = 'dashed') +
   theme_classic()
 ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatterplot_ewsScoresAllGenes.pdf', sep = ''),
                   height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a heatmap of the EwS signature genes.
+
+```{r}
+##########################################################################################
+ewsSignatureGenes = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureGeneScores.rds', sep = '')) %>%
+  dplyr::filter(ewsScore >= 20) %>%
+  dplyr::select(gene)
+rna = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_txiAllSamplesSummarizedMeans.rds', sep = '')) %>%
+  dplyr::filter(symbol %in% ewsSignatureGenes$gene)
+
+##
+rnaMatrix = as.matrix(rna[,2:9])
+rownames(rnaMatrix) = rna$symbol
+pheatmap(rnaMatrix, main = 'base',
+         cluster_cols = FALSE,
+         scale = 'row',
+         show_rownames = FALSE,
+         angle_col = 90,
+         cutree_rows = 2,
+         cellwidth = 8,
+         cellheight = 2,
+         width = 4,
+         height = 4,
+         filename = paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/heatmap_ewsSignatureGenesRnaMeanTpmScaled.pdf', sep = ''))
+
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -666,7 +843,6 @@ table(corrData$isEwing)
 median(corrData[corrData$isEwing == TRUE, 'correlation'], na.rm = TRUE)
 median(corrData[corrData$isEwing == FALSE, 'correlation'], na.rm = TRUE)
 ```
-
 
 
 

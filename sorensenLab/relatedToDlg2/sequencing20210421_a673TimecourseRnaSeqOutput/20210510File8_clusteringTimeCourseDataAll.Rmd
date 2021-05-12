@@ -1,0 +1,213 @@
+---
+title: "Temporal clustering"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details clustering of the timecourse data to find trends beyond the extreme conditions (e.g. day7 vs day0).
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('vroom')
+library('ggplot2')
+library('RColorBrewer')
+library('ggrepel')
+library('pheatmap')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the RNA fold change data from the DEseq analysis. We use this to define the set of genes that have a significant fold change in at least one of the time points.
+
+```{r}
+##########################################################################################
+day7 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day7-day0.rds', sep = '')) %>%
+  dplyr::rename(day7FC = log2FoldChange) %>%
+  dplyr::filter(padj <= 0.0001 & abs(day7FC) >= 2 & !is.na(symbol)) %>%
+  dplyr::select(symbol, day7FC)
+day9 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day9-day0.rds', sep = '')) %>%
+  dplyr::rename(day9FC = log2FoldChange) %>%
+  dplyr::filter(padj <= 0.0001 & abs(day9FC) >= 2 & !is.na(symbol)) %>%
+  dplyr::select(symbol, day9FC)
+day10 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day10-day0.rds', sep = '')) %>%
+  dplyr::rename(day10FC = log2FoldChange) %>%
+  dplyr::filter(padj <= 0.0001 & abs(day10FC) >= 2 & !is.na(symbol)) %>%
+  dplyr::select(symbol, day10FC)
+day11 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day11-day0.rds', sep = '')) %>%
+  dplyr::rename(day11FC = log2FoldChange) %>%
+  dplyr::filter(padj <= 0.0001 & abs(day11FC) >= 2 & !is.na(symbol)) %>%
+  dplyr::select(symbol, day11FC)
+day14 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day14-day0.rds', sep = '')) %>%
+  dplyr::rename(day14FC = log2FoldChange) %>%
+  dplyr::filter(padj <= 0.0001 & abs(day14FC) >= 2 & !is.na(symbol)) %>%
+  dplyr::select(symbol, day14FC)
+day17 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day17-day0.rds', sep = '')) %>%
+  dplyr::rename(day17FC = log2FoldChange) %>%
+  dplyr::filter(padj <= 0.0001 & abs(day17FC) >= 2 & !is.na(symbol)) %>%
+  dplyr::select(symbol, day17FC)
+day22 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day22-day0.rds', sep = '')) %>%
+  dplyr::rename(day22FC = log2FoldChange) %>%
+  dplyr::filter(padj <= 0.0001 & abs(day22FC) >= 2 & !is.na(symbol)) %>%
+  dplyr::select(symbol, day22FC)
+
+##
+allData = day7 %>%
+  full_join(day9) %>%
+  full_join(day10) %>%
+  full_join(day11) %>%
+  full_join(day14) %>%
+  full_join(day17) %>%
+  full_join(day22) %>%
+  as_tibble()
+
+##
+day7 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day7-day0.rds', sep = '')) %>%
+  dplyr::rename(day7FC = log2FoldChange) %>%
+  dplyr::filter(symbol %in% allData$symbol) %>%
+  dplyr::select(symbol, day7FC)
+day9 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day9-day0.rds', sep = '')) %>%
+  dplyr::rename(day9FC = log2FoldChange) %>%
+  dplyr::filter(symbol %in% allData$symbol) %>%
+  dplyr::select(symbol, day9FC)
+day10 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day10-day0.rds', sep = '')) %>%
+  dplyr::rename(day10FC = log2FoldChange) %>%
+  dplyr::filter(symbol %in% allData$symbol) %>%
+  dplyr::select(symbol, day10FC)
+day11 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day11-day0.rds', sep = '')) %>%
+  dplyr::rename(day11FC = log2FoldChange) %>%
+  dplyr::filter(symbol %in% allData$symbol) %>%
+  dplyr::select(symbol, day11FC)
+day14 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day14-day0.rds', sep = '')) %>%
+  dplyr::rename(day14FC = log2FoldChange) %>%
+  dplyr::filter(symbol %in% allData$symbol) %>%
+  dplyr::select(symbol, day14FC)
+day17 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day17-day0.rds', sep = '')) %>%
+  dplyr::rename(day17FC = log2FoldChange) %>%
+  dplyr::filter(symbol %in% allData$symbol) %>%
+  dplyr::select(symbol, day17FC)
+day22 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day22-day0.rds', sep = '')) %>%
+  dplyr::rename(day22FC = log2FoldChange) %>%
+  dplyr::filter(symbol %in% allData$symbol) %>%
+  dplyr::select(symbol, day22FC)
+
+##
+pro = readRDS(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_proteinSetABCIrsNormalized.rds', sep = '')) %>%
+  dplyr::select(gene, day0a:day22c) %>%
+  pivot_longer(cols = day0a:day22c, names_to = 'sampleName', values_to = 'irs') %>%
+  dplyr::mutate(day = factor(sub('(.*)[abc]$', '\\1', sampleName), levels = c('day0','day7','day9','day10','day11','day14','day17','day22'))) %>%
+  dplyr::mutate(logIrs = log2(irs)) %>%
+  dplyr::select(gene, day, logIrs) %>%
+  group_by(gene, day) %>%
+  summarize(meanIrs = mean(logIrs, na.rm = TRUE)) %>%
+  pivot_wider(id_cols = gene, names_from = day, values_from = meanIrs)
+
+##
+ewsData = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureScoredData.rds', sep = ''))
+goi = ewsData %>%
+  dplyr::mutate(aggSurvival = savolaScore + postelVinayScore) %>%
+  dplyr::filter(rnaClass == 'up')
+
+##
+allDataRaw = day7 %>%
+  full_join(day9) %>%
+  full_join(day10) %>%
+  full_join(day11) %>%
+  full_join(day14) %>%
+  full_join(day17) %>%
+  full_join(day22) %>%
+  #dplyr::filter(symbol %in% goi$gene) %>%
+  dplyr::filter(symbol %in% pro$gene) %>%
+  group_by(symbol) %>%
+  summarize(across(day7FC:day22FC, mean)) %>%
+  as_tibble()
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a heatmap of the different data types.
+
+```{r}
+##########################################################################################
+proInput = pro[apply(pro[,2:9], 1, function(x) all(is.finite(x))),] %>%
+  dplyr::filter(gene %in% allDataRaw$symbol)
+exprsMatrix = as.matrix(proInput[,c(2:9)])
+rownames(exprsMatrix) = proInput$gene
+pheatmap(exprsMatrix, main = 'base',
+         cluster_cols = FALSE,
+         cluster_rows = TRUE,
+         #annotation_col = icgcAnnotation,
+         #annotation_colors = icgcAnnotationCols,
+         border_color = 'white',
+         scale = 'row',
+         show_rownames = FALSE,
+         fontsize_row = 2,
+         show_colnames = FALSE,
+         #angle_col = 90,
+         cutree_rows = 2,
+         #cellwidth = 20,
+         #cellheight = 0.11
+         #width = 6,
+         #height = 6,
+         filename = paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/heatmap_proteinClustersAcrossTimecourse.pdf', sep = '')
+         )
+
+
+#testOut <- cbind(proInput, cluster = cutree(test$tree_row, k = 2))
+#write.table(testOut, 
+#            paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_testCluters.csv', sep = ''),
+#            sep = ',', quote = FALSE, col.names = TRUE, row.names = FALSE)
+
+
+
+##
+rna = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_txiAllSamplesSummarizedMeans.rds', sep = '')) %>%
+  dplyr::filter(symbol %in% allDataRaw$symbol)
+exprsMatrix = as.matrix(rna[,c(2:9)])
+rownames(exprsMatrix) = rna$symbol
+pheatmap(exprsMatrix, main = 'base',
+         cluster_cols = FALSE,
+         cluster_rows = TRUE,
+         #annotation_col = icgcAnnotation,
+         #annotation_colors = icgcAnnotationCols,
+         border_color = 'white',
+         scale = 'row',
+         show_rownames = FALSE,
+         fontsize_row = 2,
+         show_colnames = FALSE,
+         #angle_col = 90,
+         cutree_rows = 2,
+         #cellwidth = 20,
+         #cellheight = 0.11
+         #width = 6,
+         #height = 6,
+         filename = paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/heatmap_rnaClustersAcrossTimecourse.pdf', sep = '')
+         )
+```
+
+
+
+
+
+

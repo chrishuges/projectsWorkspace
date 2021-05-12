@@ -388,9 +388,48 @@ ggsave(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/sca
 
 <div style="margin-bottom:50px;"></div>
 
+Make a heatmap of the normalized data to see some EwS signature gene clusters.
+
+```{r}
+##########################################################################################
+ewsSignatureGenes = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureGeneScores.rds', sep = '')) %>%
+  dplyr::filter(ewsScore >= 20) %>%
+  dplyr::select(gene)
+pro = readRDS(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_proteinSetABCIrsNormalized.rds', sep = '')) %>%
+  dplyr::filter(gene %in% ewsSignatureGenes$gene) %>%
+  dplyr::select(gene, day0a:day22c) %>%
+  pivot_longer(cols = day0a:day22c, names_to = 'sampleName', values_to = 'irs') %>%
+  dplyr::mutate(day = factor(sub('(.*)[abc]$', '\\1', sampleName), levels = c('day0','day7','day9','day10','day11','day14','day17','day22'))) %>%
+  dplyr::mutate(logIrs = log2(irs)) %>%
+  dplyr::select(gene, day, logIrs) %>%
+  group_by(gene, day) %>%
+  summarize(meanIrs = mean(logIrs, na.rm = TRUE)) %>%
+  pivot_wider(id_cols = gene, names_from = day, values_from = meanIrs)
+
+##
+proMatrix = as.matrix(pro[,2:9])
+rownames(proMatrix) = pro$gene
+pheatmap(proMatrix, main = 'base',
+         cluster_cols = FALSE,
+         scale = 'row',
+         show_rownames = FALSE,
+         angle_col = 90,
+         cutree_rows = 2,
+         cellwidth = 8,
+         cellheight = 2,
+         width = 4,
+         height = 4,
+         filename = paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/heatmap_ewsSignatureGenesProMeanIrsScaled.pdf', sep = ''))
+```
+
+
+
+
+
 ## Session info
 
 ```{r}
+##########################################################################################
 sessionInfo()
 ```
 

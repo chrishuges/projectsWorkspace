@@ -1,0 +1,294 @@
+---
+title: "EwS signature gene set properties"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details analysis of EwS enriched or depleted genes just to look at their general characteristics.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('vroom')
+library('org.Hs.eg.db')
+library('GenomicFeatures')
+library('ggplot2')
+library('RColorBrewer')
+library('ggrepel')
+library('pheatmap')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the EwS signature gene data.
+
+```{r}
+##########################################################################################
+ews = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureGeneScores.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Look at the cellScore data. There are many genes that are very specific to EwS (either high or low expression) that are not linked to EWS-FLI1, or any known function really. 
+
+```{r}
+##########################################################################################
+##top ranked genes
+cellScoreRank = ews %>%
+  dplyr::select(gene, cellScore) %>%
+  dplyr::arrange(-cellScore) %>%
+  dplyr::filter(!is.na(cellScore)) %>%
+  dplyr::filter(cellScore > 2 | cellScore < -2) %>%
+  dplyr::mutate(rank = seq(1,length(cellScore),1)) %>%
+  dplyr::filter(rank <= 20)
+##
+ggplot(cellScoreRank, aes(rank, cellScore)) +
+  geom_point(size = 3, color = brewer.pal(11, 'RdGy')[10]) +
+  labs(x = 'cellScore Rank', y = 'cellScore', title = 'EwS high genes') +
+  geom_text_repel(label = cellScoreRank$gene, nudge_x = 2) +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatterplot_cellScoreTopRankedGenes.pdf', sep = ''),
+       width = 4, height = 4, useDingbats = FALSE)
+
+
+##bottom ranked genes
+cellScoreRank = ews %>%
+  dplyr::select(gene, cellScore) %>%
+  dplyr::arrange(-cellScore) %>%
+  dplyr::filter(!is.na(cellScore)) %>%
+  dplyr::filter(cellScore > 2 | cellScore < -2) %>%
+  dplyr::mutate(rank = seq(1,length(cellScore),1)) %>%
+  dplyr::filter(rank >= length(cellScore)-20)
+##
+ggplot(cellScoreRank, aes(rank, cellScore)) +
+  geom_point(size = 3, color = brewer.pal(11, 'RdGy')[10]) +
+  labs(x = 'cellScore Rank', y = 'cellScore', title = 'EwS low genes') +
+  geom_text_repel(label = cellScoreRank$gene, nudge_x = 2) +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatterplot_cellScoreLowRankedGenes.pdf', sep = ''),
+       width = 4, height = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Look at membrane proteins.
+
+```{r}
+##########################################################################################
+cellSurface = read_tsv(paste(generalDatasets, '/bauschFluckInSilicoCellSurfaceProteomePmid30373828/combinedSurfaceomeProteins.txt', sep = '')) %>%
+  dplyr::rename(gene = `UniProt gene`, surfaceAnno = `Surfaceome Label`) %>%
+  dplyr::select(gene, surfaceAnno) %>%
+  unique()
+
+##
+ewsCellSurface = ews %>%
+  left_join(cellSurface) %>%
+  dplyr::filter(surfaceAnno == 'surface') %>%
+  dplyr::arrange(-ewsRank) %>%
+  dplyr::mutate(pText = ifelse(abs(cellScore) >= 2 & ewsScore > 15, gene, ''))
+
+##
+ggplot(ewsCellSurface, aes(ewsScore, cellScore)) +
+  geom_point(size = 3, color = brewer.pal(11, 'RdGy')[10]) +
+  scale_y_continuous(limits = c(-8,8), breaks = seq(-6,6,2)) +
+  labs(x = 'EwS score', y = 'cellScore', title = 'EwS membrane markers') +
+  geom_text_repel(label = ewsCellSurface$pText, nudge_y = -2) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatterplot_cellSurfaceEwsScore.pdf', sep = ''),
+       width = 4, height = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Compare the survival data for these genes...are there a lot of tumour suppressors?
+
+```{r}
+##########################################################################################
+ewsData = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureGeneScores.rds', sep = ''))
+
+##
+upGenes = ewsData %>%
+  dplyr::filter(rnaClass == 'up' & ewsScore >= 10) %>%
+  dplyr::mutate(pColors = ifelse(savolaScore > 1, brewer.pal(8,'Spectral')[1],
+                                 ifelse(savolaScore < -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8])))
+ggplot(upGenes, aes(rnaFC, savolaScore)) +
+  geom_point(size = 2, color = upGenes$pColors) +
+  labs(x = 'log2(day7 - day0)', y = 'Cox Z-score, GSE17674', title = 'EwS genes, Savola') +
+  scale_x_continuous(limits = c(-10, -1), breaks = seq(-12,0,2)) +
+  scale_y_continuous(limits = c(-5, 5), breaks = seq(-6,6,2)) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatterplot_ewsSignatureGenesSavola.pdf', sep = ''),
+       height = 4, width = 3, useDingbats = FALSE)
+
+
+##
+upGenes = ewsData %>%
+  dplyr::filter(rnaClass == 'up' & ewsScore >= 10) %>%
+  dplyr::mutate(pColors = ifelse(postelVinayScore > 1, brewer.pal(8,'Spectral')[1],
+                                 ifelse(postelVinayScore < -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8])))
+ggplot(upGenes, aes(rnaFC, postelVinayScore)) +
+  geom_point(size = 2, color = upGenes$pColors) +
+  labs(x = 'log2(day7 - day0)', y = 'Cox Z-score, GSE34620', title = 'EwS genes, Postel-Vinay') +
+  scale_x_continuous(limits = c(-10, -1), breaks = seq(-12,0,2)) +
+  scale_y_continuous(limits = c(-5, 5), breaks = seq(-6,6,2)) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatterplot_ewsSignatureGenesPostelVinay.pdf', sep = ''),
+       height = 4, width = 3, useDingbats = FALSE)
+
+##
+dnGenes = ewsData %>%
+  dplyr::filter(rnaClass == 'dn' & ewsScore >= 10) %>%
+  dplyr::mutate(pColors = ifelse(savolaScore > 1, brewer.pal(8,'Spectral')[1],
+                                 ifelse(savolaScore < -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8])))
+ggplot(dnGenes, aes(rnaFC, savolaScore)) +
+  geom_point(size = 2, color = dnGenes$pColors) +
+  labs(x = 'log2(day7 - day0)', y = 'Cox Z-score, GSE17674', title = 'EwS genes, Savola') +
+  #scale_x_continuous(limits = c(-10, -1), breaks = seq(-12,0,2)) +
+  scale_y_continuous(limits = c(-5, 5), breaks = seq(-6,6,2)) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatterplot_ewsSignatureDownGenesSavola.pdf', sep = ''),
+       height = 4, width = 3, useDingbats = FALSE)
+
+
+##
+dnGenes = ewsData %>%
+  dplyr::filter(rnaClass == 'dn' & ewsScore >= 10) %>%
+  dplyr::mutate(pColors = ifelse(postelVinayScore > 1, brewer.pal(8,'Spectral')[1],
+                                 ifelse(postelVinayScore < -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8])))
+ggplot(dnGenes, aes(rnaFC, postelVinayScore)) +
+  geom_point(size = 2, color = dnGenes$pColors) +
+  labs(x = 'log2(day7 - day0)', y = 'Cox Z-score, GSE34620', title = 'EwS genes, Postel-Vinay') +
+  #scale_x_continuous(limits = c(-10, -1), breaks = seq(-12,0,2)) +
+  scale_y_continuous(limits = c(-5, 5), breaks = seq(-6,6,2)) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatterplot_ewsSignatureDownGenesPostelVinay.pdf', sep = ''),
+       height = 4, width = 3, useDingbats = FALSE)
+
+
+##
+goi = c('IL1RAP','DLG2','PRKCB','LIPI','NR0B1')
+upGenes = ewsData %>%
+  dplyr::filter(rnaClass == 'up' & ewsScore >= 10) %>%
+  dplyr::mutate(aggSurvival = savolaScore + postelVinayScore) %>%
+  dplyr::mutate(pColors = ifelse(aggSurvival > 1, brewer.pal(8,'Spectral')[1],
+                                 ifelse(aggSurvival < -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8]))) %>%
+  dplyr::mutate(pText = ifelse(gene %in% goi, gene, ''))
+ggplot(upGenes, aes(rnaFC, aggSurvival)) +
+  geom_point(size = 2, color = upGenes$pColors) +
+  geom_text_repel(label = upGenes$pText, nudge_x = -2, nudge_y = 1) +
+  labs(x = 'log2(day7 - day0)', y = 'Aggregate survival score', title = 'EwS genes, survival') +
+  scale_y_continuous(limits = c(-10, 10), breaks = seq(-10,10,2)) +
+  scale_x_continuous(limits = c(-4,-1), breaks = seq(-6,0,1)) +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatterplot_ewsSignatureUpGenesAggregateSurvival.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+What do these tumour suppressors look like in the ICGC data? First we need to process the ICGC data into a more usable object.
+
+```{r}
+##########################################################################################
+myTxdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.gtf.gz')
+k = keys(myTxdb, keytype = 'TXNAME')
+tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
+##
+donorInfo = read_tsv(paste(generalDatasets, '/icgcJune2020/donor.tsv.gz', sep = ''))
+sampleInfo = read_tsv(paste(generalDatasets, '/icgcJune2020/sample.tsv.gz', sep = ''))
+specimenInfo = read_tsv(paste(generalDatasets, '/icgcJune2020/specimen.tsv.gz', sep = ''))
+rna = vroom(paste(generalDatasets, '/icgcJune2020/exp_seq.tsv.gz', sep = '')) %>%
+  dplyr::select(icgc_donor_id, gene_id, normalized_read_count) %>%
+  dplyr::filter(normalized_read_count > 0)
+ens.str = substr(rna$gene_id, 1, 15)
+rna$symbol = mapIds(org.Hs.eg.db, keys = ens.str, column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first')
+##
+allData = rna %>%
+  left_join(donorInfo)
+saveRDS(allData, paste(generalDatasets, '/icgcJune2020/dataset_icgcDataProcessed.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now the easiest thing is probably do do some clustering of our EwS genes that are tumour suppressors.
+
+```{r}
+##########################################################################################
+ewsData = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureScoredData.rds', sep = ''))
+goi = ewsData %>%
+  dplyr::mutate(aggSurvival = savolaScore + postelVinayScore) %>%
+  dplyr::filter(rnaClass == 'up' & ewsScore <= -10 & aggregateSurvival < 0)
+##
+icgcExprs = readRDS(paste(generalDatasets, '/icgcJune2020/dataset_icgcDataProcessed.rds', sep = '')) %>%
+  dplyr::filter(symbol %in% goi$gene) %>%
+  dplyr::select(icgc_donor_id, symbol, donor_sex, donor_vital_status, normalized_read_count) %>%
+  dplyr::group_by(icgc_donor_id, symbol, donor_sex, donor_vital_status) %>%
+  dplyr::summarize(normalized_read_count = mean(normalized_read_count, na.rm = TRUE)) %>%
+  pivot_wider(id_cols = symbol, names_from = icgc_donor_id, values_from = normalized_read_count)
+##
+icgcAnnotation = readRDS(paste(generalDatasets, '/icgcJune2020/dataset_icgcDataProcessed.rds', sep = '')) %>%
+  dplyr::select(icgc_donor_id, donor_sex, donor_vital_status, donor_tumour_stage_at_diagnosis ) %>%
+  unique() %>%
+  dplyr::rename(sex = donor_sex, status = donor_vital_status, disease = donor_tumour_stage_at_diagnosis) %>%
+  column_to_rownames(var = 'icgc_donor_id')
+icgcAnnotationCols = list('sex' = c(male = brewer.pal(12,'Paired')[1], female = brewer.pal(12,'Paired')[2]),
+                          'status' = c(alive = brewer.pal(12,'Paired')[3], deceased = brewer.pal(12,'Paired')[4]),
+                          'disease' = c(`Non-metastatic stage` = brewer.pal(12,'Paired')[5], `Metastatic stage` = brewer.pal(12,'Paired')[6]))
+
+##
+rownames(icgcAnnotation) = colnames(icgcExprs)[2:58]
+exprsMatrix = as.matrix(log2(icgcExprs[,2:58]))
+rownames(exprsMatrix) = icgcExprs$symbol
+pheatmap(exprsMatrix, main = 'base',
+         cluster_cols = TRUE,
+         cluster_rows = TRUE,
+         annotation_col = icgcAnnotation,
+         annotation_colors = icgcAnnotationCols,
+         border_color = 'white',
+         scale = 'none',
+         show_rownames = TRUE,
+         fontsize_row = 6,
+         show_colnames = FALSE,
+         #angle_col = 90,
+         #cutree_rows = 2,
+         cellwidth = 6,
+         cellheight = 6)
+         #width = 6,
+         #height = 6,
+         #filename = paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/heatmap_ewsSignatureGenesIcgcCohort.pdf', sep = ''))
+```
+
+
+
+
+
+
+
+

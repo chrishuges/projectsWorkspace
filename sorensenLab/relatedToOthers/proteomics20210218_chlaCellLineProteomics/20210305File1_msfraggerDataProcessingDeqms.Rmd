@@ -124,6 +124,7 @@ head(limmaFit3$coefficients)
 ##
 deqmsResults = outputResult(limmaFit3, coef_col = 1)
 dim(deqmsResults)
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20210218_chlaCellLineProteomics/dataset_deqms_chla9-chla10.rds', sep = ''))
 write.table(deqmsResults, 
             paste(baseRepository, '/proteomics20210218_chlaCellLineProteomics/dataset_deqms_chla9-chla10.csv', sep = ''),
             sep = ',', row.names = FALSE, quote = FALSE)

@@ -1,0 +1,101 @@
+---
+title: "CHLA cell RNA and protein"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details comparison of the RNA and protein data for the CHLA9/10 cell lines.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Get the RNA and protein data and make a plot.
+
+```{r}
+##########################################################################################
+rna = as.data.frame(readRDS(paste(baseRepository, '/sequencing20210218_chlaCellLineRnaseq/dataset_deseq2_chla9-chla10.rds', sep = ''))) %>%
+  dplyr::select(symbol, log2FoldChange, padj) %>%
+  dplyr::rename(gene = symbol, rnaFC = log2FoldChange, rnaPVal = padj)
+pro = readRDS(paste(baseRepository, '/proteomics20210218_chlaCellLineProteomics/dataset_deqms_chla9-chla10.rds', sep = '')) %>%
+  dplyr::select(gene, logFC, sca.P.Value) %>%
+  dplyr::rename(proFC = logFC, proPVal = sca.P.Value)
+
+##
+rnaPro = rna %>%
+  left_join(pro) %>%
+  as_tibble()
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot of these combined data.
+
+```{r}
+##########################################################################################
+rnaPro$pColors = ifelse(rnaPro$rnaFC >= 1 & rnaPro$proFC >= 1, brewer.pal(8,'Spectral')[1], 
+                        ifelse(rnaPro$rnaFC <= -1 & rnaPro$proFC <= -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8]))
+goi = c('OTX2')
+rnaPro$pText = ifelse(rnaPro$gene %in% goi, rnaPro$gene, '')
+
+
+##
+ggplot(rnaPro, aes(rnaFC, proFC)) +
+  geom_point(size = 1, color = rnaPro$pColors) +
+  labs(x = 'log2(chla9 - chla10, RNA)', y = 'log2(chla9 - chla10, protein)', title = 'CHLA RNA and protein') +
+  geom_text_repel(label = rnaPro$pText, nudge_y = 4, nudge_x = 2) +
+  scale_x_continuous(limits = c(-15,12), breaks = seq(-20,20,4)) +
+  scale_y_continuous(limits = c(-6,6), breaks = seq(-10,10,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20210218_chlaCellLineRnaseq/scatter_rnaVSpro_chla9VsChla10.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+
+##
+cor(rnaPro$rnaFC, rnaPro$proFC, use = 'pairwise.complete.obs', method = 'pearson')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -68,6 +68,22 @@ txi = tximport(files,
                tx2gene = tx2gene)
 names(txi)
 head(txi$counts)
+
+##
+txiAbundance = as.data.frame(txi$abundance)
+colnames(txiAbundance) = paste(samples$sampleName,'_',samples$batch, sep = '')
+ens.str = substr(rownames(txiAbundance), 1, 15)
+txiAbundance$symbol = mapIds(org.Hs.eg.db, keys = ens.str, column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first')
+txiAbundanceAvg = as_tibble(txiAbundance) %>%
+  dplyr::select(symbol, day0_setA:day22_setC) %>%
+  pivot_longer(cols = day0_setA:day22_setC, names_to = 'sampleName', values_to = 'tpm') %>%
+  dplyr::mutate(day = factor(sub('(.*)_set[ABC]$', '\\1', sampleName), levels = c('day0','day7','day9','day10','day11','day14','day17','day22'))) %>%
+  dplyr::mutate(log2Tpm = log2(tpm + 1)) %>%
+  dplyr::select(-sampleName) %>%
+  group_by(symbol, day) %>%
+  summarize(meanTpm = mean(log2Tpm, na.rm = TRUE)) %>%
+  pivot_wider(id_cols = symbol, names_from = day, values_from = meanTpm)
+saveRDS(txiAbundanceAvg, paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_txiAllSamplesSummarizedMeans.rds', sep = ''))
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -91,7 +107,7 @@ Perform comparisons between samples.
 
 ```{r}
 ##########################################################################################
-datasetFirst = 'day7'
+datasetFirst = 'day22'
 datasetSecond = 'day0'
 res = results(dds, contrast = c('sampleName', datasetFirst, datasetSecond))
 ens.str = substr(rownames(res), 1, 15)

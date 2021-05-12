@@ -84,7 +84,7 @@ Make plots for different genes.
 ```{r}
 ##########################################################################################
 rna = readRDS(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/dataset_scRNAseqProcessedA673Only.rds', sep = ''))
-geneSet = c('PRKCB','STEAP1','STEAP2','IL1RAP','DLG2','ATF4','STAG2')
+geneSet = c('PRKCB','STEAP1','STEAP2','IL1RAP','DLG2','ATF4','STAG2','CRLF1','METTL16','PREX1','POU1F1','CREB5')
 for (i in 1:length(geneSet)){
   goi = filter(rna, symbol == geneSet[i])
   ggplot(goi, aes(day, log10(counts), color = day)) +

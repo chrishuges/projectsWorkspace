@@ -54,6 +54,9 @@ Read in the rna data and reshape it. This is a huge dataset, so you just have to
 ##########################################################################################
 rna = vroom(paste(generalDatasets, '/icgcJune2020/exp_seq.tsv.gz', sep = '')) %>%
   filter(grepl('ENSG00000150672', gene_id)) %>%
+  #filter(grepl('ENSG00000165588', gene_id)) %>%
+  #filter(grepl('ENSG00000204379', gene_id)) %>%
+  #filter(grepl('ENSG00000166501', gene_id)) %>%
   mutate('expression' = log2(normalized_read_count + 1)) %>%
   left_join(donorInfo)
 ```

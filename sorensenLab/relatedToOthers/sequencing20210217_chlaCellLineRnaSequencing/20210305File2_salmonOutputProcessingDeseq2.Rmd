@@ -1,5 +1,5 @@
 ---
-title: "CHLA cell line proteomics"
+title: "CHLA cell line RNAseq"
 output:
   html_notebook:
       code_folding: none
@@ -108,6 +108,7 @@ res$symbol = mapIds(org.Hs.eg.db,
                      keytype="ENSEMBL",
                      multiVals="first")
 resOrdered = res[order(res$pvalue),]
+saveRDS(resOrdered, paste(baseRepository, '/sequencing20210218_chlaCellLineRnaseq/dataset_deseq2_chla9-chla10.rds', sep = ''))
 write.csv(as.data.frame(resOrdered), file = paste(baseRepository, '/sequencing20210218_chlaCellLineRnaseq/dataset_deseq2_chla9-chla10.csv', sep = ''))
 
 ##

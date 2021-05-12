@@ -59,7 +59,7 @@ I also want to do an alignment with STAR. The code for this is also included in 
 rawDataOutputDirectory="/projects/ptx_results/Sequencing/2021/sequencing20210421_a673EwsFli1Timecourse/"
 starLocation="/projects/ptx_analysis/chughes/software/STAR-2.7.1a/STAR-2.7.1a/bin/Linux_x86_64/STAR"
 referenceLocation="/projects/ptx_analysis/chughes/databases/refgenieIndexes/alias/hg38/star_index/default/"
-annotationLocation="/projects/ptx_analysis/chughes/databases/refgenieIndexes/alias/hg38/gencode_gtf/default/hg38.gtf.gz"
+annotationLocation="/projects/ptx_analysis/chughes/databases/refgenieIndexes/alias/hg38/gencode_gtf/default/hg38.gtf"
 samtoolsLocation="/projects/ptx_analysis/chughes/software/samtools-1.9/samtools"
 
 ######################################
