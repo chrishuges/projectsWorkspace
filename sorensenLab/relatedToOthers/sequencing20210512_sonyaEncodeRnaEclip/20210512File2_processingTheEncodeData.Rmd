@@ -1,0 +1,130 @@
+---
+title: "ENCODE eCLIP"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of eCLIP data from ENCODE.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('GenomicRanges')
+library('GenomicFeatures')
+library('AnnotationDbi')
+library('org.Hs.eg.db')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I like to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the metadata file. It seems that it downloaded a bunch of stuff we don't want, so we can filter it just for GRCh38 and the combined peak files for both biological replicates. 
+
+
+```{r, message = FALSE}
+##########################################################################################
+sampleInfo = read_tsv(paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/bedFiles/metadata.tsv', sep = '')) %>%
+  dplyr::filter(`File assembly` == 'GRCh38' & `Biological replicate(s)` == '1, 2') %>%
+  dplyr::mutate(downloadLink = paste('https://www.encodeproject.org/files/',`File accession`,'/@@download/',`File accession`,'.bed.gz', sep = ''))
+  
+##
+sampleDownload = sampleInfo$downloadLink
+write.table(sampleDownload, paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/bedFiles/filteredFiles.txt', sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Using this new file, I went back and downloaded the data again just for the files I wanted in the first place. Now I want to annotate the bed files. Lets start with just one file and work out how to annotate it. I figured this out after some testing. This first part just sets up the annotation object.
+
+```{r}
+##########################################################################################
+myTxdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz')
+allGenes = keepStandardChromosomes(genes(myTxdb), pruning.mode = 'coarse')
+allGenesAnno = as.data.frame(allGenes)
+ensString = substr(allGenesAnno$gene_id, 1, 15)
+allGenesAnno$symbol = mapIds(org.Hs.eg.db, keys = ensString, column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first')
+noGeneLocations = which(!is.na(allGenesAnno$symbol))
+allGenesSubset = allGenes[noGeneLocations]
+allGenesAnnoSubset = allGenesAnno[noGeneLocations,]
+```
+
+
+<div style="margin-bottom:50px;"></div>
+
+Now we loop through all of the files to build one big object.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+bedFiles = list.files(paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/bedFiles/', sep = ''), pattern = '.bed.gz', full.names = TRUE)
+
+##
+allBedFiles = data.frame()
+for(i in 1:length(bedFiles)){
+  rawBed = read_tsv(bedFiles[i], col_names = c('seqnames','start','end','name','something1','strand','score1','score2','score3','score4')) %>%
+    dplyr::select(seqnames, start, end, strand, name, score1, score2)
+  rawBedGrange = makeGRangesFromDataFrame(rawBed)
+  rawOverlaps = GenomicRanges::findOverlaps(rawBedGrange, allGenesSubset, type = 'any')
+  ##
+  outputBed = tibble(rawBed[queryHits(rawOverlaps),])
+  overlapGeneList = allGenesAnnoSubset[subjectHits(rawOverlaps), 'symbol']
+  outputBed$boundGene = overlapGeneList
+  outputBed$ipBait = sub('(.*)_[A-Za-z0-9]+_.*$', '\\1', outputBed$name)
+  outputBed$cellLine = sub('[A-Za-z0-9]+_(.*)_.*$', '\\1', outputBed$name)
+  ##
+  allBedFiles = rbind(allBedFiles, outputBed)
+}
+
+##
+saveRDS(allBedFiles, paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/dataset_allEncodeEclipData.rds', sep = ''))
+write.table(allBedFiles, paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/dataset_allEncodeEclipData.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Wrap up.
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

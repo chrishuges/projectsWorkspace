@@ -1,0 +1,214 @@
+---
+title: "Exosome proteomics"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to examine exosome proteins from Ewing sarcoma cells.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('vroom')
+library('RColorBrewer')
+library('pheatmap')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I like to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the psm tables from FragPipe and process into a protein set.
+
+```{r, message = FALSE}
+##########################################################################################
+sampleInfo = data.frame('cellLine' = rep(c('a4573','tc71'), each = 6),
+                        'replicate' = rep(seq(1,3,1), 4),
+                        'treatment' = rep(rep(c('arsenite','untreated'), each = 3), 2),
+                        'sampleName' = paste(rep(c('a4573Exo','tc71Exo'), each = 6), 
+                                             rep(rep(c('Sa','Ut'), each = 3),2), 
+                                             rep(seq(1,3,1),3), 
+                                             '_', rep(seq(1,3,1),3), 
+                                             sep = ''))
+##
+files = file.path(baseRepository, 'proteomics20210512_valentinaExosomesMsfraggerOutput', sampleInfo$sampleName, 'psm.tsv')
+all(file.exists(files))
+
+##
+proteinSet = data.frame()
+for(i in 1:length(files)){
+  rawPsm = read_tsv(files[i]) %>%
+    dplyr::select(Peptide, `Is Unique`, `Protein ID`, Gene, Intensity) %>%
+    dplyr::rename(sequence = Peptide, 
+              unique = `Is Unique`,
+              accession = `Protein ID`,
+              gene = Gene) %>%
+    dplyr::filter(unique == TRUE, !grepl('CONT', accession), !is.na(gene), !grepl('-', gene)) %>%
+    dplyr::mutate(psm = 1, sampleName = sampleInfo$sampleName[i]) %>%
+    dplyr::select(accession, gene, Intensity, psm, sampleName) %>%
+    dplyr::group_by(accession, gene, sampleName) %>%
+    dplyr::summarise(intensity = sum(Intensity, na.rm = TRUE), psm = sum(psm, na.rm = TRUE))
+  proteinSet = rbind(proteinSet, rawPsm)
+}
+
+##
+proteinExprs = proteinSet %>%
+  pivot_wider(names_from = sampleName, values_from = c(intensity, psm))
+
+##
+saveRDS(proteinExprs, paste(baseRepository, '/proteomics20210512_valentinaExosomesMsfraggerOutput/dataset_exosomesProteinData.rds', sep = ''))
+write.table(proteinExprs, paste(baseRepository, '/proteomics20210512_valentinaExosomesMsfraggerOutput/dataset_exosomesProteinData.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+##
+proteinExprs
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Add in annotation from different public databases of exosomes.
+
+```{r, message = FALSE}
+##########################################################################################
+exocarta = vroom(paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/EXOCARTA_PROTEIN_MRNA_DETAILS_5.txt', sep = '')) %>%
+  filter(SPECIES == 'Homo sapiens') %>%
+  mutate(gene = `GENE SYMBOL`, Exocarta = 'yes') %>%
+  dplyr::select(gene, Exocarta)
+exocarta = unique(exocarta)
+
+##
+vesicle = vroom(paste(baseRepository, '/proteomics20200715_exosomeProfilingValentina/VESICLEPEDIA_PROTEIN_MRNA_DETAILS_4.1.txt', sep = '')) %>%
+  filter(SPECIES == 'Homo sapiens') %>%
+  mutate(gene = `GENE SYMBOL`, Vesiclepedia = 'yes') %>%
+  dplyr::select(gene, Vesiclepedia)
+vesicle = unique(vesicle)
+
+##
+exoAnnotatedSet = proteinExprs %>%
+  left_join(exocarta) %>%
+  left_join(vesicle)
+
+##
+saveRDS(exoAnnotatedSet, paste(baseRepository, '/proteomics20210512_valentinaExosomesMsfraggerOutput/dataset_exosomesProteinDataAnnotated.rds', sep = ''))
+write.table(exoAnnotatedSet, paste(baseRepository, '/proteomics20210512_valentinaExosomesMsfraggerOutput/dataset_exosomesProteinDataAnnotated.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+##
+exoAnnotatedSet
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a heatmap of specific genes of interest.
+
+```{r}
+##########################################################################################
+##these are genes we are interested in
+goi = tibble('gene' = c('CD81','SDCBP','PDCD6IP','RAB2A','RAB7A','ANXA1','ANXA2','HSPA8','HSP90AA1','HSP90AB1',
+        'HNRNPA2B1','HNRNPC','HNRNPK','HNRNPL','ILF2','ILF3','DHX9','RUVBL1',
+        'RUVBL2','EIF4A1','EIF4A2','EEF1A1','EEF1G','EIF2S3','EEF2','XRCC5','XRCC6',
+        'CBX1','CBX3','SRP9','SRP14'))
+goi[which(!(goi$gene %in% proteinExprs$gene))]
+
+##summarizing the data
+proteinSummary = proteinExprs %>%
+  dplyr::filter(gene %in% goi$gene) %>%
+  dplyr::select(accession, gene, intensity_a4573ExoSa1_1:intensity_tc71ExoUt3_3) %>%
+  pivot_longer(cols = intensity_a4573ExoSa1_1:intensity_tc71ExoUt3_3, names_to = 'sampleName', values_to = 'intensity') %>%
+  dplyr::mutate(cellLine = sub('intensity_(.*)Exo.*$', '\\1', sampleName)) %>%
+  dplyr::select(cellLine, accession, gene, intensity) %>%
+  dplyr::group_by(cellLine, accession, gene) %>%
+  dplyr::summarise(log10Intensity = log10(median(intensity, na.rm = TRUE))) %>%
+  pivot_wider(names_from = cellLine, values_from = log10Intensity)
+proteinOrdered = goi %>%
+  left_join(proteinSummary)
+
+##normalizing between the two cell lines for visualization
+proteinMatrix = proteinOrdered[,3:4]
+target = mean(colSums(proteinMatrix, na.rm = TRUE))
+normFacs = target / colSums(proteinMatrix, na.rm = TRUE)
+proteinMatrixSl = sweep(proteinMatrix, 2, normFacs, FUN = '*')
+rownames(proteinMatrixSl) = proteinOrdered$gene
+pheatmap(proteinMatrixSl,
+         scale = 'none',
+         color = colorRampPalette(rev(brewer.pal(n = 8, name = 'RdBu')))(100),
+         cluster_cols = FALSE,
+         cluster_rows = FALSE,
+         cellwidth = 40,
+         cellheight = 10,
+         fontsize_row = 6,
+         border_color = 'white',
+         width = 6,
+         height = 6,
+         na_col = brewer.pal(11,'RdGy')[9],
+         angle_col = 90,
+         filename = paste(baseRepository, '/proteomics20210512_valentinaExosomesMsfraggerOutput/heatmap_exosomeProteinsBothCellLines.pdf', sep = '')
+         )
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Get the metrics of protein ID's after filtering.
+
+```{r}
+##########################################################################################
+proteinFiltered = subset(proteinExprs, (rowSums(is.na(proteinExprs[,15:17])) < 2) | 
+                           (rowSums(is.na(proteinExprs[,18:20])) < 2) |
+                           (rowSums(is.na(proteinExprs[,21:23])) < 2) |
+                           (rowSums(is.na(proteinExprs[,24:26])) < 2))
+dim(proteinFiltered)
+
+##
+a4573 = subset(proteinExprs, (rowSums(is.na(proteinExprs[,15:17])) < 2) | 
+                           (rowSums(is.na(proteinExprs[,18:20])) < 2))
+tc71 = subset(proteinExprs, (rowSums(is.na(proteinExprs[,21:23])) < 2) | 
+                           (rowSums(is.na(proteinExprs[,24:26])) < 2))
+length(intersect(a4573$gene, tc71$gene))
+
+##
+commonGeneSet = intersect(a4573$gene, tc71$gene)
+proteinCommon = exoAnnotatedSet %>%
+  dplyr::filter(gene %in% commonGeneSet)
+table(proteinCommon$Exocarta)
+table(proteinCommon$Vesiclepedia)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Wrap up.
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+
+
