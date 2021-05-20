@@ -1,0 +1,2459 @@
+LOCUS       NC_000011                240 bp    DNA     linear   CON 16-MAY-2021
+DEFINITION  Homo sapiens chromosome 11, GRCh38.p13 Primary Assembly.
+ACCESSION   NC_000011 REGION: complement(83633160..83633399)
+VERSION     NC_000011.10
+DBLINK      BioProject: PRJNA168
+            Assembly: GCF_000001405.39
+KEYWORDS    RefSeq.
+SOURCE      Homo sapiens (human)
+  ORGANISM  Homo sapiens
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Primates; Haplorrhini;
+            Catarrhini; Hominidae; Homo.
+REFERENCE   1  (bases 1 to 240)
+  AUTHORS   Taylor,T.D., Noguchi,H., Totoki,Y., Toyoda,A., Kuroki,Y., Dewar,K.,
+            Lloyd,C., Itoh,T., Takeda,T., Kim,D.W., She,X., Barlow,K.F.,
+            Bloom,T., Bruford,E., Chang,J.L., Cuomo,C.A., Eichler,E.,
+            FitzGerald,M.G., Jaffe,D.B., LaButti,K., Nicol,R., Park,H.S.,
+            Seaman,C., Sougnez,C., Yang,X., Zimmer,A.R., Zody,M.C.,
+            Birren,B.W., Nusbaum,C., Fujiyama,A., Hattori,M., Rogers,J.,
+            Lander,E.S. and Sakaki,Y.
+  TITLE     Human chromosome 11 DNA sequence and analysis including novel gene
+            identification
+  JOURNAL   Nature 440 (7083), 497-500 (2006)
+   PUBMED   16554811
+REFERENCE   2  (bases 1 to 240)
+  CONSRTM   International Human Genome Sequencing Consortium
+  TITLE     Finishing the euchromatic sequence of the human genome
+  JOURNAL   Nature 431 (7011), 931-945 (2004)
+   PUBMED   15496913
+REFERENCE   3  (bases 1 to 240)
+  AUTHORS   Lander,E.S., Linton,L.M., Birren,B., Nusbaum,C., Zody,M.C.,
+            Baldwin,J., Devon,K., Dewar,K., Doyle,M., FitzHugh,W., Funke,R.,
+            Gage,D., Harris,K., Heaford,A., Howland,J., Kann,L., Lehoczky,J.,
+            LeVine,R., McEwan,P., McKernan,K., Meldrim,J., Mesirov,J.P.,
+            Miranda,C., Morris,W., Naylor,J., Raymond,C., Rosetti,M.,
+            Santos,R., Sheridan,A., Sougnez,C., Stange-Thomann,N.,
+            Stojanovic,N., Subramanian,A., Wyman,D., Rogers,J., Sulston,J.,
+            Ainscough,R., Beck,S., Bentley,D., Burton,J., Clee,C., Carter,N.,
+            Coulson,A., Deadman,R., Deloukas,P., Dunham,A., Dunham,I.,
+            Durbin,R., French,L., Grafham,D., Gregory,S., Hubbard,T.,
+            Humphray,S., Hunt,A., Jones,M., Lloyd,C., McMurray,A., Matthews,L.,
+            Mercer,S., Milne,S., Mullikin,J.C., Mungall,A., Plumb,R., Ross,M.,
+            Shownkeen,R., Sims,S., Waterston,R.H., Wilson,R.K., Hillier,L.W.,
+            McPherson,J.D., Marra,M.A., Mardis,E.R., Fulton,L.A.,
+            Chinwalla,A.T., Pepin,K.H., Gish,W.R., Chissoe,S.L., Wendl,M.C.,
+            Delehaunty,K.D., Miner,T.L., Delehaunty,A., Kramer,J.B., Cook,L.L.,
+            Fulton,R.S., Johnson,D.L., Minx,P.J., Clifton,S.W., Hawkins,T.,
+            Branscomb,E., Predki,P., Richardson,P., Wenning,S., Slezak,T.,
+            Doggett,N., Cheng,J.F., Olsen,A., Lucas,S., Elkin,C.,
+            Uberbacher,E., Frazier,M., Gibbs,R.A., Muzny,D.M., Scherer,S.E.,
+            Bouck,J.B., Sodergren,E.J., Worley,K.C., Rives,C.M., Gorrell,J.H.,
+            Metzker,M.L., Naylor,S.L., Kucherlapati,R.S., Nelson,D.L.,
+            Weinstock,G.M., Sakaki,Y., Fujiyama,A., Hattori,M., Yada,T.,
+            Toyoda,A., Itoh,T., Kawagoe,C., Watanabe,H., Totoki,Y., Taylor,T.,
+            Weissenbach,J., Heilig,R., Saurin,W., Artiguenave,F., Brottier,P.,
+            Bruls,T., Pelletier,E., Robert,C., Wincker,P., Smith,D.R.,
+            Doucette-Stamm,L., Rubenfield,M., Weinstock,K., Lee,H.M.,
+            Dubois,J., Rosenthal,A., Platzer,M., Nyakatura,G., Taudien,S.,
+            Rump,A., Yang,H., Yu,J., Wang,J., Huang,G., Gu,J., Hood,L.,
+            Rowen,L., Madan,A., Qin,S., Davis,R.W., Federspiel,N.A.,
+            Abola,A.P., Proctor,M.J., Myers,R.M., Schmutz,J., Dickson,M.,
+            Grimwood,J., Cox,D.R., Olson,M.V., Kaul,R., Raymond,C., Shimizu,N.,
+            Kawasaki,K., Minoshima,S., Evans,G.A., Athanasiou,M., Schultz,R.,
+            Roe,B.A., Chen,F., Pan,H., Ramser,J., Lehrach,H., Reinhardt,R.,
+            McCombie,W.R., de la Bastide,M., Dedhia,N., Blocker,H.,
+            Hornischer,K., Nordsiek,G., Agarwala,R., Aravind,L., Bailey,J.A.,
+            Bateman,A., Batzoglou,S., Birney,E., Bork,P., Brown,D.G.,
+            Burge,C.B., Cerutti,L., Chen,H.C., Church,D., Clamp,M.,
+            Copley,R.R., Doerks,T., Eddy,S.R., Eichler,E.E., Furey,T.S.,
+            Galagan,J., Gilbert,J.G., Harmon,C., Hayashizaki,Y., Haussler,D.,
+            Hermjakob,H., Hokamp,K., Jang,W., Johnson,L.S., Jones,T.A.,
+            Kasif,S., Kaspryzk,A., Kennedy,S., Kent,W.J., Kitts,P.,
+            Koonin,E.V., Korf,I., Kulp,D., Lancet,D., Lowe,T.M., McLysaght,A.,
+            Mikkelsen,T., Moran,J.V., Mulder,N., Pollara,V.J., Ponting,C.P.,
+            Schuler,G., Schultz,J., Slater,G., Smit,A.F., Stupka,E.,
+            Szustakowski,J., Thierry-Mieg,D., Thierry-Mieg,J., Wagner,L.,
+            Wallis,J., Wheeler,R., Williams,A., Wolf,Y.I., Wolfe,K.H.,
+            Yang,S.P., Yeh,R.F., Collins,F., Guyer,M.S., Peterson,J.,
+            Felsenfeld,A., Wetterstrand,K.A., Patrinos,A., Morgan,M.J., de
+            Jong,P., Catanese,J.J., Osoegawa,K., Shizuya,H., Choi,S. and
+            Chen,Y.J.
+  CONSRTM   International Human Genome Sequencing Consortium
+  TITLE     Initial sequencing and analysis of the human genome
+  JOURNAL   Nature 409 (6822), 860-921 (2001)
+   PUBMED   11237011
+  REMARK    Erratum:[Nature 2001 Aug 2;412(6846):565]
+COMMENT     REFSEQ INFORMATION: The reference sequence is identical to
+            CM000673.2.
+            On Feb 3, 2014 this sequence version replaced NC_000011.9.
+            Assembly Name: GRCh38.p13 Primary Assembly
+            The DNA sequence is composed of genomic sequence, primarily
+            finished clones that were sequenced as part of the Human Genome
+            Project. PCR products and WGS shotgun sequence have been added
+            where necessary to fill gaps or correct errors. All such additions
+            are manually curated by GRC staff. For more information see:
+            https://genomereference.org.
+            
+            ##Genome-Annotation-Data-START##
+            Annotation Provider         :: NCBI
+            Annotation Status           :: Updated annotation
+            Annotation Name             :: Homo sapiens Updated Annotation
+                                           Release 109.20210514
+            Annotation Version          :: 109.20210514
+            Annotation Pipeline         :: NCBI eukaryotic genome annotation
+                                           pipeline
+            Annotation Software Version :: 8.6
+            Annotation Method           :: Best-placed RefSeq; propagated
+                                           RefSeq model
+            Features Annotated          :: Gene; mRNA; CDS; ncRNA
+            ##Genome-Annotation-Data-END##
+FEATURES             Location/Qualifiers
+     source          1..240
+                     /organism="Homo sapiens"
+                     /mol_type="genomic DNA"
+                     /db_xref="taxon:9606"
+                     /chromosome="11"
+     gene            <1..>240
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="discs large MAGUK scaffold protein 2; Derived by
+                     automated computational analysis using gene prediction
+                     method: BestRefSeq,Gnomon."
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X3"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 121 ESTs, 363 long SRA
+                     reads, 5 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017256.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X9"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 123 ESTs, 420 long SRA
+                     reads, 7 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_024448379.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X8"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 123 ESTs, 420 long SRA
+                     reads, 7 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 5 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_024448378.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X2"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 122 ESTs, 365 long SRA
+                     reads, 5 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 2 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017255.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X10"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 6 mRNAs, 123 ESTs, 401 long SRA
+                     reads, 3 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017261.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X6"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 123 ESTs, 421 long SRA
+                     reads, 6 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_011544780.3"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X4"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 123 ESTs, 370 long SRA
+                     reads, 4 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_011544778.3"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X1"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 122 ESTs, 365 long SRA
+                     reads, 5 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments"
+                     /transcript_id="XM_017017254.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X5"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 122 ESTs, 369 long SRA
+                     reads, 5 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017257.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X7"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 119 ESTs, 362 long SRA
+                     reads, 5 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017258.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X30"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 124 ESTs, 399 long SRA
+                     reads, 3 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 3 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017280.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X35"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 124 ESTs, 400 long SRA
+                     reads, 3 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 2 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017285.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X19"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 123 ESTs, 362 long SRA
+                     reads, 5 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017269.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X25"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 124 ESTs, 419 long SRA
+                     reads, 6 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 4 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017276.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X29"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 125 ESTs, 399 long SRA
+                     reads, 3 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 4 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017279.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X20"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 125 ESTs, 420 long SRA
+                     reads, 6 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 7 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017270.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X15"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 125 ESTs, 370 long SRA
+                     reads, 3 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 9 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_011544782.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X12"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 124 ESTs, 363 long SRA
+                     reads, 5 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017263.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X17"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 6 mRNAs, 143 ESTs, 363 long SRA
+                     reads, 5 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 2 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017267.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X18"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 122 ESTs, 361 long SRA
+                     reads, 5 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 2 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017268.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X14"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 120 ESTs, 361 long SRA
+                     reads, 5 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017265.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X31"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 121 ESTs, 399 long SRA
+                     reads, 3 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 5 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017281.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X21"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 121 ESTs, 430 long SRA
+                     reads, 6 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 6 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017271.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X13"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 120 ESTs, 364 long SRA
+                     reads, 5 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017264.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X26"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 120 ESTs, 362 long SRA
+                     reads, 4 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 2 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017277.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X22"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 135 ESTs, 363 long SRA
+                     reads, 4 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017273.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X11"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 6 mRNAs, 135 ESTs, 380 long SRA
+                     reads, 4 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 2 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017262.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X28"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 6 mRNAs, 126 ESTs, 376 long SRA
+                     reads, 1 Protein, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 5 samples
+                     with support for all annotated introns"
+                     /transcript_id="XM_005273810.4"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X34"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 121 ESTs, 359 long SRA
+                     reads, 4 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017284.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X37"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 119 ESTs, 352 long SRA
+                     reads, 3 Proteins, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017286.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X38"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 119 ESTs, 347 long SRA
+                     reads, 1 Protein, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017287.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X40"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 120 ESTs, 347 long SRA
+                     reads, 1 Protein, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017289.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X41"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 127 ESTs, 360 long SRA
+                     reads, 1 Protein, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017290.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant X39"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon. Supporting evidence
+                     includes similarity to: 5 mRNAs, 119 ESTs, 347 long SRA
+                     reads, 1 Protein, and 100% coverage of the annotated
+                     genomic feature by RNAseq alignments, including 1 sample
+                     with support for all annotated introns"
+                     /transcript_id="XM_017017288.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 7"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001351274.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 8"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001351275.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 6"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001300983.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 12"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377968.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 2"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001364.3"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 9"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001351276.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 16"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377973.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 14"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377971.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 13"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377970.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 11"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377967.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 10"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377966.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 5"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001206769.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 3"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001142700.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 17"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377974.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     misc_RNA        <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 27"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NR_165353.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 15"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377972.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 20"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377977.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 25"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377982.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 24"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377981.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 23"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377980.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 4"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001142702.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 22"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377979.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 21"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377978.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 19"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377976.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 1"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001142699.3"
+                     /db_xref="Ensembl:ENST00000376104.7"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 8 is encoded by transcript variant 8;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 8"
+                     /protein_id="NP_001338204.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MPVKKTDTDRALSLLEEYCKKLRKPEEQLLKNAVKKVMGIFKSS
+                     LFQALLDIQEFYEVTLLNSQKSCEQKIEEANQVLQKWEKTSLLAPCHDRLQKSSELTD
+                     CSGSKENASCIEQNKENQSFENETDETTTYRYQDEDAPHDHSLPRLTHEVRGPELVHV
+                     SEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLE
+                     RGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSE
+                     VSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPG
+                     DNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKV
+                     GKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHM
+                     LVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEM
+                     TSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFIL
+                     AGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARF
+                     EAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGD
+                     ILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDS
+                     KGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISE
+                     FPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTS
+                     VQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQA
+                     KKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X8"
+                     /protein_id="XP_024304147.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MPVKKTDTDRALSLLEEYCKKLRKPEEQLLKNAVKKVMGIFKSS
+                     LFQALLDIQEFYEVTLLNSQKSCEQKIEEANQVLQKWEKTSLLAPCHDRLQKSSELTD
+                     CSGSKENASCIEQNKENQSFENETDETTTYRYQDEDAPHDHSLPRLTHEVRGPELVHV
+                     SEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLE
+                     RGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSE
+                     VSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPG
+                     DNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKV
+                     GKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHM
+                     LVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEM
+                     TSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFIL
+                     AGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARF
+                     EAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGD
+                     ILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDS
+                     KGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISE
+                     FPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTS
+                     VQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQA
+                     KKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 7 is encoded by transcript variant 7;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 7"
+                     /protein_id="NP_001338203.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MPVKKTDTDRALSLLEEYCKKLRKPEEQLLKNAVKKVMGIFKSS
+                     LFQALLDIQEFYEVTLLNSQKSCEQKIEEANQVLQKWEKTSLLAPCHDRLQKSSELTD
+                     CSGSKENASCIEQNKENQSFENETDETTTKYRYQDEDAPHDHSLPRLTHEVRGPELVH
+                     VSEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITL
+                     ERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVS
+                     EVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIP
+                     GDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLK
+                     VGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKH
+                     MLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSE
+                     MTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFI
+                     LAGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYAR
+                     FEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYG
+                     DILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVID
+                     SKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLIS
+                     EFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGT
+                     SVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQ
+                     AKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X7"
+                     /protein_id="XP_024304146.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MPVKKTDTDRALSLLEEYCKKLRKPEEQLLKNAVKKVMGIFKSS
+                     LFQALLDIQEFYEVTLLNSQKSCEQKIEEANQVLQKWEKTSLLAPCHDRLQKSSELTD
+                     CSGSKENASCIEQNKENQSFENETDETTTKYRYQDEDAPHDHSLPRLTHEVRGPELVH
+                     VSEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITL
+                     ERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVS
+                     EVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIP
+                     GDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLK
+                     VGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKH
+                     MLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSE
+                     MTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFI
+                     LAGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYAR
+                     FEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYG
+                     DILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVID
+                     SKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLIS
+                     EFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGT
+                     SVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQ
+                     AKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X4"
+                     /protein_id="XP_016872746.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MPVKKTDTDRALSLLEEYCKKLRKPEEQLLKNAVKKVMGIFKSS
+                     LFQALLDIQEFYEVTLLNSQKSCEQKIEEANQVLQKWEKTSLLAPCHDRLQKSSELTD
+                     CSGSKENASCIEQNKENQSFENETDETTTQNQGRCPAQNCSVEAPAWMPVHHCTYRYQ
+                     DEDAPHDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSHISPLKASPAPIIVN
+                     TDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPG
+                     GAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVE
+                     IKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNY
+                     SLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGN
+                     NGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPV
+                     ECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLH
+                     KGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQA
+                     AAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYV
+                     RAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSK
+                     RRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFPFYKNKEQSEQETSD
+                     PEQHVSSNASDSESSYRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEF
+                     PDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSV
+                     QSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAK
+                     KTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X2"
+                     /protein_id="XP_016872744.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MPVKKTDTDRALSLLEEYCKKLRKPEEQLLKNAVKKVMGIFKSS
+                     LFQALLDIQEFYEVTLLNSQKSCEQKIEEANQVLQKWEKTSLLAPCHDRLQKSSELTD
+                     CSGSKENASCIEQNKENQSFENETDETTTQNQGRCPAQNCSVEAPAWMPVHHCTKYRY
+                     QDEDAPHDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSHISPLKASPAPIIV
+                     NTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIP
+                     GGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVV
+                     EIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNN
+                     YSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSG
+                     NNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSP
+                     VECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVL
+                     HKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQ
+                     AAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLY
+                     VRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPS
+                     KRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFPFYKNKEQSEQETS
+                     DPEQHVSSNASDSESSYRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISE
+                     FPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTS
+                     VQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQA
+                     KKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X2"
+                     /protein_id="XP_016872745.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MPVKKTDTDRALSLLEEYCKKLRKPEEQLLKNAVKKVMGIFKSS
+                     LFQALLDIQEFYEVTLLNSQKSCEQKIEEANQVLQKWEKTSLLAPCHDRLQKSSELTD
+                     CSGSKENASCIEQNKENQSFENETDETTTQNQGRCPAQNCSVEAPAWMPVHHCTKYRY
+                     QDEDAPHDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSHISPLKASPAPIIV
+                     NTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIP
+                     GGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVV
+                     EIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNN
+                     YSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSG
+                     NNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSP
+                     VECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVL
+                     HKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQ
+                     AAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLY
+                     VRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPS
+                     KRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFPFYKNKEQSEQETS
+                     DPEQHVSSNASDSESSYRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISE
+                     FPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTS
+                     VQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQA
+                     KKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X9"
+                     /protein_id="XP_016872750.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MPVKKTDTDRALSLLEEYCKKLRKPEEQLLKNAVKKVMGIFKSS
+                     LFQALLGQSKTQDQGQHQWNIQEFYEVTLLNSQKSCEQKIEEANQVLQKWEKTSLLAP
+                     CHDRLQKSSELTDCSGSKENASCIEQNKENQSFENETDETTTQNQGRCPAQNCSVEAP
+                     AWMPVHHCTKYRYQDEDAPHDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSH
+                     ISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHI
+                     GDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRL
+                     YVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDG
+                     RLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITH
+                     SYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTSHSQHSTATRQP
+                     SMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQR
+                     GDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMN
+                     HSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWW
+                     QARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGDIPGLGDDGYG
+                     TKTLRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTT
+                     RPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKH
+                     CILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQE
+                     FGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X5"
+                     /protein_id="XP_011543082.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MPVKKTDTDRALSLLEEYCKKLRKPEEQLLKNAVKKVMGIFKSS
+                     LFQALLGQSKTQDQGQHQWNIQEFYEVTLLNSQKSCEQKIEEANQVLQKWEKTSLLAP
+                     CHDRLQKSSELTDCSGSKENASCIEQNKENQSFENETDETTTQNQGRCPAQNCSVEAP
+                     AWMPVHHCTKYRYQDEDAPHDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSH
+                     ISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHI
+                     GDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRL
+                     YVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDG
+                     RLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITH
+                     SYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNK
+                     LCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQR
+                     AVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILS
+                     VNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSG
+                     SGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVM
+                     LEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRG
+                     QEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDY
+                     EVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVS
+                     GNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFT
+                     AIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X3"
+                     /protein_id="XP_011543080.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MPVKKTDTDRALSLLEEYCKKLRKPEEQLLKNAVKKVMGIFKSS
+                     LFQALLGQSKTQDQGQHQWNIQEFYEVTLLNSQKSCEQKIEEANQVLQKWEKTSLLAP
+                     CHDRLQKSSELTDCSGSKENASCIEQNKENQSFENETDETTTQNQGRCPAQNCSVEAP
+                     AWMPVHHCTKYRYQDEDAPHDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSH
+                     ISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHI
+                     GDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRL
+                     YVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDG
+                     RLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITH
+                     SYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNK
+                     LCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQR
+                     AVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILS
+                     VNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSG
+                     SGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVM
+                     LEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFP
+                     FYKNKEQSEQETSDPERGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEF
+                     PDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSV
+                     QSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAK
+                     KTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X1"
+                     /protein_id="XP_016872743.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MPVKKTDTDRALSLLEEYCKKLRKPEEQLLKNAVKKVMGIFKSS
+                     LFQALLGQSKTQDQGQHQWNIQEFYEVTLLNSQKSCEQKIEEANQVLQKWEKTSLLAP
+                     CHDRLQKSSELTDCSGSKENASCIEQNKENQSFENETDETTTQNQGRCPAQNCSVEAP
+                     AWMPVHHCTKYRYQDEDAPHDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSH
+                     ISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHI
+                     GDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRL
+                     YVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDG
+                     RLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITH
+                     SYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNK
+                     LCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQR
+                     AVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILS
+                     VNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSG
+                     SGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVM
+                     LEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFP
+                     FYKNKEQSEQETSDPEQHVSSNASDSESSYRGQEDLILSYEPVTRQEINYTRPVIILG
+                     PMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFI
+                     EAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEP
+                     LMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPF
+                     IWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 1 is encoded by transcript variant 1;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 1"
+                     /protein_id="NP_001136171.1"
+                     /db_xref="CCDS:CCDS44690.1"
+                     /db_xref="Ensembl:ENSP00000365272.2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MGIFKSSLFQALLDIQEFYEVTLLNSQKSCEQKIEEANQVLQKW
+                     EKTSLLAPCHDRLQKSSELTDCSGSKENASCIEQNKENQSFENETDETTTQNQGRCPA
+                     QNCSVEAPAWMPVHHCTKYRYQDEDAPHDHSLPRLTHEVRGPELVHVSEKNLSQIENV
+                     HGYVLQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIA
+                     GGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALK
+                     EAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIID
+                     GGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDP
+                     YGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPE
+                     PVYSTVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATR
+                     QPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGEL
+                     QRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQM
+                     MNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDE
+                     WWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKS
+                     FIFSRKFPFYKNKEQSEQETSDPERGQEDLILSYEPVTRQEINYTRPVIILGPMKDRI
+                     NDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYN
+                     DNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNK
+                     RLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSK
+                     EKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X6"
+                     /protein_id="XP_016872747.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MESKEVLVHYIQEFYEVTLLNSQKSCEQKIEEANQVLQKWEKTS
+                     LLAPCHDRLQKSSELTDCSGSKENASCIEQNKENQSFENETDETTTQNQGRCPAQNCS
+                     VEAPAWMPVHHCTKYRYQDEDAPHDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYV
+                     LQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTD
+                     NPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGS
+                     IVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAA
+                     QKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPP
+                     DITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYS
+                     TVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSM
+                     TLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGD
+                     QILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHS
+                     MSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQA
+                     RRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFS
+                     RKFPFYKNKEQSEQETSDPEQHVSSNASDSESSYRGQEDLILSYEPVTRQEINYTRPV
+                     IILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQE
+                     HKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPR
+                     SLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQ
+                     SGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X34"
+                     /protein_id="XP_016872774.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MDCLCIVTTKKYRYQDEDAPHDHSLPRLTHEVRGPELVHVSEKN
+                     LSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNS
+                     GLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHS
+                     KAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSI
+                     YVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPT
+                     TIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDD
+                     DYTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSF
+                     ILAGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYA
+                     RFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKY
+                     GDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVI
+                     DSKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLI
+                     SEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYG
+                     TSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEE
+                     QAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X24"
+                     /protein_id="XP_016872765.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MDCLCIVTTKKYRYQDEDAPHDHSLPRLTHEVRGPELVHVSEKN
+                     LSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNS
+                     GLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHS
+                     KAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSI
+                     YVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPT
+                     TIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDD
+                     DYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMTSHS
+                     QHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGP
+                     ADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKI
+                     HDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHV
+                     INASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGDI
+                     PGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDK
+                     FGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSV
+                     RFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTY
+                     DRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X18"
+                     /protein_id="XP_016872758.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MDCLCIVTTKKYRYQDEDAPHDHSLPRLTHEVRGPELVHVSEKN
+                     LSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNS
+                     GLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHS
+                     KAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSI
+                     YVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPT
+                     TIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDD
+                     DYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMTSHS
+                     QHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGP
+                     ADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKI
+                     HDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHV
+                     INASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGSF
+                     NDKRKKSFIFSRKFPFYKNKEQSEQETSDPEQHVSSNASDSESSYRGQEDLILSYEPV
+                     TRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVI
+                     SREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQ
+                     LYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDI
+                     YNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X29"
+                     /protein_id="XP_016872769.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MDCLCIVTTKQNQGRCPAQNCSVEAPAWMPVHHCTYRYQDEDAP
+                     HDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLD
+                     TIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAE
+                     DGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFK
+                     GPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEV
+                     THEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLE
+                     YKTSLPPISPGRYSPIPKHMLVDDDYTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVL
+                     HKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQ
+                     AAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLY
+                     VRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPS
+                     KRRVERKERARLKTVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTR
+                     QEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISR
+                     EQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLY
+                     PIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYN
+                     QCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X28"
+                     /protein_id="XP_016872768.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MDCLCIVTTKQNQGRCPAQNCSVEAPAWMPVHHCTKYRYQDEDA
+                     PHDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTL
+                     DTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAA
+                     EDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLF
+                     KGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEE
+                     VTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTL
+                     EYKTSLPPISPGRYSPIPKHMLVDDDYTSHSQHSTATRQPSMTLQRAVSLEGEPRKVV
+                     LHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHE
+                     QAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSL
+                     YVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIP
+                     SKRRVERKERARLKTVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRGQEDLILSYEPVT
+                     RQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVIS
+                     REQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQL
+                     YPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIY
+                     NQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X19"
+                     /protein_id="XP_016872759.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MDCLCIVTTKQNQGRCPAQNCSVEAPAWMPVHHCTKYRYQDEDA
+                     PHDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTL
+                     DTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAA
+                     EDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLF
+                     KGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEE
+                     VTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTL
+                     EYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDK
+                     SFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGST
+                     GLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAAL
+                     KGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMF
+                     DYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVE
+                     RKERARLKTVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINY
+                     TRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEK
+                     DIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIF
+                     IKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLV
+                     IEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X14"
+                     /protein_id="XP_011543084.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MDCLCIVTTKQNQGRCPAQNCSVEAPAWMPVHHCTKYRYQDEDA
+                     PHDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTL
+                     DTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAA
+                     EDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLF
+                     KGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEE
+                     VTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTL
+                     EYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDK
+                     SFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGST
+                     GLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAAL
+                     KGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMF
+                     DYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVE
+                     RKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFPFYKNKEQSEQETSDPERG
+                     QEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDY
+                     EVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVS
+                     GNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFT
+                     AIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X11"
+                     /protein_id="XP_016872752.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MDCLCIVTTKQNQGRCPAQNCSVEAPAWMPVHHCTKYRYQDEDA
+                     PHDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTL
+                     DTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAA
+                     EDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLF
+                     KGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEE
+                     VTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTL
+                     EYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDK
+                     SFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGST
+                     GLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAAL
+                     KGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMF
+                     DYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVE
+                     RKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFPFYKNKEQSEQETSDPEQH
+                     VSSNASDSESSYRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKF
+                     GSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVR
+                     FVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYD
+                     RAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X17"
+                     /protein_id="XP_016872757.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MFFACYCALRTNVKYRYQDEDAPHDHSLPRLTHEVRGPELVHVS
+                     EKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLER
+                     GNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEV
+                     SHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGD
+                     NSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVG
+                     KPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHML
+                     VDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMT
+                     SHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILA
+                     GGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFE
+                     AKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDI
+                     LHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSK
+                     GSFNDKRKKSFIFSRKFPFYKNKEQSEQETSDPEQHVSSNASDSESSYRGQEDLILSY
+                     EPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYH
+                     FVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQ
+                     VAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTL
+                     EDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 6 is encoded by transcript variant 6;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 6"
+                     /protein_id="NP_001287912.1"
+                     /db_xref="CCDS:CCDS73357.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MFFACYCALRTNVKKYRYQDEDAPHDHSLPRLTHEVRGPELVHV
+                     SEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLE
+                     RGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSE
+                     VSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPG
+                     DNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKV
+                     GKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHM
+                     LVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEM
+                     TSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFIL
+                     AGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARF
+                     EAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGD
+                     ILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDS
+                     KGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISE
+                     FPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTS
+                     VQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQA
+                     KKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 12 is encoded by transcript variant 12;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 12"
+                     /protein_id="NP_001364897.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MFFACYCALRTNVKKYRYQDEDAPHDHSLPRLTHEVRGPELVHV
+                     SEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLE
+                     RGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSE
+                     VSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPG
+                     DNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKV
+                     GKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHM
+                     LVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEM
+                     TSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFIL
+                     AGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARF
+                     EAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGD
+                     ILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDS
+                     KGDIPGLGDDGYGTKTLKHVSSNASDSESSYRGQEDLILSYEPVTRQEINYTRPVIIL
+                     GPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKF
+                     IEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLE
+                     PLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGP
+                     FIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 2 is encoded by transcript variant 2;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 2"
+                     /protein_id="NP_001355.2"
+                     /db_xref="CCDS:CCDS41696.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MFFACYCALRTNVKKYRYQDEDAPHDHSLPRLTHEVRGPELVHV
+                     SEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLE
+                     RGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSE
+                     VSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPG
+                     DNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKV
+                     GKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHM
+                     LVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEM
+                     TSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFIL
+                     AGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARF
+                     EAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGD
+                     ILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDS
+                     KGSFNDKRKKSFIFSRKFPFYKNKEQSEQETSDPERGQEDLILSYEPVTRQEINYTRP
+                     VIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQ
+                     EHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKP
+                     RSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEE
+                     QSGPFIWIPSKEKL"
+     misc_feature    77..79
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Phosphotyrosine.
+                     /evidence=ECO:0000250|UniProtKB:Q91XM9; propagated from
+                     UniProtKB/Swiss-Prot (Q15700.3); phosphorylation site"
+     misc_feature    146..148
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Phosphoserine.
+                     /evidence=ECO:0000250|UniProtKB:Q63622; propagated from
+                     UniProtKB/Swiss-Prot (Q15700.3); phosphorylation site"
+     misc_feature    152..154
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Phosphoserine.
+                     /evidence=ECO:0000250|UniProtKB:Q63622; propagated from
+                     UniProtKB/Swiss-Prot (Q15700.3); phosphorylation site"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X16"
+                     /protein_id="XP_016872756.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MFFACYCALRTNVKKYRYQDEDAPHDHSLPRLTHEVRGPELVHV
+                     SEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLE
+                     RGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSE
+                     VSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPG
+                     DNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKV
+                     GKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHM
+                     LVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEM
+                     TSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFIL
+                     AGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARF
+                     EAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGD
+                     ILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDS
+                     KGSFNDKRKKSFIFSRKFPFYKNKEQSEQETSDPEQHVSSNASDSESSYRGQEDLILS
+                     YEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDY
+                     HFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRL
+                     QVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDT
+                     LEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 9 is encoded by transcript variant 9;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 9"
+                     /protein_id="NP_001338205.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MSPVVKDPDCFTPMICHCKVACTNNTLSLMFGCKYRYQDEDAPH
+                     DHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDT
+                     IPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAED
+                     GRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKG
+                     PKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVT
+                     HEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEY
+                     KTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSF
+                     LLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGL
+                     GFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKG
+                     AGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDY
+                     DKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERK
+                     ERARLKTVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYTR
+                     PVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDI
+                     QEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIK
+                     PRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIE
+                     EQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X13"
+                     /protein_id="XP_016872754.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MSPVVKDPDCFTPMICHCKVACTNNTLSLMFGCKYRYQDEDAPH
+                     DHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLDT
+                     IPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAED
+                     GRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKG
+                     PKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVT
+                     HEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEY
+                     KTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSF
+                     LLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGL
+                     GFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKG
+                     AGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDY
+                     DKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERK
+                     ERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFPFYKNKEQSEQETSDPEQHVS
+                     SNASDSESSYRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGS
+                     CVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFV
+                     AERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRA
+                     IKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X30"
+                     /protein_id="XP_016872770.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MSPVVKDPDCFTPMICHCKVACTNNTLSLMFGCKKYRYQDEDAP
+                     HDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLD
+                     TIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAE
+                     DGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFK
+                     GPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEV
+                     THEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLE
+                     YKTSLPPISPGRYSPIPKHMLVDDDYTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVL
+                     HKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQ
+                     AAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLY
+                     VRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPS
+                     KRRVERKERARLKTVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTR
+                     QEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISR
+                     EQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLY
+                     PIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYN
+                     QCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X20"
+                     /protein_id="XP_016872760.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MSPVVKDPDCFTPMICHCKVACTNNTLSLMFGCKKYRYQDEDAP
+                     HDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLD
+                     TIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAE
+                     DGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFK
+                     GPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEV
+                     THEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLE
+                     YKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKS
+                     FLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTG
+                     LGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALK
+                     GAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFD
+                     YDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVER
+                     KERARLKTVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYT
+                     RPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKD
+                     IQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFI
+                     KPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVI
+                     EEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X12"
+                     /protein_id="XP_016872753.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MSPVVKDPDCFTPMICHCKVACTNNTLSLMFGCKKYRYQDEDAP
+                     HDHSLPRLTHEVRGPELVHVSEKNLSQIENVHGYVLQSHISPLKASPAPIIVNTDTLD
+                     TIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAE
+                     DGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFK
+                     GPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEV
+                     THEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLE
+                     YKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKS
+                     FLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTG
+                     LGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALK
+                     GAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFD
+                     YDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVER
+                     KERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFPFYKNKEQSEQETSDPEQHV
+                     SSNASDSESSYRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFG
+                     SCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRF
+                     VAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDR
+                     AIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 16 is encoded by transcript variant 16;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 16"
+                     /protein_id="NP_001364902.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MFASIWYAKKLGRRFVHNARKAKSEKASPAPIIVNTDTLDTIPY
+                     VNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRL
+                     RVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKG
+                     LGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEE
+                     AVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTS
+                     LPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSFLLS
+                     APYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFN
+                     IVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQ
+                     TVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKS
+                     KDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERA
+                     RLKTVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYTRPVI
+                     ILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEH
+                     KFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRS
+                     LEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQS
+                     GPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X25"
+                     /protein_id="XP_016872766.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MFASIWYAKKLGRRFVHNARKAKSEKASPAPIIVNTDTLDTIPY
+                     VNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRL
+                     RVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKG
+                     LGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEE
+                     AVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTS
+                     LPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPVECDKSFLLS
+                     APYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFN
+                     IVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQ
+                     TVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKS
+                     KDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERA
+                     RLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFPFYKNKEQSEQETSDPEQHVSSNA
+                     SDSESSYRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVP
+                     HTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAER
+                     GKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKL
+                     EQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 14 is encoded by transcript variant 14;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 14"
+                     /protein_id="NP_001364900.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MNAYLTKQHSCSRGSDGMDAVRSAPTLIRDAHCACGWQRNCQGL
+                     GYSSQTMPSSGPGGPASNRTGGSSFNRTLWDSVRKSPHKTSTKGKGTCGEHCTCPHGW
+                     FSPAQASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHI
+                     GDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRL
+                     YVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDG
+                     RLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITH
+                     SYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTSHSQHSTATRQP
+                     SMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQR
+                     GDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMN
+                     HSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWW
+                     QARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGDIPGLGDDGYG
+                     TKTLRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTT
+                     RPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKH
+                     CILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQE
+                     FGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 13 is encoded by transcript variant 13;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 13"
+                     /protein_id="NP_001364899.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MNAYLTKQHSCSRGSDGMDAVRSAPTLIRDAHCACGWQRNCQGL
+                     GYSSQTMPSSGPGGPASNRTGGSSFNRTLWDSVRKSPHKTSTKGKGTCGEHCTCPHGW
+                     FSPAQASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHI
+                     GDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRL
+                     YVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDG
+                     RLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITH
+                     SYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTSHSQHSTATRQP
+                     SMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQR
+                     GDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMN
+                     HSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWW
+                     QARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFI
+                     FSRKFPFYKNKEQSEQETSDPERGQEDLILSYEPVTRQEINYTRPVIILGPMKDRIND
+                     DLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDN
+                     LYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRL
+                     TEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEK
+                     L"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X21"
+                     /protein_id="XP_016872762.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MNAYLTKQHSCSRGSDGMDAVRSAPTLIRDAHCACGWQRNCQGL
+                     GYSSQTMPSSGPGGPASNRTGGSSFNRTLWDSVRKSPHKTSTKGKGTCGEHCTCPHGW
+                     FSPAQASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHI
+                     GDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRL
+                     YVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDG
+                     RLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITH
+                     SYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTSHSQHSTATRQP
+                     SMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQR
+                     GDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMN
+                     HSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWW
+                     QARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFI
+                     FSRKFPFYKNKEQSEQETSDPEQHVSSNASDSESSYRGQEDLILSYEPVTRQEINYTR
+                     PVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDI
+                     QEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIK
+                     PRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIE
+                     EQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 11 is encoded by transcript variant 11;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 11"
+                     /protein_id="NP_001364896.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MNAYLTKQHSCSRGSDGMDAVRSAPTLIRDAHCACGWQRNCQGL
+                     GYSSQTMPSSGPGGPASNRTGGSSFNRTLWDSVRKSPHKTSTKGKGTCGEHCTCPHGW
+                     FSPAQASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHI
+                     GDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRL
+                     YVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDG
+                     RLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITH
+                     SYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNK
+                     LCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQR
+                     AVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILS
+                     VNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSG
+                     SGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVM
+                     LEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRG
+                     QEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDY
+                     EVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVS
+                     GNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFT
+                     AIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 10 is encoded by transcript variant 10;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 10"
+                     /protein_id="NP_001364895.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MNAYLTKQHSCSRGSDGMDAVRSAPTLIRDAHCACGWQRNCQGL
+                     GYSSQTMPSSGPGGPASNRTGGSSFNRTLWDSVRKSPHKTSTKGKGTCGEHCTCPHGW
+                     FSPAQASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHI
+                     GDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRL
+                     YVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDG
+                     RLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITH
+                     SYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNK
+                     LCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQR
+                     AVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILS
+                     VNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSG
+                     SGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVM
+                     LEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFP
+                     FYKNKEQSEQETSDPERGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEF
+                     PDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSV
+                     QSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPREMNKRLTEEQAKKTYDRA
+                     IKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 5 is encoded by transcript variant 5;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 5"
+                     /protein_id="NP_001193698.1"
+                     /db_xref="CCDS:CCDS55782.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MNAYLTKQHSCSRGSDGMDAVRSAPTLIRDAHCACGWQRNCQGL
+                     GYSSQTMPSSGPGGPASNRTGGSSFNRTLWDSVRKSPHKTSTKGKGTCGEHCTCPHGW
+                     FSPAQASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHI
+                     GDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRL
+                     YVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDG
+                     RLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITH
+                     SYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNK
+                     LCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQR
+                     AVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILS
+                     VNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSG
+                     SGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVM
+                     LEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFP
+                     FYKNKEQSEQETSDPERGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEF
+                     PDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSV
+                     QSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAK
+                     KTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X10"
+                     /protein_id="XP_016872751.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MNAYLTKQHSCSRGSDGMDAVRSAPTLIRDAHCACGWQRNCQGL
+                     GYSSQTMPSSGPGGPASNRTGGSSFNRTLWDSVRKSPHKTSTKGKGTCGEHCTCPHGW
+                     FSPAQASPAPIIVNTDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHI
+                     GDDPGIFITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRL
+                     YVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDG
+                     RLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITH
+                     SYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNK
+                     LCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQR
+                     AVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILS
+                     VNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSG
+                     SGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVM
+                     LEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFP
+                     FYKNKEQSEQETSDPEQHVSSNASDSESSYRGQEDLILSYEPVTRQEINYTRPVIILG
+                     PMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFI
+                     EAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEP
+                     LMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPF
+                     IWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 3 is encoded by transcript variant 3;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 3"
+                     /protein_id="NP_001136172.1"
+                     /db_xref="CCDS:CCDS44691.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MQRPSVSRAENYQLLWDTIASLKQCEQAMQHAFIPVNGTEIEYE
+                     FEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPGGAAAEDGRLRVNDCILRV
+                     NEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGV
+                     GNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTS
+                     EVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRY
+                     SPIPKHMLVDDDYTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVG
+                     GEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQAAAALKGAGQTVT
+                     IIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDS
+                     GLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLK
+                     TVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYTRPVIILG
+                     PMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFI
+                     EAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEP
+                     LMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPF
+                     IWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 17 is encoded by transcript variant 17;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 17"
+                     /protein_id="NP_001364903.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MQRPSVSRAENYQLLWDTIASLKQCEQAMQHAFIPASPAPIIVN
+                     TDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPG
+                     GAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVE
+                     IKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNY
+                     SLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGN
+                     NGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTSHSQHSTATRQPSMTLQRAVSLEGEP
+                     RKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRG
+                     ASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQ
+                     KRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEM
+                     GVIPSKRRVERKERARLKTVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRGQEDLILSY
+                     EPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYH
+                     FVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQ
+                     VAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTL
+                     EDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 15 is encoded by transcript variant 15;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 15"
+                     /protein_id="NP_001364901.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MQRPSVSRAENYQLLWDTIASLKQCEQAMQHAFIPASPAPIIVN
+                     TDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPG
+                     GAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVE
+                     IKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNY
+                     SLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGN
+                     NGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPV
+                     ECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLH
+                     KGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQA
+                     AAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYV
+                     RAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSK
+                     RRVERKERARLKTVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQ
+                     EINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISRE
+                     QMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYP
+                     IAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQ
+                     CKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X27"
+                     /protein_id="XP_005273867.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MQRPSVSRAENYQLLWDTIASLKQCEQAMQHAFIPASPAPIIVN
+                     TDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPG
+                     GAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVE
+                     IKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNY
+                     SLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGN
+                     NGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPV
+                     ECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLH
+                     KGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQA
+                     AAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYV
+                     RAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSK
+                     RRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFPFYKNKEQSEQETSD
+                     PERGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRP
+                     KRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCI
+                     LDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFG
+                     EYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X33"
+                     /protein_id="XP_016872773.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MTKVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGI
+                     FITKIIPGGAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRR
+                     PILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGD
+                     RLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPM
+                     ENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPA
+                     SPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEG
+                     EPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDL
+                     RGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRT
+                     NQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSE
+                     EMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFPFYKNKE
+                     QSEQETSDPEQHVSSNASDSESSYRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRI
+                     NDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYN
+                     DNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNK
+                     RLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSK
+                     EKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X36"
+                     /protein_id="XP_016872775.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MRRQHSYGTKSLERMRKRVNDCILRVNEVDVSEVSHSKAVEALK
+                     EAGSIVRLYVRRRRPILETVVEIKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIID
+                     GGAAQKDGRLQVGDRLLMVNNYSLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDP
+                     YGPPDITHSYSPPMENHLLSGNNGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPE
+                     PVYSTVNKLCDKPASPRHYSPVECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATR
+                     QPSMTLQRAVSLEGEPRKVVLHKGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGEL
+                     QRGDQILSVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQM
+                     MNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDE
+                     WWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKS
+                     FIFSRKFPFYKNKEQSEQETSDPEQHVSSNASDSESSYRGQEDLILSYEPVTRQEINY
+                     TRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEK
+                     DIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIF
+                     IKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLV
+                     IEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X37"
+                     /protein_id="XP_016872776.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MEMVNGIDLRGASHEQAAAALKGAGQTVTIIAQYQPEDYARFEA
+                     KIHDLREQMMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDIL
+                     HVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKG
+                     SFNDKRKKSFIFSRKFPFYKNKEQSEQETSDPEQHVSSNASDSESSYRGQEDLILSYE
+                     PVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHF
+                     VISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQV
+                     AQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLE
+                     DIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 20 is encoded by transcript variant 20;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 20"
+                     /protein_id="NP_001364906.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MLKTPGNLLKSCDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQ
+                     KRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEM
+                     GVIPSKRRVERKERARLKTVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRGQEDLILSY
+                     EPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYH
+                     FVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQ
+                     VAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTL
+                     EDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X39"
+                     /protein_id="XP_016872778.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MLKTPGNLLKSCDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQ
+                     KRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSEEM
+                     GVIPSKRRVERKERARLKTVKFNAKPGVIDSKGSFNDKRKKSFIFSRKFPFYKNKEQS
+                     EQETSDPEQHVSSNASDSESSYRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRIND
+                     DLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDN
+                     LYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRL
+                     TEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEK
+                     L"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 19 is encoded by transcript variant 19;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 19"
+                     /protein_id="NP_001364905.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MSFDSQCDLRSSEPDYARFEAKIHDLREQMMNHSMSSGSGSLRT
+                     NQKRSLYVRAMFDYDKSKDSGLPSQGLSFKYGDILHVINASDDEWWQARRVMLEGDSE
+                     EMGVIPSKRRVERKERARLKTVKFNAKPGVIDSKGDIPGLGDDGYGTKTLRGQEDLIL
+                     SYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRD
+                     YHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKR
+                     LQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGD
+                     TLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             119..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 25 is encoded by transcript variant 25;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 25"
+                     /protein_id="NP_001364911.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MMNHSMSSGSGSLRTNQKRSLYVRVERKERARLKTVKFNAKPGV
+                     IDSKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDDL
+                     ISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLY
+                     GTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTE
+                     EQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             119..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 24 is encoded by transcript variant 24;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 24"
+                     /protein_id="NP_001364910.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSF
+                     KYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPG
+                     VIDSKGDIPGLGDDGYGTKTLINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTT
+                     RPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKH
+                     CILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQE
+                     FGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             119..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 23 is encoded by transcript variant 23;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 23"
+                     /protein_id="NP_001364909.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSF
+                     KYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPG
+                     VIDSKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDD
+                     LISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNL
+                     YGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPREMNKRLTEEQAKK
+                     TYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             119..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 4 is encoded by transcript variant 4;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 4"
+                     /protein_id="NP_001136174.1"
+                     /db_xref="CCDS:CCDS44692.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSF
+                     KYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPG
+                     VIDSKGDIPGLGDDGYGTKTLRGQEDLILSYEPVTRQEINYTRPVIILGPMKDRINDD
+                     LISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQEHKFIEAGQYNDNL
+                     YGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLT
+                     EEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL
+                     "
+     CDS             119..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 22 is encoded by transcript variant 22;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 22"
+                     /protein_id="NP_001364908.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSF
+                     KYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPG
+                     VIDSKGDIPGLGDDGYGTKTLKHVSSNASDSESSYRGQEDLILSYEPVTRQEINYTRP
+                     VIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQMEKDIQ
+                     EHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAIFIKP
+                     RSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKLVIEE
+                     QSGPFIWIPSKEKL"
+     CDS             119..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 21 is encoded by transcript variant 21;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 21"
+                     /protein_id="NP_001364907.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSF
+                     KYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPG
+                     VIDSKGSFNDKRKKSFIFSRKFPFYKNKEQSEQETSDPERGQEDLILSYEPVTRQEIN
+                     YTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQME
+                     KDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAI
+                     FIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKL
+                     VIEEQSGPFIWIPSKEKL"
+     CDS             119..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X38"
+                     /protein_id="XP_016872777.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSF
+                     KYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPG
+                     VIDSKGSFNDKRKKSFIFSRKFPFYKNKEQSEQETSDPEQHVSSNASDSESSYRGQED
+                     LILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVD
+                     GRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNA
+                     IKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIV
+                     QGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     CDS             119..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: Gnomon."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform X38"
+                     /protein_id="XP_016872779.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSF
+                     KYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPG
+                     VIDSKGSFNDKRKKSFIFSRKFPFYKNKEQSEQETSDPEQHVSSNASDSESSYRGQED
+                     LILSYEPVTRQEINYTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVD
+                     GRDYHFVISREQMEKDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNA
+                     IKRLQVAQLYPIAIFIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIV
+                     QGDTLEDIYNQCKLVIEEQSGPFIWIPSKEKL"
+     mRNA            <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /product="discs large MAGUK scaffold protein 2, transcript
+                     variant 18"
+                     /note="Derived by automated computational analysis using
+                     gene prediction method: BestRefSeq."
+                     /transcript_id="NM_001377975.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     CDS             <75..>189
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 18 is encoded by transcript variant 18;
+                     Derived by automated computational analysis using gene
+                     prediction method: BestRefSeq."
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 18"
+                     /protein_id="NP_001364904.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MQRPSVSRAENYQLLWDTIASLKQCEQAMQHAFIPASPAPIIVN
+                     TDTLDTIPYVNGTEIEYEFEEITLERGNSGLGFSIAGGTDNPHIGDDPGIFITKIIPG
+                     GAAAEDGRLRVNDCILRVNEVDVSEVSHSKAVEALKEAGSIVRLYVRRRRPILETVVE
+                     IKLFKGPKGLGFSIAGGVGNQHIPGDNSIYVTKIIDGGAAQKDGRLQVGDRLLMVNNY
+                     SLEEVTHEEAVAILKNTSEVVYLKVGKPTTIYMTDPYGPPDITHSYSPPMENHLLSGN
+                     NGTLEYKTSLPPISPGRYSPIPKHMLVDDDYTRPPEPVYSTVNKLCDKPASPRHYSPV
+                     ECDKSFLLSAPYSHYHLGLLPDSEMTSHSQHSTATRQPSMTLQRAVSLEGEPRKVVLH
+                     KGSTGLGFNIVGGEDGEGIFVSFILAGGPADLSGELQRGDQILSVNGIDLRGASHEQA
+                     AAALKGAGQTVTIIAQYQPEDYARFEAKIHDLREQMMNHSMSSGSGSLRTNQKRSLYV
+                     RRGN"
+ORIGIN      
+        1 ctgcctgggc tgtgcagcat ttccaactct tgagggcaca gagcaaaatt tgctaccttt
+       61 gttttcattc ccagattacg ctcgatttga ggccaaaatc catgacctac gagagcagat
+      121 gatgaaccac agcatgagct ccgggtccgg atccctgcga accaatcaga aacgctccct
+      181 ctacgtcagg taggcaaagg agtatttctc tatctgcact ttgtgagcaa ttcaacttga
+//
+

@@ -1,0 +1,146 @@
+---
+title: "A673 timecourse data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of the A673 timecourse data for both RNAseq and proteomics.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+These are some base directories where I store things on my system. You don't have to set these variables, I just do it so I don't have to keep re-writing the whole file location. If you use these, you should change them to be appropriate for your system.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the two data sets.
+
+```{r, message = FALSE}
+##########################################################################################
+rna = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_txiAllSamples.rds', sep = ''))
+pro = readRDS(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_proteinSetABCIrsNormalized.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make plots for genes of interest. If you want to make plots for your own genes, simply add them to the goi variable. I have included some test sets that you can use. Simply un-hash the set you want to use and hash the others out. Or create your own set. You will need to change the file path of where the file is saved to be suitable for your system.
+
+```{r}
+##########################################################################################
+#goi = c('ACO1','IREB2','SLC11A2','TFRC','FTH1','SLC40A1','ACO2') ##iron genes for Taras
+#goi = c('DLG2','IL1RAP','LIPI','LOXHD1','PRKCB','NR0B1') ##positive control set
+goi = c(paste('FZD',seq(1,10,1),sep = ''),
+        'ROR1','ROR2',
+        paste('WNT',seq(1,19,1),sep = ''),
+        paste('WNT',seq(1,19,1),rep(c('A','B'),each=19),sep = ''),
+        'NOTUM') ##WNT pathway genes for Ashish
+
+##
+scaleRnaExprs = function(x,y){
+  scaledValue = x/y
+}
+
+
+##
+for (i in 1:length(goi)){
+  ##RNA data processing
+  goiExists = rna %>%
+    dplyr::filter(grepl(paste('^',goi[i],'$', sep = ''), symbol))
+  ##
+  if(nrow(goiExists) < 1){
+    print(paste(goi[i], ' not found in RNA data. Perhaps try another identifier.', sep = ''))
+  } else {
+      rnaGoi = rna %>%
+        dplyr::filter(grepl(paste('^',goi[i],'$', sep = ''), symbol)) %>%
+        dplyr::rowwise() %>%
+        dplyr::mutate(day0Median = median(c(day0_setA, day0_setB, day0_setC), na.rm = TRUE)) %>%
+        dplyr::mutate(across(c(day0_setA:day22_setC), ~ scaleRnaExprs(., y = day0Median))) %>%
+        dplyr::select(-day0Median) %>%
+        pivot_longer(cols = day0_setA:day22_setC, names_to = 'timepoint', values_to = 'signal') %>%
+        mutate(day = factor(sub('day(.*)_set[ABC]$', '\\1', timepoint), levels = c(0,7,9,10,11,14,17,22))) %>%
+        mutate(replicate = factor(sub('day[0-9]+_set(.*)$', '\\1', timepoint), levels = c('A','B','C')))
+      ##RNA data plotting
+      ggplot(rnaGoi, aes(day, signal, color = day)) +
+        geom_boxplot(size = 0.5, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[6]) +
+        geom_point(size = 1.5, position = position_jitterdodge(jitter.width = 1)) +
+        labs(x = 'Time (days)', y = 'log2(Scaled RNA Abundance)', title = paste(goi[i],' RNA abundance', sep = '')) +
+        scale_color_manual(values = c(brewer.pal(8,'Greys')[7], brewer.pal(9,'Reds')[3:9])) +
+        scale_y_continuous(limits = c(0,max(rnaGoi$signal, na.rm = TRUE)+0.1), breaks = seq(-1,100,0.2)) +
+        theme_classic() +
+        theme(legend.position = 'none')
+      ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/goiPlots/scatterplot_',goi[i],'_a673ShEwsFli1RnaAbundanceScaled.pdf', sep = ''),
+             height = 4, width = 4, useDingbats = FALSE)
+  }
+  
+  ##protein data processing
+  goiExists = pro %>%
+    dplyr::filter(grepl(paste('^',goi[i],'$', sep = ''), gene))
+  ##
+  if(nrow(goiExists) < 1){
+    print(paste(goi[i], ' not found in protein data. Perhaps try another identifier.', sep = ''))
+  } else {
+      proGoi = pro %>%
+        dplyr::filter(grepl(paste('^',goi[i],'$', sep = ''), gene)) %>%
+        dplyr::rowwise() %>%
+        dplyr::mutate(day0Median = median(c(day0a, day0b, day0c), na.rm = TRUE)) %>%
+        dplyr::mutate(across(c(day0a:day22c), ~ scaleRnaExprs(., y = day0Median))) %>%
+        dplyr::select(-day0Median) %>%
+        pivot_longer(cols = day0a:day22c, names_to = 'timepoint', values_to = 'signal') %>%
+        mutate(day = factor(sub('day(.*)[abc]$', '\\1', timepoint), levels = c(0,7,9,10,11,14,17,22))) %>%
+        mutate(replicate = factor(sub('day[0-9]+(.*)$', '\\1', timepoint), levels = c('a','b','c')))
+      ##RNA data plotting
+      ggplot(proGoi, aes(day, signal, color = day)) +
+        geom_boxplot(size = 0.5, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[6]) +
+        geom_point(size = 1.5, position = position_jitterdodge(jitter.width = 1)) +
+        labs(x = 'Time (days)', y = 'log2(Scaled Protein Abundance)', title = paste(goi[i],' Protein abundance', sep = '')) +
+        scale_color_manual(values = c(brewer.pal(8,'Greys')[7], brewer.pal(9,'Reds')[3:9])) +
+        scale_y_continuous(limits = c(0,max(proGoi$signal, na.rm = TRUE)+0.1), breaks = seq(-1,20,0.2)) +
+        theme_classic() +
+        theme(legend.position = 'none')
+      ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/goiPlots/scatterplot_',goi[i],'_a673ShEwsFli1ProteinAbundanceScaled.pdf', sep = ''),
+             height = 4, width = 4, useDingbats = FALSE)
+  }
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Wrap up.
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+

@@ -84,6 +84,15 @@ txiAbundanceAvg = as_tibble(txiAbundance) %>%
   summarize(meanTpm = mean(log2Tpm, na.rm = TRUE)) %>%
   pivot_wider(id_cols = symbol, names_from = day, values_from = meanTpm)
 saveRDS(txiAbundanceAvg, paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_txiAllSamplesSummarizedMeans.rds', sep = ''))
+
+##
+tpmCalc = function(x){
+  log2Tpm = log2(x + 1)
+}
+txiAbundanceNoAvg = as_tibble(txiAbundance) %>%
+  dplyr::select(symbol, day0_setA:day22_setC)
+  #dplyr::mutate(across(c(day0_setA:day22_setC), tpmCalc))
+saveRDS(txiAbundanceNoAvg, paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_txiAllSamples.rds', sep = ''))
 ```
 
 <div style="margin-bottom:50px;"></div>
