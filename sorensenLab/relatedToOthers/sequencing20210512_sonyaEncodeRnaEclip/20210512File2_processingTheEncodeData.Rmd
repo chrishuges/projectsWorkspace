@@ -45,7 +45,7 @@ Read in the metadata file. It seems that it downloaded a bunch of stuff we don't
 ```{r, message = FALSE}
 ##########################################################################################
 sampleInfo = read_tsv(paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/bedFiles/metadata.tsv', sep = '')) %>%
-  dplyr::filter(`File assembly` == 'GRCh38' & `Biological replicate(s)` == '1, 2') %>%
+  dplyr::filter(`File assembly` == 'hg19' & `Biological replicate(s)` != '1, 2') %>%
   dplyr::mutate(downloadLink = paste('https://www.encodeproject.org/files/',`File accession`,'/@@download/',`File accession`,'.bed.gz', sep = ''))
   
 ##
@@ -56,11 +56,11 @@ write.table(sampleDownload, paste(baseRepository, '/sequencing20210512_sonyaEnco
 
 <div style="margin-bottom:50px;"></div>
 
-Using this new file, I went back and downloaded the data again just for the files I wanted in the first place. Now I want to annotate the bed files. Lets start with just one file and work out how to annotate it. I figured this out after some testing. This first part just sets up the annotation object.
+Using this new file, I went back and downloaded the data again just for the files I wanted in the first place. Now I want to annotate the bed files. Lets start with just one file and work out how to annotate it. I figured this out after some testing. This first part just sets up the annotation object. I had to go back and change this to hg19 because this is what they seem to like to use.
 
 ```{r}
 ##########################################################################################
-myTxdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz')
+myTxdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/hg19/gencode_gtf/hg19.gtf.gz')
 allGenes = keepStandardChromosomes(genes(myTxdb), pruning.mode = 'coarse')
 allGenesAnno = as.data.frame(allGenes)
 ensString = substr(allGenesAnno$gene_id, 1, 15)
@@ -82,24 +82,101 @@ bedFiles = list.files(paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaE
 ##
 allBedFiles = data.frame()
 for(i in 1:length(bedFiles)){
-  rawBed = read_tsv(bedFiles[i], col_names = c('seqnames','start','end','name','something1','strand','score1','score2','score3','score4')) %>%
-    dplyr::select(seqnames, start, end, strand, name, score1, score2)
+  rawBed = read_tsv(bedFiles[i], col_names = c('seqnames','start','end','name','something1','strand','l2fc','l10p','score3','score4')) %>%
+    dplyr::select(seqnames, start, end, strand, name, l10p, l2fc)
   rawBedGrange = makeGRangesFromDataFrame(rawBed)
   rawOverlaps = GenomicRanges::findOverlaps(rawBedGrange, allGenesSubset, type = 'any')
   ##
   outputBed = tibble(rawBed[queryHits(rawOverlaps),])
   overlapGeneList = allGenesAnnoSubset[subjectHits(rawOverlaps), 'symbol']
   outputBed$boundGene = overlapGeneList
+  outputBed$replicate = sub('.*_rep0(.*)$', '\\1', outputBed$name)
   outputBed$ipBait = sub('(.*)_[A-Za-z0-9]+_.*$', '\\1', outputBed$name)
   outputBed$cellLine = sub('[A-Za-z0-9]+_(.*)_.*$', '\\1', outputBed$name)
+  outputBed$chrom = outputBed$seqnames
+  finalBed = dplyr::select(outputBed, cellLine, replicate, ipBait, boundGene, chrom, start, end, strand, l10p, l2fc) %>%
+    dplyr::filter(l10p >= 3 & l2fc >= 3)
   ##
-  allBedFiles = rbind(allBedFiles, outputBed)
+  allBedFiles = rbind(allBedFiles, finalBed)
 }
 
 ##
 saveRDS(allBedFiles, paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/dataset_allEncodeEclipData.rds', sep = ''))
 write.table(allBedFiles, paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/dataset_allEncodeEclipData.tsv', sep = ''),
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Revisit this to add the manuscript data. The other data we are interested in is from a paper from the same group (PMID: 32807991). The data are deposited on GEO (GSE117290). I downloaded the tar results archive and extracted it to get the csv files.
+
+I will apply a cutoff here and on their [web page](https://github.com/YeoLab/eclip/wiki/Pipeline-FAQ) they say to use:
+
+"Typically, you can start with filtering peak files given -log10(p-value) >= 3 and log2(fold change) >= 3. It's also very important to view these regions on a genome browser to ensure these thresholds are appropriate for your dataset!"
+
+```{r, message = FALSE}
+##########################################################################################
+fileList = list.files(paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/manuscriptData/', sep = ''), pattern = '.csv.gz', full.names = TRUE)
+
+##
+allCsvFiles = tibble()
+for(i in 1:length(fileList)){
+  rawCsv = read_csv(fileList[i]) %>%
+    dplyr::mutate(ipBait = sub('.*GSM[0-9]+_(.*)_R[12]\\.peak.*$', '\\1', fileList[i])) %>%
+    dplyr::mutate(replicate = sub('.*GSM[0-9]+_[A-Z0-9]+_R(.*)\\.peak.*$', '\\1', fileList[i])) %>%
+    dplyr::rename(boundGene = genename) %>%
+    dplyr::mutate(cellLine = 'HEK293T') %>%
+    dplyr::filter(l10p >= 3 & l2fc >= 3) %>%
+    dplyr::select(cellLine, replicate, ipBait, boundGene, chrom, start, end, strand, l10p, l2fc)
+  ##
+  allCsvFiles = rbind(allCsvFiles, rawCsv)
+}
+
+##
+saveRDS(allCsvFiles, paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/dataset_allManuscriptEclipData.rds', sep = ''))
+write.table(allCsvFiles, paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/dataset_allManuscriptEclipData.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Combine the data into a more usable data frame.
+
+```{r}
+##########################################################################################
+encodeData = readRDS(paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/dataset_allEncodeEclipData.rds', sep = ''))
+manuscriptData = readRDS(paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/dataset_allManuscriptEclipData.rds', sep = ''))
+
+##
+allData = rbind(encodeData, manuscriptData) %>%
+  dplyr::filter(l10p >= 3 & l2fc >= 3)
+
+##
+saveRDS(allData, paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/dataset_allEclipPeaks.rds', sep = ''))
+write.table(allData, paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/dataset_allEclipPeaks.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+##
+allData
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a quick plot of the data.
+
+```{r}
+##########################################################################################
+plotData = readRDS(paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/dataset_allEclipPeaks.rds', sep = '')) %>%
+  dplyr::filter(ipBait == 'G3BP1') %>%
+  dplyr::select(cellLine, replicate, ipBait, boundGene, l10p, l2fc) %>%
+  dplyr::arrange(-l10p) %>%
+  unique()
+
+##
+ggplot(plotData, aes(l2fc, l10p)) +
+  geom_point(size = 3)
+
+#this looks kind of weird. It is not as clean as the 'replicate 1,2' combined data. Not sure how to best filter these results.
 ```
 
 <div style="margin-bottom:50px;"></div>

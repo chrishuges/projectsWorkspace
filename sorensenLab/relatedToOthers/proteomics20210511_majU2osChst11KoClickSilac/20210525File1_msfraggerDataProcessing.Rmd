@@ -1,0 +1,116 @@
+---
+title: "CHST proteomics"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired for comparison of osteosarcoma cell lines carrying CHST gene knockouts, as well as in the presence/absence of thapsagargin. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+I think to start, it is easiest to just use the processed protein quantification data from MSFragger. These are stored in directories based on sample, so we can pull them all and compile them into a single dataset. The heavy labeled sample is always thapsagargin treated.
+
+```{r, message = FALSE}
+##########################################################################################
+sampleInfo = tibble('cellLine' = c(rep('MNNG', 3), rep('U2OSChst11Ko', 3), rep('U2OSwt', 3)),
+                    'replicate' = rep(c('1','2','3'), 3),
+                    'genotype' = c(rep('wt',3), rep('ko',3), rep('wt',3)))
+sampleInfo$filePath = file.path(baseRepository,
+                                'proteomics20210511_majU2osChst11KoClickSilac',
+                                paste(sampleInfo$cellLine,'_',sampleInfo$replicate,sep = ''),
+                                'protein_label_quant.tsv')
+
+
+##
+proDataset = tibble()
+for(i in 1:nrow(sampleInfo)){
+  proId = read_tsv(sampleInfo$filePath[i]) %>%
+    dplyr::select(`Protein ID`, Gene, `Ratios HM`, `Median Log2 Ratios HM`) %>%
+    dplyr::rename(accession = `Protein ID`, gene = Gene, numberOfQuantifiedPeptides = `Ratios HM`, medianLog2HeavyToMedium = `Median Log2 Ratios HM`) %>%
+    dplyr::mutate(sampleName = sampleInfo$cellLine[i], replicate = sampleInfo$replicate[i]) %>%
+    dplyr::filter(numberOfQuantifiedPeptides > 1)
+  ##
+  proDataset = rbind(proDataset, proId)
+}
+
+##
+saveRDS(proDataset, paste(baseRepository, '/proteomics20210511_majU2osChst11KoClickSilac/dataset_allSamplesQuantifiedProteins.rds', sep = ''))
+write.table(proDataset, paste(baseRepository, '/proteomics20210511_majU2osChst11KoClickSilac/dataset_allSamplesQuantifiedProteins.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##
+proDatasetWide = proDataset %>%
+  dplyr::mutate(sampleId = paste(sampleName,'_',replicate,sep='')) %>%
+  dplyr::select(-sampleName, -replicate) %>%
+  pivot_wider(names_from = sampleId, values_from = c(numberOfQuantifiedPeptides, medianLog2HeavyToMedium))
+proDatsetWideFiltered = subset(proDatasetWide, rowSums(is.na(proDatasetWide[,3:5])) < 2 |
+                                 rowSums(is.na(proDatasetWide[,6:8])) < 2 |
+                                 rowSums(is.na(proDatasetWide[,9:11])) < 2)
+##
+saveRDS(proDatsetWideFiltered, paste(baseRepository, '/proteomics20210511_majU2osChst11KoClickSilac/dataset_allSamplesQuantifiedProteinsWide.rds', sep = ''))
+write.table(proDatsetWideFiltered, paste(baseRepository, '/proteomics20210511_majU2osChst11KoClickSilac/dataset_allSamplesQuantifiedProteinsWide.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a quick quality control plot for HSPA5 (BIP) that should increase with thapsagargin treatment. 
+
+```{r}
+##########################################################################################
+goi = proDataset %>%
+  dplyr::filter(grepl('^HSPA5$', gene))
+
+
+##
+ggplot(goi, aes(sampleName, medianLog2HeavyToMedium)) +
+  geom_boxplot() +
+  geom_point(size = 3) +
+  scale_y_continuous(limits = c(-5,5), breaks = seq(-6,6,2)) +
+  theme_classic()
+```
+
+<div style="margin-bottom:50px;"></div>
+
+It looks a bit odd, with the exception of U2OSwt. Ask the collaborators what they think.
+
+Wrap up for now. 
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+

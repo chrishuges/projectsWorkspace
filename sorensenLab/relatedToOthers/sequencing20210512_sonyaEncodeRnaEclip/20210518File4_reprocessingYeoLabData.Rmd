@@ -1,0 +1,59 @@
+---
+title: "ENCODE eCLIP"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details me attempting to reprocessing the Encode eCLIP data using the Yeo lab pipeline.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I like to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the metadata file. I got this from the Encode repository web page. This uses the metadata file to create download links for paired data sets
+
+```{r, message = FALSE}
+##########################################################################################
+sampleInfo = read_tsv(paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/fastqFiles/metadata.tsv', sep = '')) %>%
+  dplyr::select(`File accession`, `Biological replicate(s)`, `Technical replicate(s)`, `Paired with`, `Experiment accession`, `Biosample term name`, `Experiment target`) %>%
+  dplyr::rename(accession = `File accession`, bioReplicate = `Biological replicate(s)`, techReplicate = `Technical replicate(s)`, readPair = `Paired with`) %>%
+  dplyr::rename(experiment = `Experiment accession`, cellLine = `Biosample term name`, baitName = `Experiment target`) %>%
+  dplyr::mutate(baitName = sub('(.*)\\-.*$', '\\1', baitName)) %>%
+  dplyr::mutate(readPairAccession = sub('\\/files\\/(.*)\\/$', '\\1', readPair)) %>%
+  dplyr::filter(bioReplicate == 1) %>%
+  dplyr::mutate(downloadLinkRead1 = paste('https://www.encodeproject.org/files/',accession,'/@@download/',accession,'fastq.gz', sep = ''),
+                downloadLinkRead2 = paste('https://www.encodeproject.org/files/',readPairAccession,'/@@download/',readPairAccession,'fastq.gz', sep = ''))
+  
+##
+for (i in 1:nrow(sampleInfo)){
+  sampleDownload = c(sampleInfo$downloadLinkRead1[i], sampleInfo$downloadLinkRead2[i])
+  write.table(sampleDownload, 
+              paste(baseRepository,
+                    '/sequencing20210512_sonyaEncodeRnaEclip/fastqFiles/',sampleInfo$experiment[i],'_',sampleInfo$cellLine[i],'_',sampleInfo$baitName[i],'.txt', sep = ''),
+              col.names = FALSE, row.names = FALSE, quote = FALSE)
+}
+```

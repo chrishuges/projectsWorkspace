@@ -1,0 +1,66 @@
+---
+title: "ENCODE eCLIP"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of eCLIP data from ENCODE.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('GenomicRanges')
+library('GenomicFeatures')
+library('AnnotationDbi')
+library('org.Hs.eg.db')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I like to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the metadata file. It seems that it downloaded a bunch of stuff we don't want, so we can filter it just for GRCh38 and the combined peak files for both biological replicates. On second thought, I don't want these files because they are prior to the peak calling based on the association graph on Encode. I will leave the code here for reference.
+
+
+```{r, message = FALSE}
+##########################################################################################
+sampleInfo = read_tsv(paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/bigwigFiles/metadata.tsv', sep = '')) %>%
+  dplyr::filter(`File assembly` == 'hg19' & `Biosample type` == 'cell line') %>%
+  dplyr::select(`File accession`, `Biological replicate(s)`, `Technical replicate(s)`, `Experiment accession`, `Biosample term name`, `Experiment target`,`File download URL`) %>%
+  dplyr::rename(accession = `File accession`, bioReplicate = `Biological replicate(s)`, techReplicate = `Technical replicate(s)`) %>%
+  dplyr::rename(experiment = `Experiment accession`, cellLine = `Biosample term name`, baitName = `Experiment target`) %>%
+  dplyr::mutate(baitName = sub('(.*)\\-.*$', '\\1', baitName)) %>%
+  #dplyr::rename(downloadLink = `File download URL`)
+  dplyr::mutate(downloadLink = paste('https://www.encodeproject.org/files/',accession,'/@@download/',accession,'.bigWig', sep = ''))
+
+##
+sampleDownload = sampleInfo$downloadLink
+write.table(sampleDownload, paste(baseRepository, '/sequencing20210512_sonyaEncodeRnaEclip/bigwigFiles/updatedManifest.txt', sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE)
+
+##this file had an issue with the download. R was appending a 'CR' at the end of the line. I removed it with Notepad++ using Edit>EOL conversion.
+```
+
+<div style="margin-bottom:50px;"></div>
+
+The other data we are interested in is from a paper from the same group (PMID: 32807991). The data are deposited on GEO (GSE117290). I downloaded the tar results archive and extracted it to get the csv files. 
+

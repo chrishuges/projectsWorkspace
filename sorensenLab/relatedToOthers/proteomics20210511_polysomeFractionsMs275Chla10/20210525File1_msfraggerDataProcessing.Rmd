@@ -1,0 +1,180 @@
+---
+title: "Polysome proteomics"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired for comparisons of polysomes from CHLA10 cells. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('DEqMS')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+This is just a single batch, so we only have a single file we need to read in and process.
+
+```{r, message = FALSE}
+##########################################################################################
+psmId = read_tsv(paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/psm.tsv', sep = '')) %>%
+  dplyr::select(Peptide, `Is Unique`, `Is Used`, `Protein ID`, Gene, `sample-01`:`sample-06`, `sample-09`:`sample-14`) %>%
+  dplyr::rename(sequence = Peptide, 
+                unique = `Is Unique`,
+                used = `Is Used`,
+                accession = `Protein ID`,
+                gene = Gene) %>%
+  dplyr::filter(unique == TRUE, !grepl('CONT', accession), !is.na(gene), !grepl('-', gene)) %>%
+  dplyr::rowwise(sequence, accession, gene) %>%
+  dplyr::mutate(totalSignal = sum(c_across(`sample-01`:`sample-14`), na.rm = TRUE)) %>%
+  dplyr::filter(totalSignal >= 100) %>%
+  dplyr::select(-unique, -used) %>%
+  dplyr::group_by(sequence, accession, gene) %>%
+  dplyr::summarise(across(`sample-01`:`sample-14`, mean, na.rm = TRUE))
+colnames(psmId)[4:15] = c('dmso_rep1','ms275_rep1','dmso_rep2','ms275_rep2','dmso_rep3','ms275_rep3',
+                          'ars_rep1','combo_rep1','ars_rep2','combo_rep2','ars_rep3','combo_rep3')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can process these data with DEqMS. 
+
+Our sample layout is:
+
+* 126C - dmso_rep1
+* 127N - ms275_rep1
+* 127C - dmso_rep2
+* 128N - ms275_rep2
+* 128C - dmso_rep3
+* 129N - ms275_rep3
+* 129C - empty
+* 130N - empty
+* 130C - ars_rep1
+* 131N - combo_rep1
+* 131C - ars_rep2
+* 132N - combo_rep2
+* 132C - ars_rep3
+* 133N - combo_rep3
+* 133C - empty
+* 134N - empty
+
+We will also normalize the data to deal with any gross loading differences. We save both the non-normalized data here as well and check the normalization with a plot.
+
+```{r}
+##########################################################################################
+quantInput = psmId[,c(1:2,4:15)]
+saveRDS(quantInput, paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/dataset_peptideQuantDataPreDEqMS.rds', sep = ''))
+quantInputLog = quantInput
+quantInputLog[,3:14][quantInputLog[,3:14] == 0] = NA
+quantInputLog[,3:14] = log2(quantInputLog[,3:14])
+quantInputNormalized = medianSweeping(quantInputLog, group_col = 2)
+boxplot(quantInputNormalized, las = 2, ylab = 'log2 ratio', main = 'normalized TMT data')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+All of the data look tight. Good. Lets continue with the DEqMS analysis. We need to build our sample table.
+
+```{r}
+##########################################################################################
+cond = as.factor(c('dmso','ms275','dmso','ms275','dmso','ms275','ars','combo','ars','combo','ars','combo'))
+design = model.matrix(~0+cond) 
+colnames(design) = gsub('cond', '', colnames(design))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can build the Limma model.
+
+```{r}
+##########################################################################################
+geneMatrix = as.matrix(quantInputNormalized)
+limmaFit1 = lmFit(geneMatrix, design)
+limmaContrasts = c('ms275 - dmso', 'ars - dmso', 'combo - dmso')
+limmaContrastDesign =  makeContrasts(contrasts = limmaContrasts, levels = design)
+limmaFit2 = eBayes(contrasts.fit(limmaFit1, contrasts = limmaContrastDesign))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now for the actual DEqMS work. We will first
+
+```{r}
+##########################################################################################
+psmCountTable = as.data.frame(table(quantInput$accession))
+rownames(psmCountTable) = psmCountTable$Var1
+limmaFit2$count = psmCountTable[rownames(limmaFit2$coefficients),2]
+limmaFit3 = spectraCounteBayes(limmaFit2)
+head(limmaFit3$coefficients)
+idData = unique(psmId[,2:3])
+
+##
+deqmsResults = tibble(outputResult(limmaFit3, coef_col = 1)) %>%
+  dplyr::rename(accession = gene) %>%
+  left_join(idData)
+dim(deqmsResults)
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/dataset_deqms_ms275-dmso.rds', sep = ''))
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/dataset_deqms_ms275-dmso.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+##
+deqmsResults = tibble(outputResult(limmaFit3, coef_col = 2)) %>%
+  dplyr::rename(accession = gene) %>%
+  left_join(idData)
+dim(deqmsResults)
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/dataset_deqms_ars-dmso.rds', sep = ''))
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/dataset_deqms_ars-dmso.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+##
+deqmsResults = tibble(outputResult(limmaFit3, coef_col = 3)) %>%
+  dplyr::rename(accession = gene) %>%
+  left_join(idData)
+dim(deqmsResults)
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/dataset_deqms_combo-dmso.rds', sep = ''))
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/dataset_deqms_combo-dmso.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
