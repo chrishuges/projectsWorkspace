@@ -107,7 +107,7 @@ fixedModifications=''
 variableModifications='"Oxidation of M, Lysine 13C(6) 15N(2), Lysine 2H(4), Arginine 13C(6), Arginine 13C(6) 15N(4)"'
 
 #####call the parameters file creation
-callingParameters='java -cp "$searchGuiLocation" eu.isas.searchgui.cmd.IdentificationParametersCLI -out ./databaseSearchParameters.par -prec_ppm 1 -prec_tol 10 -frag_ppm 0 -frag_tol 0.05 -fixed_mods "$fixedModifications" -variable_mods "$variableModifications" -msgf_instrument 3 -msgf_protocol 5 -msgf_fragmentation 3'
+callingParameters='java -cp "$searchGuiLocation" eu.isas.searchgui.cmd.IdentificationParametersCLI -out ./databaseSearchParameters.par -prec_ppm 1 -prec_tol 20 -frag_ppm 0 -frag_tol 0.05 -fixed_mods "$fixedModifications" -variable_mods "$variableModifications" -msgf_instrument 3 -msgf_protocol 5 -msgf_fragmentation 3'
 
 ####call the command
 if [ ! -f "./databaseSearchParameters.par" ]; then
