@@ -134,7 +134,7 @@ for i in "${fileList[@]}"; do
   if [ -f "$targetId.raw.mgf" ]; then
     printf "MGF output for $targetId already exists, skipping file.\n\n"
   else
-    rawtoolsExecution="mono $rawtoolsLocation -f $i -q -uxmR -o $PWD"
+    rawtoolsExecution="mono $rawtoolsLocation -f $i -puxmR -o $PWD"
     eval $rawtoolsExecution
   fi
 done
