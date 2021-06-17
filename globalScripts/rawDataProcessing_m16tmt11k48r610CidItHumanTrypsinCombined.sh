@@ -21,7 +21,7 @@ fi
 ##############################################################
 #users must edit the below variables
 #this is the text that will identify your files
-sampleTag="20210610_ahmedSilacTest"
+sampleTag="20210607_majHaifengClickSilacThapsagarginChstKo"
 #this is the desired location for the output of the data processing process
 desiredBaseLocation="/projects/ptx_results/2021/Lumos-VCP/06-Jun/Samples/CH/"
 #this is the base location where your raw data is stored
@@ -72,11 +72,12 @@ databaseExtension="TargetDecoy"
 #check if the database exists, and if not, get it
 if [ ! -f "./uniprotHumanCrap$databaseExtension$uniprotVersion.fasta" ]; then
     printf "Database not found!\n\n"
-    eval "wget ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/Eukaryota/UP000005640_9606.fasta.gz"
+    eval "wget ftp://ftp.uniprot.org/pub/databases/uniprot/current_release/knowledgebase/reference_proteomes/Eukaryota/UP000005640/UP000005640_9606.fasta.gz"
     eval "gunzip UP000005640_9606.fasta.gz"
     eval "mv UP000005640_9606.fasta ./uniprotHuman$uniprotVersion.fasta"
     eval "cat ./uniprotHuman$uniprotVersion.fasta $crapDatabase > ./uniprotHumanCrap$uniprotVersion.fasta"
-    eval "java -cp $searchGuiLocation eu.isas.searchgui.cmd.FastaCLI -in ./uniprotHumanCrap$uniprotVersion.fasta -decoy"    eval "mv ./uniprotHumanCrap${uniprotVersion}_concatenated_target_decoy.fasta ./uniprotHumanCrap$databaseExtension$uniprotVersion.fasta"
+    eval "java -cp $searchGuiLocation eu.isas.searchgui.cmd.FastaCLI -in ./uniprotHumanCrap$uniprotVersion.fasta -decoy"    
+    eval "mv ./uniprotHumanCrap${uniprotVersion}_concatenated_target_decoy.fasta ./uniprotHumanCrap$databaseExtension$uniprotVersion.fasta"
     eval "scp ./uniprotHuman$uniprotVersion.fasta /projects/ptx_analysis/chughes/databases/uniprot/"
     eval "scp ./uniprotHumanCrap$uniprotVersion.fasta /projects/ptx_analysis/chughes/databases/uniprot/"
     eval "scp ./uniprotHumanCrap$databaseExtension$uniprotVersion.fasta /projects/ptx_analysis/chughes/databases/uniprot/"
@@ -104,7 +105,7 @@ fi
 ####set up the parameters file
 fixedModifications='"TMT 11-plex of peptide N-term"'
 variableModifications='"Oxidation of M, TMT 11-plex of K, TMT 11-plex of K+4, TMT 11-plex of K+8, Arginine 13C(6), Arginine 13C(6) 15N(4)"'
-enzyme='"Trypsin (no P rule)"'
+enzyme='"Trypsin"'
 
 #####call the parameters file creation
 callingParameters='java -cp "$searchGuiLocation" eu.isas.searchgui.cmd.IdentificationParametersCLI -out ./databaseSearchParameters.par -prec_ppm 0 -prec_tol 1 -frag_ppm 0 -frag_tol 0.5 -fixed_mods "$fixedModifications" -variable_mods "$variableModifications" -enzyme "$enzyme" -msgf_instrument 0 -msgf_protocol 4 -msgf_fragmentation 1'
@@ -185,5 +186,5 @@ printf "\nFinished all exporting reports for $sampleTag data set.\n\n"
 ####final output
 eval "rm ${PWD}/*.html"
 eval "mv ${startingDirectory}/dataProcessing.txt $PWD"
-eval "scp ${startingDirectory}/rawDataProcessing_m16tmt11CidItHumanTrypsinCombined.sh $PWD"
+eval "scp ${startingDirectory}/rawDataProcessing_m16tmt11k48r610CidItHumanTrypsinCombined.sh $PWD"
 printf "\n\nFinished processing a total of ${#fileList[@]} files!\n\n"

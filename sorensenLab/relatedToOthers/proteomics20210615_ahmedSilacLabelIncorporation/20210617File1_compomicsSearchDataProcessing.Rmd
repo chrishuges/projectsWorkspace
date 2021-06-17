@@ -1,0 +1,131 @@
+---
+title: "Analysis of SILAC label incorporation"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of cell samples to determine SILAC label incorporation across a time course of days.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+#generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+#baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the protein annotation details.
+
+```{r}
+##########################################################################################
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20210615_ahmedSilacLabelIncorporation/uniprotHumanJun2021.fasta.annotated.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read in the psm data and process into a peptide set.
+
+```{r}
+##########################################################################################
+sampleInfo = tibble('sampleName' = c('Day3','Day5','Day7'))
+sampleInfo$filePath = file.path(baseRepository,
+                                'proteomics20210615_ahmedSilacLabelIncorporation',
+                                paste('ch_20210610_ahmedSilacTest_',
+                                sampleInfo$sampleName,
+                                '_1.raw_searchgui_out.zip_Default_PSM_Report.txt',sep=''))
+sampleInfo$quantPath = file.path(baseRepository,
+                                'proteomics20210615_ahmedSilacLabelIncorporation',
+                                'quantFiles',
+                                paste('ch_20210610_ahmedSilacTest_',
+                                sampleInfo$sampleName,
+                                '_1.raw_Matrix.txt',sep=''))
+
+##
+psmDataList = list()
+for (i in 1:nrow(sampleInfo)){
+  psmRaw = read_tsv(sampleInfo$filePath[i]) %>%
+    dplyr::select(`Protein(s)`, Sequence, `Variable Modifications`, `Spectrum File`, `Spectrum Title`) %>%
+    mutate(accession = sapply(strsplit(`Protein(s)`, ','), '[', 1)) %>%
+    mutate(scan = as.numeric(sub('Spectrum_(.*)', '\\1', `Spectrum Title`))) %>%
+    mutate(sequence = Sequence) %>%
+    mutate(label = ifelse(grepl('Arginine 13C', `Variable Modifications`),'heavy',
+                          ifelse(grepl('Lysine 13C', `Variable Modifications`),'heavy','light'))) %>%
+    dplyr::select(accession, scan, sequence, label) %>%
+    left_join(proteinAnnotation) %>%
+    dplyr::filter(!grepl('CONT',accession)) %>%
+    dplyr::select(accession, gene, scan, sequence, label) %>%
+    dplyr::mutate(dataset = sampleInfo$sampleName[i]) %>%
+    dplyr::mutate(label = factor(label, levels = c('light', 'heavy')))
+  ##
+  quantRaw = read_tsv(sampleInfo$quantPath[i]) %>%
+    dplyr::select(MS2ScanNumber,ParentPeakArea) %>%
+    dplyr::rename(scan = MS2ScanNumber, intensity = ParentPeakArea)
+  ##
+  psmData = psmRaw %>%
+    left_join(quantRaw) %>%
+    dplyr::select(-scan) %>%
+    group_by(accession, gene, sequence, label, dataset) %>%
+    summarise(intensity = mean(intensity, na.rm = TRUE)) %>%
+    pivot_wider(names_from = c('label','dataset'), values_from = 'intensity')
+  ##
+  psmDataList[[i]] = psmData
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Calculate some metrics for these data.
+
+```{r}
+#######################################################################
+metricsCalculation = function(listInput, ...){
+  listInput$silacRatio = listInput[,4] / listInput[,5]
+  message('number of NA values in ', colnames(listInput)[5], ' = ', length(which(is.na(listInput[,5]))))
+  message('number of NA values in ', colnames(listInput)[4], ' = ', length(which(is.na(listInput[,4]))))
+  #message('')
+  #message('mean intensity of ', colnames(listInput)[5], ' = ', round(colMeans(listInput[,5], na.rm = TRUE),2))
+  #message('mean intensity of ', colnames(listInput)[4], ' = ', round(colMeans(listInput[,4], na.rm = TRUE),2))
+  #message('')
+  message('ratio = ', log2(colMeans(listInput[,6], na.rm = TRUE)))
+  message('')
+}
+
+
+lapply(psmDataList, metricsCalculation)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+Wrap up.
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
