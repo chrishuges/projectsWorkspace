@@ -526,6 +526,12 @@ msc = read_tsv(paste(baseRepository, '/sequencing20210419_survivalAndBafComplexI
   dplyr::select(gene, fli1Score, brg1Score)
 
 
+##
+##cell surface
+cellSurface = read_tsv(paste(generalDatasets, '/bauschFluckInSilicoCellSurfaceProteomePmid30373828/combinedSurfaceomeProteins.txt', sep = '')) %>%
+  dplyr::rename(gene = `UniProt gene`, surfaceAnno = `Surfaceome Label`) %>%
+  dplyr::select(gene, surfaceAnno) %>%
+  unique()
 
 
 ##
@@ -653,6 +659,7 @@ for (i in 1:length(rnaProGenes)){
 rnaProCells = rna %>%
   left_join(pro) %>%
   left_join(ewsCellScores) %>%
+  left_join(cellSurface) %>%
   left_join(msc) %>%
   left_join(highPeaks) %>%
   left_join(lowPeaks) %>%
@@ -721,12 +728,12 @@ What if we sum these scores up to calculate the strongest EwS signature genes?
 sigData = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureRawData.rds', sep = '')) %>%
   dplyr::mutate(rnaFC = scale(rnaFC), proFC = scale(proFC), fli1Score = scale(fli1Score), brg1Score = scale(brg1Score), aggregateSurvival = scale(aggregateSurvival), cellScore = scale(cellScore)) %>%
   dplyr::mutate(highFli1PeakScore = log2(highFli1PeakScore + 1), lowFli1PeakScore = log2(lowFli1PeakScore + 1))
-sigData$ewsScore = rowSums(sigData[,c(2,5,8,9,10,27)], na.rm = TRUE)
+sigData$ewsScore = rowSums(sigData[,c(2,5,8,10,11,28)], na.rm = TRUE)
 
 ##
 goi = c('STEAP1','STEAP2','IL1RAP','PRKCB','DLG2')
 ewsScoreData = sigData %>%
-  dplyr::arrange(-ewsScore) %>%
+  dplyr::arrange(ewsScore) %>%
   dplyr::mutate(ewsRank = seq(1,nrow(sigData),1)) %>%
   dplyr::mutate(pText = ifelse(gene %in% goi, gene, ''))
 saveRDS(ewsScoreData, paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_ewsSignatureScoredData.rds', sep = ''))

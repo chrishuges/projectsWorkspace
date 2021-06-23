@@ -115,7 +115,7 @@ Now we can build the Limma model.
 ##########################################################################################
 geneMatrix = as.matrix(quantInputNormalized)
 limmaFit1 = lmFit(geneMatrix, design)
-limmaContrasts = c('ms275 - dmso', 'ars - dmso', 'combo - dmso')
+limmaContrasts = c('ms275 - dmso', 'ars - dmso', 'combo - dmso', 'ars - combo', 'ms275 - combo')
 limmaContrastDesign =  makeContrasts(contrasts = limmaContrasts, levels = design)
 limmaFit2 = eBayes(contrasts.fit(limmaFit1, contrasts = limmaContrastDesign))
 ```
@@ -159,6 +159,26 @@ dim(deqmsResults)
 saveRDS(deqmsResults, paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/dataset_deqms_combo-dmso.rds', sep = ''))
 write.table(deqmsResults, 
             paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/dataset_deqms_combo-dmso.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+
+##
+deqmsResults = tibble(outputResult(limmaFit3, coef_col = 4)) %>%
+  dplyr::rename(accession = gene) %>%
+  left_join(idData)
+dim(deqmsResults)
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/dataset_deqms_ars-combo.rds', sep = ''))
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/dataset_deqms_ars-combo.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+
+##
+deqmsResults = tibble(outputResult(limmaFit3, coef_col = 5)) %>%
+  dplyr::rename(accession = gene) %>%
+  left_join(idData)
+dim(deqmsResults)
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/dataset_deqms_ms275-combo.rds', sep = ''))
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20210511_polysomeFractionsMs275Chla10/dataset_deqms_ms275-combo.csv', sep = ''),
             sep = ',', row.names = FALSE, quote = FALSE)
 ```
 
