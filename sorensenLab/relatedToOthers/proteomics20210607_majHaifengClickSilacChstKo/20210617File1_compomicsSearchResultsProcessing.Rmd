@@ -155,7 +155,7 @@ u2osChstKo = c('tmt127N','tmt128N','tmt129N')
 mnngWt = c('tmt130C','tmt131N','tmt131C')
 
 ##
-samplesOfInterest = mnngWt
+samplesOfInterest = u2osWt
 dataToCompare = psmQuantFiltered %>%
   dplyr::select(accession:label, all_of(samplesOfInterest)) %>%
   dplyr::group_by(accession, gene, sequence, label) %>%
@@ -173,7 +173,7 @@ quantInputNormalized = medianSweeping(quantInputLog, group_col = 1)
 boxplot(quantInputNormalized, las = 2, ylab = 'log2 ratio', main = 'normalized TMT data')
 
 ##
-cond = as.factor(c('medium','medium','medium','heavy','heavy','heavy'))
+cond = as.factor(c('heavy','heavy','heavy','medium','medium','medium'))
 design = model.matrix(~0+cond) 
 colnames(design) = gsub('cond', '', colnames(design))
 geneMatrix = as.matrix(quantInputNormalized)
@@ -189,9 +189,9 @@ head(limmaFit3$coefficients)
 deqmsResults = outputResult(limmaFit3, coef_col = 1)
 
 ##
-saveRDS(deqmsResults, paste(baseRepository, '/proteomics20210607_majHaifengClickSilacChstKo/dataset_deqms_medium-heavy_mnngWt.rds', sep = ''))
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20210607_majHaifengClickSilacChstKo/dataset_deqms_medium-heavy_u2osWt.rds', sep = ''))
 write.table(deqmsResults, 
-            paste(baseRepository, '/proteomics20210607_majHaifengClickSilacChstKo/dataset_deqms_medium-heavy_mnngWt.csv', sep = ''),
+            paste(baseRepository, '/proteomics20210607_majHaifengClickSilacChstKo/dataset_deqms_medium-heavy_u2osWt.csv', sep = ''),
             sep = ',', row.names = FALSE, quote = FALSE)
 ```
 
