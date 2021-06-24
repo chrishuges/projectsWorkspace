@@ -1,0 +1,216 @@
+---
+title: "Analysis of Click SILAC samples"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of Click SILAC samples from Maj and Haifeng.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('DEqMS')
+library('matrixStats')
+library('limma')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+#generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+#baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read the protein annotation details.
+
+```{r}
+##########################################################################################
+proteinAnnotation = readRDS(paste(baseRepository, '/proteomics20210607_majHaifengClickSilacChstKo/uniprotHumanJun2021.fasta.annotated.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read in the psm data and process into a peptide set.
+
+```{r}
+##########################################################################################
+psm = read_tsv(paste(baseRepository, '/proteomics20210607_majHaifengClickSilacChstKo/20210607_majHaifengClickSilacThapsagarginChstKo_Default_PSM_Report.txt', sep = '')) %>%
+  dplyr::select(`Protein(s)`, Sequence, `Variable Modifications`, `Spectrum File`, `Spectrum Title`) %>%
+  dplyr::mutate(fraction = factor(sub('.*TMT11_(.*)\\.raw$', '\\1', `Spectrum File`), levels = seq(1,12,1))) %>%
+  dplyr::mutate(accession = sapply(strsplit(`Protein(s)`, ','), '[', 1)) %>%
+  dplyr::mutate(scan = as.numeric(sub('Spectrum_(.*)', '\\1', `Spectrum Title`))) %>%
+  dplyr::mutate(sequence = Sequence) %>%
+  dplyr::mutate(label = ifelse(grepl('Arginine 13C\\(6\\) 15N', `Variable Modifications`),'heavy',
+                          ifelse(grepl('Arginine 13C\\(6\\) \\(', `Variable Modifications`),'medium',
+                                 ifelse(grepl('K\\+4', `Variable Modifications`), 'medium', 
+                                        ifelse(grepl('K\\+8', `Variable Modifications`), 'heavy', 'light'))))) %>%
+  dplyr::filter(!grepl('CONT', accession)) %>%
+  left_join(proteinAnnotation) %>%
+  dplyr::select(fraction, scan, accession, gene, sequence, label)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we need the quantification data. I will use a function to process these data.
+
+```{r}
+#######################################################################
+#######################################################################
+##this function goes through the provided quant files and returns
+##a parsed object for each. It returns intensity for quant
+#######################################################################
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`131CIntensity`)
+  colnames(quantData) = c('scan',
+                          'tmt126C','tmt127N','tmt127C',
+                          'tmt128N','tmt128C','tmt129N',
+                          'tmt129C','tmt130N','tmt130C',
+                          'tmt131N','tmt131C')
+  ##
+  fraction = sub('.*TMT11_(.*)\\.raw_Matrix\\.txt$', '\\1', filePath)
+  quantData$fraction = fraction
+  print(paste('Processing file for fraction ', fraction, '.', sep = ''))
+  ##
+  return(quantData)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We can use this function to parse the quant data into a single object.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+quantFiles = as.list(list.files(paste(baseRepository, '/proteomics20210607_majHaifengClickSilacChstKo/quantFiles/', sep = ''),
+           pattern = '_Matrix.txt', full.names = TRUE))
+##
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now combine the quant data into a single data frame and with the previously processed PSM data.
+
+```{r}
+##########################################################################################
+allQuantData = do.call('rbind', quantDataSet)
+psmQuant = psm %>%
+  left_join(allQuantData)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we will filter the expression data to discard any entries where the signal is just too low to be confident in the data. I generally will use a cutoff of a minimum signal of 10 per TMT channel. In this case we have 9 channels, so we will use a sum signal of 100 as a cutoff. 
+
+Our sample layout is:
+
+* 126C - u2os_wt1
+* 127N - u2os_chstKo1
+* 127C - u2os_wt2
+* 128N - u2os_chstKo2
+* 128C - u2os_wt3
+* 129N - u2os_chstKo3
+* 129C - empty1
+* 130N - empty2
+* 130C - mnng_wt1
+* 131N - mnng_wt2
+* 131C - mnng_wt3
+
+
+```{r}
+##########################################################################################
+psmQuant$sampleSignal = rowSums(psmQuant[,c(7:12,15:17)])
+psmQuantFiltered = subset(psmQuant, psmQuant$sampleSignal >= 100 & !is.na(psmQuant$gene) & !grepl('-', psmQuant$gene)) %>%
+  dplyr::select(-tmt129C, -tmt130N) %>%
+  dplyr::filter(!grepl('light', label))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+These are SILAC data, so we need to reshape them to compare the medium and heavy samples for condition.
+
+```{r}
+##########################################################################################
+u2osWt = c('tmt126C','tmt127C','tmt128C')
+u2osChstKo = c('tmt127N','tmt128N','tmt129N')
+mnngWt = c('tmt130C','tmt131N','tmt131C')
+
+##
+samplesOfInterest = u2osWt
+dataToCompare = psmQuantFiltered %>%
+  dplyr::select(accession:label, all_of(samplesOfInterest)) %>%
+  dplyr::group_by(accession, gene, sequence, label) %>%
+  dplyr::summarise(across(all_of(samplesOfInterest), mean, na.rm = TRUE)) %>%
+  pivot_longer(cols = all_of(samplesOfInterest), names_to = 'tmtLabel', values_to = 'tmtIntensity') %>%
+  pivot_wider(names_from = c('label','tmtLabel'), values_from = 'tmtIntensity')
+dataToCompareSubset = subset(dataToCompare, rowSums(is.na(dataToCompare[,4:9])) < 1)
+
+##
+quantInput = dataToCompareSubset[,c(2,3,4:9)]
+quantInputLog = quantInput
+quantInputLog[,3:8][quantInputLog[,3:8] == 0] = NA
+quantInputLog[,3:8] = log2(quantInputLog[,3:8])
+quantInputNormalized = medianSweeping(quantInputLog, group_col = 1)
+boxplot(quantInputNormalized, las = 2, ylab = 'log2 ratio', main = 'normalized TMT data')
+
+##
+cond = as.factor(c('heavy','heavy','heavy','medium','medium','medium'))
+design = model.matrix(~0+cond) 
+colnames(design) = gsub('cond', '', colnames(design))
+geneMatrix = as.matrix(quantInputNormalized)
+limmaFit1 = lmFit(geneMatrix, design)
+limmaContrasts = c('medium - heavy')
+limmaContrastDesign =  makeContrasts(contrasts = limmaContrasts, levels = design)
+limmaFit2 = eBayes(contrasts.fit(limmaFit1, contrasts = limmaContrastDesign))
+psmCountTable = as.data.frame(table(quantInput$gene))
+rownames(psmCountTable) = psmCountTable$Var1
+limmaFit2$count = psmCountTable[rownames(limmaFit2$coefficients),2]
+limmaFit3 = spectraCounteBayes(limmaFit2)
+head(limmaFit3$coefficients)
+deqmsResults = outputResult(limmaFit3, coef_col = 1)
+
+##
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20210607_majHaifengClickSilacChstKo/dataset_deqms_medium-heavy_u2osWt.rds', sep = ''))
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20210607_majHaifengClickSilacChstKo/dataset_deqms_medium-heavy_u2osWt.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+```
+
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+Wrap up.
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
