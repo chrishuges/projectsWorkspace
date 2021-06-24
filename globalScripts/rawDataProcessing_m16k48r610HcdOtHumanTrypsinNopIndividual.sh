@@ -27,7 +27,7 @@ desiredBaseLocation="/projects/ptx_results/2021/Lumos-VCP/06-Jun/Samples/CH/"
 #this is the base location where your raw data is stored
 dataStorageLocation="/projects/ptx_results/2021/Lumos-VCP/06-Jun/Samples/CH/"
 #this is text that will be appended to your output folder that is created for this analysis
-folderAdapter="dataProcessing_"
+folderAdapter="dataProcessingNop_"
 #users do not need to edit the statement below
 folderToCreate="$desiredBaseLocation$folderAdapter$sampleTag"
 #starting directory
@@ -105,9 +105,10 @@ fi
 ####set up the parameters file
 fixedModifications=''
 variableModifications='"Oxidation of M, Lysine 13C(6) 15N(2), Lysine 2H(4), Arginine 13C(6), Arginine 13C(6) 15N(4)"'
+enzyme='"Trypsin (no P rule)"'
 
 #####call the parameters file creation
-callingParameters='java -cp "$searchGuiLocation" eu.isas.searchgui.cmd.IdentificationParametersCLI -out ./databaseSearchParameters.par -prec_ppm 1 -prec_tol 20 -frag_ppm 0 -frag_tol 0.05 -fixed_mods "$fixedModifications" -variable_mods "$variableModifications" -msgf_instrument 3 -msgf_protocol 5 -msgf_fragmentation 3'
+callingParameters='java -cp "$searchGuiLocation" eu.isas.searchgui.cmd.IdentificationParametersCLI -out ./databaseSearchParameters.par -prec_ppm 0 -prec_tol 1 -frag_ppm 0 -frag_tol 0.05 -fixed_mods "$fixedModifications" -variable_mods "$variableModifications" -enzyme "$enzyme" -msgf_instrument 3 -msgf_protocol 5 -msgf_fragmentation 3'
 
 ####call the command
 if [ ! -f "./databaseSearchParameters.par" ]; then
@@ -194,5 +195,5 @@ printf "\nFinished all exporting reports for $sampleTag data set.\n\n"
 ####final output
 eval "rm ${PWD}/*.html"
 eval "mv ${startingDirectory}/dataProcessing.txt $PWD"
-eval "scp ${startingDirectory}/rawDataProcessing_m16k48r610HcdOtHumanTrypsinIndividual.sh $PWD"
+eval "scp ${startingDirectory}/rawDataProcessing_m16k48r610HcdOtHumanTrypsinNoPIndividual.sh $PWD"
 printf "\n\nFinished processing a total of ${#fileList[@]} files!\n\n"
