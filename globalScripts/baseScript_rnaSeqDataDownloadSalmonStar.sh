@@ -4,7 +4,7 @@ salmonLocation="/home/chughes/softwareTools/salmon-1.5.1/bin/salmon"
 indexLocation="/home/chughes/databases/refgenieManualGenomes/hg38/salmonPartialSaIndex_072021/default/"
 starLocation="/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
 referenceLocation="/home/chughes/databases/refgenieManualGenomes/hg38/starIndex_072021/default/"
-annotationLocation="/home/chughes/databases/refgenieManualGenomes/hg38/gencodeGtf_072021/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.gtf.gz"
+annotationLocation="/home/chughes/databases/refgenieManualGenomes/hg38/gencodeGtf_072021/default/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.gtf"
 samtoolsLocation="/home/chughes/softwareTools/samtools-1.12/samtools"
 rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20210713_a673DoxTreatmentPmid34009296/"
 
@@ -20,7 +20,7 @@ eval "cd ${rawDataOutputDirectory}"
 eval "mkdir ${rawDataOutputDirectory}starResults"
 eval wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR856/007/SRR8561337/SRR8561337_1.fastq.gz
 eval wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR856/007/SRR8561337/SRR8561337_2.fastq.gz
-eval wgetftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR856/004/SRR8561334/SRR8561334_1.fastq.gz
+eval wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR856/004/SRR8561334/SRR8561334_1.fastq.gz
 eval wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR856/004/SRR8561334/SRR8561334_2.fastq.gz
 eval wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR856/003/SRR8561333/SRR8561333_1.fastq.gz
 eval wget ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR856/003/SRR8561333/SRR8561333_2.fastq.gz
