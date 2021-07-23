@@ -74,7 +74,7 @@ fileList=()
 # convert them to mzML
 for i in "${fileList[@]}"; do
   targetId=$(basename "$i" ".raw")
-  if [ -f "$targetId.mzML" ]; then
+  if [ -f "${targetId}.mzML" ]; then
     printf "mzML output for $targetId already exists, skipping file.\n\n"
   else
     eval mono $thermoRawFileParser -i $i
@@ -82,22 +82,25 @@ for i in "${fileList[@]}"; do
 done
 # send each to its own directory
 for i in "${fileList[@]}"; do
-  targetId=$(basename "$i" ".mzML")
-  if [ -d $targetId ]; then
+  targetId=$(basename "$i" ".raw")
+  if [ -d ${targetId:12} ]; then
     printf "directory for $targetId already exists, skipping file.\n\n"
   else
-    eval mkdir $targetId
-    eval mv ${targetId}.raw ./$targetId/
-    eval mv ${targetId}.mzML ./$targetId/
+    eval mkdir ${targetId:12}
+    eval mv ${targetId}.raw ./${targetId:12}/
+    eval mv ${targetId}.mzML ./${targetId:12}/
   fi
 done
 #################################
 
 
-
 ## /home/chughes/softwareTools/philosopher-3.4.13/philosopher.yml
-eval philosopher workspace --init
-eval philosopher database --reviewed --contam --id UP000005640
-eval scp /home/chughes/softwareTools/philosopher-3.4.13/philosopher.yml ./
+philosopher workspace --init
+philosopher database --reviewed --contam --id UP000005640
+scp /home/chughes/softwareTools/philosopher-3.4.13/philosopher.yml ./
 
-philosopher pipeline --config philosopher.yml CONTROL_1 CONTROL_2 CONTROL_3 HDAC5_1 HDAC5_2 HDAC5_3
+philosopher pipeline --config philosopher.yml rapidTrypsinControlSp3_40C_1 rapidTrypsinControlSp3_55C_1 rapidTrypsinControlSp3_70C_1 rapidTrypsinControl_40C_1 rapidTrypsinControl_55C_1 rapidTrypsinControl_70C_1 rapidTrypsinDeoxycholateSp3_40C_1 rapidTrypsinDeoxycholateSp3_55C_1 rapidTrypsinDeoxycholateSp3_70C_1 rapidTrypsinDeoxycholate_40C_1 rapidTrypsinDeoxycholate_55C_1 rapidTrypsinDeoxycholate_70C_1 rapidTrypsinProteaseMaxSp3_40C_1 rapidTrypsinProteaseMaxSp3_55C_1 rapidTrypsinProteaseMaxSp3_70C_1 rapidTrypsinProteaseMax_40C_1 rapidTrypsinProteaseMax_55C_1 rapidTrypsinProteaseMax_70C_1
+
+
+philosopher pipeline --config philosopher.yml
+
