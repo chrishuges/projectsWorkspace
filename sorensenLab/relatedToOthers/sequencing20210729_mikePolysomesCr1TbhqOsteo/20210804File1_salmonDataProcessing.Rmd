@@ -1,0 +1,248 @@
+---
+title: "Analysis of Mike's polysome data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of RNA-seq data from totalRNA and polysomeRNA samples of osteosarcoma cells treated with CR131B and tBHQ. Samples were ribo-depleted and sequencing on an MGI instrument.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message=FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('tximport')
+library('GenomicFeatures')
+library('DESeq2')
+library('org.Hs.eg.db')
+library('ggrepel')
+library('anota2seq')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+#generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+#baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the sample annotation details and make the txdb that we can use later on for annotation gene identifiers.
+
+```{r, message = FALSE}
+##########################################################################################
+samples = read_tsv(paste(baseRepository, '/sequencing20210729_mikePolysomesCr1TbhqOsteo/sampleInfo.txt', sep = ''))
+
+##
+files = file.path(baseRepository, 'sequencing20210729_mikePolysomesCr1TbhqOsteo', paste(samples$sampleId, '_quant', sep = ''), 'quant.sf')
+all(file.exists(files))
+
+##
+#myTxdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.gtf.gz')
+myTxdb = makeTxDbFromGFF('C:/Users/chris/OneDrive/Documents/bccrc/databases/hg38/gencode_gtf/2230c535660fb4774114bfa966a62f823fdb6d21acf138d4.gtf.gz')
+k = keys(myTxdb, keytype = 'TXNAME')
+tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now import the Salmon data. I am going to process the total RNA and polysomes separately and just combine them later on downstream. First, we will do total RNA.
+
+```{r}
+##########################################################################################
+txi = tximport(files[1:12], 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+names(txi)
+head(txi$counts)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Construct the DESeq2 dataset.
+
+```{r}
+##########################################################################################
+ddsTxi = DESeqDataSetFromTximport(txi,
+                                  colData = samples[1:12,],
+                                  design = ~ treatment)
+##
+dds = DESeq(ddsTxi)
+keep = rowSums(counts(dds)) >= 150
+dds = dds[keep,]
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Perform comparisons between samples.
+
+```{r}
+##########################################################################################
+datasetFirst = 'dmso'
+datasetSecond = 'combo'
+res = results(dds, contrast = c('treatment', datasetFirst, datasetSecond))
+ens.str = substr(rownames(res), 1, 15)
+res$symbol = mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+resOrdered = res[order(res$pvalue) & !is.na(res$symbol),]
+
+##
+saveRDS(as.data.frame(resOrdered), 
+        paste(baseRepository, '/sequencing20210729_mikePolysomesCr1TbhqOsteo/dataset_deseq2_total', datasetFirst, '-', datasetSecond, '.rds', sep = ''))
+write.csv(as.data.frame(resOrdered), 
+          file = paste(baseRepository, '/sequencing20210729_mikePolysomesCr1TbhqOsteo/dataset_deseq2_total', datasetFirst, '-', datasetSecond, '.csv', sep = ''))
+
+##
+#resLFC = lfcShrink(dds, coef = paste('treatment_',datasetFirst,'_vs_',datasetSecond, sep = ''), type = "apeglm")
+#resLFC
+#plotMA(resLFC, ylim = c(-2,2))
+rnaExp = as.data.frame(resOrdered)
+rnaExp$logPValue = -log10(rnaExp$padj)
+#rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 50, 50, rnaExp$logPValue)
+rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(8,'Spectral')[1], 
+                        ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8]))
+goi = c('NFE2L2')
+rnaExp$pText = ifelse(rnaExp$symbol %in% goi, rnaExp$symbol, '')
+##
+ggplot(rnaExp, aes(log2FoldChange, logPValue)) +
+  geom_point(size = 1, color = rnaExp$pColors, alpha = 0.75) +
+  labs(x = paste('log2(',datasetFirst,' - ',datasetSecond,')', sep = ''), y = '-log10(Adjusted p-value)', title = paste(datasetFirst,' vs ',datasetSecond, sep='')) +
+  geom_text_repel(label = rnaExp$pText, nudge_x = -3, nudge_y = 100) +
+  scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+  #scale_y_continuous(limits = c(0,20), breaks = seq(0,20,4)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  theme_classic()
+##
+ggsave(paste(baseRepository, '/sequencing20210729_mikePolysomesCr1TbhqOsteo/scatter_deseq2_total', datasetFirst, '-', datasetSecond, '.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+
+
+Repeat with the polysome samples.
+
+```{r}
+##########################################################################################
+txi = tximport(files[c(13,14,16,18,20,21,22,24)], 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+names(txi)
+head(txi$counts)
+
+##########################################################################################
+ddsTxi = DESeqDataSetFromTximport(txi,
+                                  colData = samples[c(13,14,16,18,20,21,22,24),],
+                                  design = ~ treatment)
+##
+dds = DESeq(ddsTxi)
+keep = rowSums(counts(dds)) >= 150
+dds = dds[keep,]
+
+
+txi = tximport(files[c(13:24)], 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+z = as.data.frame(txi$counts)
+zSub = z[rowSums(z) >= 150,]
+
+
+
+
+
+```
+
+```{r}
+##########################################################################################
+datasetFirst = 'dmso'
+datasetSecond = 'cr131b'
+res = results(dds, contrast = c('treatment', datasetFirst, datasetSecond))
+ens.str = substr(rownames(res), 1, 15)
+res$symbol = mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+resOrdered = res[order(res$pvalue) & !is.na(res$symbol),]
+
+##
+saveRDS(as.data.frame(resOrdered), 
+        paste(baseRepository, '/sequencing20210729_mikePolysomesCr1TbhqOsteo/dataset_deseq2_poly', datasetFirst, '-', datasetSecond, '.rds', sep = ''))
+write.csv(as.data.frame(resOrdered), 
+          file = paste(baseRepository, '/sequencing20210729_mikePolysomesCr1TbhqOsteo/dataset_deseq2_poly', datasetFirst, '-', datasetSecond, '.csv', sep = ''))
+
+##
+#resLFC = lfcShrink(dds, coef = paste('treatment_',datasetFirst,'_vs_',datasetSecond, sep = ''), type = "apeglm")
+#resLFC
+#plotMA(resLFC, ylim = c(-2,2))
+rnaExp = as.data.frame(resOrdered)
+rnaExp$logPValue = -log10(rnaExp$padj)
+#rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 50, 50, rnaExp$logPValue)
+rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(8,'Spectral')[1], 
+                        ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8]))
+goi = c('NFE2L2')
+rnaExp$pText = ifelse(rnaExp$symbol %in% goi, rnaExp$symbol, '')
+##
+ggplot(rnaExp, aes(log2FoldChange, logPValue)) +
+  geom_point(size = 1, color = rnaExp$pColors, alpha = 0.75) +
+  labs(x = paste('log2(',datasetFirst,' - ',datasetSecond,')', sep = ''), y = '-log10(Adjusted p-value)', title = paste(datasetFirst,' vs ',datasetSecond, sep='')) +
+  geom_text_repel(label = rnaExp$pText, nudge_x = -3, nudge_y = 100) +
+  scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+  #scale_y_continuous(limits = c(0,20), breaks = seq(0,20,4)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  theme_classic()
+##
+ggsave(paste(baseRepository, '/sequencing20210729_mikePolysomesCr1TbhqOsteo/scatter_deseq2_poly', datasetFirst, '-', datasetSecond, '.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
