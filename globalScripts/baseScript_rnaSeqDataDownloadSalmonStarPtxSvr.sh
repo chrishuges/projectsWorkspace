@@ -6,7 +6,7 @@ starLocation="/projects/ptx_analysis/chughes/software/STAR-2.7.1a/STAR-2.7.1a/bi
 referenceLocation="/projects/ptx_analysis/chughes/databases/refgenieIndexes/alias/hg38/star_index/default/"
 annotationLocation="/projects/ptx_analysis/chughes/databases/refgenieIndexes/alias/hg38/gencode_gtf/default/hg38.gtf"
 samtoolsLocation="/projects/ptx_analysis/chughes/software/samtools-1.9/samtools"
-rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/201808GollavilliCancerResPmid29898995/"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/202105SaulnierNucAcidResPmid34009296/"
 
 #download the data files
 if [ ! -d $rawDataOutputDirectory ]; then
@@ -61,15 +61,15 @@ do
   eval $starCall
   
   ##
-  bamSortCall="$samtoolsLocation sort ${rawDataOutputDirectory}/starResults/${i}_Aligned.out.bam -o ${rawDataOutputDirectory}/starResults/${i}.sorted.bam"
+  bamSortCall="$samtoolsLocation sort ${rawDataOutputDirectory}starResults/${i}_Aligned.out.bam -o ${rawDataOutputDirectory}starResults/${i}.sorted.bam"
   eval $bamSortCall
   
   ##
-  bamIndexCall="$samtoolsLocation index ${rawDataOutputDirectory}/starResults/${i}.sorted.bam"
+  bamIndexCall="$samtoolsLocation index ${rawDataOutputDirectory}starResults/${i}.sorted.bam"
   eval $bamIndexCall
   
   ##
-  coverageCall="bamCoverage -b ${rawDataOutputDirectory}/starResults/${i}.sorted.bam -o ${rawDataOutputDirectory}/starResults/${i}.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --centerReads -p 6"
+  coverageCall="bamCoverage -b ${rawDataOutputDirectory}starResults/${i}.sorted.bam -o ${rawDataOutputDirectory}starResults/${i}.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --centerReads -p 6"
   eval $coverageCall
 done
 
