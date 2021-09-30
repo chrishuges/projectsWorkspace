@@ -94,6 +94,30 @@ done
 #################################
 
 
+#################################
+# script for raw file conversion that just converts files and does RawTools for TMT
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/proteomics20210930_ewsDtagPtxPmid32948771/"
+thermoRawFileParser="/home/chughes/softwareTools/thermoRawFileParser-1.3.4/ThermoRawFileParser.exe"
+rawTools="/home/chughes/softwareTools/rawtools2.0.3a/RawTools.exe"
+# find the raw files
+fileList=()
+  while IFS= read -d $'\0' -r file ; do
+    fileList=("${fileList[@]}" "$file")
+  done < <(find $workingDirectory -name "*.raw" -print0 | sort -z)
+# convert them to mzML
+for i in "${fileList[@]}"; do
+  targetId=$(basename "$i" ".raw")
+  if [ -f "${targetId}.mzML" ]; then
+    printf "mzML output for $targetId already exists, skipping file.\n\n"
+  else
+    eval mono $thermoRawFileParser -i $i
+    eval mono $rawTools -f $i -q -r TMT11 -uxR -chro 1B 
+  fi
+done
+#################################
+
+
+
 ## /home/chughes/softwareTools/philosopher-3.4.13/philosopher.yml
 philosopher workspace --init
 philosopher database --reviewed --contam --id UP000005640
