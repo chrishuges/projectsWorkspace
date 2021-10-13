@@ -121,7 +121,11 @@ done
 ## /home/chughes/softwareTools/philosopher-3.4.13/philosopher.yml
 philosopher workspace --init
 philosopher database --reviewed --contam --id UP000005640
-scp /home/chughes/softwareTools/philosopher-3.4.13/philosopher.yml ./
+#scp /home/chughes/softwareTools/philosopher-3.4.13/philosopher.yml ./
+#scp /home/chughes/softwareTools/philosopher-4.0.0/philosopher.yml ./
+
+/home/chughes/softwareTools/msfragger-3.2/MSFragger-3.2/MSFragger-3.2.jar
+
 
 philosopher pipeline --config philosopher.yml rapidTrypsinControlSp3_40C_1 rapidTrypsinControlSp3_55C_1 rapidTrypsinControlSp3_70C_1 rapidTrypsinControl_40C_1 rapidTrypsinControl_55C_1 rapidTrypsinControl_70C_1 rapidTrypsinDeoxycholateSp3_40C_1 rapidTrypsinDeoxycholateSp3_55C_1 rapidTrypsinDeoxycholateSp3_70C_1 rapidTrypsinDeoxycholate_40C_1 rapidTrypsinDeoxycholate_55C_1 rapidTrypsinDeoxycholate_70C_1 rapidTrypsinProteaseMaxSp3_40C_1 rapidTrypsinProteaseMaxSp3_55C_1 rapidTrypsinProteaseMaxSp3_70C_1 rapidTrypsinProteaseMax_40C_1 rapidTrypsinProteaseMax_55C_1 rapidTrypsinProteaseMax_70C_1
 

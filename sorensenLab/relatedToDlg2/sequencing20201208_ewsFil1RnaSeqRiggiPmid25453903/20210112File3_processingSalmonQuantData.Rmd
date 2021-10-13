@@ -96,7 +96,7 @@ geneExpData = txiAnnotated %>%
   left_join(geneSymbols) %>%
   mutate(symbol = SYMBOL)
 ##now make the plots
-targetGenes = c('STAG2','DLG2','IL1RAP','PRKCB')
+targetGenes = c('DLG2','PRKCB','LOX')
 for (i in 1:length(targetGenes)){
   geneExpData$pText = ifelse(geneExpData$symbol %in% targetGenes[i], geneExpData$symbol, '')
   geneExpData$pColors = ifelse(geneExpData$a673Fc <= -1 & geneExpData$sknmcFc <= -1, brewer.pal(8,'RdBu')[8],
@@ -116,14 +116,14 @@ for (i in 1:length(targetGenes)){
 }
 
 #combo plot
-targetGenes = c('STAG2','DLG2','IL1RAP','PRKCB')
+targetGenes = c('DLG2','PRKCB','LOX')
 geneExpData$pText = ifelse(geneExpData$symbol %in% targetGenes, geneExpData$symbol, '')
-geneExpData$pColors = ifelse(geneExpData$a673Fc <= -1 & geneExpData$sknmcFc <= -1, brewer.pal(8,'RdBu')[8],
-                            ifelse(geneExpData$a673Fc >= 1 & geneExpData$sknmcFc >= 1, brewer.pal(8,'RdBu')[1],
-                                    brewer.pal(8,'Greys')[6]))
+geneExpData$pColors = ifelse(geneExpData$a673Fc <= -1 & geneExpData$sknmcFc <= -1, brewer.pal(3,'Blues')[3],
+                            ifelse(geneExpData$a673Fc >= 1 & geneExpData$sknmcFc >= 1, brewer.pal(3,'Blues')[3],
+                                    brewer.pal(3,'Greys')[2]))
 ggplot(geneExpData, aes(a673Fc, sknmcFc)) +
   geom_point(size = 1, color = geneExpData$pColors, alpha = 0.5) +
-  geom_text_repel(label = geneExpData$pText) +
+  geom_text_repel(label = geneExpData$pText, max.overlaps = 10000, nudge_y = -6, nudge_x = -4) +
   labs(x = 'log2(shEWS-FLI1 vs shGFP in A673)', y = 'log2(shEWS-FLI1 vs shGFP in SKNMC)', title = 'Bulk RNAseq counts') +
   geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
   geom_hline(yintercept = c(-1,1), linetype = 'dashed') +

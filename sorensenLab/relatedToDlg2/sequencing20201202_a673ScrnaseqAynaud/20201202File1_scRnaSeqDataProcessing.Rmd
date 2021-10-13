@@ -102,6 +102,32 @@ for (i in 1:length(geneSet)){
 
 <div style="margin-bottom:50px;"></div>
 
+Make a compressed version of the plots for candidate genes.
+
+```{r}
+##########################################################################################
+daysOfInterest = c('d7','d7+4','d7+7','d7+10','d0_Xeno','d7_Xeno')
+rna = readRDS(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/dataset_scRNAseqProcessedA673Only.rds', sep = '')) %>%
+  dplyr::filter(day %in% daysOfInterest)
+geneSet = c('PRKCB','DLG2','LOX')
+for (i in 1:length(geneSet)){
+  goi = filter(rna, symbol == geneSet[i])
+  ggplot(goi, aes(day, log10(counts), color = day)) +
+    geom_boxplot(size = 1, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[7]) +
+    geom_point(size = 1.5, position = position_jitterdodge(jitter.width = 1)) +
+    labs(x = 'Timepoint', y = 'log10(rna counts)', title = paste(geneSet[i], 'scRNAseq counts')) +
+    scale_color_manual(values = c(brewer.pal(3,'Greys')[2], rep(brewer.pal(3,'Blues')[3],4), brewer.pal(3,'Greys')[2])) +
+    geom_vline(xintercept = 4.5, linetype = 'dashed') +
+    scale_y_continuous(limits = c(0,3.5), breaks = seq(0,6,1)) +
+    theme_classic() +
+    theme(legend.position = 'none', axis.text.x = element_text(angle = 45, hjust = 1))
+  ggsave(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/scatterplot_',geneSet[i],'scRnaSeqA673XenoCompressed.pdf', sep = ''),
+       height = 4, width = 3, useDingbats = FALSE)
+}
+```
+
+<div style="margin-bottom:50px;"></div>
+
 Add MSC data.
 
 ```{r, message = FALSE, warning = FALSE}
