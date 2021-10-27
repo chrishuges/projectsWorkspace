@@ -1,0 +1,220 @@
+---
+title: "Analysis of proteomic data from EF1 degron"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to look at protein expression in dTAG labeled EWS-FLI1 expressing EWS502 cells from PMID32948771.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('limma')
+library('DEqMS')
+library('matrixStats')
+library('ggrepel')
+library('DESeq2')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the peptide spectral match data.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+#identification data
+psmData = read_tsv(paste(baseRepository, '/proteomics20210930_ewsDtagPtxPmid32948771/psm.tsv', sep = '')) %>%
+  dplyr::select(Spectrum, `Modified Peptide`, `Protein ID`, Gene, `Is Unique`) %>%
+  dplyr::rename(sequence = `Modified Peptide`,
+                accession = `Protein ID`,
+                gene = Gene,
+                unique = `Is Unique`) %>%
+  dplyr::mutate(scan = as.numeric(sub('.*_f[0-9]+\\.(.*)\\.[0-9]+\\.[0-9]+$', '\\1', Spectrum))) %>%
+  dplyr::mutate(fraction = sub('.*dTAG_(.*)\\.[0-9]+\\.[0-9]+\\.[0-9]+$', '\\1', Spectrum)) %>%
+  #dplyr::filter(unique == TRUE) %>%
+  dplyr::select(scan, fraction, accession, gene, sequence)
+
+
+#quant data
+processQuant = function(rawToolsFile, ...){
+  quantIn = read_tsv(rawToolsFile) %>%
+    dplyr::select(MS2ScanNumber, ParentPeakArea, `126Intensity`:`131CIntensity`) %>%
+    dplyr::rename(scan = MS2ScanNumber,
+                  dmso_1 = `126Intensity`,
+                  dmso_2 = `127NIntensity`,
+                  t2h_1 = `127CIntensity`,
+                  t2h_2 = `128NIntensity`,
+                  t2h_3 = `128CIntensity`,
+                  t6h_1 = `129NIntensity`,
+                  t6h_2 = `129CIntensity`,
+                  t6h_3 = `130NIntensity`,
+                  t24h_1 = `130CIntensity`,
+                  t24h_2 = `131NIntensity`,
+                  t24h_3 = `131CIntensity`) %>%
+    dplyr::mutate(fraction = sub('.*dTAG_(.*)\\.raw_Matrix.txt', '\\1', rawToolsFile))
+  return(quantIn)
+}
+#
+quantFileList = list.files(paste(baseRepository, '/proteomics20210930_ewsDtagPtxPmid32948771/quantFiles/', sep = ''), full.names = TRUE, pattern = '_Matrix.txt')
+quantData = do.call('rbind', lapply(quantFileList, processQuant))
+
+#combine the files
+psmQuant = psmData %>%
+  left_join(quantData) %>%
+  dplyr::select(accession:t24h_3) %>%
+  dplyr::rowwise(sequence, accession, gene) %>%
+  dplyr::mutate(totalSignal = sum(c_across(dmso_1:t24h_3), na.rm = TRUE)) %>%
+  dplyr::filter(totalSignal >= 1000, !is.na(sequence), !is.na(gene))
+dlg2 = psmQuant[grepl('DLG2', psmQuant$gene),]
+psmQuant
+```
+
+<div style="margin-bottom:50px;"></div>
+
+For some reason fraction 12 is missing. It looks like the RawTools run threw an error for some reason, will need to go back and check this. Now do a DEQ analysis.
+
+```{r}
+##########################################################################################
+quantInput = psmQuant[,c(3,2,5:15)] #sequence then gene
+saveRDS(quantInput, paste(baseRepository, '/proteomics20210930_ewsDtagPtxPmid32948771/dataset_peptideQuantDataPreDEqMS.rds', sep = ''))
+quantInputLog = quantInput
+quantInputLog[,3:13][quantInputLog[,3:13] == 0] = NA
+quantInputLog[,3:13] = log2(quantInputLog[,3:13])
+quantInputNormalized = medianSweeping(quantInputLog, group_col = 2)
+boxplot(quantInputNormalized, las = 2, ylab = 'log2 ratio', main = 'normalized TMT data')
+```
+
+
+<div style="margin-bottom:50px;"></div>
+
+All of the data look tight. Good. Lets continue with the DEqMS analysis. We need to build our sample table.
+
+```{r}
+##########################################################################################
+cond = as.factor(c('dmso','dmso','t2h','t2h','t2h','t6h','t6h','t6h','t24h','t24h','t24h'))
+design = model.matrix(~0+cond) 
+colnames(design) = gsub('cond', '', colnames(design))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can build the Limma model.
+
+```{r}
+##########################################################################################
+geneMatrix = as.matrix(quantInputNormalized)
+limmaFit1 = lmFit(geneMatrix, design)
+limmaContrasts = c('t2h - dmso', 't6h - dmso', 't24h - dmso')
+limmaContrastDesign =  makeContrasts(contrasts = limmaContrasts, levels = design)
+limmaFit2 = eBayes(contrasts.fit(limmaFit1, contrasts = limmaContrastDesign))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now for the actual DEqMS work. We will first
+
+```{r}
+##########################################################################################
+psmCountTable = as.data.frame(table(quantInput$gene))
+rownames(psmCountTable) = psmCountTable$Var1
+limmaFit2$count = psmCountTable[rownames(limmaFit2$coefficients),2]
+limmaFit3 = spectraCounteBayes(limmaFit2)
+head(limmaFit3$coefficients)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 3)
+dim(deqmsResults)
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20210930_ewsDtagPtxPmid32948771/dataset_deqms_t24h-dmso.rds', sep = ''))
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20210930_ewsDtagPtxPmid32948771/dataset_deqms_t24h-dmso.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+
+deqmsResults = outputResult(limmaFit3, coef_col = 2)
+dim(deqmsResults)
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20210930_ewsDtagPtxPmid32948771/dataset_deqms_t6h-dmso.rds', sep = ''))
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20210930_ewsDtagPtxPmid32948771/dataset_deqms_t6h-dmso.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+```
+<div style="margin-bottom:50px;"></div>
+
+Now let us make a volcano plot to show the data.
+
+```{r}
+##########################################################################################
+deqmsResults = outputResult(limmaFit3, coef_col = 3)
+deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(3,'Blues')[3],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(3,'OrRd')[3],
+                                     brewer.pal(3,'Greys')[2]))
+#
+goi = c('PRKCB','LOX','DLG2','FLI1')
+deqmsResults$pText = ifelse(deqmsResults$gene %in% goi, deqmsResults$gene, '')
+##
+ggplot(deqmsResults, aes(logFC, plotPValue)) +
+  geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = -1, nudge_y = 1, max.overlaps = 1000) +
+  labs(x = 'log2(dTAG 24h vs dmso)', y = '-log10(P-value)', title = 'Differential proteins') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,20,2)) +
+  scale_x_continuous(limits = c(-3,3), breaks = seq(-6,6,1)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = 3, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20210930_ewsDtagPtxPmid32948771/scatter_deqms_t24h-dmso.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+
+
+
+##########################################################################################
+deqmsResults = outputResult(limmaFit3, coef_col = 2)
+deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(3,'Blues')[3],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(3,'OrRd')[3],
+                                     brewer.pal(3,'Greys')[2]))
+#
+goi = c('PRKCB','LOX','DLG2','FLI1')
+deqmsResults$pText = ifelse(deqmsResults$gene %in% goi, deqmsResults$gene, '')
+##
+ggplot(deqmsResults, aes(logFC, plotPValue)) +
+  geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = -1, nudge_y = 1, max.overlaps = 1000) +
+  labs(x = 'log2(dTAG 6h vs dmso)', y = '-log10(P-value)', title = 'Differential proteins') +
+  scale_y_continuous(limits = c(0,10), breaks = seq(0,20,2)) +
+  scale_x_continuous(limits = c(-2,2), breaks = seq(-6,6,1)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = 3, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20210930_ewsDtagPtxPmid32948771/scatter_deqms_t6h-dmso.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

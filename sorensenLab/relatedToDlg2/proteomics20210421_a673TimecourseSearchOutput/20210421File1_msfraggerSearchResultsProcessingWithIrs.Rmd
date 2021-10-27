@@ -210,7 +210,7 @@ percentVar = round(100 * attr(mdsPlot, 'percentVar'))
 #make the ggplot
 ggplot(mdsPlot, aes(PC1, PC2, color = sampleName, shape = batch)) +
   geom_point(size = 6, alpha = 0.75) +
-  scale_color_manual(values = rep(c(brewer.pal(8,'Greys')[7], brewer.pal(9,'Reds')[3:9]),3)) +
+  scale_color_manual(values = rep(c(brewer.pal(3,'Blues')[3], brewer.pal(3,'OrRd')[3], brewer.pal(7,'Blues')[1:6]),3)) +
   scale_x_continuous(limits = c(-30,20), breaks = seq(-30,20,8)) +
   scale_y_continuous(limits = c(-10,16), breaks = seq(-20,20,4)) +
   labs(x = paste0('PC1: ', percentVar[1], '% variance'), 
@@ -367,15 +367,15 @@ write.table(deqmsResults,
 
 ##volcano plot in our usualy style
 deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
-deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
-                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
-                                     brewer.pal(8,'Greys')[6]))
-goi = c('PRKCB','IL1RAP','DLG2')
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(3,'Blues')[3],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(3,'OrRd')[3],
+                                     brewer.pal(3,'Greys')[2]))
+goi = c('PRKCB','LOX','DLG2')
 deqmsResults$pText = ifelse(deqmsResults$gene %in% goi, deqmsResults$gene, '')
 ##
 ggplot(deqmsResults, aes(logFC, plotPValue)) +
   geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
-  geom_text_repel(label = deqmsResults$pText, nudge_x = -2) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = -2, nudge_y = 1) +
   labs(x = 'log2(day7 - day0)', y = '-log10(P-value)', title = 'Differential protein abundance') +
   scale_y_continuous(limits = c(0,18), breaks = seq(0,20,4)) +
   scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +

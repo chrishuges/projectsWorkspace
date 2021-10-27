@@ -116,7 +116,7 @@ for (i in 1:length(geneSet)){
     geom_boxplot(size = 1, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[7]) +
     geom_point(size = 1.5, position = position_jitterdodge(jitter.width = 1)) +
     labs(x = 'Timepoint', y = 'log10(rna counts)', title = paste(geneSet[i], 'scRNAseq counts')) +
-    scale_color_manual(values = c(brewer.pal(3,'Greys')[2], rep(brewer.pal(3,'Blues')[3],4), brewer.pal(3,'Greys')[2])) +
+    scale_color_manual(values = c(brewer.pal(3,'OrRd')[3], rep(brewer.pal(3,'Blues')[3],4), brewer.pal(3,'OrRd')[3])) +
     geom_vline(xintercept = 4.5, linetype = 'dashed') +
     scale_y_continuous(limits = c(0,3.5), breaks = seq(0,6,1)) +
     theme_classic() +

@@ -119,7 +119,7 @@ for (i in 1:length(targetGenes)){
 targetGenes = c('DLG2','PRKCB','LOX')
 geneExpData$pText = ifelse(geneExpData$symbol %in% targetGenes, geneExpData$symbol, '')
 geneExpData$pColors = ifelse(geneExpData$a673Fc <= -1 & geneExpData$sknmcFc <= -1, brewer.pal(3,'Blues')[3],
-                            ifelse(geneExpData$a673Fc >= 1 & geneExpData$sknmcFc >= 1, brewer.pal(3,'Blues')[3],
+                            ifelse(geneExpData$a673Fc >= 1 & geneExpData$sknmcFc >= 1, brewer.pal(3,'OrRd')[3],
                                     brewer.pal(3,'Greys')[2]))
 ggplot(geneExpData, aes(a673Fc, sknmcFc)) +
   geom_point(size = 1, color = geneExpData$pColors, alpha = 0.5) +

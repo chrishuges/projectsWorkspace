@@ -1,0 +1,139 @@
+---
+title: "EwS encyclopedia data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of microarray data from the EwS encyclopedia from GSE176190.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message=FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+#library('clariomdhumantranscriptcluster.db')
+#install.packages('C:/Users/chughes/Documents/bccrc/databases/microarrays/clariomDHuman/pd.clariomdhuman.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('C:/Users/chughes/Documents/bccrc/databases/microarrays/clariomDHuman/clariomdhumanhsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+#these were for when I had to run it on linux because of memory issues
+#install.packages('/home/chughes/databases/microarray/clariomDHuman/pd.clariomdhuman.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('/home/chughes/databases/microarray/clariomDHuman/clariomdhumanhsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+library('oligo')
+library('affycoretools')
+library('pd.clariomdhuman.hs.refseq')
+library('clariomdhumanhsrefseq.db')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the data using a custom CDF that has the RefSeq annotation so we can look at specific transcripts (specifically, DLG2 long and short isoforms).
+
+```{r}
+##########################################################################################
+#I downloaded custom CDF files from http://brainarray.mbni.med.umich.edu/Brainarray/Database/CustomCDF/CDF_download.asp
+library('clariomdhumanhsrefseqcdf')
+#celSubset = affy::ReadAffy(filenames = celFiles[1], cdfname = 'clariomdhumanhsrefseqcdf')
+
+#take a look at the probe format just to see what the ID is like
+topProbes = head(ls(clariomdhumanhsrefseqcdf))
+topProbes
+
+#ENSG00000150672 is DLG2
+#NM_001377978.1 is DLG2 short
+#NM_001300983.1 is DLG2 long
+dim(get('NM_001300983.1_at', clariomdhumanhsrefseqcdf))
+dim(get('NM_001377978.1_at', clariomdhumanhsrefseqcdf))
+
+#read in a subset of the cel files and look at DLG2 expression
+#celFiles = affy::list.celfiles(path = paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/', sep = ''), full.names = TRUE)
+celData = affy::ReadAffy(celfile.path = paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/', sep = ''),
+                  cdfname = 'clariomdhumanhsrefseqcdf')
+rmaExprs = exprs(affy::rma(celData))
+head(rmaExprs)
+saveRDS(rmaExprs, paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/dataset_allSamplesAffyRmaRefseqCdf.rds', sep = ''))
+
+##########################################################################################
+#####I had to run this code on the linux server because it kept failing here with the whole dataset
+library('tidyverse')
+library('affy')
+library('clariomdhumanhsrefseqcdf')
+celData = affy::ReadAffy(celfile.path = '/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/microarray20211026_grunewaldEwsEncyclopedia/', cdfname = 'clariomdhumanhsrefseqcdf')
+rmaExprs = exprs(affy::rma(celData))
+saveRDS(rmaExprs, '/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/microarray20211026_grunewaldEwsEncyclopedia/dataset_allSamplesAffyRmaRefseqCdf.rds')
+##actually, this also failed on the linux server...segmentation fault. Maybe it is something with the affy package? We can try with oligo, but we will need to build our own cdf package.
+```
+
+
+```{r}
+##########################################################################################
+#following directions here: https://support.bioconductor.org/p/72378/#72552
+#dat = read.celfiles(list.celfiles(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/', sep = ''), full.names=TRUE), pkgname = 'pd.clariomdhuman.hs.refseq')
+dat = read.celfiles(list.celfiles('/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/microarray20211026_grunewaldEwsEncyclopedia/', full.names=TRUE), pkgname = 'pd.clariomdhuman.hs.refseq')
+eset = rma(dat)
+eset = annotateEset(eset, clariomdhumanhsrefseq.db)
+saveRDS(exprs(eset), '/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/microarray20211026_grunewaldEwsEncyclopedia/dataset_allSamplesOligoRmaRefseqCdf.rds')
+```
+
+
+
+
+
+<div style="margin-bottom:50px;"></div>
+
+Annotate the data for cell lines and EWS-fusion expression and plot for DLG2.
+
+```{r}
+##########################################################################################
+eData = readRDS(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/dataset_allSamplesAffyRmaRefseqCdf.rds', sep = ''))
+annoData = read_tsv(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/geoCellLineAnnotation.txt', sep = ''))
+
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Plot the original published data.
+
+```{r}
+##########################################################################################
+eData = readRDS(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/dataset_allSamplesAffyRmaRefseqCdf.rds', sep = ''))
+annoData = read_tsv(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/geoCellLineAnnotation.txt', sep = ''))
+
+
+```
+
+
+
+#look at the DLG2 data
+dlg2Lexprs = rmaExprs[grepl('NM_001300983.1_at', rownames(rmaExprs)),]
+dlg2Lexprs
+dlg2Sexprs = rmaExprs[grepl('NM_001377978.1_at', rownames(rmaExprs)),]
+dlg2Sexprs
+```
+
+
+
+
+
+
+
