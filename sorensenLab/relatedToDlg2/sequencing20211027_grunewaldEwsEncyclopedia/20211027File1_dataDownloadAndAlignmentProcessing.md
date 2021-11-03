@@ -91,7 +91,7 @@ rule bam_conversion:
   output:
       "results/{smp}.unsorted.bam"
   message:
-      "Sorting with samtools."
+      "SAM to BAM conversion with samtools."
   shell:
       "{SAMTOOLS} view -h -S -b -o {output} {input}"
 
@@ -137,6 +137,8 @@ sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
 sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
 workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211027_grunewaldEwsEncyclopedia"
 eval cd ${workingDirectory}
+eval mkdir raw
+eval mkdir results
 
 ##loop over the accessions
 for i in SRR1476{{0997..1021},{1027..1087}}
@@ -153,6 +155,8 @@ do
   eval rm ${workingDirectory}/results/${i}.clean.fastq.gz
   eval rm ${workingDirectory}/results/${i}.unsorted.sam
   eval rm ${workingDirectory}/results/${i}.unsorted.bam
+  eval rm ${workingDirectory}/results/${i}.sorted.bam
+  eval rm ${workingDirectory}/results/${i}.sorted.bam.bai
 done
 ```
 
