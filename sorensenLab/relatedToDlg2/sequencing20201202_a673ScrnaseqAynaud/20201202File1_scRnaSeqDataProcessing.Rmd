@@ -113,16 +113,16 @@ geneSet = c('PRKCB','DLG2','LOX')
 for (i in 1:length(geneSet)){
   goi = filter(rna, symbol == geneSet[i])
   ggplot(goi, aes(day, log10(counts), color = day)) +
-    geom_boxplot(size = 1, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[7]) +
-    geom_point(size = 1.5, position = position_jitterdodge(jitter.width = 1)) +
+    geom_boxplot(size = 0.5, outlier.shape = NA, width = 0.5, color = brewer.pal(8,'Greys')[7]) +
+    geom_point(size = 1, position = position_jitterdodge(jitter.width = 1)) +
     labs(x = 'Timepoint', y = 'log10(rna counts)', title = paste(geneSet[i], 'scRNAseq counts')) +
     scale_color_manual(values = c(brewer.pal(3,'OrRd')[3], rep(brewer.pal(3,'Blues')[3],4), brewer.pal(3,'OrRd')[3])) +
     geom_vline(xintercept = 4.5, linetype = 'dashed') +
     scale_y_continuous(limits = c(0,3.5), breaks = seq(0,6,1)) +
     theme_classic() +
-    theme(legend.position = 'none', axis.text.x = element_text(angle = 45, hjust = 1))
+    theme(legend.position = 'none')
   ggsave(paste(baseRepository, '/sequencing20201202_a673ScrnaseqAynaud/scatterplot_',geneSet[i],'scRnaSeqA673XenoCompressed.pdf', sep = ''),
-       height = 4, width = 3, useDingbats = FALSE)
+       height = 2, width = 2, useDingbats = FALSE)
 }
 ```
 

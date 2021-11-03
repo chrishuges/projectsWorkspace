@@ -47,7 +47,7 @@ totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bcc
 
 <div style="margin-bottom:50px;"></div>
 
-Subset the GTF. The main transcript I am going to use is NM_001142699.3. 
+Subset the GTF. The main transcript I am going to use is NM_001300983.1 as the DLG2 long form that seems to be most expressed in the brain. 
 
 ```{r}
 ##########################################################################################
@@ -88,7 +88,7 @@ plotCoverage(dlg2Exons, dlg2Cds,
              heights = c(2,1), fill_palette = getGenotypePalette(),
              rescale_introns = TRUE)
 ggsave(paste(baseRepository, '/sequencing20200107_humanProteinAtlasData/boxplot_dlg2RefseqCoverageBrainRna.pdf', sep = ''),
-         height = 4, width = 4, useDingbats = FALSE)
+         height = 2, width = 2, useDingbats = FALSE)
 ```
 
 <div style="margin-bottom:50px;"></div>

@@ -209,17 +209,18 @@ mdsPlot$sampleName = factor(mdsPlot$sampleName, levels = c('day0','day7','day9',
 percentVar = round(100 * attr(mdsPlot, 'percentVar'))
 #make the ggplot
 ggplot(mdsPlot, aes(PC1, PC2, color = sampleName, shape = batch)) +
-  geom_point(size = 6, alpha = 0.75) +
+  geom_point(size = 3, alpha = 0.75) +
   scale_color_manual(values = rep(c(brewer.pal(3,'Blues')[3], brewer.pal(3,'OrRd')[3], brewer.pal(7,'Blues')[1:6]),3)) +
   scale_x_continuous(limits = c(-30,20), breaks = seq(-30,20,8)) +
   scale_y_continuous(limits = c(-10,16), breaks = seq(-20,20,4)) +
   labs(x = paste0('PC1: ', percentVar[1], '% variance'), 
        y = paste0('PC2: ', percentVar[2], '% variance'), 
        title = 'A673 protein groups') +
-  theme_classic()
+  theme_classic() +
+  theme(legend.position = 'none')
 #save the plot
 ggsave(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/pcaplot_a673ShEwsFli1AbundanceLog.pdf', sep = ''), 
-       height = 4, width = 4, useDingbats = FALSE)
+       height = 2, width = 2, useDingbats = FALSE)
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -375,7 +376,7 @@ deqmsResults$pText = ifelse(deqmsResults$gene %in% goi, deqmsResults$gene, '')
 ##
 ggplot(deqmsResults, aes(logFC, plotPValue)) +
   geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
-  geom_text_repel(label = deqmsResults$pText, nudge_x = -2, nudge_y = 1) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = -2, nudge_y = 1, max.overlaps = 10000) +
   labs(x = 'log2(day7 - day0)', y = '-log10(P-value)', title = 'Differential protein abundance') +
   scale_y_continuous(limits = c(0,18), breaks = seq(0,20,4)) +
   scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
@@ -383,7 +384,7 @@ ggplot(deqmsResults, aes(logFC, plotPValue)) +
   geom_hline(yintercept = 3, linetype = 'dashed') +
   theme_classic()
 ggsave(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/scatter_deqmsIrsDay7-Day0.pdf', sep = ''),
-       height = 4, width = 4, useDingbats = FALSE)
+       height = 2, width = 2, useDingbats = FALSE)
 ```
 
 <div style="margin-bottom:50px;"></div>

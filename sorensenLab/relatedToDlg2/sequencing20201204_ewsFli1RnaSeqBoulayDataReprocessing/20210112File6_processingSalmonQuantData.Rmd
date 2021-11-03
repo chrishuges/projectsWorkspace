@@ -123,7 +123,7 @@ geneExpData$pColors = ifelse(geneExpData$a673Fc <= -1 & geneExpData$sknmcFc <= -
                                     brewer.pal(3,'Greys')[2]))
 ggplot(geneExpData, aes(a673Fc, sknmcFc)) +
   geom_point(size = 1, color = geneExpData$pColors, alpha = 0.5) +
-  geom_text_repel(label = geneExpData$pText, max.overlaps = 10000, nudge_y = -6, nudge_x = -4) +
+  geom_text_repel(label = geneExpData$pText, max.overlaps = 15000, nudge_y = -6, nudge_x = -4) +
   labs(x = 'log2(shEWS-FLI1 vs shGFP in A673)', y = 'log2(shEWS-FLI1 vs shGFP in SKNMC)', title = 'Bulk RNAseq counts') +
   geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
   geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
@@ -131,7 +131,7 @@ ggplot(geneExpData, aes(a673Fc, sknmcFc)) +
   scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
   theme_classic()
 ggsave(paste(baseRepository, '/sequencing20201204_ewsFli1RnaSeqBoulayDataReprocessing/scatter_allTargetsSalmonRnaExpressionShEwsfli1.pdf', sep = ''),
-      height = 4, width = 4, useDingbats = FALSE)
+      height = 2, width = 2, useDingbats = FALSE)
 ```
 
 <div style="margin-bottom:50px;"></div>

@@ -17,15 +17,9 @@ library('tidyverse')
 library('ggplot2')
 library('RColorBrewer')
 #library('clariomdhumantranscriptcluster.db')
-#install.packages('C:/Users/chughes/Documents/bccrc/databases/microarrays/clariomDHuman/pd.clariomdhuman.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
-#install.packages('C:/Users/chughes/Documents/bccrc/databases/microarrays/clariomDHuman/clariomdhumanhsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
-#these were for when I had to run it on linux because of memory issues
-#install.packages('/home/chughes/databases/microarray/clariomDHuman/pd.clariomdhuman.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
-#install.packages('/home/chughes/databases/microarray/clariomDHuman/clariomdhumanhsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
 library('oligo')
+library('ff')
 library('affycoretools')
-library('pd.clariomdhuman.hs.refseq')
-library('clariomdhumanhsrefseq.db')
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -46,7 +40,70 @@ baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLa
 
 ## Data processing
 
-Read in the data using a custom CDF that has the RefSeq annotation so we can look at specific transcripts (specifically, DLG2 long and short isoforms).
+The first thing I need to do is set the annotation. I use a CDF from BrainArray (in this case, version 25). 
+
+```{r}
+##########################################################################################
+#these are the install commands for my windows machine
+#install.packages('C:/Users/chughes/Documents/bccrc/databases/microarrays/clariomDHuman/pd.clariomdhuman.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('C:/Users/chughes/Documents/bccrc/databases/microarrays/clariomDHuman/clariomdhumanhsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+#these were for when I had to run it on linux because of memory issues
+#install.packages('/home/chughes/databases/microarray/clariomDHuman/pd.clariomdhuman.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('/home/chughes/databases/microarray/clariomDHuman/clariomdhumanhsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+
+#load the packages
+library('pd.clariomdhuman.hs.refseq')
+library('clariomdhumanhsrefseq.db')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now read in the data files and process them with rma from the oligo package. 
+
+```{r}
+##########################################################################################
+#following directions here: https://support.bioconductor.org/p/72378/#72552
+allData = tibble()
+for (i in seq(1,108,27)){
+  dat = read.celfiles(list.celfiles(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia', sep = ''), full.names=TRUE)[i:i+26], pkgname = 'pd.clariomdhuman.hs.refseq')
+  rmaEset = rma(dat)
+  annotatedEset = annotateEset(eset, clariomdhumanhsrefseq.db)
+  expressionData = as_tibble(exprs(annotatedEset)) %>%
+    dplyr::mutate(PROBEID = rownames(annotatedEset)) %>%
+    dplyr::rename_with(~ sub('(.*)_[0-9]+\\-[0-9]+\\.CEL', '\\1', .x))
+  annotationData = as_tibble(fData(annotatedEset)) %>%
+    left_join(expressionData)
+  #
+  allData = allData %>%
+    left_join(annotationData)
+}
+
+
+
+
+
+
+saveRDS(exprs(eset), paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/dataset_allSamplesOligoRmaRefseqCdf.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Below is some linux code. 
+
+dat = read.celfiles(list.celfiles('/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/microarray20211026_grunewaldEwsEncyclopedia', full.names=TRUE)[1:6], pkgname = 'pd.clariomdhuman.hs.refseq')
+saveRDS(exprs(eset), '/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/microarray20211026_grunewaldEwsEncyclopedia/dataset_allSamplesOligoRmaRefseqCdf.rds')
+
+
+
+
+
+
+
+
+
+#######################################
+this is old processing code and was not used in the end
+######################################
 
 ```{r}
 ##########################################################################################
@@ -82,57 +139,6 @@ rmaExprs = exprs(affy::rma(celData))
 saveRDS(rmaExprs, '/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/microarray20211026_grunewaldEwsEncyclopedia/dataset_allSamplesAffyRmaRefseqCdf.rds')
 ##actually, this also failed on the linux server...segmentation fault. Maybe it is something with the affy package? We can try with oligo, but we will need to build our own cdf package.
 ```
-
-
-```{r}
-##########################################################################################
-#following directions here: https://support.bioconductor.org/p/72378/#72552
-#dat = read.celfiles(list.celfiles(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/', sep = ''), full.names=TRUE), pkgname = 'pd.clariomdhuman.hs.refseq')
-dat = read.celfiles(list.celfiles('/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/microarray20211026_grunewaldEwsEncyclopedia/', full.names=TRUE), pkgname = 'pd.clariomdhuman.hs.refseq')
-eset = rma(dat)
-eset = annotateEset(eset, clariomdhumanhsrefseq.db)
-saveRDS(exprs(eset), '/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/microarray20211026_grunewaldEwsEncyclopedia/dataset_allSamplesOligoRmaRefseqCdf.rds')
-```
-
-
-
-
-
-<div style="margin-bottom:50px;"></div>
-
-Annotate the data for cell lines and EWS-fusion expression and plot for DLG2.
-
-```{r}
-##########################################################################################
-eData = readRDS(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/dataset_allSamplesAffyRmaRefseqCdf.rds', sep = ''))
-annoData = read_tsv(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/geoCellLineAnnotation.txt', sep = ''))
-
-
-```
-
-<div style="margin-bottom:50px;"></div>
-
-Plot the original published data.
-
-```{r}
-##########################################################################################
-eData = readRDS(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/dataset_allSamplesAffyRmaRefseqCdf.rds', sep = ''))
-annoData = read_tsv(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/geoCellLineAnnotation.txt', sep = ''))
-
-
-```
-
-
-
-#look at the DLG2 data
-dlg2Lexprs = rmaExprs[grepl('NM_001300983.1_at', rownames(rmaExprs)),]
-dlg2Lexprs
-dlg2Sexprs = rmaExprs[grepl('NM_001377978.1_at', rownames(rmaExprs)),]
-dlg2Sexprs
-```
-
-
-
 
 
 
