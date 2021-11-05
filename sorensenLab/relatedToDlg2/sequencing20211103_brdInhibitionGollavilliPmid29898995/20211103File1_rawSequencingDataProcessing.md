@@ -81,12 +81,13 @@ for smp in SAMPLES:
 ###############################
 #processing workflow
 rule all:
-    input: expand("results/{smp}.counts.txt", smp = SAMPLES),
-    expand("quants/{smp}/quant.sf", smp = SAMPLES)
+    input:
+      expand("results/{smp}.counts.txt", smp = SAMPLES),
+      expand("quants/{smp}/quant.sf", smp = SAMPLES)
 
 rule bbduk:
   input:
-      r1 = "raw/{smp}_1.fastq.gz"
+      r1 = "raw/{smp}_1.fastq.gz",
       r2 = "raw/{smp}_2.fastq.gz"
   output:
       ro1 = "results/{smp}_1.clean.fastq.gz",

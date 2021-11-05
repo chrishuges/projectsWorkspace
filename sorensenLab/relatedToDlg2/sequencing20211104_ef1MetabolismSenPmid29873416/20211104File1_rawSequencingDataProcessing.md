@@ -45,12 +45,12 @@ Edit the contents of the snakefile to include the text below. I use vim for this
 Author: Christopher Hughes
 Affiliation: BCCRC
 Aim: Workflow for RNA-Seq data
-Date: 20211104
+Date: 20211103
 """
 
 ###############################
 #working directory
-BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211104_ef1MetabolismSenPmid29873416"
+BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211103_brdInhibitionGollavilliPmid29898995"
 
 
 ###############################
@@ -84,12 +84,13 @@ for smp in SAMPLES:
 ###############################
 #processing workflow
 rule all:
-    input: expand("results/{smp}.counts.txt", smp = SAMPLES),
-    expand("quants/{smp}/quant.sf", smp = SAMPLES)
+    input:
+      expand("results/{smp}.counts.txt", smp = SAMPLES),
+      expand("quants/{smp}/quant.sf", smp = SAMPLES)
 
 rule bbduk:
   input:
-      r1 = "raw/{smp}_1.fastq.gz"
+      r1 = "raw/{smp}_1.fastq.gz",
       r2 = "raw/{smp}_2.fastq.gz"
   output:
       ro1 = "results/{smp}_1.clean.fastq.gz",
@@ -98,6 +99,19 @@ rule bbduk:
       "Processing with BBDuk."
   shell:
       "{BBDUK} in1={input.r1} in2={input.r2} ref=adapters out1={output.ro1} out2={output.ro2} ktrim=r k=23 mink=11 hdist=1 tpe tbo"
+
+rule salmon:
+  input:
+      r1 = "results/{smp}_1.clean.fastq.gz",
+      r2 = "results/{smp}_2.clean.fastq.gz"
+  output:
+      "quants/{smp}/quant.sf"
+  params:
+      dir = "quants/{smp}"
+  message:
+      "Quantifying with salmon."
+  shell:
+      "{SALMON} quant -i {SALMONINDEX} -l A -p 8 --gcBias --validateMappings -o {params.dir} -1 {input.r1} -2 {input.r2}"
 
 rule star:
   input:
@@ -139,19 +153,6 @@ rule featurecounts:
       "Counting reads with featureCounts."
   shell:
       "{FEATURECOUNTS} -p --countReadPairs -t exon -g gene_id -a {GTF} -o {output} {input}"
-
-rule salmon:
-  input:
-      r1 = "results/{smp}_1.clean.fastq.gz",
-      r2 = "results/{smp}_2.clean.fastq.gz"
-  output:
-      "quants/{smp}/quant.sf"
-  params:
-      dir = "quants/{smp}"
-  message:
-      "Quantifying with salmon."
-  shell:
-      "{SALMON} quant -i {SALMONINDEX} -l A -p 8 --gcBias --validateMappings -o {params.dir} -1 {input.r1} -2 {input.r2}"
 ```
 
 Below is the shell script I will use to process these data with snakemake.
