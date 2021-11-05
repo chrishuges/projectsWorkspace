@@ -40,7 +40,7 @@ eval ${bowtie2Location}bowtie2-build ${baseDirectory}baseGenomeFiles/genome.fa h
 
 ## HISAT2 index
 
-Now we will prepare the index for HISAT2. I am following their instructions as detailed [here](http://daehwankimlab.github.io/hisat2/howto/). Version 104 was current at the time of download (Oct. 29, 2021).
+Now we will prepare the index for HISAT2. I am following their instructions as detailed [here](http://daehwankimlab.github.io/hisat2/howto/). Version 104 was current at the time of download (Oct. 29, 2021). I need to re-run this on a high memory machine, the sorensenlab server doesn't have enough RAM for it. 
 
 ```shell
 #!/bin/bash
@@ -52,7 +52,7 @@ eval cd ${baseDirectory}hisat2Index
 eval ${hisat2Location}hisat2_extract_splice_sites.py ${baseDirectory}baseGenomeFiles/genome.gtf > genome.ss
 eval ${hisat2Location}hisat2_extract_exons.py ${baseDirectory}baseGenomeFiles/genome.gtf > genome.exon
 eval ${hisat2Location}hisat2-build -p 16 ${baseDirectory}baseGenomeFiles/genome.fa genome
-eval ${hisat2Location}hisat2-build -p 16 --exon ${baseDirectory}hisat2Index/genome.exon --ss ${baseDirectory}hisat2Index/genome.ss ${baseDirectory}baseGenomeFiles/genome.fa genome_tran
+#eval ${hisat2Location}hisat2-build -p 16 --exon ${baseDirectory}hisat2Index/genome.exon --ss ${baseDirectory}hisat2Index/genome.ss ${baseDirectory}baseGenomeFiles/genome.fa genome_tran
 ```
 
 ## SALMON index
@@ -74,5 +74,20 @@ salmonLocation="/home/chughes/softwareTools/salmon-1.5.2/bin/"
 eval cd ${baseDirectory}salmonIndex
 eval ${salmonLocation}salmon index -t ${baseDirectory}baseGenomeFiles/gentrome.fa.gz -d ${baseDirectory}baseGenomeFiles/decoys.txt -p 8 -i salmon_index --gencode
 ```
+
+## STAR index
+
+Now we will prepare an index for STAR aligner. I am following the instructions detailed [here](https://github.com/alexdobin/STAR/blob/master/doc/STARmanual.pdf). 
+
+```shell
+#!/bin/bash
+baseDirectory="/home/chughes/databases/projectEwsDlg2/"
+starLocation="/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64"
+
+eval mkdir ${baseDirectory}starIndex
+eval cd ${baseDirectory}starIndex
+eval ${starLocation}/STAR --runThreadN 8 --runMode genomeGenerate --genomeDir ${baseDirectory}starIndex --genomeFastaFiles ${baseDirectory}baseGenomeFiles/genome.fa --sjdbGTFfile ${baseDirectory}baseGenomeFiles/genome.gtf
+```
+
 
 For now, I don't have any other indexes to make, but I may revisit and add here later on.

@@ -2,12 +2,16 @@
 
 This document describes the reprocessing of some RNAseq data from a previous publication. Specifically:
 
-"BET bromodomain dependency in EWS/ETS driven Ewing Sarcoma"
-GEO: 113604, PMID: 29898995
+"EWS‐FLI1 reprograms the metabolism of Ewing sarcoma cells via positive regulation of glutamine import and serine‐glycine biosynthesis"
+GEO: GSE103843, PMID: 29873416
+
+From the methods of the paper:
+
+"For analysis of whole transcriptome profiles, we transfected cells (4 × 105 cells per well of a 6‐well plate) grown overnight with 20 nM siRNA complexed with 5 μL RNAi‐Max and harvested cells 24 or 48 h post‐transfection. We purified total RNA using the Maxwell 16 LEV SimplyRNA cells kit (Promega), confirmed decreased expression of EWS‐FLI1 and selected target genes by qPCR analysis (Figure S1A) and prepared poly‐A selected RNA libraries that we sequenced on an Illumina HiSeq2000 (Illumina, San Diego, CA). We aligned RNA‐sequencing (RNA‐seq) reads to the hg19 reference genome using Linux TopHat."
 
 ### Description
 
-I am interested in the CHLA10 RNAseq data where they have knocked down EWS-FLI1 expression. I want to reprocess these to get expression data, .
+I am interested in the TC32 RNAseq data where they have knocked down EWS-FLI1 expression. I want to reprocess these to get expression data, .
 
 I am going to use [sraDownloader](https://github.com/s-andrews/sradownloader) to get at these data. I am going to save them in the directory `/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211103_brdInhibitionGollavilliPmid29898995/`. 
 
@@ -17,8 +21,7 @@ I will use [STAR](https://github.com/alexdobin/STAR) for the alignment. I am fol
 
 I will use [Salmon](https://github.com/COMBINE-lab/salmon) to do read quantification. There is a great info page for this tool [here](https://salmon.readthedocs.io/en/latest/).
 
-For library construction, it appears the authors used the [TruSeq RNA Library Prep Kit v2](https://www.illumina.com/products/by-type/sequencing-kits/library-prep-kits/truseq-rna-v2.html). This appears to be non-stranded, so we will leave HiSAT2 with default settings.
-
+For library construction, there was no indication of whether the library was stranded or not, so I will assume it wasn't.
 
 I will then use [samtools](http://www.htslib.org/) to prepare the files before using [FeatureCounts](http://subread.sourceforge.net/featureCounts.html) (part of [Subread](http://subread.sourceforge.net/)) for quantification.
 
@@ -29,7 +32,7 @@ This is kind of a useful website for a general pipeline, [here](https://www.bioc
 First we will move into our working directory and create our shell and snakemake scripts.
 
 ```shell
-cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211103_brdInhibitionGollavilliPmid29898995
+cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211104_ef1MetabolismSenPmid29873416
 touch sraDataProcessingScript.sh
 chmod +x sraDataProcessingScript.sh
 touch snakefile
@@ -42,12 +45,12 @@ Edit the contents of the snakefile to include the text below. I use vim for this
 Author: Christopher Hughes
 Affiliation: BCCRC
 Aim: Workflow for RNA-Seq data
-Date: 20211103
+Date: 20211104
 """
 
 ###############################
 #working directory
-BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211103_brdInhibitionGollavilliPmid29898995"
+BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211104_ef1MetabolismSenPmid29873416"
 
 
 ###############################
@@ -96,19 +99,6 @@ rule bbduk:
   shell:
       "{BBDUK} in1={input.r1} in2={input.r2} ref=adapters out1={output.ro1} out2={output.ro2} ktrim=r k=23 mink=11 hdist=1 tpe tbo"
 
-rule salmon:
-  input:
-      r1 = "results/{smp}_1.clean.fastq.gz",
-      r2 = "results/{smp}_2.clean.fastq.gz"
-  output:
-      "quants/{smp}/quant.sf"
-  params:
-      dir = "quants/{smp}"
-  message:
-      "Quantifying with salmon."
-  shell:
-      "{SALMON} quant -i {SALMONINDEX} -l A -p 8 --gcBias --validateMappings -o {params.dir} -1 {input.r1} -2 {input.r2}"
-
 rule star:
   input:
       r1 = "results/{smp}_1.clean.fastq.gz",
@@ -149,6 +139,19 @@ rule featurecounts:
       "Counting reads with featureCounts."
   shell:
       "{FEATURECOUNTS} -p --countReadPairs -t exon -g gene_id -a {GTF} -o {output} {input}"
+
+rule salmon:
+  input:
+      r1 = "results/{smp}_1.clean.fastq.gz",
+      r2 = "results/{smp}_2.clean.fastq.gz"
+  output:
+      "quants/{smp}/quant.sf"
+  params:
+      dir = "quants/{smp}"
+  message:
+      "Quantifying with salmon."
+  shell:
+      "{SALMON} quant -i {SALMONINDEX} -l A -p 8 --gcBias --validateMappings -o {params.dir} -1 {input.r1} -2 {input.r2}"
 ```
 
 Below is the shell script I will use to process these data with snakemake.
@@ -159,14 +162,14 @@ Below is the shell script I will use to process these data with snakemake.
 ##set the location of software tools and the working directory where files will be stored
 sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
 sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211103_brdInhibitionGollavilliPmid29898995"
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211104_ef1MetabolismSenPmid29873416"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-for i in SRR7059{715..722}
+for i in SRR6035{978..983}
 do
   printf "Downloading files associated with ${i}."
   eval ${sraDownloader} --noena --outdir ${workingDirectory}/raw ${i}
