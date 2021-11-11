@@ -1,0 +1,144 @@
+---
+title: "Ewing EWS-FLI1 knockdown expression data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with Salmon data obtained from analysis of brain RNAseq data from the Sen et al. These data have a 48h knockdown of the EWS-FLI1 gene.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('tximport')
+library('GenomicFeatures')
+library('ggrepel')
+library('org.Hs.eg.db')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+The first thing to do is to make a sample annotation table.
+
+```{r}
+##########################################################################################
+samples = tibble('tissue' = c('neg.1','neg.2','ewsr1.1','ewsr1.2','fli1.1','fli1.2'),
+                 'cellLine' = c('TC32','TC32','TC32','TC32','TC32','TC32'),
+                 'sample' = c('SRR6035978','SRR6035979','SRR6035980','SRR6035981','SRR6035982','SRR6035983'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Next we point at our quant files.
+
+```{r}
+##########################################################################################
+quantFiles = file.path(paste(baseRepository, '/sequencing20211104_ef1MetabolismSenPmid29873416/quants', sep = ''), samples$sample, 'quant.sf')
+names(quantFiles) = samples$sample
+all(file.exists(quantFiles))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Build the transcriptome index.
+
+```{r}
+##########################################################################################
+txdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(txdb, keytype = "TXNAME")
+tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read the transcript data.
+
+```{r}
+##########################################################################################
+txi = tximport(quantFiles, type = 'salmon', tx2gene = tx2gene)
+names(txi)
+txiCounts = tibble(as.data.frame(txi$abundance)) %>%
+  dplyr::mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$counts)))
+geneSymbols = select(org.Hs.eg.db, txiCounts$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') 
+txiAnnotated = txiCounts %>%
+  dplyr::left_join(geneSymbols) %>%
+  dplyr::rename(symbol = SYMBOL, gene = ENSEMBL)
+saveRDS(txiAnnotated, paste(baseRepository,'/sequencing20211104_ef1MetabolismSenPmid29873416/dataset_countDataFromSalmon.rds', sep = ''))
+write.table(txiAnnotated, paste(baseRepository,'/sequencing20211104_ef1MetabolismSenPmid29873416/dataset_countDataFromSalmon.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot of these data.
+
+```{r}
+##########################################################################################
+rna = readRDS(paste(baseRepository,'/sequencing20211104_ef1MetabolismSenPmid29873416/dataset_countDataFromSalmon.rds', sep = ''))
+rna$meanNeg = rowMeans(rna[,1:2], na.rm = TRUE)
+rna$meanEws = rowMeans(rna[,3:4], na.rm = TRUE)
+rna$meanFli = rowMeans(rna[,5:6], na.rm = TRUE)
+rna$log2Ews = log2(rna$meanEws) - log2(rna$meanNeg)
+rna$log2Fli = log2(rna$meanFli) - log2(rna$meanNeg)
+rna = subset(rna, !is.na(rna$log2Ews) & !is.na(rna$log2Fli) & !is.infinite(rna$log2Ews) & !is.infinite(rna$log2Fli))
+
+###
+targetGenes = c('LOX','DLG2','PRKCB')
+rna$pText = ifelse(rna$symbol %in% targetGenes, rna$symbol, '')
+rna$pColors = ifelse(rna$log2Ews <= -1 & rna$log2Fli <= -1, brewer.pal(3,'Blues')[3],
+                            ifelse(rna$log2Ews >= 1 & rna$log2Fli >= 1, brewer.pal(3,'OrRd')[3],
+                                    brewer.pal(3,'Greys')[2]))
+ggplot(rna, aes(log2Ews, log2Fli)) +
+  geom_point(size = 1, color = rna$pColors, alpha = 0.5) +
+  geom_text_repel(label = rna$pText, max.overlaps = 15000, nudge_y = -6, nudge_x = -4) +
+  labs(x = 'log2(shFLI1 vs shNeg in TC32)', y = 'log2(shEWSR1 vs shNeg in TC32)', title = 'Bulk RNAseq counts') +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  scale_y_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+  scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20211104_ef1MetabolismSenPmid29873416/scatter_allTargetsSalmonRnaExpressionShEwsfli1Tc32.pdf', sep = ''),
+      height = 2, width = 2, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This data looks a bit odd compared to the others. Maybe their shRNA is not as good?
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+

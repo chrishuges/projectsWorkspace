@@ -167,55 +167,205 @@ conda activate snakemake
 ./sraDataProcessingScript.sh |& tee sraDataProcessingScriptLog.txt
 ```
 
-
-```shell
-/projects/ptx_analysis/chughes/software/sambamba-0.8.0/sambamba-0.8.0 view -h -t 6 -f bam -F '[XS] == null and not unmapped and not duplicate' ./SRR8832667.sorted.bam > ./SRR8832667.filtered.bam
-```
-
 Now we move on to peak calling using [MACS](https://github.com/macs3-project/MACS). There is a great walkthrough of this process [here](https://hbctraining.github.io/Intro-to-ChIPseq/lessons/05_peak_calling_macs.html). Also [here](https://deeptools.readthedocs.io/en/develop/content/tools/bamCoverage.html) for discussion of deepTools, specifically bamCoverage.
+
+The first file here is for narrow peak calling on the transcription factors.
 
 ```shell
 #!/bin/bash
-annotationLocation="/projects/ptx_analysis/chughes/databases/refgenieIndexes/hg38/gencode_gtf/default/hg38.gtf"
-rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/"
-for i in SRR8832669 SRR8832670 SRR8832671 SRR8832672 SRR8832673 SRR8832674
+annotationLocation="/home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
+rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211027_grunewaldEwsEncyclopedia"
+for i in SRR14760997
 do
-  echo $i
-  eval macs3 callpeak -t ${rawDataOutputDirectory}${i}.filtered.bam -c ${rawDataOutputDirectory}SRR8832666.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761001.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761002
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761006.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761007
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761011.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761012
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761016.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761017
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761021.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761027
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761031.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761032
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761036.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761037
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761041.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761042
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761046.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761047
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761051.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761052
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761057.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761058
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761062.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761063
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761067.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761068
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761072.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761073
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761077.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761078
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761082.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR14761083
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761087.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
 done
 ```
 
-For the H3K27ac data, I rand MACS3 using the --broad tag as well as this is how it was done in the original manuscript. Now we are ready for visualization. There is a good walkthrough of visualization [here](https://hbctraining.github.io/Intro-to-ChIPseq/lessons/10_data_visualization.html). First, I ran [deeptools](https://deeptools.readthedocs.io/en/develop/) on the bam files to create coverage maps:
+This second file is for broad peak calling with the histone marks.
 
 ```shell
-bamCoverage -b ./SRR8832666.filtered.bam -o ./deeptools/SRR8832666.chr11.bw --binSize 20 --region chr11 --normalizeUsing BPM --smoothLength 60 --extendReads 150 --centerReads -p 6
+#!/bin/bash
+annotationLocation="/home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
+rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211027_grunewaldEwsEncyclopedia"
+for i in SRR14760998 SRR14760999 SRR14761000
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761001.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
 
-bamCoverage -b ./$i.filtered.bam -o ./deeptools/$i.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --extendReads 150 --centerReads -p 6
+for i in SRR14761003 SRR14761004 SRR14761005
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761006.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761008 SRR14761009 SRR14761010
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761011.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761013 SRR14761014 SRR14761015
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761016.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761018 SRR14761019 SRR14761020
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761021.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761028 SRR14761029 SRR14761030
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761031.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761033 SRR14761034 SRR14761035
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761036.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761038 SRR14761039 SRR14761040
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761041.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761043 SRR14761044 SRR14761045
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761046.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761048 SRR14761049 SRR14761050
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761051.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761053 SRR14761055 SRR14761056
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761057.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761059 SRR14761060 SRR14761061
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761062.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761064 SRR14761065 SRR14761066
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761067.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761069 SRR14761070 SRR14761071
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761072.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761074 SRR14761075 SRR14761076
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761077.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761079 SRR14761080 SRR14761081
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761082.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR14761084 SRR14761085 SRR14761086
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14761087.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
 ```
 
-Now, I want to create a heatmap around the TSS for genes on chromosome 11. First I need to create a bed file with the chr11 gene regions in it. I can do this using the command line:
+Now we are ready for visualization. There is a good walkthrough of visualization [here](https://hbctraining.github.io/Intro-to-ChIPseq/lessons/10_data_visualization.html). First, I ran [deeptools](https://deeptools.readthedocs.io/en/develop/) on the bam files to create coverage maps:
 
 ```shell
-cat /projects/ptx_analysis/chughes/databases/refgenieIndexes/hg38/gencode_gtf/default/hg38.gtf |  awk 'OFS="\t" {if ($3=="gene" && $1=="chr11") {print $1,$4-1,$5,$10,$16,$7}}' | tr -d '";' > ./chr11Hg38GeneRegions.bed
+#!/bin/bash
+
+##set the location of software tools and the working directory where files will be stored
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211027_grunewaldEwsEncyclopedia"
+
+##loop over the accessions
+for i in SRR1476{{0997..1021},{1027..1053},{1055..1087}}
+do
+  eval bamCoverage -b ${workingDirectory}/results/${i}.filtered.bam -o ${workingDirectory}/results/${i}.chr11.bw --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --extendReads 150 --centerReads -p 6
+done
 ```
 
-Now I can run computeMatrix from deeptools.
-
-```shell
-computeMatrix reference-point --referencePoint TSS -b 1000 -a 1000 -R /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/chr11Hg38GeneRegions.bed -S /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/SRR88326[67][901234]*.bw --skipZeros -o /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/ewsFli1ChipSeqTssMatrixChr11.gz -p 6 --outFileSortedRegions /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/regionsTssChr11.bed
-```
-
-We can create a profile plot from these data.
-
-```shell
-plotProfile -m /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/ewsFli1ChipSeqTssMatrixChr11.gz --outFileName /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/regionsTssChr11Profile.pdf --perGroup --refPointLabel "TSS"
-```
-
-Alternatively, we can show this as a heatmap.
-
-```shell
-plotHeatmap -m /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/ewsFli1ChipSeqTssMatrixChr11.gz --outFileName /projects/ptx_results/Sequencing/publishedStudies/202002AynaudCellReportsPmid32049009/chipSeq/deeptools/regionsTssChr11Heatmap.pdf --colorMap RdBu
-```
-
-I think for the rest of the visualization, we will carry this out in R.
-
+The rest I can do in R.

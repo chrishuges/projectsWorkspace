@@ -1,0 +1,183 @@
+---
+title: "Ewing EWS-FLI1 knockdown expression data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with Salmon data obtained from analysis of brain RNAseq data from the Glollavilli et al.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('tximport')
+library('GenomicFeatures')
+library('ggrepel')
+library('org.Hs.eg.db')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+The first thing to do is to make a sample annotation table.
+
+```{r}
+##########################################################################################
+samples = tibble('tissue' = c('dmso.1','dmso.2','jq1.1','jq1.2','shEF1.1','shEF1.2','shBRD4.1','shBRD4.2'),
+                 'cellLine' = c('CHLA10','CHLA10','CHLA10','CHLA10','CHLA10','CHLA10','CHLA10','CHLA10'),
+                 'sample' = c('SRR7059715','SRR7059716','SRR7059717','SRR7059718','SRR7059719','SRR7059720','SRR7059721','SRR7059722'))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Next we point at our quant files.
+
+```{r}
+##########################################################################################
+quantFiles = file.path(paste(baseRepository, '/sequencing20211103_brdInhibitionGollavilliPmid29898995/quants', sep = ''), samples$sample, 'quant.sf')
+names(quantFiles) = samples$sample
+all(file.exists(quantFiles))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Build the transcriptome index.
+
+```{r}
+##########################################################################################
+txdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(txdb, keytype = "TXNAME")
+tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read the transcript data.
+
+```{r}
+##########################################################################################
+txi = tximport(quantFiles, type = 'salmon', tx2gene = tx2gene, countsFromAbundance = 'scaledTPM')
+names(txi)
+txiCounts = tibble(as.data.frame(txi$abundance)) %>%
+  dplyr::mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$counts)))
+geneSymbols = select(org.Hs.eg.db, txiCounts$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') 
+txiAnnotated = txiCounts %>%
+  dplyr::left_join(geneSymbols) %>%
+  dplyr::rename(symbol = SYMBOL, gene = ENSEMBL)
+saveRDS(txiAnnotated, paste(baseRepository,'/sequencing20211103_brdInhibitionGollavilliPmid29898995/dataset_countDataFromSalmon.rds', sep = ''))
+write.table(txiAnnotated, paste(baseRepository,'/sequencing20211103_brdInhibitionGollavilliPmid29898995/dataset_countDataFromSalmon.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot of these data.
+
+```{r}
+##########################################################################################
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##now make the plots
+targetGenes = c('LOX','DLG2','PRKCB')
+for (i in 1:length(targetGenes)){
+  geneExpData$pText = ifelse(geneExpData$symbol %in% targetGenes[i], geneExpData$symbol, '')
+  geneExpData$pColors = ifelse(geneExpData$a673Fc <= -1 & geneExpData$sknmcFc <= -1, brewer.pal(8,'RdBu')[8],
+                              ifelse(geneExpData$a673Fc >= 1 & geneExpData$sknmcFc >= 1, brewer.pal(8,'RdBu')[1],
+                                     brewer.pal(8,'Greys')[6]))
+  ggplot(geneExpData, aes(a673Fc, sknmcFc)) +
+    geom_point(size = 1, color = geneExpData$pColors, alpha = 0.5) +
+    geom_text_repel(label = geneExpData$pText) +
+    labs(x = 'log2(shEWS-FLI1 vs shGFP in A673)', y = 'log2(shEWS-FLI1 vs shGFP in SKNMC)', title = paste(targetGenes[i], 'expression in Ewing sarcoma')) +
+    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+    scale_y_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+    scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+    theme_classic()
+  ggsave(paste(baseRepository, '/sequencing20201204_ewsFli1RnaSeqBoulayDataReprocessing/scatter_',targetGenes[i],'SalmonRnaExpressionShEwsfli1.pdf', sep = ''),
+        height = 4, width = 4, useDingbats = FALSE)
+}
+
+#combo plot
+targetGenes = c('LOX','DLG2','PRKCB')
+geneExpData$pText = ifelse(geneExpData$symbol %in% targetGenes, geneExpData$symbol, '')
+geneExpData$pColors = ifelse(geneExpData$a673Fc <= -1 & geneExpData$sknmcFc <= -1, brewer.pal(3,'Blues')[3],
+                            ifelse(geneExpData$a673Fc >= 1 & geneExpData$sknmcFc >= 1, brewer.pal(3,'OrRd')[3],
+                                    brewer.pal(3,'Greys')[2]))
+ggplot(geneExpData, aes(a673Fc, sknmcFc)) +
+  geom_point(size = 1, color = geneExpData$pColors, alpha = 0.5) +
+  geom_text_repel(label = geneExpData$pText, max.overlaps = 15000, nudge_y = -6, nudge_x = -4) +
+  labs(x = 'log2(shEWS-FLI1 vs shGFP in A673)', y = 'log2(shEWS-FLI1 vs shGFP in SKNMC)', title = 'Bulk RNAseq counts') +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  scale_y_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+  scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20201204_ewsFli1RnaSeqBoulayDataReprocessing/scatter_allTargetsSalmonRnaExpressionShEwsfli1.pdf', sep = ''),
+      height = 2, width = 2, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Alright this looks good. Write the data to a file for use later on.
+
+```{r}
+##########################################################################################
+write.table(geneExpData, paste(baseRepository, '/sequencing20201204_ewsFli1RnaSeqBoulayDataReprocessing/dataset_boulaySalmonRnaSeqProcessedData.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+

@@ -181,18 +181,13 @@ awk '!/start_codon/ && !/stop_codon/ && !/UTR/ && !/^CDS$/' /mnt/Data/chughes/pr
 #/projects/ptx_analysis/chughes/software/ggSashimi/sashimi-plot.py -b /projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/starResults/SRR8616012.sorted.bam -c chr11:83626956-83760000 -g /projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/sashimi/dlg2ExonsOnly.gtf --min-coverage 50 --base-size 9
 ```
 
-This works great! The last thing I want to do is pass it multiple BAM files.
+Pass one at a time for the 3 cell lines.
 
 ```shell
-/projects/ptx_analysis/chughes/software/ggSashimi/sashimi-plot.py -b /projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/sashimi/bamFileAccessions.txt -c chr11:83626956-83760000 -g /projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/sashimi/dlg2ExonsOnly.gtf --min-coverage 50 --base-size 9
-```
+#CHLA10
+/home/chughes/softwareTools/ggSashimi/ggsashimi.py -b /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211103_brdInhibitionGollavilliPmid29898995/results/SRR7059715.sorted.bam -c chr11:83626956-83760000 -g /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211103_brdInhibitionGollavilliPmid29898995/sashimiPlots/dlg2ExonsOnly.gtf --min-coverage 10 --base-size 9 -o chla10Dlg2Upstream
 
-These plots don't seem to play well with Illustrator, so make just one at a time.
+/home/chughes/softwareTools/ggSashimi/ggsashimi.py -b /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1PrionBoulayPmid28844694/results/SRR5217668.sorted.bam -c chr11:83626956-83760000 -g /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211103_brdInhibitionGollavilliPmid29898995/sashimiPlots/dlg2ExonsOnly.gtf --min-coverage 10 --base-size 9 -o a673Dlg2Upstream
 
-```shell
-/projects/ptx_analysis/chughes/software/ggSashimi/sashimi-plot.py -b /projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/starResults/SRR8616012.sorted.bam -o a673 -c chr11:83626956-83760000 -g /projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/sashimi/dlg2ExonsOnly.gtf --min-coverage 50 --base-size 9
-
-/projects/ptx_analysis/chughes/software/ggSashimi/sashimi-plot.py -b /projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/starResults/SRR8615497.sorted.bam -o sknmc -c chr11:83626956-83760000 -g /projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/sashimi/dlg2ExonsOnly.gtf --min-coverage 50 --base-size 9
-
-/projects/ptx_analysis/chughes/software/ggSashimi/sashimi-plot.py -b /projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/additionalEwingLines/starResults/SRR8615521.sorted.bam -o mhhes1 -c chr11:83626956-83760000 -g /projects/ptx_results/Sequencing/publishedStudies/ccleRnaSequencingData/sashimi/dlg2ExonsOnly.gtf --min-coverage 50 --base-size 9
+/home/chughes/softwareTools/ggSashimi/ggsashimi.py -b /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1PrionBoulayPmid28844694/results/SRR5217670.sorted.bam -c chr11:83626956-83760000 -g /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211103_brdInhibitionGollavilliPmid29898995/sashimiPlots/dlg2ExonsOnly.gtf --min-coverage 10 --base-size 9 -o sknmcDlg2Upstream
 ```

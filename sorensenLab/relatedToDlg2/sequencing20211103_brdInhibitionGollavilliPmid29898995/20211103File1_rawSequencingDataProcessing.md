@@ -3,7 +3,7 @@
 This document describes the reprocessing of some RNAseq data from a previous publication. Specifically:
 
 "BET bromodomain dependency in EWS/ETS driven Ewing Sarcoma"
-GEO: 113604, PMID: 29898995
+GEO: GSE113604, PMID: 29898995
 
 ### Description
 

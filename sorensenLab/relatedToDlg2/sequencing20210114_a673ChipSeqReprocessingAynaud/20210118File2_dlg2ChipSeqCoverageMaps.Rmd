@@ -47,7 +47,9 @@ First get the gtf file we used for alignment and will use for annotation below.
 
 ```{r}
 ##########################################################################################
-totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz'))
+#need to change your gtf dependent on what the code below is using. The ensembl code uses the 'genome.gtf' file.
+totalGtf = as.data.frame(rtracklayer::import.gff('D:/databases/projectEwsDlg2/refseqFiles/GRCh38_latest_genomic.gtf.gz'))
+#totalGtf = as.data.frame(rtracklayer::import.gff('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf'))
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -69,11 +71,14 @@ I think this might be more flexible in the future if we extract this directly fr
 ```{r}
 ##########################################################################################
 dlg2Gtf = totalGtf %>%
-  filter(grepl('ENST00000398309.6', transcript_id))
+  #filter(grepl('ENST00000398309.6', transcript_id))
+  #filter(grepl('ENST00000426717.6', transcript_id) | grepl('ENST00000398309.6', transcript_id))
+  dplyr::filter(grepl('NM_001300983.1', transcript_id) | grepl('NM_001377978.1', transcript_id))
+  
 ##
 dlg2Meta = dlg2Gtf %>%
   filter(grepl('transcript', type)) %>%
-  dplyr::select(transcript_id, gene_id, gene_name, strand)
+  dplyr::select(transcript_id, gene_id, gene, strand)
 ##
 dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
   filter(grepl('exon', type)), split.field = 'transcript_id')
@@ -89,8 +94,8 @@ Lets try plotting with these data.
 ```{r}
 ##########################################################################################
 plotTranscripts(dlg2Exons, dlg2Cds, dlg2Meta, rescale_introns = TRUE, )
-ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/rectangly_dlg2GeneLayout.pdf', sep = ''),
-         height = 4, width = 4, useDingbats = FALSE)
+ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/rectangly_dlg2GeneLayoutRefseq.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -264,11 +269,45 @@ ggplot(combinedPeaksCollapse, aes(indexLocation, score)) +
         axis.text.x = element_blank())
 ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/lineplot_dlg2ChipPeaksAll.pdf', sep = ''),
        height = 8, width = 8, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This is the same plot as above, but excluding a couple of the time points.
+
+```{r}
+##########################################################################################
+#you need to run the code in the previous chunk before this because it relies on some of the objects from it
+accessions = c('SRR8832669','SRR8832672','SRR8832674')
+combinedPeaks = list()
+for(i in 1:length(accessions)){
+  macsBw = rtracklayer::import(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/',accessions[i],'.chr11.bw', sep = ''))
+  macsOverlaps = findOverlaps(peakWindows, macsBw, ignore.strand = TRUE)
+  macsCounts = as.data.frame(macsBw)[subjectHits(macsOverlaps),]
+  macsCounts$peakId = peakWindows$peak
+  macsCounts$indexLocation = rep(seq(1,2001,1), 5)
+  macsCounts$dataset = accessions[i]
+  ##
+  combinedPeaks[[i]] = macsCounts
+}
+combinedPeaksCollapse = do.call('rbind', combinedPeaks)
 
 
-
-
-
+##now try making the plot again
+ggplot(combinedPeaksCollapse, aes(indexLocation, score)) +
+  geom_path(color = brewer.pal(3,'Blues')[3], size = 0.5) +
+  scale_y_continuous(limits = c(0,6), breaks = seq(0,8,2)) +
+  scale_x_continuous(limits = c(0,2005), breaks = seq(0,2000,1000)) +
+  labs(x = 'Peak position', y = 'Bins per million', title = 'EWS-FLI1 peaks in DLG2') +
+  facet_wrap(~dataset + peakId, nrow = 3, ncol = 5) +
+  theme_classic() +
+  theme(panel.border = element_rect(size = 0.5, fill = NA),
+        strip.background = element_blank(),
+        strip.text.x = element_blank(),
+        axis.text.x = element_blank(),
+        panel.spacing = unit(0.1,'lines'))
+ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/lineplot_dlg2ChipPeaksSubset.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
 ```
 
 <div style="margin-bottom:50px;"></div>
