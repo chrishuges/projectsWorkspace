@@ -183,6 +183,32 @@ do
 done
 ```
 
+This is an alternative script that uses ENA.
 
+```shell
+#!/bin/bash
 
+##set the location of software tools and the working directory where files will be stored
+ftpLocation="ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR159"
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903"
+eval cd ${workingDirectory}
+eval mkdir raw
+eval mkdir results
+eval mkdir quants
 
+##loop over the accessions
+for i in {0..5}
+do
+  printf "Downloading files associated with SRR159402${i}."
+  eval wget ${ftpLocation}/00${i}/SRR159402${i}/SRR159402${i}_1.fastq.gz
+  eval wget ${ftpLocation}/00${i}/SRR159402${i}/SRR159402${i}_2.fastq.gz
+  eval mv ${workingDirectory}/SRR159402${i}_1.fastq.gz ${workingDirectory}/raw
+  eval mv ${workingDirectory}/SRR159402${i}_2.fastq.gz ${workingDirectory}/raw
+  #eval conda activate snakemake
+  eval snakemake --cores 8
+  #eval conda deactivate
+  eval rm ${workingDirectory}/raw/SRR159402${i}*.fastq.gz
+  eval rm ${workingDirectory}/results/SRR159402${i}*.clean.fastq.gz
+  eval rm ${workingDirectory}/results/SRR159402${i}_Aligned.out.bam
+done
+```

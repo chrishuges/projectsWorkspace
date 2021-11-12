@@ -1,23 +1,18 @@
 ## Reprocessing some RNAseq data
 
-This document describes the reprocessing of some RNAseq data from a previous publication. Specifically:
-
-"Cancer-Specific Retargeting of BAF Complexes by a Prion-like Domain"
-Cell, 2017, Pubmed ID: 28844694, GEO: GSE94278
+This document describes the reprocessing of some RNAseq data from a the CCLE database, or DepMap. The data are all located in SRA: PRJNA523380.
 
 ### Description
 
 I am interested in the RNAseq data where they have knocked down EWS-FLI1 expression. I want to reprocess these to get expression data, .
 
-I am going to use [sraDownloader](https://github.com/s-andrews/sradownloader) to get at these data. I am going to save them in the directory `/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1PrionBoulayPmid28844694/`.
+I am going to use [sraDownloader](https://github.com/s-andrews/sradownloader) to get at these data. I am going to save them in the directory `/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/`.
 
 I will parse these downloaded raw files for quality and adapter sequences using bbduk from the [bbTools package](https://sourceforge.net/projects/bbmap/). There are some good walkthroughs on how to use this package in the packages documentation itself, as well as [here](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/).
 
 I will use [STAR](https://github.com/alexdobin/STAR) for the alignment. I am following the instructions in the STAR [manual](https://github.com/alexdobin/STAR/blob/master/doc/STARmanual.pdf).
 
 I will use [Salmon](https://github.com/COMBINE-lab/salmon) to do read quantification. There is a great info page for this tool [here](https://salmon.readthedocs.io/en/latest/).
-
-For library construction, they don't mention anything about whether the libraries are stranded or not, so we will assume they aren't.
 
 I will then use [samtools](http://www.htslib.org/) to prepare the files before using [FeatureCounts](http://subread.sourceforge.net/featureCounts.html) (part of [Subread](http://subread.sourceforge.net/)) for quantification.
 
@@ -28,7 +23,7 @@ This is kind of a useful website for a general pipeline, [here](https://www.bioc
 First we will move into our working directory and create our shell and snakemake scripts.
 
 ```shell
-cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1PrionBoulayPmid28844694
+cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing
 touch sraDataProcessingScript.sh
 chmod +x sraDataProcessingScript.sh
 touch snakefile
@@ -46,7 +41,7 @@ Date: 20211105
 
 ###############################
 #working directory
-BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1PrionBoulayPmid28844694"
+BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing"
 
 
 ###############################
@@ -159,14 +154,14 @@ Below is the shell script I will use to process these data with snakemake.
 ##set the location of software tools and the working directory where files will be stored
 sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
 sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1PrionBoulayPmid28844694"
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-for i in SRR52176{67..70}
+for i in SRR8616012 SRR8615497 SRR8616213 SRR8616214 SRR8615592 SRR8615679 SRR8615832 SRR8615859 SRR8615273 SRR8615499 SRR8615521
 do
   printf "Downloading files associated with ${i}."
   eval ${sraDownloader} --noena --outdir ${workingDirectory}/raw ${i}
@@ -177,40 +172,13 @@ do
   eval snakemake --cores 8
   #eval conda deactivate
   eval rm ${workingDirectory}/raw/${i}*.fastq.gz
+  eval rm ${sraCacheLocation}/sra/${i}*.sra
   eval rm ${sraCacheLocation}/sra/${i}*.sra.cache
   eval rm ${workingDirectory}/results/${i}*.clean.fastq.gz
   eval rm ${workingDirectory}/results/${i}_Aligned.out.bam
 done
 ```
 
-This is an alternative script that uses ENA.
 
-```shell
-#!/bin/bash
 
-##set the location of software tools and the working directory where files will be stored
-ftpLocation="ftp://ftp.sra.ebi.ac.uk/vol1/fastq"
-baseAccession="SRR52176"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1PrionBoulayPmid28844694"
-eval cd ${workingDirectory}
-eval mkdir raw
-eval mkdir results
-eval mkdir quants
 
-##loop over the accessions
-for i in {68..70}
-do
-  printf "Downloading files associated with ${baseAccession}${i}."
-
-  eval wget ${ftpLocation}/${baseAccession:0:6}/00${i: -1}/${baseAccession}${i}/${baseAccession}${i}_1.fastq.gz
-  eval wget ${ftpLocation}/${baseAccession:0:6}/00${i: -1}/${baseAccession}${i}/${baseAccession}${i}_2.fastq.gz
-  eval mv ${workingDirectory}/${baseAccession}${i}_1.fastq.gz ${workingDirectory}/raw
-  eval mv ${workingDirectory}/${baseAccession}${i}_2.fastq.gz ${workingDirectory}/raw
-  #eval conda activate snakemake
-  eval snakemake --cores 8
-  #eval conda deactivate
-  eval rm ${workingDirectory}/raw/${baseAccession}${i}*.fastq.gz.fastq.gz
-  eval rm ${workingDirectory}/results/${baseAccession}${i}*.clean.fastq.gz
-  eval rm ${workingDirectory}/results/${baseAccession}${i}_Aligned.out.bam
-done
-```

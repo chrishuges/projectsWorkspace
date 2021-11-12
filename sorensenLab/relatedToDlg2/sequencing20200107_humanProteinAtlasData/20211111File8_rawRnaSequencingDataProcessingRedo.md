@@ -1,9 +1,6 @@
 ## Reprocessing some RNAseq data
 
-This document describes the reprocessing of some RNAseq data from a previous publication. Specifically:
-
-"Cancer-Specific Retargeting of BAF Complexes by a Prion-like Domain"
-Cell, 2017, Pubmed ID: 28844694, GEO: GSE94278
+This document describes the reprocessing of some RNAseq data from the [Human Protein Atlas](https://www.proteinatlas.org/). I am specifically interested in the brain data. They have deposited the raw files in ENA with the accession [ERP006650](https://www.ebi.ac.uk/ena/browser/view/PRJEB6971).
 
 ### Description
 
@@ -28,7 +25,7 @@ This is kind of a useful website for a general pipeline, [here](https://www.bioc
 First we will move into our working directory and create our shell and snakemake scripts.
 
 ```shell
-cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1PrionBoulayPmid28844694
+cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211111_humanProteinAtlasData
 touch sraDataProcessingScript.sh
 chmod +x sraDataProcessingScript.sh
 touch snakefile
@@ -46,7 +43,7 @@ Date: 20211105
 
 ###############################
 #working directory
-BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1PrionBoulayPmid28844694"
+BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211111_humanProteinAtlasData"
 
 
 ###############################
@@ -157,60 +154,29 @@ Below is the shell script I will use to process these data with snakemake.
 #!/bin/bash
 
 ##set the location of software tools and the working directory where files will be stored
-sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
-sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1PrionBoulayPmid28844694"
+ftpLocation="ftp://ftp.sra.ebi.ac.uk/vol1/fastq/ERR315/"
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211111_humanProteinAtlasData"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-for i in SRR52176{67..70}
+for i in ERR315{455,477,432}
 do
   printf "Downloading files associated with ${i}."
-  eval ${sraDownloader} --noena --outdir ${workingDirectory}/raw ${i}
-  ##the file gets renamed upon download, but I just want it to have the SRR id and I can annotate it later
-  eval mv ${workingDirectory}/raw/${i}*_1.fastq.gz ${workingDirectory}/raw/${i}_1.fastq.gz
-  eval mv ${workingDirectory}/raw/${i}*_2.fastq.gz ${workingDirectory}/raw/${i}_2.fastq.gz
+  eval wget ${ftpLocation}${i}/${i}_1.fastq.gz
+  eval wget ${ftpLocation}${i}/${i}_2.fastq.gz
+  eval mv ${workingDirectory}/${i}_1.fastq.gz ${workingDirectory}/raw
+  eval mv ${workingDirectory}/${i}_2.fastq.gz ${workingDirectory}/raw
   #eval conda activate snakemake
   eval snakemake --cores 8
   #eval conda deactivate
   eval rm ${workingDirectory}/raw/${i}*.fastq.gz
-  eval rm ${sraCacheLocation}/sra/${i}*.sra.cache
   eval rm ${workingDirectory}/results/${i}*.clean.fastq.gz
   eval rm ${workingDirectory}/results/${i}_Aligned.out.bam
 done
 ```
 
-This is an alternative script that uses ENA.
 
-```shell
-#!/bin/bash
 
-##set the location of software tools and the working directory where files will be stored
-ftpLocation="ftp://ftp.sra.ebi.ac.uk/vol1/fastq"
-baseAccession="SRR52176"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1PrionBoulayPmid28844694"
-eval cd ${workingDirectory}
-eval mkdir raw
-eval mkdir results
-eval mkdir quants
-
-##loop over the accessions
-for i in {68..70}
-do
-  printf "Downloading files associated with ${baseAccession}${i}."
-
-  eval wget ${ftpLocation}/${baseAccession:0:6}/00${i: -1}/${baseAccession}${i}/${baseAccession}${i}_1.fastq.gz
-  eval wget ${ftpLocation}/${baseAccession:0:6}/00${i: -1}/${baseAccession}${i}/${baseAccession}${i}_2.fastq.gz
-  eval mv ${workingDirectory}/${baseAccession}${i}_1.fastq.gz ${workingDirectory}/raw
-  eval mv ${workingDirectory}/${baseAccession}${i}_2.fastq.gz ${workingDirectory}/raw
-  #eval conda activate snakemake
-  eval snakemake --cores 8
-  #eval conda deactivate
-  eval rm ${workingDirectory}/raw/${baseAccession}${i}*.fastq.gz.fastq.gz
-  eval rm ${workingDirectory}/results/${baseAccession}${i}*.clean.fastq.gz
-  eval rm ${workingDirectory}/results/${baseAccession}${i}_Aligned.out.bam
-done
-```
