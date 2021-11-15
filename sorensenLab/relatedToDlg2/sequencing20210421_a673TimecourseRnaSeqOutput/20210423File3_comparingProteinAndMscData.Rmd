@@ -62,7 +62,7 @@ Make a plot of these combined data.
 ##########################################################################################
 rnaPro$pColors = ifelse(rnaPro$rnaFC >= 1 & rnaPro$proFC >= 1, brewer.pal(8,'Spectral')[1], 
                         ifelse(rnaPro$rnaFC <= -1 & rnaPro$proFC <= -1, brewer.pal(8,'Spectral')[8], brewer.pal(11,'RdGy')[8]))
-goi = c('DLG2','PRKCB','IL1RAP')
+goi = c('DLG2','PRKCB','LOX')
 rnaPro$pText = ifelse(rnaPro$gene %in% goi, rnaPro$gene, '')
 
 
@@ -132,19 +132,19 @@ expData = rnaPro %>%
   dplyr::rename(symbol = gene) %>%
   right_join(hancockSig) %>%
   dplyr::filter(!is.na(rnaFC) & !is.na(proFC)) %>%
-  dplyr::mutate(pColors = ifelse(category == 'up', brewer.pal(8,'Spectral')[8], brewer.pal(8,'Spectral')[1]))
+  dplyr::mutate(pColors = ifelse(category == 'up', brewer.pal(3,'Blues')[3], brewer.pal(3,'OrRd')[3]))
 
 ggplot(expData, aes(rnaFC, proFC)) +
   geom_point(size = 1, color = expData$pColors) +
   labs(x = 'log2(day7 - day0, RNA)', y = 'log2(day7 - day0, protein)', title = 'Hancock signature') +
-  geom_text_repel(label = expData$pText, nudge_x = -3, nudge_y = 3) +
+  geom_text_repel(label = expData$pText, nudge_x = -3, nudge_y = 3, max.overlaps = 10000) +
   scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
   scale_y_continuous(limits = c(-6,6), breaks = seq(-10,10,2)) +
   geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
   geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
   theme_classic()
 ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatter_rnaVSpro_day7VSday0_hancock.pdf', sep = ''),
-       height = 4, width = 4, useDingbats = FALSE)
+       height = 2, width = 2, useDingbats = FALSE)
 
 
 

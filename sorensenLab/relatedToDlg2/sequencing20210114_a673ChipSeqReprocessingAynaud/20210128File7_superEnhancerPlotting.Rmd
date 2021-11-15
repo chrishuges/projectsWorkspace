@@ -41,7 +41,8 @@ First get the gtf file we used for alignment and will use for annotation below.
 
 ```{r}
 ##########################################################################################
-totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz'))
+#totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz'))
+totalGtf = as.data.frame(rtracklayer::import.gff('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf'))
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -52,7 +53,7 @@ Read in the peaks from the MACS analysis of the ChipSeq data and filter for thos
 ##########################################################################################
 #the transcript with the closest 'exon' is ENST00000426717.6
 dlg2Gtf = totalGtf %>%
-  filter(grepl('DLG2', gene_name)) %>%
+  filter(grepl('DLG2$', gene_name)) %>%
   filter(grepl('gene', type)) %>%
   mutate(end = end + 100000) #we add 100kb here to search beyond the annotated TSS
 
@@ -163,7 +164,7 @@ ggplot(finalData, aes(-start, signal)) +
   theme(strip.background = element_blank(),
         strip.text.x = element_blank())
 ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/roseDay0/lineplot_dlg2AllDatasetPeaks.pdf', sep = ''),
-         height = 4, width = 4, useDingbats = FALSE)
+         height = 2, width = 2, useDingbats = FALSE)
 ```
 
 <div style="margin-bottom:50px;"></div>

@@ -100,10 +100,10 @@ ggplot(macsCounts, aes(indexLocation, score)) +
   facet_wrap(~peakId, nrow = 1)
 
 ##looks good, so make a plot for each
-#accessions = c(paste('SRR147',seq(60997,61017,5),sep=''),
-#               paste('SRR147',seq(61027,61052,5),sep=''),
-#               paste('SRR147',seq(61058,61083,5),sep=''))	
-accessions = c(paste('SRR147',seq(60997,61010,5),sep=''))
+accessions = c(paste('SRR147',seq(60997,61017,5),sep=''),
+               paste('SRR147',seq(61027,61052,5),sep=''),
+               paste('SRR147',seq(61058,61083,5),sep=''))	
+
 for(i in 1:length(accessions)){
   macsBw = rtracklayer::import(paste(baseRepository, '/sequencing20211027_grunewaldEwsEncyclopedia/coverageAnalysis/',accessions[i],'.chr11.bw', sep = ''))
   macsOverlaps = findOverlaps(peakWindows, macsBw, ignore.strand = TRUE)
@@ -123,3 +123,282 @@ for(i in 1:length(accessions)){
          height = 4, width = 4, useDingbats = FALSE)
 }
 ```
+
+<div style="margin-bottom:50px;"></div>
+
+Make plots of each individual peak across the different cell lines.
+
+```{r}
+##########################################################################################
+#need to run the code above before you run this chunk
+sampleAnno = tibble('accession' = accessions,
+                    'cellLine' = c('A673','CHLA10','CHLA25','EW1','EW22','EW3',
+                                   'EW7','MHHES1','MIC','POE','RDES','RH1',
+                                   'SKES1','SKNMC','TC32','TC71','TC106'))
+##
+peakData = tibble()
+for(i in 1:length(accessions)){
+  macsBw = rtracklayer::import(paste(baseRepository, '/sequencing20211027_grunewaldEwsEncyclopedia/coverageAnalysis/',accessions[i],'.chr11.bw', sep = ''))
+  macsOverlaps = findOverlaps(peakWindows, macsBw, ignore.strand = TRUE)
+  macsCounts = as.data.frame(macsBw)[subjectHits(macsOverlaps),]
+  macsCounts$peakId = peakWindows$peak
+  macsCounts$indexLocation = rep(seq(1,2001,1), 2)
+  macsCounts$accession = accessions[i]
+  macsCounts$adjustedScore = (macsCounts$score / sum(macsBw$score)) * 1e6
+  macsCountsAnno = macsCounts %>%
+    left_join(sampleAnno)
+  peakData = rbind(peakData, macsCountsAnno)
+}
+
+##
+#you can use adjusted score to check if the low coverage is a result of low overall coverage, but it is not the case
+for (i in c(4,5)){
+  peakPlot = dplyr::filter(peakData, peakId == i)
+  peakMax = peakPlot %>%
+    dplyr::select(cellLine, peakId, score) %>%
+    dplyr::group_by(cellLine, peakId) %>%
+    dplyr::summarise(peakMaxScore = max(score)) %>%
+    dplyr::arrange(-peakMaxScore)
+  print(peakMax)
+  ggplot(peakPlot, aes(indexLocation, score)) +
+    geom_path(aes(group = cellLine), color = brewer.pal(3,'Blues')[3], alpha = 0.5, size = 0.5) +
+    scale_x_continuous(limits = c(0,2005), breaks = seq(0,2000,1000)) +
+    scale_y_continuous(limits = c(0,26), breaks = seq(0,60,5)) +
+    labs(x = 'Peak position', y = 'Coverage', title = 'EWS-FLI1 peaks in DLG2') +
+    theme_classic()
+  ggsave(paste(baseRepository, '/sequencing20211027_grunewaldEwsEncyclopedia/coverageAnalysis/lineplot_dlg2ChipPeak',i,'AllCellLines.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+}
+
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We also have H3K27Ac and some other data here.
+
+```{r}
+##########################################################################################
+#need to run the code above before you run this chunk
+accessions = c(paste('SRR147',seq(61000,61020,5),sep=''),
+               paste('SRR147',seq(61030,61050,5),sep=''),
+               paste('SRR147',seq(61056,61086,5),sep=''))
+sampleAnno = tibble('accession' = accessions,
+                    'cellLine' = c('A673','CHLA10','CHLA25','EW1','EW22','EW3',
+                                   'EW7','MHHES1','MIC','POE','RDES','RH1',
+                                   'SKES1','SKNMC','TC32','TC71','TC106'))
+##
+peakData = tibble()
+for(i in 1:length(accessions)){
+  macsBw = rtracklayer::import(paste(baseRepository, '/sequencing20211027_grunewaldEwsEncyclopedia/coverageAnalysis/',accessions[i],'.chr11.bw', sep = ''))
+  macsOverlaps = findOverlaps(peakWindows, macsBw, ignore.strand = TRUE)
+  macsCounts = as.data.frame(macsBw)[subjectHits(macsOverlaps),]
+  macsCounts$peakId = peakWindows$peak
+  macsCounts$indexLocation = rep(seq(1,2001,1), 2)
+  macsCounts$accession = accessions[i]
+  macsCounts$adjustedScore = (macsCounts$score / sum(macsBw$score)) * 1e6
+  macsCountsAnno = macsCounts %>%
+    left_join(sampleAnno)
+  peakData = rbind(peakData, macsCountsAnno)
+}
+
+##
+#you can use adjusted score to check if the low coverage is a result of low overall coverage, but it is not the case
+for (i in c(4,5)){
+  peakPlot = dplyr::filter(peakData, peakId == i)
+  peakMax = peakPlot %>%
+    dplyr::select(cellLine, peakId, score) %>%
+    dplyr::group_by(cellLine, peakId) %>%
+    dplyr::summarise(peakMaxScore = max(score)) %>%
+    dplyr::arrange(-peakMaxScore)
+  print(peakMax)
+  ggplot(peakPlot, aes(indexLocation, score)) +
+    geom_path(aes(group = cellLine), color = brewer.pal(3,'Blues')[3], alpha = 0.5, size = 0.5) +
+    scale_x_continuous(limits = c(0,2005), breaks = seq(0,2000,1000)) +
+    scale_y_continuous(limits = c(0,26), breaks = seq(0,60,5)) +
+    labs(x = 'Peak position', y = 'Coverage', title = 'EWS-FLI1 peaks in DLG2') +
+    theme_classic()
+  ggsave(paste(baseRepository, '/sequencing20211027_grunewaldEwsEncyclopedia/coverageAnalysis/lineplot_dlg2H3K27Ac',i,'AllCellLines.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+}
+```
+
+
+<div style="margin-bottom:50px;"></div>
+
+We can also combine all of these data. In the end I don't think I used this because they are too different.
+
+```{r, message=FALSE}
+##########################################################################################
+accessions = c(paste('SRR147',seq(60997,61017,5),sep=''),
+               paste('SRR147',seq(61027,61052,5),sep=''),
+               paste('SRR147',seq(61058,61083,5),sep=''))
+##
+sampleAnno = tibble('accession' = accessions,
+                    'cellLine' = c('A673','CHLA10','CHLA25','EW1','EW22','EW3',
+                                   'EW7','MHHES1','MIC','POE','RDES','RH1',
+                                   'SKES1','SKNMC','TC32','TC71','TC106'))
+
+#make a grange that covers the peak regions, macsPeaks object is created in the code above
+peakGrange = makeGRangesFromDataFrame(data.frame('seqname' = macsPeaks$chr,
+                        'start' = macsPeaks$midPoint - 500,
+                        'end' = macsPeaks$midPoint + 500,
+                        'strand' = '*'))
+peakWindows = unlist(slidingWindows(peakGrange,1), use.names = TRUE)
+peakWindows$peak = rep(seq(5,4,-1), each = 1001)
+
+##this is the FLI1 bait data
+ipBait = 'FLI1'
+ipData = tibble()
+for(i in 1:length(accessions)){
+  macsBw = rtracklayer::import(paste(baseRepository, '/sequencing20211027_grunewaldEwsEncyclopedia/coverageAnalysis/',accessions[i],'.chr11.bw', sep = ''))
+  macsOverlaps = findOverlaps(peakWindows, macsBw, ignore.strand = TRUE)
+  macsCounts = as.data.frame(macsBw)[subjectHits(macsOverlaps),]
+  macsCounts$peakId = peakWindows$peak
+  macsCounts$indexLocation = rep(seq(1,1001,1), 2)
+  macsCounts$accession = accessions[i]
+  macsCountsAnno = macsCounts %>%
+    left_join(sampleAnno)
+  ##
+  peakMaxJoin = tibble('cellLine' = as.character(sampleAnno[i,2]))
+  for (j in c(4,5)){
+    macsCountsSubset = dplyr::filter(macsCountsAnno, peakId == j)
+    peakMax = macsCountsSubset %>%
+      dplyr::select(cellLine, score) %>%
+      dplyr::group_by(cellLine) %>%
+      dplyr::summarise(peakMaxScore = max(score))
+    colnames(peakMax)[2] = paste('peak',j,ipBait,'Score',sep='')
+    peakMaxJoin = dplyr::left_join(peakMaxJoin, peakMax)
+  }
+  ipData = rbind(ipData, peakMaxJoin)
+}
+
+
+##this is the H3K4me3 bait data
+accessions = c(paste('SRR147',seq(60998,61018,5),sep=''),
+               paste('SRR147',seq(61028,61053,5),sep=''),
+               paste('SRR147',seq(61059,61084,5),sep=''))
+##
+sampleAnno = tibble('accession' = accessions,
+                    'cellLine' = c('A673','CHLA10','CHLA25','EW1','EW22','EW3',
+                                   'EW7','MHHES1','MIC','POE','RDES','RH1',
+                                   'SKES1','SKNMC','TC32','TC71','TC106'))
+##
+ipBait = 'H3K4me3'
+ipData2 = tibble()
+for(i in 1:length(accessions)){
+  macsBw = rtracklayer::import(paste(baseRepository, '/sequencing20211027_grunewaldEwsEncyclopedia/coverageAnalysis/',accessions[i],'.chr11.bw', sep = ''))
+  macsOverlaps = findOverlaps(peakWindows, macsBw, ignore.strand = TRUE)
+  macsCounts = as.data.frame(macsBw)[subjectHits(macsOverlaps),]
+  macsCounts$peakId = peakWindows$peak
+  macsCounts$indexLocation = rep(seq(1,1001,1), 2)
+  macsCounts$accession = accessions[i]
+  macsCountsAnno = macsCounts %>%
+    left_join(sampleAnno)
+  ##
+  peakMaxJoin = tibble('cellLine' = as.character(sampleAnno[i,2]))
+  for (j in c(4,5)){
+    macsCountsSubset = dplyr::filter(macsCountsAnno, peakId == j)
+    peakMax = macsCountsSubset %>%
+      dplyr::select(cellLine, score) %>%
+      dplyr::group_by(cellLine) %>%
+      dplyr::summarise(peakMaxScore = max(score))
+    colnames(peakMax)[2] = paste('peak',j,ipBait,'Score',sep='')
+    peakMaxJoin = dplyr::left_join(peakMaxJoin, peakMax)
+  }
+  ipData2 = rbind(ipData2, peakMaxJoin)
+}
+
+
+##this is the H3K27me3 bait data
+accessions = c(paste('SRR147',seq(60999,61019,5),sep=''),
+               paste('SRR147',seq(61029,61049,5),sep=''),
+               paste('SRR147',seq(61055,61085,5),sep=''))
+##
+sampleAnno = tibble('accession' = accessions,
+                    'cellLine' = c('A673','CHLA10','CHLA25','EW1','EW22','EW3',
+                                   'EW7','MHHES1','MIC','POE','RDES','RH1',
+                                   'SKES1','SKNMC','TC32','TC71','TC106'))
+##
+ipBait = 'H3K27me3'
+ipData3 = tibble()
+for(i in 1:length(accessions)){
+  macsBw = rtracklayer::import(paste(baseRepository, '/sequencing20211027_grunewaldEwsEncyclopedia/coverageAnalysis/',accessions[i],'.chr11.bw', sep = ''))
+  macsOverlaps = findOverlaps(peakWindows, macsBw, ignore.strand = TRUE)
+  macsCounts = as.data.frame(macsBw)[subjectHits(macsOverlaps),]
+  macsCounts$peakId = peakWindows$peak
+  macsCounts$indexLocation = rep(seq(1,1001,1), 2)
+  macsCounts$accession = accessions[i]
+  macsCountsAnno = macsCounts %>%
+    left_join(sampleAnno)
+  ##
+  peakMaxJoin = tibble('cellLine' = as.character(sampleAnno[i,2]))
+  for (j in c(4,5)){
+    macsCountsSubset = dplyr::filter(macsCountsAnno, peakId == j)
+    peakMax = macsCountsSubset %>%
+      dplyr::select(cellLine, score) %>%
+      dplyr::group_by(cellLine) %>%
+      dplyr::summarise(peakMaxScore = max(score))
+    colnames(peakMax)[2] = paste('peak',j,ipBait,'Score',sep='')
+    peakMaxJoin = dplyr::left_join(peakMaxJoin, peakMax)
+  }
+  ipData3 = rbind(ipData3, peakMaxJoin)
+}
+
+
+
+##this is the H3K27ac bait data
+accessions = c(paste('SRR147',seq(61000,61020,5),sep=''),
+               paste('SRR147',seq(61030,61050,5),sep=''),
+               paste('SRR147',seq(61056,61086,5),sep=''))
+##
+sampleAnno = tibble('accession' = accessions,
+                    'cellLine' = c('A673','CHLA10','CHLA25','EW1','EW22','EW3',
+                                   'EW7','MHHES1','MIC','POE','RDES','RH1',
+                                   'SKES1','SKNMC','TC32','TC71','TC106'))
+##
+ipBait = 'H3K27ac'
+ipData4 = tibble()
+for(i in 1:length(accessions)){
+  macsBw = rtracklayer::import(paste(baseRepository, '/sequencing20211027_grunewaldEwsEncyclopedia/coverageAnalysis/',accessions[i],'.chr11.bw', sep = ''))
+  macsOverlaps = findOverlaps(peakWindows, macsBw, ignore.strand = TRUE)
+  macsCounts = as.data.frame(macsBw)[subjectHits(macsOverlaps),]
+  macsCounts$peakId = peakWindows$peak
+  macsCounts$indexLocation = rep(seq(1,1001,1), 2)
+  macsCounts$accession = accessions[i]
+  macsCountsAnno = macsCounts %>%
+    left_join(sampleAnno)
+  ##
+  peakMaxJoin = tibble('cellLine' = as.character(sampleAnno[i,2]))
+  for (j in c(4,5)){
+    macsCountsSubset = dplyr::filter(macsCountsAnno, peakId == j)
+    peakMax = macsCountsSubset %>%
+      dplyr::select(cellLine, score) %>%
+      dplyr::group_by(cellLine) %>%
+      dplyr::summarise(peakMaxScore = max(score))
+    colnames(peakMax)[2] = paste('peak',j,ipBait,'Score',sep='')
+    peakMaxJoin = dplyr::left_join(peakMaxJoin, peakMax)
+  }
+  ipData4 = rbind(ipData4, peakMaxJoin)
+}
+
+###combine all of the data
+allIpData = ipData %>%
+  left_join(ipData2) %>%
+  left_join(ipData3) %>%
+  left_join(ipData4)
+```
+
+
+
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+

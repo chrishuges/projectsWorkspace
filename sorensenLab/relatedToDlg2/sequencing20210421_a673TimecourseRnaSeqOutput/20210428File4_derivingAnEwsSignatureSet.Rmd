@@ -697,13 +697,13 @@ ggplot(goi, aes(category, scores)) +
   scale_y_continuous(limits = c(-5,6), breaks = seq(-6,6,2)) +
   theme_classic()
 ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/barplot_ewsScoresDlg2.pdf', sep = ''),
-                  height = 4, width = 3, useDingbats = FALSE)
+                  height = 2, width = 2, useDingbats = FALSE)
 
 
 
 ##
 goi = sigData %>%
-  dplyr::filter(gene == 'MGLL') %>%
+  dplyr::filter(gene == 'LOX') %>%
   dplyr::select(rnaFC, proFC, cellScore, fli1Score, brg1Score, highFli1PeakScore, lowFli1PeakScore, savolaScore, postelVinayScore) %>%
   dplyr::mutate(highFli1PeakScore = log2(highFli1PeakScore), lowFli1PeakScore = log2(lowFli1PeakScore)) %>%
   pivot_longer(cols = rnaFC:postelVinayScore, names_to = 'category', values_to = 'scores') %>%
@@ -712,11 +712,11 @@ goi = sigData %>%
 ##
 ggplot(goi, aes(category, scores)) +
   geom_bar(stat = 'identity', width = 0.8) +
-  labs(x = 'Category', y = 'Score', title = 'MGLL EwS scores') +
+  labs(x = 'Category', y = 'Score', title = 'LOX EwS scores') +
   scale_y_continuous(limits = c(-5,6), breaks = seq(-6,6,2)) +
   theme_classic()
-ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/barplot_ewsScoresMgll.pdf', sep = ''),
-                  height = 4, width = 3, useDingbats = FALSE)
+ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/barplot_ewsScoresLox.pdf', sep = ''),
+                  height = 2, width = 2, useDingbats = FALSE)
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -731,7 +731,7 @@ sigData = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSe
 sigData$ewsScore = rowSums(sigData[,c(2,5,8,10,11,28)], na.rm = TRUE)
 
 ##
-goi = c('STEAP1','STEAP2','IL1RAP','PRKCB','DLG2')
+goi = c('LOX','PRKCB','DLG2')
 ewsScoreData = sigData %>%
   dplyr::arrange(ewsScore) %>%
   dplyr::mutate(ewsRank = seq(1,nrow(sigData),1)) %>%
@@ -743,14 +743,15 @@ write.table(ewsScoreData,
 
 
 ##
-ggplot(ewsScoreData, aes(ewsRank, ewsScore)) +
-  geom_point(size = 3, pch = 21, color = brewer.pal(11,'RdGy')[10], fill = brewer.pal(8,'Spectral')[1], alpha = 0.75) +
+ggplot(ewsScoreData, aes(ewsRank, -ewsScore)) +
+  geom_point(size = 1, color = brewer.pal(3,'Blues')[3], alpha = 0.5) +
   geom_text_repel(label = ewsScoreData$pText, nudge_y = -5, nudge_x = 50, max.overlaps = 200) +
   labs(x = 'Gene rank', y = 'EwS score', title = 'EwS signature genes') +
-  geom_hline(yintercept = 10, linetype = 'dashed') +
+  geom_hline(yintercept = 0, linetype = 'dashed') +
+  scale_y_continuous(limits = c(-8,20), breaks = seq(-5,20,5)) +
   theme_classic()
 ggsave(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/scatterplot_ewsScoresAllGenes.pdf', sep = ''),
-                  height = 4, width = 4, useDingbats = FALSE)
+                  height = 2, width = 2, useDingbats = FALSE)
 ```
 
 <div style="margin-bottom:50px;"></div>

@@ -41,7 +41,8 @@ First get the gtf file we used for alignment and will use for annotation below.
 
 ```{r}
 ##########################################################################################
-totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz'))
+#totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz'))
+totalGtf = as.data.frame(rtracklayer::import.gff('D:/databases/projectEwsDlg2/refseqFiles/GRCh38_latest_genomic.gtf.gz'))
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -50,9 +51,9 @@ Read in the peaks from the MACS analysis of the ChipSeq data and filter for thos
 
 ```{r}
 ##########################################################################################
-#the transcript with the closest 'exon' is ENST00000426717.6
+#the transcript with the closest 'exon' is NM_001300983.1
 dlg2Gtf = totalGtf %>%
-  filter(grepl('DLG2', gene_name)) %>%
+  filter(grepl('DLG2$', gene_name)) %>%
   filter(grepl('gene', type)) %>%
   mutate(end = end + 100000) #we add 100kb here to search beyond the annotated TSS
 
@@ -172,7 +173,7 @@ ggplot(finalPeakData, aes(peakAnnotation, macsScore, group = expectedEws)) +
   theme_classic()
   #theme(aspect.ratio = 2/1)
 ggsave(paste(baseRepository, '/sequencing20210114_a673ChipSeqReprocessingAynaud/barplot_dlg2ChipAndAcetylPeakEnrichment.pdf', sep = ''),
-       height = 4, width = 4, useDingbats = FALSE)
+       height = 2, width = 2, useDingbats = FALSE)
 ```
 
 <div style="margin-bottom:50px;"></div>
