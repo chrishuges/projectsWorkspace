@@ -1,0 +1,279 @@
+---
+title: "Osteo incucyte with DLG2"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of Incuctyte data from HOSa cells with DLG2 expression.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message=FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+#generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+#baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the sample data, first for confluence.
+
+```{r}
+##########################################################################################
+incu = read_tsv(paste(baseRepository, '/incucyte20210619_hosaDlg2ShortConfluenceMigration/incucyte20210619_hosaTbhpCr131bDlg2Expression.txt',sep=''),
+                skip = 6) %>%
+  dplyr::select(`Elapsed`, 
+                `HOSa (1) 1K / well (A1)` : `HOSa (1) 1K / well (D1)`,
+                `dlg2 (1) 1K / well (A2)` : `dlg2 (1) 1K / well (D2)`)
+colnames(incu) = c('Time',
+                   c(paste('HOSa_', seq(1,4,1),sep='')),
+                   c(paste('DLG2_', seq(1,4,1),sep='')))
+incuLong = incu %>%
+  pivot_longer(cols = HOSa_1:DLG2_4, names_to = 'sampleName', values_to = 'confluence') %>%
+  dplyr::mutate(cellLine = ifelse(grepl('HOS', sampleName), 'empty', 'DLG2short')) %>%
+  dplyr::group_by(cellLine, Time) %>%
+  dplyr::summarise(medianConfluence = median(confluence))
+
+##make a plot for these initial data
+ggplot(incuLong, aes(Time, medianConfluence, color = cellLine)) +
+  geom_point(size = 0.5) +
+  scale_color_manual(values = c(brewer.pal(3,'OrRd')[3], brewer.pal(3,'Blues')[3])) +
+  scale_x_continuous(limits = c(1,120), breaks = seq(0,120,20)) +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,120,10)) +
+  labs(x = 'Time (h)', y = 'Median confluence (%)', title = 'DLG2, osteosarcoma growth') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository,'/incucyte20210619_hosaDlg2ShortConfluenceMigration/scatter_incucyteConfluenceHosaDlg2Short.pdf',sep=''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now check for the stress conditions.
+
+```{r}
+##########################################################################################
+incu = read_tsv(paste(baseRepository, '/incucyte20210619_hosaDlg2ShortConfluenceMigration/incucyte20210619_hosaTbhpCr131bDlg2Expression.txt',sep=''),
+                skip = 6) %>%
+  dplyr::select(`Elapsed`, 
+                `HOSa (1) 1K / well Tbhp 2 µM (A9)`:`HOSa (1) 1K / well Tbhp 2 µM (D9)`,
+                `dlg2 (1) 1K / well Tbhp 2 µM (A10)`:`dlg2 (1) 1K / well Tbhp 2 µM (D10)`)
+colnames(incu) = c('Time',
+                   c(paste('HOSa_', seq(1,4,1),sep='')),
+                   c(paste('DLG2_', seq(1,4,1),sep='')))
+incuLong = incu %>%
+  pivot_longer(cols = HOSa_1:DLG2_4, names_to = 'sampleName', values_to = 'confluence') %>%
+  dplyr::mutate(cellLine = ifelse(grepl('HOS', sampleName), 'empty', 'DLG2short')) %>%
+  dplyr::group_by(cellLine, Time) %>%
+  dplyr::summarise(medianConfluence = median(confluence))
+
+##make a plot for these initial data
+ggplot(incuLong, aes(Time, medianConfluence, color = cellLine)) +
+  geom_point(size = 0.5) +
+  scale_x_continuous(limits = c(1,120), breaks = seq(0,120,20)) +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,120,10)) +
+  scale_color_manual(values = c(brewer.pal(3,'OrRd')[3], brewer.pal(3,'Blues')[3])) +
+  labs(x = 'Time (h)', y = 'Median confluence (%)', title = 'DLG2, osteosarcoma growth') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository,'/incucyte20210619_hosaDlg2ShortConfluenceMigration/scatter_incucyteConfluenceHosaDlg2ShortTbhp2um.pdf',sep=''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+###
+incu = read_tsv(paste(baseRepository, '/incucyte20210619_hosaDlg2ShortConfluenceMigration/incucyte20210619_hosaTbhpCr131bDlg2Expression.txt',sep=''),
+                skip = 6) %>%
+  dplyr::select(`Elapsed`, 
+                `HOSa (1) 1K / well Cr131b 2 nM (E5)`:`HOSa (1) 1K / well Cr131b 2 nM (H5)`,
+                `dlg2 (1) 1K / well Cr131b 2 nM (E6)`:`dlg2 (1) 1K / well Cr131b 2 nM (H6)`)
+colnames(incu) = c('Time',
+                   c(paste('HOSa_', seq(1,4,1),sep='')),
+                   c(paste('DLG2_', seq(1,4,1),sep='')))
+incuLong = incu %>%
+  pivot_longer(cols = HOSa_1:DLG2_4, names_to = 'sampleName', values_to = 'confluence') %>%
+  dplyr::mutate(cellLine = ifelse(grepl('HOS', sampleName), 'empty', 'DLG2short')) %>%
+  dplyr::group_by(cellLine, Time) %>%
+  dplyr::summarise(medianConfluence = median(confluence))
+
+##make a plot for these initial data
+ggplot(incuLong, aes(Time, medianConfluence, color = cellLine)) +
+  geom_point(size = 0.5) +
+  scale_x_continuous(limits = c(1,120), breaks = seq(0,120,20)) +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,120,10)) +
+  scale_color_manual(values = c(brewer.pal(3,'OrRd')[3], brewer.pal(3,'Blues')[3])) +
+  labs(x = 'Time (h)', y = 'Median confluence (%)', title = 'DLG2, osteosarcoma growth') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository,'/incucyte20210619_hosaDlg2ShortConfluenceMigration/scatter_incucyteConfluenceHosaDlg2ShortCr131b2nm.pdf',sep=''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+###
+incu = read_tsv(paste(baseRepository, '/incucyte20210619_hosaDlg2ShortConfluenceMigration/incucyte20210619_hosaTbhpCr131bDlg2Expression.txt',sep=''),
+                skip = 6) %>%
+  dplyr::select(`Elapsed`, 
+                `HOSa (1) 1K / well Tbhp 1 µM Cr131b 1 nM (E9)`:`HOSa (1) 1K / well Tbhp 1 µM Cr131b 1 nM (H9)`,
+                `dlg2 (1) 1K / well Tbhp 1 µM Cr131b 1 nM (E10)`:`dlg2 (1) 1K / well Tbhp 1 µM Cr131b 1 nM (H10)`)
+colnames(incu) = c('Time',
+                   c(paste('HOSa_', seq(1,4,1),sep='')),
+                   c(paste('DLG2_', seq(1,4,1),sep='')))
+incuLong = incu %>%
+  pivot_longer(cols = HOSa_1:DLG2_4, names_to = 'sampleName', values_to = 'confluence') %>%
+  dplyr::mutate(cellLine = ifelse(grepl('HOS', sampleName), 'empty', 'DLG2short')) %>%
+  dplyr::group_by(cellLine, Time) %>%
+  dplyr::summarise(medianConfluence = median(confluence))
+
+##make a plot for these initial data
+ggplot(incuLong, aes(Time, medianConfluence, color = cellLine)) +
+  geom_point(size = 0.5) +
+  scale_x_continuous(limits = c(1,120), breaks = seq(0,120,20)) +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,120,10)) +
+  scale_color_manual(values = c(brewer.pal(3,'OrRd')[3], brewer.pal(3,'Blues')[3])) +
+  labs(x = 'Time (h)', y = 'Median confluence (%)', title = 'DLG2, osteosarcoma growth') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository,'/incucyte20210619_hosaDlg2ShortConfluenceMigration/scatter_incucyteConfluenceHosaDlg2ShortCombo.pdf',sep=''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now look at the migration data.
+
+```{r}
+##########################################################################################
+incu = read_tsv(paste(baseRepository, '/incucyte20210619_hosaDlg2ShortConfluenceMigration/incucyte20210619_hosaTbhpCr131bDlg2WoundConfluence.txt',sep=''),
+                skip = 6) %>%
+  dplyr::select(`Elapsed`, 
+                `HOSa (1) 1K / well (A1)` : `HOSa (1) 1K / well (D1)`,
+                `dlg2 (1) 1K / well (A2)` : `dlg2 (1) 1K / well (D2)`)
+colnames(incu) = c('Time',
+                   c(paste('HOSa_', seq(1,4,1),sep='')),
+                   c(paste('DLG2_', seq(1,4,1),sep='')))
+incuLong = incu %>%
+  pivot_longer(cols = HOSa_1:DLG2_4, names_to = 'sampleName', values_to = 'confluence') %>%
+  dplyr::mutate(cellLine = ifelse(grepl('HOS', sampleName), 'empty', 'DLG2short')) %>%
+  dplyr::group_by(cellLine, Time) %>%
+  dplyr::summarise(medianConfluence = median(confluence))
+
+##make a plot for these initial data
+ggplot(incuLong, aes(Time, medianConfluence, color = cellLine)) +
+  geom_point(size = 0.5) +
+  scale_color_manual(values = c(brewer.pal(3,'OrRd')[3], brewer.pal(3,'Blues')[3])) +
+  scale_x_continuous(limits = c(1,80), breaks = seq(0,120,20)) +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,120,10)) +
+  labs(x = 'Time (h)', y = 'Median confluence (%)', title = 'DLG2, osteosarcoma growth') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository,'/incucyte20210619_hosaDlg2ShortConfluenceMigration/scatter_woundConfluenceHosaDlg2Short.pdf',sep=''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+###
+incu = read_tsv(paste(baseRepository, '/incucyte20210619_hosaDlg2ShortConfluenceMigration/incucyte20210619_hosaTbhpCr131bDlg2WoundConfluence.txt',sep=''),
+                skip = 6) %>%
+  dplyr::select(`Elapsed`, 
+                `HOSa (1) 1K / well Tbhp 2 µM (A9)`:`HOSa (1) 1K / well Tbhp 2 µM (D9)`,
+                `dlg2 (1) 1K / well Tbhp 2 µM (A10)`:`dlg2 (1) 1K / well Tbhp 2 µM (D10)`)
+colnames(incu) = c('Time',
+                   c(paste('HOSa_', seq(1,4,1),sep='')),
+                   c(paste('DLG2_', seq(1,4,1),sep='')))
+incuLong = incu %>%
+  pivot_longer(cols = HOSa_1:DLG2_4, names_to = 'sampleName', values_to = 'confluence') %>%
+  dplyr::mutate(cellLine = ifelse(grepl('HOS', sampleName), 'empty', 'DLG2short')) %>%
+  dplyr::group_by(cellLine, Time) %>%
+  dplyr::summarise(medianConfluence = median(confluence))
+
+##make a plot for these initial data
+ggplot(incuLong, aes(Time, medianConfluence, color = cellLine)) +
+  geom_point(size = 0.5) +
+  scale_x_continuous(limits = c(1,80), breaks = seq(0,120,20)) +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,120,10)) +
+  scale_color_manual(values = c(brewer.pal(3,'OrRd')[3], brewer.pal(3,'Blues')[3])) +
+  labs(x = 'Time (h)', y = 'Median confluence (%)', title = 'DLG2, osteosarcoma growth') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository,'/incucyte20210619_hosaDlg2ShortConfluenceMigration/scatter_woundConfluenceHosaDlg2ShortTbhp2um.pdf',sep=''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+###
+incu = read_tsv(paste(baseRepository, '/incucyte20210619_hosaDlg2ShortConfluenceMigration/incucyte20210619_hosaTbhpCr131bDlg2WoundConfluence.txt',sep=''),
+                skip = 6) %>%
+  dplyr::select(`Elapsed`, 
+                `HOSa (1) 1K / well Cr131b 2 nM (E5)`:`HOSa (1) 1K / well Cr131b 2 nM (H5)`,
+                `dlg2 (1) 1K / well Cr131b 2 nM (E6)`:`dlg2 (1) 1K / well Cr131b 2 nM (H6)`)
+colnames(incu) = c('Time',
+                   c(paste('HOSa_', seq(1,4,1),sep='')),
+                   c(paste('DLG2_', seq(1,4,1),sep='')))
+incuLong = incu %>%
+  pivot_longer(cols = HOSa_1:DLG2_4, names_to = 'sampleName', values_to = 'confluence') %>%
+  dplyr::mutate(cellLine = ifelse(grepl('HOS', sampleName), 'empty', 'DLG2short')) %>%
+  dplyr::group_by(cellLine, Time) %>%
+  dplyr::summarise(medianConfluence = median(confluence))
+
+##make a plot for these initial data
+ggplot(incuLong, aes(Time, medianConfluence, color = cellLine)) +
+  geom_point(size = 0.5) +
+  scale_x_continuous(limits = c(1,80), breaks = seq(0,120,20)) +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,120,10)) +
+  scale_color_manual(values = c(brewer.pal(3,'OrRd')[3], brewer.pal(3,'Blues')[3])) +
+  labs(x = 'Time (h)', y = 'Median confluence (%)', title = 'DLG2, osteosarcoma growth') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository,'/incucyte20210619_hosaDlg2ShortConfluenceMigration/scatter_woundConfluenceHosaDlg2ShortCr131b2nm.pdf',sep=''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+###
+incu = read_tsv(paste(baseRepository, '/incucyte20210619_hosaDlg2ShortConfluenceMigration/incucyte20210619_hosaTbhpCr131bDlg2WoundConfluence.txt',sep=''),
+                skip = 6) %>%
+  dplyr::select(`Elapsed`, 
+                `HOSa (1) 1K / well Tbhp 1 µM Cr131b 1 nM (E9)`:`HOSa (1) 1K / well Tbhp 1 µM Cr131b 1 nM (H9)`,
+                `dlg2 (1) 1K / well Tbhp 1 µM Cr131b 1 nM (E10)`:`dlg2 (1) 1K / well Tbhp 1 µM Cr131b 1 nM (H10)`)
+colnames(incu) = c('Time',
+                   c(paste('HOSa_', seq(1,4,1),sep='')),
+                   c(paste('DLG2_', seq(1,4,1),sep='')))
+incuLong = incu %>%
+  pivot_longer(cols = HOSa_1:DLG2_4, names_to = 'sampleName', values_to = 'confluence') %>%
+  dplyr::mutate(cellLine = ifelse(grepl('HOS', sampleName), 'empty', 'DLG2short')) %>%
+  dplyr::group_by(cellLine, Time) %>%
+  dplyr::summarise(medianConfluence = median(confluence))
+
+##make a plot for these initial data
+ggplot(incuLong, aes(Time, medianConfluence, color = cellLine)) +
+  geom_point(size = 0.5) +
+  scale_x_continuous(limits = c(1,80), breaks = seq(0,120,20)) +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,120,10)) +
+  scale_color_manual(values = c(brewer.pal(3,'OrRd')[3], brewer.pal(3,'Blues')[3])) +
+  labs(x = 'Time (h)', y = 'Median confluence (%)', title = 'DLG2, osteosarcoma growth') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository,'/incucyte20210619_hosaDlg2ShortConfluenceMigration/scatter_woundConfluenceHosaDlg2ShortCombo.pdf',sep=''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+
+
+
+
