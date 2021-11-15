@@ -1,0 +1,85 @@
+---
+title: "EwS cell atlas"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of microarray data from the EwS cell atlas paper.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message=FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+#generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+#baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the sample data.
+
+```{r}
+##########################################################################################
+cells = read_tsv(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/dataset_supplementaryTable7.txt',sep=''),
+                 skip = 1, n_max = 0)
+conditions = read_tsv(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/dataset_supplementaryTable7.txt',sep=''),
+                 skip = 3, n_max = 0)
+conditionNames = sub('.*_(.*)\\.\\.\\.[0-9]+','\\1',colnames(conditions)[3:110])
+cellNames = paste(sub('(.*)\\.\\.\\.[0-9]+','\\1',colnames(cells)[3:110]),'_',conditionNames,'_r',rep(seq(1,3,1),36),sep='')
+goi = c('DLG2','LOX','PRKCB')
+exprs = read_tsv(paste(baseRepository, '/microarray20211026_grunewaldEwsEncyclopedia/dataset_supplementaryTable7.txt',sep=''),
+                 skip = 5, col_names = c('id','gene',cellNames)) %>%
+  dplyr::filter(gene %in% goi) %>%
+  pivot_longer(cols = A673_high_r1:RDES_low_r3, names_to = 'sampleName', values_to = 'exprsValue') %>%
+  dplyr::mutate(cellLine = sub('(.*)_[a-z]+_r[123]','\\1',sampleName),
+                fli1Level = sub('.*_(.*)_r[123]','\\1',sampleName),
+                replicate = sub('.*_r(.*)','\\1',sampleName)) %>%
+  dplyr::select(gene, cellLine, fli1Level, replicate, exprsValue) %>%
+  dplyr::mutate(gene = factor(gene, levels = c('PRKCB','LOX','DLG2')))
+
+
+##
+ggplot(exprs, aes(gene, exprsValue, fill = fli1Level)) +
+  geom_violin() +
+  scale_fill_manual(values = c(brewer.pal(3,'Blues')[3], brewer.pal(3,'OrRd')[3])) +
+  labs(y = 'log(expression value)', x = 'Gene', title = 'EwS microarray') +
+  scale_y_continuous(limits = c(0,18), breaks = seq(0,20,4)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository,'/microarray20211026_grunewaldEwsEncyclopedia/violin_ewsCellAtlasGenesPublished.pdf',sep=''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
