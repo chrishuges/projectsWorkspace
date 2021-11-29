@@ -1,0 +1,84 @@
+---
+title: "Rapid trypsin - additive testing"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with proteomics data for the rapid trypsin testing.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToRapidTrypsin'
+baseRepository = 'D:/msDataTemp/proteomics20211126_rapidTrypsin'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First we can process the psm data.
+
+```{r}
+##########################################################################################
+samples = tibble('experiment' = c(rep('control',3), rep(rep(c('normal','doc','sp3'), each = 3),3)),
+                 'temperature' = c(rep('35',3), rep(c('35','55','70'), each = 9)),
+                 'replicate' = c(rep(seq(1,3,1),10)))
+
+##
+psmList = file.path(baseRepository,
+                    'additiveTesting', 
+                    paste(samples$experiment, '_', samples$temperature, '_', samples$replicate, sep=''),
+                    'psm.tsv')
+
+##
+#test = read_tsv(psmList[1])
+processPsm = function(psmFileList, ...){
+  tempPsm = read_tsv(psmFileList) %>%
+    dplyr::select(Peptide, `Protein ID`, Gene, Spectrum, `Number of Missed Cleavages`) %>%
+    dplyr::rename(sequence = Peptide, 
+                  accession = `Protein ID`,
+                  gene = Gene,
+                  scan = Spectrum,
+                  missed = `Number of Missed Cleavages`) %>%
+    dplyr::mutate(dataset = sub('.*AdditiveTesting_(.*)C_[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+','\\1',scan)) %>%
+    dplyr::mutate(replicate = sub('.*C_(.*)\\.[0-9]+\\.[0-9]+\\.[0-9]+','\\1',scan)) %>%
+    dplyr::mutate(scan = as.numeric(sub('.*C_[0-9]+\\.(.*)\\.[0-9]+\\.[0-9]+','\\1',scan)))
+  ##
+  quantFile = file.path(baseRepository,
+                      'additiveTesting', 
+                      tolower(unique(tempPsm$dataset)),
+                      paste('ch20211124_rapidTrypsinAdditiveTesting_',unique(tempPsm$dataset),'C_',unique(tempPsm$replicate),'.raw_Matrix.txt',sep=''))
+  tempQuant = read_tsv(quantFile) %>%
+    dplyr::select(MS2ScanNumber,ParentPeakArea) %>%
+    dplyr::rename(scan = MS2ScanNumber, 
+                  area = ParentPeakArea)
+  ##
+  psmQuant = tempPsm %>%
+    left_join(tempQuant)
+  ##
+  return(psmQuant)
+}
+
+##
+psmDataSet = do.call('rbind', lapply(psmList, processPsm))
+```

@@ -140,7 +140,7 @@ I think I will just plot this manually because it is a bit tricky with the way t
 ##########################################################################################
 ##get the exons for the primary isoform in Ensembl
 dlg2Exons = totalGtf %>%
-  filter(grepl('DLG2', gene_name)) %>%
+  filter(grepl('DLG2', gene)) %>%
   filter(grepl('exon', type) | grepl('UTR', type)) %>%
   filter(grepl('ENST00000398309.6', transcript_id)) %>%
   arrange(-start)
@@ -175,7 +175,7 @@ I don't really like the way this looks. I am wasting a bit too much time on this
 ##########################################################################################
 #the transcript with the closest 'exon' is ENST00000426717.6
 dlg2Gtf = totalGtf %>%
-  filter(grepl('DLG2', gene_name)) %>%
+  filter(grepl('DLG2$', gene)) %>%
   filter(grepl('gene', type)) %>%
   mutate(end = end + 100000) #we add 100kb here to search beyond the annotated TSS
 ##

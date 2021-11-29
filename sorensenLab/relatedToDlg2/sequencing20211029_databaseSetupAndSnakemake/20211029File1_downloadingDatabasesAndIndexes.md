@@ -2,7 +2,6 @@
 
 This document describes the process of preparing indexes for the DLG2 project.
 
-
 ## Bowtie2 index
 
 First we will prepare the index for Bowtie2. I am following their instructions as detailed [here](http://bowtie-bio.sourceforge.net/bowtie2/manual.shtml#the-bowtie2-build-indexer). Version 38 was current at the time of download (Oct. 29, 2021). First I did the download with a shell script as detailed below and wrote a log so I could track the version.
@@ -89,5 +88,18 @@ eval cd ${baseDirectory}starIndex
 eval ${starLocation}/STAR --runThreadN 8 --runMode genomeGenerate --genomeDir ${baseDirectory}starIndex --genomeFastaFiles ${baseDirectory}baseGenomeFiles/genome.fa --sjdbGTFfile ${baseDirectory}baseGenomeFiles/genome.gtf
 ```
 
+## BWA index
+
+Now we will prepare an index for BWA aligner. I am following the instructions detailed [here](http://bio-bwa.sourceforge.net/bwa.shtml) and [here](https://github.com/bwa-mem2/bwa-mem2). **NOTE** this index is actually stored in the baseGenomeFiles directory because you aren't able to re-direct it.
+
+```shell
+#!/bin/bash
+baseDirectory="/home/chughes/databases/projectEwsDlg2/"
+starLocation="/home/chughes/softwareTools/bwa-mem2-2.2.1"
+
+eval mkdir ${baseDirectory}bwaIndex
+eval cd ${baseDirectory}bwaIndex
+eval ${starLocation}/bwa-mem2 index ${baseDirectory}baseGenomeFiles/genome.fa
+```
 
 For now, I don't have any other indexes to make, but I may revisit and add here later on.

@@ -1,0 +1,103 @@
+---
+title: "sonya degradome"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to look at protein degradation. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'D:/msDataTemp/proteomics20211123_sonyaDegradome'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First we can process the psm data.
+
+```{r}
+##########################################################################################
+psm = read_tsv(paste(baseRepository, '/setA/psm.tsv', sep = '')) %>%
+  dplyr::select(Peptide, `Protein ID`, Gene, Spectrum, `Assigned Modifications`) %>%
+  dplyr::rename(sequence = Peptide, 
+                accession = `Protein ID`,
+                gene = Gene,
+                scan = Spectrum,
+                mods = `Assigned Modifications`) %>%
+  dplyr::mutate(fraction = sub('.*hPh_(.*)\\.[0-9]+\\.[0-9]+\\.[0-9]+','\\1',scan)) %>%
+  dplyr::mutate(scan = as.numeric(sub('.*hPh_[0-9]+\\.(.*)\\.[0-9]+\\.[0-9]+','\\1',scan))) %>%
+  dplyr::mutate(label = ifelse(grepl('R\\(10',mods),'heavy',
+                               ifelse(grepl('K\\(237',mods),'heavy','light'))) %>%
+  dplyr::filter(!grepl('CONT', accession), !is.na(gene), !grepl('-', gene)) %>%
+  dplyr::select(scan, fraction, accession, gene, sequence, label)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can get the quant data.
+
+```{r}
+##########################################################################################
+##this is the function we will use
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`131NIntensity`)
+  colnames(quantData) = c('scan','tmt126C','tmt127N','tmt127C','tmt128N',
+                  'tmt128C','tmt129N','tmt129C','tmt130N','tmt130C','tmt131N')
+  ##
+  fraction = sub('.*hPh_(.*)\\.raw_Matrix\\.txt$', '\\1', filePath)
+  quantData$fraction = fraction
+  print(paste('Processing file for fraction ', fraction, '.', sep = ''))
+  ##
+  return(quantData)
+}
+
+##
+quantFiles = as.list(list.files(paste(baseRepository,'/setA/',sep=''),
+           pattern = '_Matrix.txt', full.names = TRUE))
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+allQuantData = do.call('rbind', quantDataSet)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now combine the data.
+
+```{r}
+##########################################################################################
+combinedData = psm %>%
+  left_join(allQuantData)
+```
+
+
+
+
+
+
+
+
+
+
+
+

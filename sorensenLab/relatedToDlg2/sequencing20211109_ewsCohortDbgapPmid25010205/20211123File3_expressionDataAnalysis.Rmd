@@ -1,0 +1,133 @@
+---
+title: "Isoform determination for DLG2"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with Salmon data obtained from analysis of the dbGaP rnaseq EwS cohort.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('tximport')
+library('GenomicFeatures')
+library('ggrepel')
+library('org.Hs.eg.db')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+The first thing to do is to make a sample annotation table.
+
+```{r}
+##########################################################################################
+samples = tibble('tissue' = rep('EwS',86),
+                 'sample' = c(paste('SRR5163',seq(671,711,1),sep=''),paste('SRR5163',seq(713,757,1),sep='')))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Next we point at our quant files.
+
+```{r}
+##########################################################################################
+quantFiles = file.path(paste(baseRepository, '/sequencing20211109_ewsCohortDbgapPmid25010205/results', sep = ''), paste(samples$sample, '_quant', sep = ''), 'quant.sf')
+names(quantFiles) = samples$sample
+all(file.exists(quantFiles))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Build the transcriptome index.
+
+```{r}
+##########################################################################################
+txdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(txdb, keytype = "TXNAME")
+tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read the transcript data.
+
+```{r}
+##########################################################################################
+txi = tximport(quantFiles, type = 'salmon', tx2gene = tx2gene, countsFromAbundance = 'scaledTPM')
+names(txi)
+txiAnnotated = tibble(as.data.frame(txi$counts)) %>%
+  mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$counts)))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot of these data.
+
+```{r}
+##########################################################################################
+geneSymbols = select(org.Hs.eg.db, txiAnnotated$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') 
+geneExpData = txiAnnotated %>%
+  left_join(geneSymbols) %>%
+  mutate(symbol = SYMBOL)
+
+##
+targetGenes = c('IL1RAP','DLG2','PRKCB','LOX','STEAP1','STEAP2')
+targetData = geneExpData %>%
+  dplyr::filter(symbol %in% targetGenes) %>%
+  tidyr::pivot_longer(cols = SRR5163671:SRR5163757, names_to = 'accession', values_to = 'tpm') %>%
+  dplyr::select(symbol,accession,tpm) %>%
+  dplyr::mutate(tpm = log10(tpm + 1))
+
+##
+ggplot(targetData, aes(symbol, tpm, fill = symbol)) +
+  geom_violin(size = 0.5, color = brewer.pal(3,'Greys')[3]) +
+  geom_point(size = 0.5, color = brewer.pal(3,'Greys')[3]) +
+  labs(x = 'gene symbol', y = 'log10(TPM + 1)', title = 'EWS-FLI1 target genes') +
+  scale_fill_manual(values = rep(brewer.pal(3,'OrRd')[3],6)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/sequencing20211109_ewsCohortDbgapPmid25010205/scatter_ewsFli1TargetsAcrossCohort.pdf', sep = ''),
+      height = 2, width = 2, useDingbats = FALSE)
+```
+
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+
