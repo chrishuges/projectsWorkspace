@@ -51,7 +51,7 @@ SALMON = "/home/chughes/softwareTools/salmon-1.5.2/bin/salmon"
 #HISAT2 = "/home/chughes/softwareTools/hisat2-2.2.1/hisat2"
 STAR = "/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
 SAMTOOLS="/home/chughes/softwareTools/samtools-1.12/samtools"
-SAMBAMBA="/home/chughes/softwareTools/sambamba-0.8.1/sambamba"
+#SAMBAMBA="/home/chughes/softwareTools/sambamba-0.8.1/sambamba"
 FEATURECOUNTS="/home/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
 
 
@@ -77,6 +77,7 @@ for smp in SAMPLES:
 rule all:
     input:
       expand("results/{smp}.counts.txt", smp = SAMPLES),
+      expand("results/{smp}.sorted.bam.bai", smp = SAMPLES),
       expand("quants/{smp}/quant.sf", smp = SAMPLES)
 
 rule bbduk:
@@ -96,21 +97,11 @@ rule star:
       r1 = "results/{smp}_1.clean.fastq.gz",
       r2 = "results/{smp}_2.clean.fastq.gz"
   output:
-      "results/{smp}_Aligned.out.bam"
+      "results/{smp}.sorted.bam"
   message:
       "Aligning with STAR."
   shell:
-      "{STAR} --runThreadN 8 --genomeDir {STARINDEX} --readFilesIn {input.r1} {input.r2} --readFilesCommand zcat --sjdbGTFfile {GTF} --outFileNamePrefix results/{smp}_ --outSAMtype BAM Unsorted"
-
-rule bam_sorting:
-  input:
-      "results/{smp}_Aligned.out.bam"
-  output:
-      "results/{smp}.sorted.bam"
-  message:
-      "BAM sorting with sambamba."
-  shell:
-      "{SAMBAMBA} sort -t 6 -o {output} {input}"
+      "{STAR} --runThreadN 8 --genomeDir {STARINDEX} --readFilesIn {input.r1} {input.r2} --readFilesCommand zcat --sjdbGTFfile {GTF} --outStd SAM | {SAMTOOLS} sort -o {output}"
 
 rule bam_indexing:
   input:
@@ -135,7 +126,8 @@ rule featurecounts:
 rule salmon:
   input:
       r1 = "results/{smp}_1.clean.fastq.gz",
-      r2 = "results/{smp}_2.clean.fastq.gz"
+      r2 = "results/{smp}_2.clean.fastq.gz",
+      w3 = "results/{smp}.counts.txt"
   output:
       "quants/{smp}/quant.sf"
   params:
@@ -164,21 +156,18 @@ eval mkdir quants
 for i in SRR8616012 SRR8615497 SRR8616213 SRR8616214 SRR8615592 SRR8615679 SRR8615832 SRR8615859 SRR8615273 SRR8615499 SRR8615521
 do
   printf "Downloading files associated with ${i}."
-  eval ${sraDownloader} --noena --outdir ${workingDirectory}/raw ${i}
+  eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}
   ##the file gets renamed upon download, but I just want it to have the SRR id and I can annotate it later
   eval mv ${workingDirectory}/raw/${i}*_1.fastq.gz ${workingDirectory}/raw/${i}_1.fastq.gz
   eval mv ${workingDirectory}/raw/${i}*_2.fastq.gz ${workingDirectory}/raw/${i}_2.fastq.gz
   #eval conda activate snakemake
-  eval snakemake --cores 8
+  eval snakemake --cores 8 --latency-wait 300
   #eval conda deactivate
   eval rm ${workingDirectory}/raw/${i}*.fastq.gz
-  eval rm ${sraCacheLocation}/sra/${i}*.sra
-  eval rm ${sraCacheLocation}/sra/${i}*.sra.cache
+  eval rm ${sraCacheLocation}/sra/${i}*
   eval rm ${workingDirectory}/results/${i}*.clean.fastq.gz
-  eval rm ${workingDirectory}/results/${i}_Aligned.out.bam
+  eval rm ${workingDirectory}/*.out
+  eval rm ${workingDirectory}/*.tab
+  eval rm -r ${workingDirectory}/*STAR*
 done
 ```
-
-
-
-

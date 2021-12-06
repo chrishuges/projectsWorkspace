@@ -65,8 +65,8 @@ for smp in SAMPLES:
 #processing workflow
 rule all:
     input: 
-      expand("results/{smp}.bam.bai", smp = SAMPLES),
-      expand("results/{smp}.bw", smp = SAMPLES)
+      expand("results/{smp}.sorted.bam.bai", smp = SAMPLES),
+      expand("results/{smp}.sorted.bw", smp = SAMPLES)
 
 rule bbduk:
   input:
@@ -125,7 +125,7 @@ rule bam_coverage:
   input:
       "results/{smp}.sorted.bam"
   output:
-      "results/{smp}.bw"
+      "results/{smp}.sorted.bw"
   message:
       "Calculating coverage with deeptools."
   shell:
