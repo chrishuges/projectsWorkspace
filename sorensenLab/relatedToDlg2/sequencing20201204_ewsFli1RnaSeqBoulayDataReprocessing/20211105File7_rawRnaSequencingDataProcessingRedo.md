@@ -82,6 +82,7 @@ for smp in SAMPLES:
 rule all:
     input:
       expand("results/{smp}.counts.txt", smp = SAMPLES),
+      expand("results/{smp}.sorted.bam.bai", smp = SAMPLES),
       expand("quants/{smp}/quant.sf", smp = SAMPLES)
 
 rule bbduk:
@@ -101,21 +102,11 @@ rule star:
       r1 = "results/{smp}_1.clean.fastq.gz",
       r2 = "results/{smp}_2.clean.fastq.gz"
   output:
-      "results/{smp}_Aligned.out.bam"
+      "results/{smp}.sorted.bam"
   message:
       "Aligning with STAR."
   shell:
-      "{STAR} --runThreadN 8 --genomeDir {STARINDEX} --readFilesIn {input.r1} {input.r2} --readFilesCommand zcat --sjdbGTFfile {GTF} --outFileNamePrefix results/{smp}_ --outSAMtype BAM Unsorted"
-
-rule bam_sorting:
-  input:
-      "results/{smp}_Aligned.out.bam"
-  output:
-      "results/{smp}.sorted.bam"
-  message:
-      "BAM sorting with sambamba."
-  shell:
-      "{SAMBAMBA} sort -t 6 -o {output} {input}"
+      "{STAR} --runThreadN 8 --genomeDir {STARINDEX} --readFilesIn {input.r1} {input.r2} --readFilesCommand zcat --sjdbGTFfile {GTF} --outStd SAM | {SAMTOOLS} sort -o {output}"
 
 rule bam_indexing:
   input:
@@ -140,7 +131,8 @@ rule featurecounts:
 rule salmon:
   input:
       r1 = "results/{smp}_1.clean.fastq.gz",
-      r2 = "results/{smp}_2.clean.fastq.gz"
+      r2 = "results/{smp}_2.clean.fastq.gz",
+      w3 = "results/{smp}.counts.txt"
   output:
       "quants/{smp}/quant.sf"
   params:

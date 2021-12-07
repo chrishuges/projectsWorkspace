@@ -2,8 +2,8 @@
 
 This document describes the reprocessing of some ChIPseq data from a previous publication. Specifically:
 
-"The Ewing Sarcoma Cell Line Atlas (ESCLA)"
-GEO: GSE176339, https://www.biorxiv.org/content/10.1101/2021.06.08.447518v1
+"Transcriptional Programs Define Intratumoral Heterogeneity of Ewing Sarcoma at Single-Cell Resolution"
+Cell Reports, 2020, Pubmed ID: 32049009, GEO: GSE130025
 
 ### Description
 

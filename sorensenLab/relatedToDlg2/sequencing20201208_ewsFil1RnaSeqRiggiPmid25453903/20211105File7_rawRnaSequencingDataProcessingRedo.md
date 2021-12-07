@@ -82,6 +82,7 @@ for smp in SAMPLES:
 rule all:
     input:
       expand("results/{smp}.counts.txt", smp = SAMPLES),
+      expand("results/{smp}.sorted.bam.bai", smp = SAMPLES),
       expand("quants/{smp}/quant.sf", smp = SAMPLES)
 
 rule bbduk:
@@ -130,7 +131,8 @@ rule featurecounts:
 rule salmon:
   input:
       r1 = "results/{smp}_1.clean.fastq.gz",
-      r2 = "results/{smp}_2.clean.fastq.gz"
+      r2 = "results/{smp}_2.clean.fastq.gz",
+      w3 = "results/{smp}.counts.txt"
   output:
       "quants/{smp}/quant.sf"
   params:

@@ -86,6 +86,7 @@ for smp in SAMPLES:
 rule all:
     input:
       expand("results/{smp}.counts.txt", smp = SAMPLES),
+      expand("results/{smp}.sorted.bam.bai", smp = SAMPLES),
       expand("quants/{smp}/quant.sf", smp = SAMPLES)
 
 rule bbduk:
@@ -100,39 +101,16 @@ rule bbduk:
   shell:
       "{BBDUK} in1={input.r1} in2={input.r2} ref=adapters out1={output.ro1} out2={output.ro2} ktrim=r k=23 mink=11 hdist=1 tpe tbo"
 
-rule salmon:
-  input:
-      r1 = "results/{smp}_1.clean.fastq.gz",
-      r2 = "results/{smp}_2.clean.fastq.gz"
-  output:
-      "quants/{smp}/quant.sf"
-  params:
-      dir = "quants/{smp}"
-  message:
-      "Quantifying with salmon."
-  shell:
-      "{SALMON} quant -i {SALMONINDEX} -l A -p 8 --gcBias --validateMappings -o {params.dir} -1 {input.r1} -2 {input.r2}"
-
 rule star:
   input:
       r1 = "results/{smp}_1.clean.fastq.gz",
       r2 = "results/{smp}_2.clean.fastq.gz"
   output:
-      "results/{smp}_Aligned.out.bam"
+      "results/{smp}.sorted.bam"
   message:
       "Aligning with STAR."
   shell:
-      "{STAR} --runThreadN 8 --genomeDir {STARINDEX} --readFilesIn {input.r1} {input.r2} --readFilesCommand zcat --sjdbGTFfile {GTF} --outFileNamePrefix results/{smp}_ --outSAMtype BAM Unsorted"
-
-rule bam_sorting:
-  input:
-      "results/{smp}_Aligned.out.bam"
-  output:
-      "results/{smp}.sorted.bam"
-  message:
-      "BAM sorting with sambamba."
-  shell:
-      "{SAMBAMBA} sort -t 6 -o {output} {input}"
+      "{STAR} --runThreadN 8 --genomeDir {STARINDEX} --readFilesIn {input.r1} {input.r2} --readFilesCommand zcat --sjdbGTFfile {GTF} --outStd SAM | {SAMTOOLS} sort -o {output}"
 
 rule bam_indexing:
   input:
@@ -153,6 +131,20 @@ rule featurecounts:
       "Counting reads with featureCounts."
   shell:
       "{FEATURECOUNTS} -p --countReadPairs -t exon -g gene_id -a {GTF} -o {output} {input}"
+
+rule salmon:
+  input:
+      r1 = "results/{smp}_1.clean.fastq.gz",
+      r2 = "results/{smp}_2.clean.fastq.gz",
+      w3 = "results/{smp}.counts.txt"
+  output:
+      "quants/{smp}/quant.sf"
+  params:
+      dir = "quants/{smp}"
+  message:
+      "Quantifying with salmon."
+  shell:
+      "{SALMON} quant -i {SALMONINDEX} -l A -p 8 --gcBias --validateMappings -o {params.dir} -1 {input.r1} -2 {input.r2}"
 ```
 
 Below is the shell script I will use to process these data with snakemake.
