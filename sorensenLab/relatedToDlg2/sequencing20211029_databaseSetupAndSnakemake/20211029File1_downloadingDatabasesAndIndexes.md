@@ -95,11 +95,11 @@ Now we will prepare an index for BWA aligner. I am following the instructions de
 ```shell
 #!/bin/bash
 baseDirectory="/home/chughes/databases/projectEwsDlg2/"
-starLocation="/home/chughes/softwareTools/bwa-mem2-2.2.1"
+bwaLocation="/home/chughes/softwareTools/bwa-mem2-2.2.1"
 
 eval mkdir ${baseDirectory}bwaIndex
 eval cd ${baseDirectory}bwaIndex
-eval ${starLocation}/bwa-mem2 index ${baseDirectory}baseGenomeFiles/genome.fa
+eval ${bwaLocation}/bwa-mem2 index ${baseDirectory}baseGenomeFiles/genome.fa
 ```
 
 For now, I don't have any other indexes to make, but I may revisit and add here later on.
