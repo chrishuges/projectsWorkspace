@@ -1,0 +1,60 @@
+---
+title: "EwS microarray data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of microarray data from various EwS datasets.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message=FALSE, warning=FALSE}
+##########################################################################################
+#base packages
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+
+#microarray specific packages
+#library('clariomdhumantranscriptcluster.db')
+library('oligo')
+#library('ff')
+#library('affycoretools')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+The first thing I need to do is set the annotation. I use a CDF from BrainArray (in this case, version 25). 
+
+```{r}
+##########################################################################################
+#these are the install commands for my windows machine
+#install.packages('C:/Users/chughes/Documents/bccrc/databases/microarrays/clariomDHuman/pd.clariomdhuman.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('C:/Users/chughes/Documents/bccrc/databases/microarrays/clariomDHuman/clariomdhumanhsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+#these were for when I had to run it on linux because of memory issues
+#install.packages('/home/chughes/databases/microarray/clariomDHuman/pd.clariomdhuman.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('/home/chughes/databases/microarray/clariomDHuman/clariomdhumanhsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+
+#load the packages
+library('pd.clariomdhuman.hs.refseq')
+library('clariomdhumanhsrefseq.db')
+```
