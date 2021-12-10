@@ -177,3 +177,28 @@ do
   #eval rm ${workingDirectory}/results/${i}_Aligned.out.bam
 done
 ```
+
+At this point, I didn't have coverage calculations incorporated into snakemake, so I ran it through a separate script.
+
+```shell
+cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903
+touch coverageProcessingScript.sh
+chmod +x coverageProcessingScript.sh
+```
+
+Below is the shell script I used to get the coverage files.
+
+```shell
+#!/bin/bash
+
+bamCoverage="/home/chughes/virtualPython368/bin/bamCoverage"
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903"
+eval cd ${workingDirectory}
+
+#loop over the accessions
+for i in SRR15940{20..25}
+do
+  eval ${bamCoverage} -b ${workingDirectory}/results/${i}.sorted.bam -o ${workingDirectory}/results/${i}.sorted.bw -p 8
+done
+```
+

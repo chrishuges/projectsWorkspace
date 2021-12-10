@@ -4,9 +4,9 @@ This document describes the reprocessing of some RNAseq data from a the CCLE dat
 
 ### Description
 
-I am interested in the RNAseq data where they have knocked down EWS-FLI1 expression. I want to reprocess these to get expression data, .
+I am interested in the RNAseq data.
 
-I am going to use [sraDownloader](https://github.com/s-andrews/sradownloader) to get at these data. I am going to save them in the directory `/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/`.
+I am going to use [sraDownloader](https://github.com/s-andrews/sradownloader) to get at these data.
 
 I will parse these downloaded raw files for quality and adapter sequences using bbduk from the [bbTools package](https://sourceforge.net/projects/bbmap/). There are some good walkthroughs on how to use this package in the packages documentation itself, as well as [here](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/).
 
@@ -169,5 +169,29 @@ do
   eval rm ${workingDirectory}/*.out
   eval rm ${workingDirectory}/*.tab
   eval rm -r ${workingDirectory}/*STAR*
+done
+```
+
+At this point, I didn't have coverage calculations incorporated into snakemake, so I ran it through a separate script.
+
+```shell
+cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing
+touch coverageProcessingScript.sh
+chmod +x coverageProcessingScript.sh
+```
+
+Below is the shell script I used to get the coverage files.
+
+```shell
+#!/bin/bash
+
+bamCoverage="/home/chughes/virtualPython368/bin/bamCoverage"
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing"
+eval cd ${workingDirectory}
+
+#loop over the accessions
+for i in SRR8616012 SRR8615497 SRR8616213 SRR8616214 SRR8615592 SRR8615679 SRR8615832 SRR8615859 SRR8615273 SRR8615499 SRR8615521
+do
+  eval ${bamCoverage} -b ${workingDirectory}/results/${i}.sorted.bam -o ${workingDirectory}/results/${i}.sorted.bw -p 8
 done
 ```

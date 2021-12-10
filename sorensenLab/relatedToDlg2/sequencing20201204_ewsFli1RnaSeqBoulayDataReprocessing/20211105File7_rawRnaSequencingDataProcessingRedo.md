@@ -175,34 +175,26 @@ do
 done
 ```
 
-This is an alternative script that uses ENA.
+At this point, I didn't have coverage calculations incorporated into snakemake, so I ran it through a separate script.
+
+```shell
+cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1PrionBoulayPmid28844694
+touch coverageProcessingScript.sh
+chmod +x coverageProcessingScript.sh
+```
+
+Below is the shell script I used to get the coverage files.
 
 ```shell
 #!/bin/bash
 
-##set the location of software tools and the working directory where files will be stored
-ftpLocation="ftp://ftp.sra.ebi.ac.uk/vol1/fastq"
-baseAccession="SRR52176"
+bamCoverage="/home/chughes/virtualPython368/bin/bamCoverage"
 workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201204_ewsFli1PrionBoulayPmid28844694"
 eval cd ${workingDirectory}
-eval mkdir raw
-eval mkdir results
-eval mkdir quants
 
-##loop over the accessions
-for i in {68..70}
+#loop over the accessions
+for i in SRR52176{67..70}
 do
-  printf "Downloading files associated with ${baseAccession}${i}."
-
-  eval wget ${ftpLocation}/${baseAccession:0:6}/00${i: -1}/${baseAccession}${i}/${baseAccession}${i}_1.fastq.gz
-  eval wget ${ftpLocation}/${baseAccession:0:6}/00${i: -1}/${baseAccession}${i}/${baseAccession}${i}_2.fastq.gz
-  eval mv ${workingDirectory}/${baseAccession}${i}_1.fastq.gz ${workingDirectory}/raw
-  eval mv ${workingDirectory}/${baseAccession}${i}_2.fastq.gz ${workingDirectory}/raw
-  #eval conda activate snakemake
-  eval snakemake --cores 8
-  #eval conda deactivate
-  eval rm ${workingDirectory}/raw/${baseAccession}${i}*.fastq.gz.fastq.gz
-  eval rm ${workingDirectory}/results/${baseAccession}${i}*.clean.fastq.gz
-  eval rm ${workingDirectory}/results/${baseAccession}${i}_Aligned.out.bam
+  eval ${bamCoverage} -b ${workingDirectory}/results/${i}.sorted.bam -o ${workingDirectory}/results/${i}.sorted.bw -p 8
 done
 ```

@@ -21,8 +21,8 @@ library('RColorBrewer')
 #microarray specific packages
 #library('clariomdhumantranscriptcluster.db')
 library('oligo')
-#library('ff')
-#library('affycoretools')
+library('ff')
+library('affycoretools')
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -31,12 +31,12 @@ I want to set a base directory that we can use as a link to the directory where 
 
 ```{r}
 ##########################################################################################
-generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
-baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
-baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
-#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
-#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
-#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+#baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -48,13 +48,57 @@ The first thing I need to do is set the annotation. I use a CDF from BrainArray 
 ```{r}
 ##########################################################################################
 #these are the install commands for my windows machine
-#install.packages('C:/Users/chughes/Documents/bccrc/databases/microarrays/clariomDHuman/pd.clariomdhuman.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
-#install.packages('C:/Users/chughes/Documents/bccrc/databases/microarrays/clariomDHuman/clariomdhumanhsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/hgu133plus2/pd.hgu133plus2.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/hgu133plus2/hgu133plus2hsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+
 #these were for when I had to run it on linux because of memory issues
 #install.packages('/home/chughes/databases/microarray/clariomDHuman/pd.clariomdhuman.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
 #install.packages('/home/chughes/databases/microarray/clariomDHuman/clariomdhumanhsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
 
 #load the packages
-library('pd.clariomdhuman.hs.refseq')
-library('clariomdhumanhsrefseq.db')
+library('pd.hgu133plus2.hs.refseq')
+library('hgu133plus2hsrefseq.db')
 ```
+
+<div style="margin-bottom:50px;"></div>
+
+Now read in the data files and process them with rma from the oligo package. 
+
+```{r}
+##########################################################################################
+#following directions here: https://support.bioconductor.org/p/72378/#72552
+list.celfiles(paste(baseRepository, '/microarray20211209_ewsExpressionDatasets/', sep = ''))
+dat = read.celfiles(list.celfiles(paste(baseRepository, '/microarray20211209_ewsExpressionDatasets', sep = ''), full.names=TRUE)[1:3], pkgname = 'pd.hgu133plus2.hs.refseq')
+
+rmaEset = rma(dat)
+annotatedEset = annotateEset(rmaEset, hgu133plus2hsrefseq.db)
+expressionData = as_tibble(exprs(annotatedEset)) %>%
+  dplyr::mutate(PROBEID = rownames(annotatedEset)) %>%
+  dplyr::rename_with(~ sub('.*_(.*)\\.CEL', '\\1', .x))
+annotatedEdata = as_tibble(fData(annotatedEset)) %>%
+  left_join(expressionData)
+
+
+
+
+
+allData = tibble()
+for (i in seq(1,108,27)){
+  dat = read.celfiles(list.celfiles(paste(baseRepository, '/microarray20211209_ewsExpressionDatasets', sep = ''), full.names=TRUE)[i:i+26], pkgname = 'pd.clariomdhuman.hs.refseq')
+  rmaEset = rma(dat)
+  annotatedEset = annotateEset(eset, clariomdhumanhsrefseq.db)
+  expressionData = as_tibble(exprs(annotatedEset)) %>%
+    dplyr::mutate(PROBEID = rownames(annotatedEset)) %>%
+    dplyr::rename_with(~ sub('(.*)_[0-9]+\\-[0-9]+\\.CEL', '\\1', .x))
+  annotationData = as_tibble(fData(annotatedEset)) %>%
+    left_join(expressionData)
+  #
+  allData = allData %>%
+    left_join(annotationData)
+}
+
+
+```
+
+
+
