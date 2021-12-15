@@ -146,20 +146,24 @@ eval mkdir raw
 eval mkdir results
 
 ##loop over the accessions
-for i in SRR11235{318..335}
+for i in SRR11235320 #was {318..335}
 do
-  printf "Downloading files associated with ${i}."
-  eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}
-  ##the file gets renamed upon download, but I just want it to have the SRR id and I can annotate it later
-  eval mv ${workingDirectory}/raw/${i}*_1.fastq.gz ${workingDirectory}/raw/${i}_1.fastq.gz
-  eval mv ${workingDirectory}/raw/${i}*_2.fastq.gz ${workingDirectory}/raw/${i}_2.fastq.gz
-  #eval conda activate snakemake
-  eval snakemake --cores 8
-  #eval conda deactivate
-  eval rm ${workingDirectory}/raw/${i}*.fastq.gz
-  eval rm ${sraCacheLocation}/sra/${i}*.sra.cache
-  eval rm ${workingDirectory}/results/${i}*.clean.fastq.gz
-  eval rm ${workingDirectory}/results/${i}.unsorted.sam
-  eval rm ${workingDirectory}/results/${i}.unsorted.bam
+  if [ -f "${workingDirectory}/raw/${i}_1.fastq.gz" ]; then
+    printf "Raw file for ${workingDirectory}/raw/${i}_1.fastq.gz already exists, moving to alignment.\n\n"
+    #eval conda activate snakemake
+    eval snakemake --cores 8
+    #eval conda deactivate
+    eval rm ${workingDirectory}/raw/${i}*.fastq.gz
+    eval rm ${sraCacheLocation}/sra/${i}*.sra.cache
+    eval rm ${workingDirectory}/results/${i}*.clean.fastq.gz
+    eval rm ${workingDirectory}/results/${i}.unsorted.sam
+    eval rm ${workingDirectory}/results/${i}.unsorted.bam
+  else
+    printf "Downloading files associated with ${i}."
+    eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}
+    ##the file gets renamed upon download, but I just want it to have the SRR id and I can annotate it later
+    eval mv ${workingDirectory}/raw/${i}*_1.fastq.gz ${workingDirectory}/raw/${i}_1.fastq.gz
+    eval mv ${workingDirectory}/raw/${i}*_2.fastq.gz ${workingDirectory}/raw/${i}_2.fastq.gz
+  fi
 done
 ```
