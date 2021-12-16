@@ -74,7 +74,9 @@ for smp in SAMPLES:
 ###############################
 #processing workflow
 rule all:
-    input: expand("results/{smp}.filtered.bam.bai", smp = SAMPLES)
+    input: 
+      expand("results/{smp}.filtered.bam.bai", smp = SAMPLES),
+      expand("results/{smp}.filtered.bw", smp = SAMPLES)
 
 rule bbduk:
   input:
