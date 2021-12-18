@@ -92,11 +92,31 @@ rule bowtie:
   input:
       "results/{smp}.clean.fastq.gz"
   output:
-      "results/{smp}.sorted.bam"
+      "results/{smp}.unsorted.sam"
   message:
       "Aligning with bowtie2."
   shell:
-      "{BOWTIE2} -p 8 -q --local -x {INDEX} -U {input} -S {output} | {SAMTOOLS} sort -o {output}"
+      "{BOWTIE2} -p 8 -q --local -x {INDEX} -U {input} -S {output}"
+
+rule bam_conversion:
+  input:
+      "results/{smp}.unsorted.sam"
+  output:
+      "results/{smp}.unsorted.bam"
+  message:
+      "SAM to BAM conversion with samtools."
+  shell:
+      "{SAMTOOLS} view -h -S -b -o {output} {input}"
+
+rule bam_sorting:
+  input:
+      "results/{smp}.unsorted.bam"
+  output:
+      "results/{smp}.sorted.bam"
+  message:
+      "BAM sorting with sambamba."
+  shell:
+      "{SAMBAMBA} sort -t 6 -o {output} {input}"
 
 rule bam_filtering:
   input:
