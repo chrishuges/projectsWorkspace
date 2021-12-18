@@ -74,7 +74,9 @@ for smp in SAMPLES:
 ###############################
 #processing workflow
 rule all:
-    input: expand("results/{smp}.filtered.bam.bai", smp = SAMPLES)
+    input: 
+      expand("results/{smp}.filtered.bam.bai", smp = SAMPLES),
+      expand("results/{smp}.filtered.bw", smp = SAMPLES)
 
 rule bbduk:
   input:
@@ -136,20 +138,20 @@ Below is the shell script I will use to process these data with snakemake.
 ##set the location of software tools and the working directory where files will be stored
 sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
 sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211210_soleMscToEwsPmid34341072"
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211210_soleMscToEwsPmid34341072/chipSeq"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-for i in SRR1{{1807630..1807666},{4743608..4743630}}
+for i in SRR1{1807624..1807629}
 do
   printf "Downloading files associated with ${i}."
   eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}
   ##the file gets renamed upon download, but I just want it to have the SRR id and I can annotate it later
-  eval mv ${workingDirectory}/raw/${i}*_1.fastq.gz ${workingDirectory}/raw/${i}_1.fastq.gz
-  eval mv ${workingDirectory}/raw/${i}*_2.fastq.gz ${workingDirectory}/raw/${i}_2.fastq.gz
+  eval mv ${workingDirectory}/raw/${i}*.fastq.gz ${workingDirectory}/raw/${i}.fastq.gz
+  #eval mv ${workingDirectory}/raw/${i}*_2.fastq.gz ${workingDirectory}/raw/${i}_2.fastq.gz
   #eval conda activate snakemake
   eval snakemake --cores 8 --latency-wait 300
   #eval conda deactivate
