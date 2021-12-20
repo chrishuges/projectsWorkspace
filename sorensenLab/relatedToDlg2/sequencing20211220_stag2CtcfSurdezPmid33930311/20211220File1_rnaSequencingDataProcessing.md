@@ -1,12 +1,15 @@
 ## Reprocessing some RNAseq data
 
-This document describes the reprocessing of some RNAseq data from a the CCLE database, or DepMap. The data are all located in SRA: PRJNA523380.
+This document describes the reprocessing of some RNAseq data from a manuscript. Specifically:
+
+"STAG2 mutations alter CTCF-anchored loop extrusion, reduce cis-regulatory interactions and EWSR1-FLI1 activity in Ewing sarcoma"
+PMID: 33930311, GEO: GSE133228, SRA: PRJNA550416
 
 ### Description
 
 I am interested in the RNAseq data.
 
-I am going to use [sraDownloader](https://github.com/s-andrews/sradownloader) to get at these data.
+I am going to use [sraDownloader](https://github.com/s-andrews/sradownloader) to get at these data. 
 
 I will parse these downloaded raw files for quality and adapter sequences using bbduk from the [bbTools package](https://sourceforge.net/projects/bbmap/). There are some good walkthroughs on how to use this package in the packages documentation itself, as well as [here](https://jgi.doe.gov/data-and-tools/bbtools/bb-tools-user-guide/).
 
@@ -23,7 +26,7 @@ This is kind of a useful website for a general pipeline, [here](https://www.bioc
 First we will move into our working directory and create our shell and snakemake scripts.
 
 ```shell
-cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing
+cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/rnaSeq
 touch sraDataProcessingScript.sh
 chmod +x sraDataProcessingScript.sh
 touch snakefile
@@ -41,7 +44,7 @@ Date: 20211105
 
 ###############################
 #working directory
-BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing"
+BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/rnaSeq"
 
 
 ###############################
@@ -53,6 +56,7 @@ STAR = "/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
 SAMTOOLS="/home/chughes/softwareTools/samtools-1.12/samtools"
 #SAMBAMBA="/home/chughes/softwareTools/sambamba-0.8.1/sambamba"
 FEATURECOUNTS="/home/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
+BAMCOVERAGE="/home/chughes/virtualPython368/bin/bamCoverage"
 
 
 ###############################
@@ -78,6 +82,7 @@ rule all:
     input:
       expand("results/{smp}.counts.txt", smp = SAMPLES),
       expand("results/{smp}.sorted.bam.bai", smp = SAMPLES),
+      expand("results/{smp}.sorted.bw", smp = SAMPLES),
       expand("quants/{smp}/quant.sf", smp = SAMPLES)
 
 rule bbduk:
@@ -113,15 +118,27 @@ rule bam_indexing:
   shell:
       "{SAMTOOLS} index {input}"
 
+rule bam_coverage:
+  input:
+      r1 = "results/{smp}.sorted.bam",
+      w2 = "results/{smp}.sorted.bam.bai"
+  output:
+      "results/{smp}.sorted.bw"
+  message:
+      "Calculating coverage with deeptools."
+  shell:
+      "{BAMCOVERAGE} -b {input.r1} -o {output} -p 8"
+
 rule featurecounts:
   input:
-      "results/{smp}.sorted.bam"
+      r1 = "results/{smp}.sorted.bam",
+      w2 = "results/{smp}.sorted.bam.bai"
   output:
       "results/{smp}.counts.txt"
   message:
       "Counting reads with featureCounts."
   shell:
-      "{FEATURECOUNTS} -p --countReadPairs -t exon -g gene_id -a {GTF} -o {output} {input}"
+      "{FEATURECOUNTS} -p --countReadPairs -t exon -g gene_id -a {GTF} -o {output} {input.r1}"
 
 rule salmon:
   input:
@@ -146,14 +163,14 @@ Below is the shell script I will use to process these data with snakemake.
 ##set the location of software tools and the working directory where files will be stored
 sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
 sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing"
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/rnaSeq"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-for i in SRR8616012 SRR8615497 SRR8616213 SRR8616214 SRR8615592 SRR8615679 SRR8615832 SRR8615859 SRR8615273 SRR8615499 SRR8615521
+for i in SRR{{9326191..9326197},{9326204..9326210},{12492905..12492908},{12492920..12492923},{14217762..14217791}}
 do
   printf "Downloading files associated with ${i}."
   eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}
@@ -169,35 +186,8 @@ do
   eval rm ${workingDirectory}/*.out
   eval rm ${workingDirectory}/*.tab
   eval rm -r ${workingDirectory}/*STAR*
+  eval rm ${workingDirectory}/results/${i}*.bam
+  eval rm ${workingDirectory}/results/${i}*.bai
 done
 ```
 
-At this point, I didn't have coverage calculations incorporated into snakemake, so I ran it through a separate script.
-
-```shell
-cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing
-touch getCoverageMaps.sh
-chmod +x getCoverageMaps.sh
-```
-
-Below is a script I used to get coverage maps.
-
-```shell
-#!/bin/bash
-
-##set the location of software tools and the working directory where files will be stored
-samtools="/home/chughes/softwareTools/samtools-1.12/samtools"
-bamCoverage="/home/chughes/virtualPython368/bin/bamCoverage"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing"
-eval cd ${workingDirectory}
-
-##loop over the accessions
-#was for i in SRR8616012 SRR8615497 SRR8616213 SRR8616214 SRR8615592 SRR8615679 SRR8615832 SRR8615859 SRR8615273 SRR8615499 SRR8615521
-for i in SRR8616012 SRR8615497 SRR8616213 SRR8616214 SRR8615592 SRR8615679 SRR8615832 SRR8615859 SRR8615273 SRR8615499
-do
-  printf "Rebuilding the index for ${i}."
-  eval ${samtools} index ${workingDirectory}/results/${i}.sorted.bam
-  printf "Calculating coverage for ${i}."
-  eval ${bamCoverage} -b ${workingDirectory}/results/${i}.sorted.bam -o ${workingDirectory}/results/${i}.sorted.bw -p 8
-done
-```

@@ -3,7 +3,7 @@
 This document describes the reprocessing of some CHIPseq data from a manuscript. Specifically:
 
 "Unraveling Ewing Sarcoma Tumorigenesis Originating from Patient-Derived Mesenchymal Stem Cells"
-PMID: 34341072, GEO: GSE150777, SRA: SRP262164
+PMID: 34341072, GEO: GSE150776, SRA: SRP262163
 
 ### Description
 
@@ -183,5 +183,41 @@ do
   eval rm -r ${workingDirectory}/*STAR*
   eval rm ${workingDirectory}/results/${i}*.bam
   eval rm ${workingDirectory}/results/${i}*.bai
+done
+```
+
+Now we move on to peak calling using [MACS](https://github.com/macs3-project/MACS). There is a great walkthrough of this process [here](https://hbctraining.github.io/Intro-to-ChIPseq/lessons/05_peak_calling_macs.html). Also [here](https://deeptools.readthedocs.io/en/develop/content/tools/bamCoverage.html) for discussion of deepTools, specifically bamCoverage.
+
+The first file here is for narrow peak calling on the transcription factors.
+
+```shell
+#!/bin/bash
+annotationLocation="/home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
+rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211210_soleMscToEwsPmid34341072/chipSeq"
+for i in SRR11807625
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR11807626.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+
+for i in SRR11807628
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR11807629.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+done
+```
+
+This second file is for broad peak calling with the histone marks.
+
+```shell
+#!/bin/bash
+annotationLocation="/home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
+rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211210_soleMscToEwsPmid34341072/chipSeq"
+for i in SRR11807624
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR11807626.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+done
+
+for i in SRR11807627
+do
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR11807629.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
 done
 ```
