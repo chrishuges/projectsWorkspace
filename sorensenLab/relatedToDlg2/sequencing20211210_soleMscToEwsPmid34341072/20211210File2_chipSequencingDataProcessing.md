@@ -1,6 +1,6 @@
-## Reprocessing some RNAseq data
+## Reprocessing some CHIPseq data
 
-This document describes the reprocessing of some RNAseq data from a manuscript. Specifically:
+This document describes the reprocessing of some CHIPseq data from a manuscript. Specifically:
 
 "Unraveling Ewing Sarcoma Tumorigenesis Originating from Patient-Derived Mesenchymal Stem Cells"
 PMID: 34341072, GEO: GSE150777, SRA: SRP262164

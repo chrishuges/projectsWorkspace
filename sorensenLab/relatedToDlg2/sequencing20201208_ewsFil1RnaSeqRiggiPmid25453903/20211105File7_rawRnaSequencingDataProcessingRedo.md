@@ -182,23 +182,27 @@ At this point, I didn't have coverage calculations incorporated into snakemake, 
 
 ```shell
 cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903
-touch coverageProcessingScript.sh
-chmod +x coverageProcessingScript.sh
+touch getCoverageMaps.sh
+chmod +x getCoverageMaps.sh
 ```
 
-Below is the shell script I used to get the coverage files.
+Below is a script I used to get coverage maps.
 
 ```shell
 #!/bin/bash
 
+##set the location of software tools and the working directory where files will be stored
+samtools="/home/chughes/softwareTools/samtools-1.12/samtools"
 bamCoverage="/home/chughes/virtualPython368/bin/bamCoverage"
 workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903"
 eval cd ${workingDirectory}
 
-#loop over the accessions
+##loop over the accessions
 for i in SRR15940{20..25}
 do
+  printf "Rebuilding the index for ${i}."
+  eval ${samtools} index ${workingDirectory}/results/${i}.sorted.bam
+  printf "Calculating coverage for ${i}."
   eval ${bamCoverage} -b ${workingDirectory}/results/${i}.sorted.bam -o ${workingDirectory}/results/${i}.sorted.bw -p 8
 done
 ```
-
