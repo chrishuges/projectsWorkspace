@@ -178,5 +178,24 @@ do
 done
 ```
 
+Below is a script I used to get coverage maps.
 
+```shell
+#!/bin/bash
+
+##set the location of software tools and the working directory where files will be stored
+samtools="/home/chughes/softwareTools/samtools-1.12/samtools"
+bamCoverage="/home/chughes/virtualPython368/bin/bamCoverage"
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211111_humanProteinAtlasData"
+eval cd ${workingDirectory}
+
+##loop over the accessions
+for i in ERR315{455,477,432}
+do
+  printf "Rebuilding the index for ${i}."
+  eval ${samtools} index ${workingDirectory}/results/${i}.sorted.bam
+  printf "Calculating coverage for ${i}."
+  eval ${bamCoverage} -b ${workingDirectory}/results/${i}.sorted.bam -o ${workingDirectory}/results/${i}.sorted.bw -p 8
+done
+```
 
