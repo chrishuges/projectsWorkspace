@@ -43,7 +43,7 @@ baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sor
 
 ## Data processing
 
-The first thing I need to do is set the annotation. I use a CDF from BrainArray (in this case, version 25). 
+The first thing I need to do is set the annotation. I use a CDF from BrainArray (in this case, version 25). The commands below are to build the libraries I need for the different arrays used. You only need to do the package install once, and then just load the library from then on. 
 
 ```{r}
 ##########################################################################################
@@ -55,10 +55,124 @@ The first thing I need to do is set the annotation. I use a CDF from BrainArray 
 #install.packages('/home/chughes/databases/microarray/clariomDHuman/pd.clariomdhuman.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
 #install.packages('/home/chughes/databases/microarray/clariomDHuman/clariomdhumanhsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
 
-#load the packages
+#####################
+##library for clariomd
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/clariomd/pd.clariomdhuman.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/clariomd/clariomdhumanhsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+library('pd.clariomdhuman.hs.refseq')
+library('clariomdhumanhsrefseq.db')
+
+##library for hgu133a
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/hgu133a/pd.hgu133a.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/hgu133a/hgu133ahsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+library('pd.hgu133a.hs.refseq')
+library('hgu133ahsrefseq.db')
+
+##library for hgu133a2
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/hgu133a2/pd.hgu133a2.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/hgu133a2/hgu133a2hsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+library('pd.hgu133a2.hs.refseq')
+library('hgu133a2hsrefseq.db')
+
+##library for hgu133plus2
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/hgu133plus2/pd.hgu133plus2.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/hgu133plus2/hgu133plus2hsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
 library('pd.hgu133plus2.hs.refseq')
 library('hgu133plus2hsrefseq.db')
+
+##library for huex10st
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/huex10st/pd.huex10st.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/huex10st/huex10sthsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+library('pd.huex10st.hs.refseq')
+library('huex10sthsrefseq.db')
+
+##library for hugene10st
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/hugene10st/pd.hugene10st.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/hugene10st/hugene10sthsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+library('pd.hugene10st.hs.refseq')
+library('hugene10sthsrefseq.db')
+
+##library for hugene20st
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/hugene20st/pd.hugene20st.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/hugene20st/hugene20sthsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+library('pd.hugene20st.hs.refseq')
+library('hugene20sthsrefseq.db')
+
+##library for u133aaofav2
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/u133aaofav2/pd.u133aaofav2.hs.refseq_25.0.0.tar.gz', repos = NULL, type = 'source')
+#install.packages('C:/Users/chris/OneDrive/Documents/bccrc/databases/microarrays/u133aaofav2/u133aaofav2hsrefseq.db_25.0.0.tar.gz', repos = NULL, type = 'source')
+library('pd.u133aaofav2.hs.refseq')
+library('u133aaofav2hsrefseq.db')
 ```
+
+<div style="margin-bottom:50px;"></div>
+
+Read the annotation and dataset table.
+
+```{r}
+##########################################################################################
+samples = read_tsv(paste(baseRepository,'/microarray20211209_ewsExpressionDatasets/samples.txt',sep=''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Work through the different accessions and save the output data for later use. 
+
+```{r}
+##########################################################################################
+#following directions here: https://support.bioconductor.org/p/72378/#72552
+#list.celfiles(paste(baseRepository, '/microarray20211209_ewsExpressionDatasets/GSE6930', sep = ''))
+
+for (i in 2:nrow(samples)){
+  print(paste('working on dataset', samples[i,1]))
+  print(paste('reference package being used is: pd.',samples[i,2],'.hs.refseq',sep=''))
+  print(paste('annotation package being used is: ',samples[i,2],'hsrefseq.db',sep=''))
+  ##
+  dat = read.celfiles(list.celfiles(paste(baseRepository, 
+                                          '/microarray20211209_ewsExpressionDatasets/', 
+                                          samples[i,1], 
+                                          sep = ''), 
+                                    full.names=TRUE), 
+                      pkgname = paste('pd.',samples[i,2],'.hs.refseq',sep=''))
+  ##
+  rmaEset = rma(dat)
+  annotatedEset = annotateEset(rmaEset, paste(samples[i,2],'hsrefseq.db',sep=''))
+  expressionData = as_tibble(exprs(annotatedEset)) %>%
+    dplyr::mutate(PROBEID = rownames(annotatedEset))
+    #dplyr::rename_with(~ sub('(.*)\\.CEL', '\\1', .x))
+  annotatedEdata = as_tibble(fData(annotatedEset)) %>%
+    left_join(expressionData)
+  ##
+  saveRDS(annotatedEdata, 
+          paste(baseRepository,'/microarray20211209_ewsExpressionDatasets/', samples[i,1],'/',samples[i,1],'.processed.rds', sep = ''))
+  ##
+  #clean out previous result
+  rm(dat)
+  rm(rmaEset)
+  rm(annotatedEset)
+  rm(expressionData)
+  rm(annotatedEdata)
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 <div style="margin-bottom:50px;"></div>
 
