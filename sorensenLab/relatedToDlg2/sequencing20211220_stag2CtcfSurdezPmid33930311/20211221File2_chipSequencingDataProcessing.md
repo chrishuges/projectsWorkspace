@@ -49,17 +49,31 @@ BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/seque
 
 ###############################
 #locations of tools we will use
-BBDUK = "/home/chughes/softwareTools/bbmap-38.90/bbduk.sh"
-BOWTIE2 = "/home/chughes/softwareTools/bowtie2-2.4.4/bowtie2"
-SAMTOOLS="/home/chughes/softwareTools/samtools-1.12/samtools"
-SAMBAMBA="/home/chughes/softwareTools/sambamba-0.8.1/sambamba"
-BAMCOVERAGE="/home/chughes/virtualPython368/bin/bamCoverage"
+#BBDUK = "/home/chughes/softwareTools/bbmap-38.90/bbduk.sh"
+BBDUK = "/projects/ptx_analysis/chughes/softwareTools/bbmap-38.90/bbduk.sh"
+#BOWTIE2 = "/home/chughes/softwareTools/bowtie2-2.4.4/bowtie2"
+BOWTIE2 = "/projects/ptx_analysis/chughes/softwareTools/bowtie2-2.4.4/bowtie2"
+#SALMON = "/home/chughes/softwareTools/salmon-1.5.2/bin/salmon"
+SALMON = "/projects/ptx_analysis/chughes/softwareTools/salmon-1.5.2/bin/salmon"
+#HISAT2 = "/home/chughes/softwareTools/hisat2-2.2.1/hisat2"
+#STAR = "/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
+STAR = "/projects/ptx_analysis/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
+#SAMTOOLS="/home/chughes/softwareTools/samtools-1.12/samtools"
+SAMTOOLS="/gsc/software/linux-x86_64-centos7/samtools-1.14/bin/samtools"
+#SAMBAMBA="/home/chughes/softwareTools/sambamba-0.8.1/sambamba"
+SAMBAMBA="/projects/ptx_analysis/chughes/softwareTools/sambamba-0.8.1/sambamba"
+#FEATURECOUNTS="/home/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
+FEATURECOUNTS="/projects/ptx_analysis/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
+#BAMCOVERAGE="/home/chughes/virtualPython368/bin/bamCoverage"
+BAMCOVERAGE="/home/chughes/Virtual_Python383/bin/bamCoverage"
+
 
 ###############################
 #locations of our index files
-DATABASE_DIR = "/home/chughes/databases/projectEwsDlg2"
+#DATABASE_DIR = "/home/chughes/databases/projectEwsDlg2"
+DATABASE_DIR = "/projects/ptx_analysis/chughes/databases/projectEwsDlg2"
 INDEX = DATABASE_DIR + "/bowtie2Index/human_genome"
-GTF   = DATABASE_DIR + "/baseGenomeFiles/genome.gtf"
+GTF = DATABASE_DIR + "/baseGenomeFiles/genome.gtf"
 FASTA = DATABASE_DIR + "/baseGenomeFiles/genome.fa"
 
 
@@ -156,9 +170,12 @@ Below is the shell script I will use to process these data with snakemake.
 #!/bin/bash
 
 ##set the location of software tools and the working directory where files will be stored
-sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
-sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
+#sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
+sraDownloader="/projects/ptx_analysis/chughes/softwareTools/sradownloader-3.8/sradownloader"
+#sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
+sraCacheLocation="/projects/ptx_results/Sequencing/sraCache"
+#workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
+workingDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results
@@ -178,11 +195,8 @@ do
   eval rm ${workingDirectory}/raw/${i}*.fastq.gz
   eval rm ${sraCacheLocation}/sra/${i}*
   eval rm ${workingDirectory}/results/${i}*.clean.fastq.gz
-  eval rm ${workingDirectory}/*.out
-  eval rm ${workingDirectory}/*.tab
-  eval rm -r ${workingDirectory}/*STAR*
-  eval rm ${workingDirectory}/results/${i}*.bam
-  eval rm ${workingDirectory}/results/${i}*.bai
+  eval rm ${workingDirectory}/results/${i}*.sam
+  eval rm ${workingDirectory}/results/${i}*.sorted.bam
 done
 ```
 
