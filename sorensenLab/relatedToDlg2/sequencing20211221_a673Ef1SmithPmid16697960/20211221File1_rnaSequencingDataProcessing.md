@@ -26,7 +26,7 @@ This is kind of a useful website for a general pipeline, [here](https://www.bioc
 First we will move into our working directory and create our shell and snakemake scripts.
 
 ```shell
-cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211221_a673Ef1SmithPmid16697960
+cd /projects/ptx_results/Sequencing/publishedStudies/sequencing20211221_a673Ef1SmithPmid16697960
 touch sraDataProcessingScript.sh
 chmod +x sraDataProcessingScript.sh
 touch snakefile
@@ -44,24 +44,31 @@ Date: 20211105
 
 ###############################
 #working directory
-BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211221_a673Ef1SmithPmid16697960"
+BASE_DIR = "/projects/ptx_results/Sequencing/publishedStudies/sequencing20211221_a673Ef1SmithPmid16697960"
 
 
 ###############################
 #locations of tools we will use
-BBDUK = "/home/chughes/softwareTools/bbmap-38.90/bbduk.sh"
-SALMON = "/home/chughes/softwareTools/salmon-1.5.2/bin/salmon"
+#BBDUK = "/home/chughes/softwareTools/bbmap-38.90/bbduk.sh"
+BBDUK = "/projects/ptx_analysis/chughes/softwareTools/bbmap-38.90/bbduk.sh"
+#SALMON = "/home/chughes/softwareTools/salmon-1.5.2/bin/salmon"
+SALMON = "/projects/ptx_analysis/chughes/softwareTools/salmon-1.5.2/bin/salmon"
 #HISAT2 = "/home/chughes/softwareTools/hisat2-2.2.1/hisat2"
-STAR = "/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
-SAMTOOLS="/home/chughes/softwareTools/samtools-1.12/samtools"
+#STAR = "/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
+STAR = "/projects/ptx_analysis/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
+#SAMTOOLS="/home/chughes/softwareTools/samtools-1.12/samtools"
+SAMTOOLS="/gsc/software/linux-x86_64-centos7/samtools-1.14/bin/samtools"
 #SAMBAMBA="/home/chughes/softwareTools/sambamba-0.8.1/sambamba"
-FEATURECOUNTS="/home/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
-BAMCOVERAGE="/home/chughes/virtualPython368/bin/bamCoverage"
+#FEATURECOUNTS="/home/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
+FEATURECOUNTS="/projects/ptx_analysis/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
+#BAMCOVERAGE="/home/chughes/virtualPython368/bin/bamCoverage"
+BAMCOVERAGE="/home/chughes/Virtual_Python383/bin/bamCoverage"
 
 
 ###############################
 #locations of our index files
-DATABASE_DIR = "/home/chughes/databases/projectEwsDlg2"
+#DATABASE_DIR = "/home/chughes/databases/projectEwsDlg2"
+DATABASE_DIR = "/projects/ptx_analysis/chughes/databases/projectEwsDlg2"
 STARINDEX = DATABASE_DIR + "/starIndex"
 SALMONINDEX = DATABASE_DIR + "/salmonIndex/salmon_index"
 GTF = DATABASE_DIR + "/baseGenomeFiles/genome.gtf"
@@ -132,7 +139,8 @@ rule bam_coverage:
 rule featurecounts:
   input:
       r1 = "results/{smp}.sorted.bam",
-      w2 = "results/{smp}.sorted.bam.bai"
+      w2 = "results/{smp}.sorted.bam.bai",
+      w3 = "results/{smp}.sorted.bw"
   output:
       "results/{smp}.counts.txt"
   message:
@@ -161,9 +169,12 @@ Below is the shell script I will use to process these data with snakemake.
 #!/bin/bash
 
 ##set the location of software tools and the working directory where files will be stored
-sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
-sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211221_a673Ef1SmithPmid16697960"
+#sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
+sraDownloader="/projects/ptx_analysis/chughes/softwareTools/sradownloader-3.8/sradownloader"
+#sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
+sraCacheLocation="/projects/ptx_results/Sequencing/sraCache"
+#workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211221_a673Ef1SmithPmid16697960"
+workingDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211221_a673Ef1SmithPmid16697960"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results
