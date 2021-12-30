@@ -44,8 +44,8 @@ Date: 20211030
 
 ###############################
 #working directory
-BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
-
+#BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
+BASE_DIR = "/projects/ptx_results/Sequencing/publishedStudies/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
 
 ###############################
 #locations of tools we will use
