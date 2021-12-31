@@ -206,8 +206,10 @@ The first file here is for narrow peak calling on the transcription factors.
 
 ```shell
 #!/bin/bash
-annotationLocation="/home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
-rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
+#annotationLocation="/home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
+annotationLocation="/projects/ptx_analysis/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
+#rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
 
 ##A673 peak calling
 for i in SRR9409729
@@ -226,8 +228,10 @@ This second file is for broad peak calling with the histone marks.
 
 ```shell
 #!/bin/bash
-annotationLocation="/home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
-rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
+#annotationLocation="/home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
+annotationLocation="/projects/ptx_analysis/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
+#rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
 
 ##A673 peak calling
 for i in SRR9409730 SRR9409731
