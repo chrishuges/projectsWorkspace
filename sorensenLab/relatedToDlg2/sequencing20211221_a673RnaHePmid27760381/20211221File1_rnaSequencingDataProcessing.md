@@ -44,24 +44,31 @@ Date: 20211105
 
 ###############################
 #working directory
-BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211221_a673RnaHePmid27760381"
-
+#BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211221_a673RnaHePmid27760381"
+BASE_DIR = "/projects/ptx_results/Sequencing/publishedStudies/sequencing20211221_a673RnaHePmid27760381"
 
 ###############################
 #locations of tools we will use
-BBDUK = "/home/chughes/softwareTools/bbmap-38.90/bbduk.sh"
-SALMON = "/home/chughes/softwareTools/salmon-1.5.2/bin/salmon"
+#BBDUK = "/home/chughes/softwareTools/bbmap-38.90/bbduk.sh"
+BBDUK = "/projects/ptx_analysis/chughes/softwareTools/bbmap-38.90/bbduk.sh"
+#SALMON = "/home/chughes/softwareTools/salmon-1.5.2/bin/salmon"
+SALMON = "/projects/ptx_analysis/chughes/softwareTools/salmon-1.5.2/bin/salmon"
 #HISAT2 = "/home/chughes/softwareTools/hisat2-2.2.1/hisat2"
-STAR = "/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
-SAMTOOLS="/home/chughes/softwareTools/samtools-1.12/samtools"
+#STAR = "/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
+STAR = "/projects/ptx_analysis/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
+#SAMTOOLS="/home/chughes/softwareTools/samtools-1.12/samtools"
+SAMTOOLS="/gsc/software/linux-x86_64-centos7/samtools-1.14/bin/samtools"
 #SAMBAMBA="/home/chughes/softwareTools/sambamba-0.8.1/sambamba"
-FEATURECOUNTS="/home/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
-BAMCOVERAGE="/home/chughes/virtualPython368/bin/bamCoverage"
+#FEATURECOUNTS="/home/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
+FEATURECOUNTS="/projects/ptx_analysis/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
+#BAMCOVERAGE="/home/chughes/virtualPython368/bin/bamCoverage"
+BAMCOVERAGE="/home/chughes/Virtual_Python383/bin/bamCoverage"
 
 
 ###############################
 #locations of our index files
-DATABASE_DIR = "/home/chughes/databases/projectEwsDlg2"
+#DATABASE_DIR = "/home/chughes/databases/projectEwsDlg2"
+DATABASE_DIR = "/projects/ptx_analysis/chughes/databases/projectEwsDlg2"
 STARINDEX = DATABASE_DIR + "/starIndex"
 SALMONINDEX = DATABASE_DIR + "/salmonIndex/salmon_index"
 GTF = DATABASE_DIR + "/baseGenomeFiles/genome.gtf"
@@ -87,26 +94,23 @@ rule all:
 
 rule bbduk:
   input:
-      r1 = "raw/{smp}_1.fastq.gz",
-      r2 = "raw/{smp}_2.fastq.gz"
+      r1 = "raw/{smp}_1.fastq.gz"
   output:
-      ro1 = "results/{smp}_1.clean.fastq.gz",
-      ro2 = "results/{smp}_2.clean.fastq.gz"
+      ro1 = "results/{smp}_1.clean.fastq.gz"
   message:
       "Processing with BBDuk."
   shell:
-      "{BBDUK} in1={input.r1} in2={input.r2} ref=adapters out1={output.ro1} out2={output.ro2} ktrim=r k=23 mink=11 hdist=1 tpe tbo"
+      "{BBDUK} in={input.r1} ref=adapters out={output.ro1} ktrim=r k=23 mink=11 hdist=1"
 
 rule star:
   input:
-      r1 = "results/{smp}_1.clean.fastq.gz",
-      r2 = "results/{smp}_2.clean.fastq.gz"
+      r1 = "results/{smp}_1.clean.fastq.gz"
   output:
       "results/{smp}.sorted.bam"
   message:
       "Aligning with STAR."
   shell:
-      "{STAR} --runThreadN 8 --genomeDir {STARINDEX} --readFilesIn {input.r1} {input.r2} --readFilesCommand zcat --sjdbGTFfile {GTF} --outStd SAM | {SAMTOOLS} sort -o {output}"
+      "{STAR} --runThreadN 8 --genomeDir {STARINDEX} --readFilesIn {input.r1} --readFilesCommand zcat --sjdbGTFfile {GTF} --outStd SAM | {SAMTOOLS} sort -o {output}"
 
 rule bam_indexing:
   input:
@@ -132,18 +136,18 @@ rule bam_coverage:
 rule featurecounts:
   input:
       r1 = "results/{smp}.sorted.bam",
-      w2 = "results/{smp}.sorted.bam.bai"
+      w2 = "results/{smp}.sorted.bam.bai",
+      w3 = "results/{smp}.sorted.bw"
   output:
       "results/{smp}.counts.txt"
   message:
       "Counting reads with featureCounts."
   shell:
-      "{FEATURECOUNTS} -p --countReadPairs -t exon -g gene_id -a {GTF} -o {output} {input.r1}"
+      "{FEATURECOUNTS} -t exon -g gene_id -a {GTF} -o {output} {input.r1}"
 
 rule salmon:
   input:
       r1 = "results/{smp}_1.clean.fastq.gz",
-      r2 = "results/{smp}_2.clean.fastq.gz",
       w3 = "results/{smp}.counts.txt"
   output:
       "quants/{smp}/quant.sf"
@@ -152,7 +156,7 @@ rule salmon:
   message:
       "Quantifying with salmon."
   shell:
-      "{SALMON} quant -i {SALMONINDEX} -l A -p 8 --gcBias --validateMappings -o {params.dir} -1 {input.r1} -2 {input.r2}"
+      "{SALMON} quant -i {SALMONINDEX} -l A -p 8 --gcBias --validateMappings -o {params.dir} -r {input.r1}"
 ```
 
 Below is the shell script I will use to process these data with snakemake.
@@ -161,9 +165,12 @@ Below is the shell script I will use to process these data with snakemake.
 #!/bin/bash
 
 ##set the location of software tools and the working directory where files will be stored
-sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
-sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211221_a673RnaHePmid27760381"
+#sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
+sraDownloader="/projects/ptx_analysis/chughes/softwareTools/sradownloader-3.8/sradownloader"
+#sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
+sraCacheLocation="/projects/ptx_results/Sequencing/sraCache"
+#workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211221_a673RnaHePmid27760381"
+workingDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211221_a673RnaHePmid27760381"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results
@@ -176,7 +183,6 @@ do
   eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}
   ##the file gets renamed upon download, but I just want it to have the SRR id and I can annotate it later
   eval mv ${workingDirectory}/raw/${i}*_1.fastq.gz ${workingDirectory}/raw/${i}_1.fastq.gz
-  eval mv ${workingDirectory}/raw/${i}*_2.fastq.gz ${workingDirectory}/raw/${i}_2.fastq.gz
   #eval conda activate snakemake
   eval snakemake --cores 8 --latency-wait 300
   #eval conda deactivate
