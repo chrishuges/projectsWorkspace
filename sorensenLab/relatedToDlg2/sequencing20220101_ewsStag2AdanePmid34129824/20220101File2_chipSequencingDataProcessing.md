@@ -2,8 +2,8 @@
 
 This document describes the reprocessing of some CHIPseq data from a manuscript. Specifically:
 
-"STAG2 mutations alter CTCF-anchored loop extrusion, reduce cis-regulatory interactions and EWSR1-FLI1 activity in Ewing sarcoma"
-PMID: 33930311, GEO: GSE133228, SRA: PRJNA550416
+"STAG2 loss rewires oncogenic and developmental programs to promote metastasis in Ewing sarcoma"
+PMID: 34129824, GEO: GSE116495, SRA: PRJNA478839
 
 ### Description
 
@@ -26,7 +26,7 @@ This is kind of a useful website for a general pipeline, [here](https://www.bioc
 First we will move into our working directory and create our shell and snakemake scripts.
 
 ```shell
-cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211210_soleMscToEwsPmid34341072/chipSeq
+cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20220101_ewsStag2AdanePmid34129824/chipSeq
 touch sraDataProcessingScript.sh
 chmod +x sraDataProcessingScript.sh
 touch snakefile
@@ -44,8 +44,8 @@ Date: 20211030
 
 ###############################
 #working directory
-#BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
-BASE_DIR = "/projects/ptx_results/Sequencing/publishedStudies/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
+#BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20220101_ewsStag2AdanePmid34129824/chipSeq"
+BASE_DIR = "/projects/ptx_results/Sequencing/publishedStudies/sequencing20220101_ewsStag2AdanePmid34129824/chipSeq"
 
 ###############################
 #locations of tools we will use
@@ -174,16 +174,15 @@ Below is the shell script I will use to process these data with snakemake.
 sraDownloader="/projects/ptx_analysis/chughes/softwareTools/sradownloader-3.8/sradownloader"
 #sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
 sraCacheLocation="/projects/ptx_results/Sequencing/sraCache"
-#workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
-workingDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
+#workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20220101_ewsStag2AdanePmid34129824/chipSeq"
+workingDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20220101_ewsStag2AdanePmid34129824/chipSeq"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-#for i in SRR940{{9729..9732},{9755..9758}}
-for i in SRR{{9409701..9409762},{12492693..12492698},{12492699..12492719}}
+for i in SRR{{13577547..13577560},{14333718..14333719},{14546336..14546339}}
 do
   printf "Downloading files associated with ${i}."
   eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}
@@ -209,47 +208,25 @@ The first file here is for narrow peak calling on the transcription factors.
 #!/bin/bash
 #annotationLocation="/home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
 annotationLocation="/projects/ptx_analysis/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
-#rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
-rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
+#rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20220101_ewsStag2AdanePmid34129824/chipSeq"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20220101_ewsStag2AdanePmid34129824/chipSeq"
 
-##A673 peak calling
-for i in SRR{{9409728..9409729},{9409733..9409736}}
+##
+for i in SRR13577547
 do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409732.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR13577548.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
 done
 
 ##
-for i in SRR{{9409701..9409702},{9409706..9409709}}
+for i in SRR13577549 SRR13577551 SRR13577553 SRR13577555
 do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409705.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR13577559.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
 done
 
 ##
-for i in SRR{{9409710..9409711},{9409715..9409718}}
+for i in SRR13577550 SRR13577552 SRR13577554 SRR13577556
 do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409714.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
-done
-
-##
-for i in SRR{{9409719..9409720},{9409724..9409727}}
-do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409723.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
-done
-
-##TC71 peak calling
-for i in SRR{{9409754..9409755},{9409759..9409762}}
-do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409758.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
-done
-
-for i in SRR{{9409737..9409738},{9409742..9409744}}
-do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409741.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
-done
-
-for i in SRR{{9409745..9409746},{9409750..9409753}}
-do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409749.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR13577560.filtered.bam -f BAM -g hs -n ${rawDataOutputDirectory}/results/${i} -B -q 0.01 
 done
 ```
 
@@ -259,49 +236,18 @@ This second file is for broad peak calling with the histone marks.
 #!/bin/bash
 #annotationLocation="/home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
 annotationLocation="/projects/ptx_analysis/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
-#rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
-rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211220_stag2CtcfSurdezPmid33930311/chipSeq"
+#rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20220101_ewsStag2AdanePmid34129824/chipSeq"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20220101_ewsStag2AdanePmid34129824/chipSeq"
 
-##A673 peak calling
-for i in SRR{9409730..9409731}
+##
+for i in SRR14546336
 do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409732.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14546337.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
 done
 
 ##
-for i in SRR{9409703..9409704}
+for i in SRR14546338
 do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409705.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
-done
-
-##
-for i in SRR{9409712..9409713}
-do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409714.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
-done
-
-##
-for i in SRR{9409721..9409722}
-do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409723.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
-done
-
-
-##TC71 peak calling
-for i in SRR{9409756..9409757}
-do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409758.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
-done
-
-##
-for i in SRR{9409739..9409740}
-do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409741.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
-done
-
-##
-for i in SRR{9409747..9409748}
-do
-  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR9409749.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
+  eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR14546339.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
 done
 ```

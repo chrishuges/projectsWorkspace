@@ -177,7 +177,7 @@ eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-for i in SRR24223{72..74}
+for i in SRR24223{72..80}
 do
   printf "Downloading files associated with ${i}."
   eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}

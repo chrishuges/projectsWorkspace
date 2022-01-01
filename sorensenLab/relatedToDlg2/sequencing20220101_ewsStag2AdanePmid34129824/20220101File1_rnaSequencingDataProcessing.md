@@ -2,8 +2,8 @@
 
 This document describes the reprocessing of some RNAseq data from a manuscript. Specifically:
 
-"STAG2 mutations alter CTCF-anchored loop extrusion, reduce cis-regulatory interactions and EWSR1-FLI1 activity in Ewing sarcoma"
-PMID: 33930311, GEO: GSE133228, SRA: PRJNA550416
+"STAG2 loss rewires oncogenic and developmental programs to promote metastasis in Ewing sarcoma"
+PMID: 34129824, GEO: GSE116495, SRA: PRJNA478839
 
 ### Description
 
@@ -26,7 +26,7 @@ This is kind of a useful website for a general pipeline, [here](https://www.bioc
 First we will move into our working directory and create our shell and snakemake scripts.
 
 ```shell
-cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/rnaSeq
+cd /projects/ptx_results/Sequencing/publishedStudies/sequencing20220101_ewsStag2AdanePmid34129824
 touch sraDataProcessingScript.sh
 chmod +x sraDataProcessingScript.sh
 touch snakefile
@@ -43,12 +43,8 @@ Date: 20211105
 """
 
 ###############################
-#throughout this file, the top line is for Sorensen server, bottom is for proteomics
-
-###############################
 #working directory
-#BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/rnaSeq"
-BASE_DIR ="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211220_stag2CtcfSurdezPmid33930311/rnaSeq"
+BASE_DIR = "/projects/ptx_results/Sequencing/publishedStudies/sequencing20220101_ewsStag2AdanePmid34129824/rnaSeq"
 
 
 ###############################
@@ -143,7 +139,8 @@ rule bam_coverage:
 rule featurecounts:
   input:
       r1 = "results/{smp}.sorted.bam",
-      w2 = "results/{smp}.sorted.bam.bai"
+      w2 = "results/{smp}.sorted.bam.bai",
+      w3 = "results/{smp}.sorted.bw"
   output:
       "results/{smp}.counts.txt"
   message:
@@ -176,16 +173,15 @@ Below is the shell script I will use to process these data with snakemake.
 sraDownloader="/projects/ptx_analysis/chughes/softwareTools/sradownloader-3.8/sradownloader"
 #sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
 sraCacheLocation="/projects/ptx_results/Sequencing/sraCache"
-#workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_stag2CtcfSurdezPmid33930311/rnaSeq"
-workingDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211220_stag2CtcfSurdezPmid33930311/rnaSeq"
+#workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20220101_ewsStag2AdanePmid34129824/rnaSeq"
+workingDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20220101_ewsStag2AdanePmid34129824/rnaSeq"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-#for i in SRR{{9326191..9326197},{9326204..9326210},{12492905..12492908},{12492920..12492923},{14217762..14217791}}
-for i in SRR{{9326182..9326210},{12492887..12492946}}
+for i in SRR7459{805..811}
 do
   printf "Downloading files associated with ${i}."
   eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}
