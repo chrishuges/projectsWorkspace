@@ -176,7 +176,7 @@ eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-for i in SRR5163{738..748} #was {671..757}
+for i in SRR5163{665..757} #was {671..757}
 do
   printf "Downloading files associated with ${i}."
 
@@ -194,13 +194,14 @@ do
   eval snakemake --cores 8 --latency-wait 300
 
   #clean-up
-  eval rm ${workingDirectory}/raw/${i}*.fastq.gz
+  eval rm ${workingDirectory}/raw/${i}*
   eval rm ${workingDirectory}/results/${i}*.clean.fastq.gz
   eval rm ${workingDirectory}/*.out
   eval rm ${workingDirectory}/*.tab
   eval rm -r ${workingDirectory}/*STAR*
   eval rm ${workingDirectory}/results/${i}*.bam
   eval rm ${workingDirectory}/results/${i}*.bai
+done
 ```
 
 
@@ -267,5 +268,27 @@ do
   eval rm ${i}*.fastq.gz
   eval rm ${rawDataOutputDirectory}/starResults/*Aligned*.bam
 
+done
+```
+
+This was a script I used previously to get coverage maps.
+
+```shell
+#!/bin/bash
+
+##set the location of software tools and the working directory where files will be stored
+bamCoverage="/home/chughes/virtualPython368/bin/bamCoverage"
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_ewsCohortDbgapPmid25010205/archive/starResults"
+eval cd ${workingDirectory}
+
+
+##loop over the accessions
+for i in *.bam
+do
+  printf "Processing files associated with ${i}.\n\n"
+
+  ##get coverage
+  eval $bamCoverage -b ${i} -o ${i::-3}.bw -p 6
+  eval rm ${i}
 done
 ```

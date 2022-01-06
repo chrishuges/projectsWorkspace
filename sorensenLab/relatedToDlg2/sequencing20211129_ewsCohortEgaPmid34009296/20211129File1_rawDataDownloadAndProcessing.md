@@ -214,7 +214,9 @@ do
 done
 ```
 
+The code below is my original script.
 
+```shell
 for j in T{33..57}
 do
   ############downloading code
@@ -263,3 +265,4 @@ do
   eval "rm *.out.bam"
   #done
 done
+```
