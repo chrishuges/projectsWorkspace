@@ -205,12 +205,14 @@ do
   eval snakemake --cores 8
   #eval conda deactivate
   printf "Cleaning up."
-  eval rm ${workingDirectory}/raw/${i}*.fastq.gz
-  eval rm ${workingDirectory}/raw/${i}*.md5
-  eval rm ${workingDirectory}/results/${i}*.clean.fastq.gz
+  eval rm ${workingDirectory}/raw/${j}*.fastq.gz
+  eval rm ${workingDirectory}/raw/${j}*.md5
+  eval rm ${workingDirectory}/results/${j}*.clean.fastq.gz
   eval rm ${workingDirectory}/*.out
   eval rm ${workingDirectory}/*.tab
   eval rm -r ${workingDirectory}/*STAR*
+  eval rm ${workingDirectory}/results/${j}*.bam
+  eval rm ${workingDirectory}/results/${j}*.bai
 done
 ```
 
