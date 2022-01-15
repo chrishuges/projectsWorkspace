@@ -50,13 +50,14 @@ Date: 20211105
 
 ###############################
 #working directory
-BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_ewsCohortDbgapPmid25010205"
+BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211210_soleMscToEwsPmid34341072/rnaSeq"
 
 
 ###############################
 #locations of tools we will use
 BBDUK = "/home/chughes/softwareTools/bbmap-38.90/bbduk.sh"
 SALMON = "/home/chughes/softwareTools/salmon-1.5.2/bin/salmon"
+#HISAT2 = "/home/chughes/softwareTools/hisat2-2.2.1/hisat2"
 STAR = "/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
 SAMTOOLS="/home/chughes/softwareTools/samtools-1.12/samtools"
 #SAMBAMBA="/home/chughes/softwareTools/sambamba-0.8.1/sambamba"
@@ -85,9 +86,9 @@ for smp in SAMPLES:
 #processing workflow
 rule all:
     input:
+      expand("results/{smp}.counts.txt", smp = SAMPLES),
       expand("results/{smp}.sorted.bam.bai", smp = SAMPLES),
       expand("results/{smp}.sorted.bw", smp = SAMPLES),
-      expand("results/{smp}.counts.txt", smp = SAMPLES),      
       expand("quants/{smp}/quant.sf", smp = SAMPLES)
 
 rule bbduk:
@@ -138,7 +139,7 @@ rule featurecounts:
   input:
       r1 = "results/{smp}.sorted.bam",
       w2 = "results/{smp}.sorted.bam.bai",
-      w3 = "results/{smp}.sorted.bw
+      w3 = "results/{smp}.sorted.bw"
   output:
       "results/{smp}.counts.txt"
   message:
@@ -176,25 +177,23 @@ eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-for i in SRR5163{665..757} #was {671..757}
+for i in SRR5163{665..757} #was {665..757}
 do
   printf "Downloading files associated with ${i}."
 
   ##prefetch the files from SRA
   eval prefetch --ngc prj_29838.ngc -p ${i}
-  eval mv ${i}/${i}*.sra ./${i}.sra
-  eval rm -r ${i}
-  eval fasterq-dump --ngc prj_29838.ngc -p ${i}.sra
-  eval rm ${i}.sra
-  eval mv ${i}*.fastq ${workingDirectory}/raw
+  eval mv ${sraCacheLocation}/sra/${i}*.sra ${workingDirectory}/raw/${i}.sra
+  eval fasterq-dump --ngc prj_29838.ngc -p ${workingDirectory}/raw/${i}.sra
+  eval mv ${workingDirectory}/${i}*.fastq ${workingDirectory}/raw
   eval gzip -v ${workingDirectory}/raw/${i}_1.fastq
   eval gzip -v ${workingDirectory}/raw/${i}_2.fastq
-  
+
   #process data files
   eval snakemake --cores 8 --latency-wait 300
 
   #clean-up
-  eval rm ${workingDirectory}/raw/${i}*
+  eval rm ${workingDirectory}/raw/${i}*.fastq.gz
   eval rm ${workingDirectory}/results/${i}*.clean.fastq.gz
   eval rm ${workingDirectory}/*.out
   eval rm ${workingDirectory}/*.tab

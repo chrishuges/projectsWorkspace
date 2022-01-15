@@ -167,40 +167,50 @@ Below is the shell script I will use to process these data with snakemake. I had
 
 ##set the location of software tools and the working directory where files will be stored
 workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211129_ewsCohortEgaPmid34009296"
+dataProcessingTemp="/home/chughes/dataProcessingTemp"
 pyega3="/home/chughes/softwareTools/pyega3/ega-download-client-master"
 eval mkdir raw
 eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-for j in T{1..50}
+for j in T{23..50} #was for j in T{1..50}
 do
   eval cd ${workingDirectory}
-  printf "Downloading files associated with ${j}."
+  printf "Downloading files associated with ${j}.\n\n"
+ 
   ############get the files associated with an accession
   egaFileId=($(awk 'BEGIN {FS="\t"; OFS="\t"} {print $3, $4}' EGAD00001004493/delimited_maps/Sample_File.map | grep "^${j}_" | awk 'BEGIN {FS="\t"; OFS=" "} {print $2}'))
   rnaFileId=($(awk 'BEGIN {FS="\t"; OFS="\t"} {print $3, $4}' EGAD00001004493/delimited_maps/Sample_File.map | grep "^${j}_" | awk 'BEGIN {FS="\t"; OFS=" "} {print $1}'))
+ 
   ############download the file
   eval cd ${pyega3}
   for i in $( seq 0 $(( ${#egaFileId[@]} - 1)) )
   do
-    if [ -f "${rawDataOutputDirectory}/raw/${rnaFileId[$i]::-4}" ]; then
-      printf "Raw file for ${rnaFileId[$i]::-4} already exists, skipping file.\n\n"
+    if [ -f "${workingDirectory}/${rnaFileId[$i]::-4}" ]; then
+      printf "Raw file ${rnaFileId[$i]::-4} already exists, skipping file.\n\n"
     else
-      while [ ! -f "${rawDataOutputDirectory}/raw/${rnaFileId[$i]::-4}" ]
+      while [ ! -f "${workingDirectory}/raw/${rnaFileId[$i]::-4}" ]
       do
-        printf "File ${rnaFileId[$i]::-4} doesn't exist, attempting download."
-        eval python -m pyega3.pyega3 -c 10 -cf ${rawDataOutputDirectory}credential_file.json fetch ${egaFileId[$i]} --saveto ${rawDataOutputDirectory}/raw/${rnaFileId[$i]::-4}
+        printf "File ${rnaFileId[$i]::-4} doesn't exist, attempting download.\n\n"
+        #eval python -m pyega3.pyega3 -c 10 -cf ${rawDataOutputDirectory}credential_file.json fetch ${egaFileId[$i]} --output-dir ${rawDataOutputDirectory}/raw/${rnaFileId[$i]::-4} #this is what this command used to be
+        eval python -m pyega3.pyega3 -c 10 -cf ${workingDirectory}/credential_file.json fetch ${egaFileId[$i]} --output-dir ${dataProcessingTemp}
+        eval mv ${dataProcessingTemp}/${egaFileId[$i]}/${rnaFileId[$i]::-4} ${workingDirectory}/raw
+        eval rm -r ${dataProcessingTemp}/${egaFileId[$i]}
       done
     fi
   done
-  
+
   #############processing the files associated with an accession
-  printf "Combining read 1 files."
+  eval cd ${workingDirectory}
+  printf "Combining read 1 files.\n\n"
   eval cat raw/${j}_*_R1_*.gz > raw/${j}_1.fastq.gz
-  printf "Combining read 2 files."
+  printf "Combining read 2 files.\n\n"
   eval cat raw/${j}_*_R2_*.gz > raw/${j}_2.fastq.gz
-  printf "Running snakemake."
+  printf "Removing precursor files.\n\n"
+  eval find ./ -name "${j}_[GATC]*.fastq.gz" -delete
+
+  printf "Running snakemake.\n\n"
   #eval conda activate snakemake
   eval snakemake --cores 8
   #eval conda deactivate
