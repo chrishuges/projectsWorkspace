@@ -227,8 +227,12 @@ This second file is for broad peak calling with the histone marks.
 
 ```shell
 #!/bin/bash
-annotationLocation="/home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
-rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq"
+#annotationLocation="/home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
+annotationLocation="/projects/ptx_analysis/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf"
+#rawDataOutputDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq"
+rawDataOutputDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/chipSeq"
+
+##
 for i in SRR1593{{961..964},968,{970..972},977,{979..981}}
 do
   eval macs3 callpeak -t ${rawDataOutputDirectory}/results/${i}.filtered.bam -c ${rawDataOutputDirectory}/results/SRR1593966.filtered.bam -f BAM -g hs -n ${i} -B -q 0.01 --broad
