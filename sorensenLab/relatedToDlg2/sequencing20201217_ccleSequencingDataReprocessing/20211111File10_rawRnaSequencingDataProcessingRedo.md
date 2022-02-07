@@ -46,18 +46,26 @@ BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/seque
 
 ###############################
 #locations of tools we will use
-BBDUK = "/home/chughes/softwareTools/bbmap-38.90/bbduk.sh"
-SALMON = "/home/chughes/softwareTools/salmon-1.5.2/bin/salmon"
+#BBDUK = "/home/chughes/softwareTools/bbmap-38.90/bbduk.sh"
+BBDUK = "/projects/ptx_analysis/chughes/softwareTools/bbmap-38.90/bbduk.sh"
+#SALMON = "/home/chughes/softwareTools/salmon-1.5.2/bin/salmon"
+SALMON = "/projects/ptx_analysis/chughes/softwareTools/salmon-1.5.2/bin/salmon"
 #HISAT2 = "/home/chughes/softwareTools/hisat2-2.2.1/hisat2"
-STAR = "/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
-SAMTOOLS="/home/chughes/softwareTools/samtools-1.12/samtools"
+#STAR = "/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
+STAR = "/projects/ptx_analysis/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
+#SAMTOOLS="/home/chughes/softwareTools/samtools-1.12/samtools"
+SAMTOOLS="/gsc/software/linux-x86_64-centos7/samtools-1.14/bin/samtools"
 #SAMBAMBA="/home/chughes/softwareTools/sambamba-0.8.1/sambamba"
-FEATURECOUNTS="/home/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
+#FEATURECOUNTS="/home/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
+FEATURECOUNTS="/projects/ptx_analysis/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
+#BAMCOVERAGE="/home/chughes/virtualPython368/bin/bamCoverage"
+BAMCOVERAGE="/home/chughes/Virtual_Python383/bin/bamCoverage"
 
 
 ###############################
 #locations of our index files
-DATABASE_DIR = "/home/chughes/databases/projectEwsDlg2"
+#DATABASE_DIR = "/home/chughes/databases/projectEwsDlg2"
+DATABASE_DIR = "/projects/ptx_analysis/chughes/databases/projectEwsDlg2"
 STARINDEX = DATABASE_DIR + "/starIndex"
 SALMONINDEX = DATABASE_DIR + "/salmonIndex/salmon_index"
 GTF = DATABASE_DIR + "/baseGenomeFiles/genome.gtf"
@@ -78,6 +86,7 @@ rule all:
     input:
       expand("results/{smp}.counts.txt", smp = SAMPLES),
       expand("results/{smp}.sorted.bam.bai", smp = SAMPLES),
+      expand("results/{smp}.sorted.bw", smp = SAMPLES),
       expand("quants/{smp}/quant.sf", smp = SAMPLES)
 
 rule bbduk:
@@ -113,15 +122,28 @@ rule bam_indexing:
   shell:
       "{SAMTOOLS} index {input}"
 
+rule bam_coverage:
+  input:
+      r1 = "results/{smp}.sorted.bam",
+      w2 = "results/{smp}.sorted.bam.bai"
+  output:
+      "results/{smp}.sorted.bw"
+  message:
+      "Calculating coverage with deeptools."
+  shell:
+      "{BAMCOVERAGE} -b {input.r1} -o {output} -p 8"
+
 rule featurecounts:
   input:
-      "results/{smp}.sorted.bam"
+      r1 = "results/{smp}.sorted.bam",
+      w2 = "results/{smp}.sorted.bam.bai",
+      w3 = "results/{smp}.sorted.bw"
   output:
       "results/{smp}.counts.txt"
   message:
       "Counting reads with featureCounts."
   shell:
-      "{FEATURECOUNTS} -p --countReadPairs -t exon -g gene_id -a {GTF} -o {output} {input}"
+      "{FEATURECOUNTS} -p --countReadPairs -t exon -g gene_id -a {GTF} -o {output} {input.r1}"
 
 rule salmon:
   input:
@@ -144,16 +166,20 @@ Below is the shell script I will use to process these data with snakemake.
 #!/bin/bash
 
 ##set the location of software tools and the working directory where files will be stored
-sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
-sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing"
+#sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
+sraDownloader="/projects/ptx_analysis/chughes/softwareTools/sradownloader-3.8/sradownloader"
+#sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
+sraCacheLocation="/projects/ptx_results/Sequencing/sraCache"
+#workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing"
+workingDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211112_ccleSequencingDataReprocessing"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-for i in SRR8616012 SRR8615497 SRR8616213 SRR8616214 SRR8615592 SRR8615679 SRR8615832 SRR8615859 SRR8615273 SRR8615499 SRR8615521
+#for i in SRR8616012 SRR8615497 SRR8616213 SRR8616214 SRR8615592 SRR8615679 SRR8615832 SRR8615859 SRR8615273 SRR8615499 SRR8615521
+for i in SRR8615811 SRR8615470 SRR8616196 SRR8615602 SRR8615955 SRR8615610 SRR8615372 SRR8616175 SRR8616152 SRR8616003 SRR8616200 SRR8615908 SRR8615341 SRR8615679 SRR8615521 SRR8615614 SRR8615601 SRR8616193 SRR8616109 SRR8615875 SRR8615607 SRR8616102 SRR8616062 SRR8616107 SRR8616151 SRR8615771 SRR8615430 SRR8615384 SRR8615747 SRR8615916 SRR8615631 SRR8615331 SRR8615579 SRR8616169 SRR8616011 SRR8616001 SRR8615522 SRR8615961 SRR8615286 SRR8615616 SRR8615273 SRR8615832 SRR8616058 SRR8615675 SRR8615977 SRR8615426 SRR8616213 SRR8615527 SRR8616214 SRR8616146 SRR8615592 SRR8615998 SRR8616079 SRR8615625 SRR8615329 SRR8616161 SRR8615368 SRR8616189 SRR8615975 SRR8615807 SRR8615810 SRR8615812 SRR8616067 SRR8616078 SRR8615844 SRR8616019 SRR8615549 SRR8615605 SRR8616112 SRR8615727 SRR8615816 SRR8615703 SRR8615378 SRR8615712 SRR8615727 SRR8615423 SRR8615739 SRR8618307 SRR8615971 SRR8615727 SRR8615497 SRR8616096 SRR8615376 SRR8616005 SRR8618301 SRR8615422 SRR8615429 SRR8618305 SRR8615946 SRR8615697 SRR8616012
 do
   printf "Downloading files associated with ${i}."
   eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}
@@ -169,35 +195,7 @@ do
   eval rm ${workingDirectory}/*.out
   eval rm ${workingDirectory}/*.tab
   eval rm -r ${workingDirectory}/*STAR*
-done
-```
-
-At this point, I didn't have coverage calculations incorporated into snakemake, so I ran it through a separate script.
-
-```shell
-cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing
-touch getCoverageMaps.sh
-chmod +x getCoverageMaps.sh
-```
-
-Below is a script I used to get coverage maps.
-
-```shell
-#!/bin/bash
-
-##set the location of software tools and the working directory where files will be stored
-samtools="/home/chughes/softwareTools/samtools-1.12/samtools"
-bamCoverage="/home/chughes/virtualPython368/bin/bamCoverage"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211112_ccleSequencingDataReprocessing"
-eval cd ${workingDirectory}
-
-##loop over the accessions
-#was for i in SRR8616012 SRR8615497 SRR8616213 SRR8616214 SRR8615592 SRR8615679 SRR8615832 SRR8615859 SRR8615273 SRR8615499 SRR8615521
-for i in SRR8616012 SRR8615497 SRR8616213 SRR8616214 SRR8615592 SRR8615679 SRR8615832 SRR8615859 SRR8615273 SRR8615499
-do
-  printf "Rebuilding the index for ${i}."
-  eval ${samtools} index ${workingDirectory}/results/${i}.sorted.bam
-  printf "Calculating coverage for ${i}."
-  eval ${bamCoverage} -b ${workingDirectory}/results/${i}.sorted.bam -o ${workingDirectory}/results/${i}.sorted.bw -p 8
+  eval rm ${workingDirectory}/results/${i}*.bam
+  eval rm ${workingDirectory}/results/${i}*.bai
 done
 ```

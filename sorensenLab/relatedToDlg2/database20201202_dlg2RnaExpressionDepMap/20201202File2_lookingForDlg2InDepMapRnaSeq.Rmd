@@ -40,7 +40,7 @@ Read the parsed RNA data from Depmap.
 
 ```{r}
 ##########################################################################################
-rna = readRDS(paste(generalDatasets, '/depmap20Q4/CCLE_expression_parsed.rds', sep = ''))
+rna = readRDS(paste(generalDatasets, '/depmap21Q4/CCLE_expression_parsed.rds', sep = ''))
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -130,8 +130,35 @@ ggsave(paste(baseRepository, '/database20201202_dlg2RnaExpressionDepMap/boxplot_
 
 <div style="margin-bottom:50px;"></div>
 
+One other thing I want to do is pull out the cell lines that contain expression for DLG2 so I can reprocess their RNAseq data in SRA. I downloaded a metadata table with all of the SRA accession details for PRJNA523380. 
+
+```{r}
+##########################################################################################
+dlg2 = rna %>%
+  dplyr::filter(grepl('^DLG2$', gene)) %>%
+  dplyr::filter(log2Tpm >= 2)
+
+##SRA table
+sra = read_csv(paste(generalDatasets,'/depmap21Q4/SraRunTable.txt',sep = '')) %>%
+  dplyr::select(Run, `Assay Type`, Cell_Line) %>%
+  dplyr::rename(cell_line_name = 'Cell_Line')
+
+##
+dlg2Runs = dlg2 %>%
+  dplyr::left_join(sra) %>%
+  dplyr::filter(!is.na(Run))
+
+##
+write.table(dlg2Runs, paste(baseRepository,'/database20201202_dlg2RnaExpressionDepMap/dataset_sraRunsWithDlg2Expression.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+
+<div style="margin-bottom:50px;"></div>
+
 ## Session info
 
 ```{r}
+##########################################################################################
 sessionInfo()
 ```
