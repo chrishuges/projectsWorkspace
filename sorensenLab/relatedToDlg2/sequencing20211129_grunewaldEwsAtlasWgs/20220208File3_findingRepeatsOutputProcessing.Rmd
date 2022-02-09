@@ -1,0 +1,129 @@
+---
+title: "Mapping tandem repeats"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details processing of tandem repeat data output from [Tandem Repeats Finder](https://github.com/Benson-Genomics-Lab/TRF). 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+###########################################################
+library('tidyverse')
+library('rtracklayer')
+library('GenomicRanges')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Set the base folders where we will do the work.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in and process the tandem repeats data.
+
+```{r}
+###########################################################
+baseLocation = 'C:/Users/chughes/Documents/bccrc/databases/projectEwsDlg2/baseGenomeFiles/tandemRepeats'
+repFiles = list.files(baseLocation, pattern = '*.dat', full.names = TRUE)
+
+##
+repColNames = c('start','end','period',
+                'copyNumber','consensusSize','percentMatches',
+                'percentIndels','score','A','C','G','T','entropy',
+                'repeatedSeq','fullSeq')
+#
+allReps = tibble()
+for (i in 1:length(repFiles)){
+  inData = read_table(repFiles[i], skip = 15, col_names = repColNames) %>%
+    dplyr::mutate(chromosome = sub('.*tandemRepeats\\/(.*)\\.fa\\.2\\.7\\.7\\.80\\.10\\.50\\.500\\.dat','\\1',repFiles[i])) %>%
+    dplyr::mutate(strand = ifelse(grepl('^GGAA$', repeatedSeq), '+', 
+                                ifelse(grepl('^TTCC$', repeatedSeq), '-', 'false'))) %>%
+    dplyr::filter(strand != 'false')
+  #
+  allReps = rbind(allReps, inData)
+}
+
+#
+saveRDS(allReps, paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsNotAnnotated.rds',sep=''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now annotate these repeats with respect to genes. First thing to do is get the gene regions out of the GTF.
+
+```{r}
+###########################################################
+gtf = as_tibble(as.data.frame(rtracklayer::import('C:/Users/chughes/Documents/bccrc/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf'))) %>%
+  dplyr::filter(type == 'gene')
+
+#
+saveRDS(gtf, paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_genesOnlyFromGtf.rds',sep=''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can use these gene regions to annotate the repeats data.
+
+```{r}
+###########################################################
+gtfGenes = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_genesOnlyFromGtf.rds',sep=''))
+msatRepeats = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsNotAnnotated.rds',sep=''))
+
+##
+gfGtf = makeGRangesFromDataFrame(gtfGenes)
+gfMsat = makeGRangesFromDataFrame(msatRepeats)
+overlapSet = GenomicRanges::findOverlaps(gfMsat, gfGtf, type = 'within')
+
+##
+msatAnnotation = tibble('qHits' = queryHits(overlapSet),
+                        'sHits' = subjectHits(overlapSet),
+                        'geneId' = gtfGenes[subjectHits(overlapSet), 'gene_name']) %>%
+  group_by(qHits) %>%
+  dplyr::mutate(multiGeneHits = paste(geneId, collapse = ',')) %>%
+  dplyr::select(qHits, multiGeneHits) %>%
+  dplyr::rename(genes = 'multiGeneHits') %>%
+  unique()
+
+##
+msatRepeats$inGene = NA
+msatRepeats[msatAnnotation$qHits,'inGene'] = msatAnnotation$genes
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This theoretically works, but maybe we want to use [bedtools closest](https://bedtools.readthedocs.io/en/latest/content/tools/closest.html) for this instead.In order to do that, we need to make bed format files for our two sets we want to compare.
+
+```{r}
+###########################################################
+gtfGenes = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_genesOnlyFromGtf.rds',sep=''))
+msatRepeats = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsNotAnnotated.rds',sep=''))
+
+
+```
+
+
+
+
+
+
+
+
+
+

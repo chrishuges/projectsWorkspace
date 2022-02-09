@@ -20,13 +20,13 @@ tandemRepeatFinder="/projects/ptx_analysis/chughes/softwareTools/tandemRepeatFin
 eval cd ${baseDirectory}/tandemRepeats
 
 #create and process the individual chromosome files
-for i in chr11
+for i in chr{1..23} chrX chrY
 do
   printf "extracting ${i} from genome"
-  eval $samtools faidx -o ${baseDirectory}/individualChromosomes/${i}.fa ${baseDirectory}/genome.fa chr11
+  eval $samtools faidx -o ${baseDirectory}/individualChromosomes/${i}.fa ${baseDirectory}/genome.fa ${i}
   printf "processing tandem repeats from ${i}"
   eval ${tandemRepeatFinder} ${baseDirectory}/individualChromosomes/${i}.fa 2 7 7 80 10 50 500 -f -h -d
-done  
+done 
 ```
 
 Test command

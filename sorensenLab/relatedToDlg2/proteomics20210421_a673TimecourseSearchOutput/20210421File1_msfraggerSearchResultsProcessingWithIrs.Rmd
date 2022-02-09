@@ -372,6 +372,7 @@ deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPVal
                               ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(3,'OrRd')[3],
                                      brewer.pal(3,'Greys')[2]))
 goi = c('PRKCB','LOX','DLG2')
+#goi = c('DDX58','IFIH1','IRF3','IRF7','STAT1','STAT2')
 deqmsResults$pText = ifelse(deqmsResults$gene %in% goi, deqmsResults$gene, '')
 ##
 ggplot(deqmsResults, aes(logFC, plotPValue)) +
