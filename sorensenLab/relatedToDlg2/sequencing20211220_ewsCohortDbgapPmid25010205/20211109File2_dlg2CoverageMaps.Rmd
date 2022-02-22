@@ -47,7 +47,7 @@ totalGtf = as.data.frame(rtracklayer::import.gff('D:/databases/projectEwsDlg2/re
 
 <div style="margin-bottom:50px;"></div>
 
-Subset the GTF. The main transcript I am going to use is NM_001300983.1. 
+Subset the GTF and make the coverage plot. The main transcript I am going to use is NM_001300983.1. 
 
 ```{r}
 ##########################################################################################
@@ -67,11 +67,11 @@ dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
 dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
   filter(grepl('CDS', type)), split.field = 'transcript_id')
 ##
-sampleData = tibble(sample_id = c(paste('SRR5163', seq(671,711,1), sep = ''),paste('SRR5163', seq(713,757,1), sep = '')), 
-                    condition = factor(c(rep('ews',86)), levels = c('ews')),
+sampleData = tibble(sample_id = c(paste('SRR5163', seq(665,711,1), sep = ''), paste('SRR5163', seq(713,757,1), sep = '')), 
+                    condition = factor(c(rep('ews',92)), levels = c('ews')),
                     scaling_factor = 1)
 ##
-bigwigFiles = file.path(baseRepository,'sequencing20211109_ewsCohortDbgapPmid25010205/results',paste(sampleData$sample_id,'.chr11.bw',sep=''))
+bigwigFiles = file.path(baseRepository,'sequencing20211109_ewsCohortDbgapPmid25010205/results',paste(sampleData$sample_id,'.sorted.bw',sep=''))
 all(file.exists(bigwigFiles))
 
 ##
@@ -137,6 +137,50 @@ ggsave(paste(baseRepository, '/sequencing20211109_ewsCohortDbgapPmid25010205/cov
 
 
 <div style="margin-bottom:50px;"></div>
+
+I want to see if I can do this with line plots instead. 
+
+```{r}
+##########################################################################################
+dlg2Gtf = totalGtf %>%
+  filter(grepl('NM_001300983.1$', transcript_id)) %>%
+  dplyr::rename(gene_name = gene_id, gene_id = seqnames) %>%
+  mutate('seqnames' = 'chr11')
+##
+dlg2Meta = tibble('transcript_id' = 'NM_001300983.1',
+                  'gene_id' = 'NC_000011.10',
+                  'gene_name' = 'DLG2',
+                  'strand' = '-')
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+##
+sampleData = tibble(sample_id = c(paste('SRR5163', seq(665,711,1), sep = ''), paste('SRR5163', seq(713,757,1), sep = '')), 
+                    condition = c(paste('ews',seq(1,92,1),sep='')),
+                    scaling_factor = 1)
+##
+bigwigFiles = file.path(baseRepository,'sequencing20211109_ewsCohortDbgapPmid25010205/results',paste(sampleData$sample_id,'.sorted.bw',sep=''))
+all(file.exists(bigwigFiles))
+
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+trackData = dplyr::mutate(sampleData, track_id = 'RNA-seq', colour_group = condition)
+#trackData = dplyr::mutate(sampleData, track_id = sample_id, colour_group = condition)
+##
+test = plotCoverage(dlg2Exons, dlg2Cds, 
+             dlg2Meta, trackData,
+             heights = c(2,1), fill_palette = c(rep(brewer.pal(3,'Greys')[2],92)),
+             rescale_introns = TRUE,
+             coverage_type = 'line')
+#ggsave(paste(baseRepository, '/sequencing20211109_ewsCohortDbgapPmid25010205/coverage_dlg2CoverageRefseqDbgapCohort.pdf', sep = ''),
+#         height = 2, width = 2, useDingbats = FALSE)
+```
 
 ## Session info
 

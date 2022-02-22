@@ -166,7 +166,7 @@ Below is the shell script I will use to process these data with snakemake.
 ##set the location of software tools and the working directory where files will be stored
 sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
 sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211220_ewsCohortDbgapPmid25010205"
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20220125_ewsCohortDbgapPmid25186949"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results

@@ -16,6 +16,7 @@ These are packages you will need for this notebook. For exact versions used, ple
 library('tidyverse')
 library('rtracklayer')
 library('GenomicRanges')
+library('wiggleplotr')
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -53,15 +54,18 @@ allReps = tibble()
 for (i in 1:length(repFiles)){
   inData = read_table(repFiles[i], skip = 15, col_names = repColNames) %>%
     dplyr::mutate(chromosome = sub('.*tandemRepeats\\/(.*)\\.fa\\.2\\.7\\.7\\.80\\.10\\.50\\.500\\.dat','\\1',repFiles[i])) %>%
-    dplyr::mutate(strand = ifelse(grepl('^GGAA$', repeatedSeq), '+', 
-                                ifelse(grepl('^TTCC$', repeatedSeq), '-', 'false'))) %>%
-    dplyr::filter(strand != 'false')
+    dplyr::mutate(strand = ifelse(grepl('^[AG][AG][AG][AG]$', repeatedSeq), '+', 
+                                ifelse(grepl('^[TC][TC][TC][TC]$', repeatedSeq), '-', 'false'))) %>%
+    dplyr::filter(strand != 'false') %>%
+    dplyr::mutate(isMsat = ifelse(strand == '+' & G >= 40 & G <=60, 'yes',
+                                  ifelse(strand == '-' & T >= 40 & T <= 60, 'yes', 'no'))) %>%
+    dplyr::filter(isMsat == 'yes')
   #
   allReps = rbind(allReps, inData)
 }
 
 #
-saveRDS(allReps, paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsNotAnnotated.rds',sep=''))
+saveRDS(allReps, paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsHg38NotAnnotated.rds',sep=''))
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -144,11 +148,80 @@ write.table(msatBed, paste(baseRepository, '/sequencing20211129_grunewaldEwsAtla
             col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
 
+<div style="margin-bottom:50px;"></div>
+
+Read in and process the tandem repeats data for the hg19 analysis.
+
+```{r}
+###########################################################
+baseLocation = 'C:/Users/chughes/Documents/bccrc/databases/projectEwsDlg2/hg19/tandemRepeats'
+repFiles = list.files(baseLocation, pattern = '*.dat', full.names = TRUE)
+
+##
+repColNames = c('start','end','period',
+                'copyNumber','consensusSize','percentMatches',
+                'percentIndels','score','A','C','G','T','entropy',
+                'repeatedSeq','fullSeq')
+#
+allReps = tibble()
+for (i in 1:length(repFiles)){
+  inData = read_table(repFiles[i], skip = 15, col_names = repColNames) %>%
+    dplyr::mutate(chromosome = sub('.*tandemRepeats\\/(.*)\\.fa\\.2\\.7\\.7\\.80\\.10\\.50\\.500\\.dat','\\1',repFiles[i])) %>%
+    dplyr::mutate(strand = ifelse(grepl('^[AG][AG][AG][AG]$', repeatedSeq), '+', 
+                                ifelse(grepl('^[TC][TC][TC][TC]$', repeatedSeq), '-', 'false'))) %>%
+    dplyr::filter(strand != 'false') %>%
+    dplyr::mutate(isMsat = ifelse(strand == '+' & G >= 40 & G <=60, 'yes',
+                                  ifelse(strand == '-' & T >= 40 & T <= 60, 'yes', 'no'))) %>%
+    dplyr::filter(isMsat == 'yes')
+  #
+  allReps = rbind(allReps, inData)
+}
+
+#
+saveRDS(allReps, paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsHg19NotAnnotated.rds',sep=''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Compare the hg19 and hg38 sets.
+
+```{r}
+###########################################################
+hg19 = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsHg19NotAnnotated.rds',sep=''))
+hg38 = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsHg38NotAnnotated.rds',sep=''))
+
+#
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot of the DLG2 gene from a GTF.
+
+```{r}
+###########################################################
+gtf = as_tibble(as.data.frame(rtracklayer::import('C:/Users/chughes/Documents/bccrc/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')))
+dlg2Gtf = gtf %>%
+  dplyr::filter(grepl('DLG2$', gene_name))
+  #filter(grepl('NM_001300983.1$', transcript_id))
+  dplyr::rename(gene_name = gene_id, gene_id = seqnames) %>%
+  mutate('seqnames' = 'chr11')
+##
+dlg2Meta = tibble('transcript_id' = 'NM_001300983.1',
+                  'gene_id' = 'NC_000011.10',
+                  'gene_name' = 'DLG2',
+                  'strand' = '-')
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
 
 
+#
 
-
-
+```
 
 
 

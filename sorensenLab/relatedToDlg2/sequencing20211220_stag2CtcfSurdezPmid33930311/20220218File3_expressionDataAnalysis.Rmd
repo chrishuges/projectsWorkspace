@@ -1,11 +1,11 @@
 ---
-title: "Isoform determination for DLG2"
+title: "Expression analysis of Sole data"
 output:
   html_notebook:
       code_folding: none
 ---
 
-This document details working with Salmon data obtained from analysis of the dbGaP rnaseq EwS cohort.
+This document details working with Salmon data obtained from analysis of data from the Sole manuscript.
 
 ## Setting up the environment
 
@@ -44,9 +44,12 @@ The first thing to do is to make a sample annotation table.
 
 ```{r}
 ##########################################################################################
-samples = tibble('tissue' = rep('EwS',92),
-                 'sample' = c(paste('SRR5163',seq(665,711,1),sep=''),
-                              paste('SRR5163',seq(713,757,1),sep='')))
+samples = read_csv(paste(baseRepository, '/sequencing20211220_stag2CtcfSurdezPmid33930311/rnaSeq/SraRunTable1.txt',sep='')) %>% 
+  dplyr::select(Run, `GEO_Accession (exp)`, Genotype, Cell_Line) %>%
+  dplyr::rename(accession = 'Run', geo = `GEO_Accession (exp)`) %>%
+  dplyr::arrange(accession) %>%
+  dplyr::filter(!is.na(Genotype)) %>%
+  dplyr::mutate(Genotype = factor(Genotype, levels = unique(Genotype)))
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -55,8 +58,8 @@ Next we point at our quant files.
 
 ```{r}
 ##########################################################################################
-quantFiles = file.path(paste(baseRepository, '/sequencing20211109_ewsCohortDbgapPmid25010205/quants', sep = ''), samples$sample, 'quant.sf')
-names(quantFiles) = samples$sample
+quantFiles = file.path(paste(baseRepository, '/sequencing20211220_stag2CtcfSurdezPmid33930311/rnaSeq/quants', sep = ''), samples$accession, 'quant.sf')
+names(quantFiles) = samples$accession
 all(file.exists(quantFiles))
 ```
 
@@ -98,19 +101,30 @@ geneExpData = txiAnnotated %>%
 targetGenes = c('DLG2')
 targetData = geneExpData %>%
   dplyr::filter(symbol %in% targetGenes) %>%
-  tidyr::pivot_longer(cols = SRR5163671:SRR5163757, names_to = 'accession', values_to = 'tpm') %>%
+  tidyr::pivot_longer(cols = SRR14217762:SRR9326210, names_to = 'accession', values_to = 'tpm') %>%
   dplyr::select(symbol,accession,tpm) %>%
-  dplyr::mutate(tpm = log2(tpm + 1))
+  dplyr::mutate(tpm = log2(tpm + 1)) %>%
+  dplyr::left_join(samples)
+
 
 ##
-ggplot(targetData, aes(symbol, tpm, fill = symbol)) +
-  geom_violin(size = 0.5, color = brewer.pal(3,'Greys')[3]) +
-  geom_point(size = 0.5, color = brewer.pal(3,'Greys')[3]) +
-  labs(x = 'gene symbol', y = 'log2(TPM + 1)', title = 'EWS-FLI1 target genes') +
-  scale_fill_manual(values = rep(brewer.pal(3,'OrRd')[3],6)) +
+sampleColors = c(rep(brewer.pal(3,'Blues')[3],41),
+                 rep(brewer.pal(3,'OrRd')[3],2),
+                 rep(brewer.pal(3,'Blues')[3],11),
+                 rep(brewer.pal(3,'OrRd')[3],2),
+                 rep(brewer.pal(3,'Blues')[3],3))
+                 
+ggplot(targetData, aes(Genotype, tpm, color = Genotype)) +
+  geom_point(aes(x=Genotype, y=tpm), data = targetData, size = 2, alpha = 0.75, position = position_jitter(w = 0.1, h = 0)) +
+  scale_color_manual(values = samples$sampleColors) +
+  labs(y = 'log2(TPM + 1)', title = 'DLG2 in EWIma cells') +
+  scale_y_continuous(limits = c(0,16), breaks = seq(0,16,2)) +
   theme_classic() +
-  theme(legend.position = 'none')
-ggsave(paste(baseRepository, '/sequencing20211109_ewsCohortDbgapPmid25010205/scatter_ewsFli1TargetsAcrossCohort.pdf', sep = ''),
+  theme(legend.position = 'none'
+        #axis.title.x=element_blank(),
+        #axis.text.x = element_text(angle = 45, hjust = 1)
+        )
+ggsave(paste(baseRepository, '/sequencing20211220_stag2CtcfSurdezPmid33930311/rnaSeq/scatter_dlg2RnaExpressionLevels.pdf', sep = ''),
       height = 2, width = 2, useDingbats = FALSE)
 ```
 
