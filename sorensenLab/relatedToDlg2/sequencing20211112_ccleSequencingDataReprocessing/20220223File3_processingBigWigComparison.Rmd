@@ -1,0 +1,73 @@
+---
+title: "Coverage plots for DLG2"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details working with RNAseq output from CCLE samples in order to make coverage plots in a better way.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('rtracklayer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Make a non-redundant BED file with all possible exons for DLG2.
+
+```{r}
+##########################################################################################
+dlg2Gtf = as_tibble(rtracklayer::import(paste(baseRepository,'/sequencing20211112_ccleSequencingDataReprocessing/multiBigWig/dlg2Only.gtf',sep=''))) %>%
+  dplyr::filter(type == 'exon') %>%
+  dplyr::select(seqnames, start, end, width, strand, type) %>%
+  unique() %>%
+  dplyr::arrange(start) %>%
+  dplyr::mutate(exonName = paste('exon',seq(1,89,1),sep=''))
+
+
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read in the output from [multiBigWigSummary](https://deeptools.readthedocs.io/en/develop/content/tools/multiBigwigSummary.html). 
+
+```{r}
+##########################################################################################
+##sample names for annotation
+sampleNames = c('chr','start','end', sub('(.*)\\.sorted\\.bw', '\\1', list.files(paste(baseRepository,'/sequencing20211112_ccleSequencingDataReprocessing/results',sep=''), pattern = '*.sorted.bw')))
+
+##
+bwScores = read_tsv(paste(baseRepository,'/sequencing20211112_ccleSequencingDataReprocessing/multiBigWig/dlg2OnlyGtfScores.tab',sep=''))
+colnames(bwScores) = sampleNames
+
+##
+
+
+
+
+```

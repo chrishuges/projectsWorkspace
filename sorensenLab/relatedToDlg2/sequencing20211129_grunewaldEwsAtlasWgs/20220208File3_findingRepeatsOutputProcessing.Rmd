@@ -183,7 +183,7 @@ saveRDS(allReps, paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs
 
 <div style="margin-bottom:50px;"></div>
 
-Compare the hg19 and hg38 sets.
+Write a bed file for each of the msat sets.
 
 ```{r}
 ###########################################################
@@ -191,7 +191,18 @@ hg19 = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/d
 hg38 = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsHg38NotAnnotated.rds',sep=''))
 
 #
-
+hg19Bed = hg19 %>%
+  dplyr::select(chromosome, start, end, consensusSize, copyNumber) %>%
+  dplyr::mutate(name = paste('mSat',seq(1,nrow(hg19),1),sep='')) 
+write.table(hg19Bed, paste(baseRepository,'/sequencing20211129_grunewaldEwsAtlasWgs/dataset_hg19MsatRepeats.bed',sep=''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+  
+#
+hg38Bed = hg38 %>%
+  dplyr::select(chromosome, start, end, consensusSize, copyNumber) %>%
+  dplyr::mutate(name = paste('mSat',seq(1,nrow(hg38),1),sep='')) 
+write.table(hg38Bed, paste(baseRepository,'/sequencing20211129_grunewaldEwsAtlasWgs/dataset_hg38MsatRepeats.bed',sep=''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
 
 <div style="margin-bottom:50px;"></div>
