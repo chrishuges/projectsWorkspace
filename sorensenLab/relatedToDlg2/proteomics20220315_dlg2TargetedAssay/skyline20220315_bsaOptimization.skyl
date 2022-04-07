@@ -1,0 +1,576 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<audit_log_root format_version="21.2">
+  <document_hash>ovyydS8HpvG1PEG2BohXhc7Wjeg=</document_hash>
+  <root_hash>0kBpe+uYILM0sQZ6t2Q5LmSwpus=</root_hash>
+  <audit_log>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T12:04:44-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.YICDNQDTISSK.L [286, 297]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.YICDNQDTISSK.L [286, 297]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.YICDNQDTISSK.L [286, 297]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.YICDNQDTISSK.L [286, 297]</en_expanded>
+      </summary>
+      <hash>kqa5geYkW90B+9JpoNP/es4WL6E=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T12:04:37-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}R.HPEYAVSVLLR.L [361, 371]{2:PropertySeparator}642.3590++{2:PropertySeparator}V [y6] - 686.4559+</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; R.HPEYAVSVLLR.L [361, 371] &gt; 642.3590++ &gt; V [y6] - 686.4559+</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}R.HPEYAVSVLLR.L [361, 371]{2:PropertySeparator}642.3590++{2:PropertySeparator}V [y6] - 686.4559+</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; R.HPEYAVSVLLR.L [361, 371] &gt; 642.3590++ &gt; V [y6] - 686.4559+</en_expanded>
+      </summary>
+      <hash>5QmPibhgqjYPJaq80520a3zpvPc=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T12:02:55-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.QNCDQFEK.L [413, 420]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.QNCDQFEK.L [413, 420]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.QNCDQFEK.L [413, 420]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.QNCDQFEK.L [413, 420]</en_expanded>
+      </summary>
+      <hash>xTQnR6AKuA0isNKw/fg9Vw6zTUY=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T12:02:28-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.ECCDKPLLEK.S [300, 309]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.ECCDKPLLEK.S [300, 309]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.ECCDKPLLEK.S [300, 309]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.ECCDKPLLEK.S [300, 309]</en_expanded>
+      </summary>
+      <hash>GkaCWsrmamKCgPehgM3g8b+/OJ4=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T12:02:07-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.LKPDPNTLCDEFK.A [139, 151]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.LKPDPNTLCDEFK.A [139, 151]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.LKPDPNTLCDEFK.A [139, 151]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.LKPDPNTLCDEFK.A [139, 151]</en_expanded>
+      </summary>
+      <hash>/QHSujnAkVBr/8ecmrRqIGD5GsU=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T12:01:21-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.VPQVSTPTLVEVSR.S [438, 451]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.VPQVSTPTLVEVSR.S [438, 451]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.VPQVSTPTLVEVSR.S [438, 451]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.VPQVSTPTLVEVSR.S [438, 451]</en_expanded>
+      </summary>
+      <hash>AdLuDqnXEkTvHw4e8C90REmUINQ=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T12:01:01-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.HLVDEPQNLIK.Q [402, 412]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.HLVDEPQNLIK.Q [402, 412]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.HLVDEPQNLIK.Q [402, 412]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.HLVDEPQNLIK.Q [402, 412]</en_expanded>
+      </summary>
+      <hash>1+PIAnSA0fUdP35muGeBKYM1ok8=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T12:00:49-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.TVMENFVAFVDK.C [569, 580]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.TVMENFVAFVDK.C [569, 580]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.TVMENFVAFVDK.C [569, 580]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.TVMENFVAFVDK.C [569, 580]</en_expanded>
+      </summary>
+      <hash>BfsDkn8T4a7wTAMVKByu6wVnpYc=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T12:00:46-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.LFTFHADICTLPDTEK.Q [529, 544]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.LFTFHADICTLPDTEK.Q [529, 544]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.LFTFHADICTLPDTEK.Q [529, 544]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.LFTFHADICTLPDTEK.Q [529, 544]</en_expanded>
+      </summary>
+      <hash>iU+LZol22cH1roL/492SWfb3zh0=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T12:00:08-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}R.ETYGDMADCCEK.Q [106, 117]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; R.ETYGDMADCCEK.Q [106, 117]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}R.ETYGDMADCCEK.Q [106, 117]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; R.ETYGDMADCCEK.Q [106, 117]</en_expanded>
+      </summary>
+      <hash>LAn1Dfc8roCjAY1rDUSs+4kHZ6E=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T12:00:05-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.LVNELTEFAK.T [66, 75]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.LVNELTEFAK.T [66, 75]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.LVNELTEFAK.T [66, 75]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.LVNELTEFAK.T [66, 75]</en_expanded>
+      </summary>
+      <hash>1fWsN/cLAL75VNnBXfeq9C9ICKU=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:58:01-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.LVVSTQTALA.- [598, 607]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.LVVSTQTALA.- [598, 607]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.LVVSTQTALA.- [598, 607]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.LVVSTQTALA.- [598, 607]</en_expanded>
+      </summary>
+      <hash>YjrM2v7b9dn3J0uxK4lUpQz78QY=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:59-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.QTALVELLK.H [549, 557]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.QTALVELLK.H [549, 557]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.QTALVELLK.H [549, 557]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.QTALVELLK.H [549, 557]</en_expanded>
+      </summary>
+      <hash>VRygdn5D7/oSt1FDP3pEDIMyrm4=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:59-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}R.RPCFSALTPDETYVPK.A [508, 523]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; R.RPCFSALTPDETYVPK.A [508, 523]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}R.RPCFSALTPDETYVPK.A [508, 523]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; R.RPCFSALTPDETYVPK.A [508, 523]</en_expanded>
+      </summary>
+      <hash>rYsYOMHRpmN/8pfwc9TDMMM4IKc=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:58-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}R.MPCTEDYLSLILNR.L [469, 482]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; R.MPCTEDYLSLILNR.L [469, 482]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}R.MPCTEDYLSLILNR.L [469, 482]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; R.MPCTEDYLSLILNR.L [469, 482]</en_expanded>
+      </summary>
+      <hash>rYWYowi9psfAy6NV83gyi8Md3z8=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:56-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.DDPHACYSTVFDK.L [387, 399]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.DDPHACYSTVFDK.L [387, 399]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.DDPHACYSTVFDK.L [387, 399]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.DDPHACYSTVFDK.L [387, 399]</en_expanded>
+      </summary>
+      <hash>hIuqZpfr1p6Iam4bPZqajlP8z8w=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:55-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.DAFLGSFLYEYSR.R [347, 359]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.DAFLGSFLYEYSR.R [347, 359]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.DAFLGSFLYEYSR.R [347, 359]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.DAFLGSFLYEYSR.R [347, 359]</en_expanded>
+      </summary>
+      <hash>gMmjnkJ7ezc096E3TlO26og6oYs=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:54-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.DAIPENLPPLTADFAEDK.D [319, 336]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.DAIPENLPPLTADFAEDK.D [319, 336]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.DAIPENLPPLTADFAEDK.D [319, 336]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.DAIPENLPPLTADFAEDK.D [319, 336]</en_expanded>
+      </summary>
+      <hash>to3Fy2dh5KfPKX6HemM9kDI6xeA=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:54-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.SHCIAEVEK.D [310, 318]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.SHCIAEVEK.D [310, 318]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.SHCIAEVEK.D [310, 318]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.SHCIAEVEK.D [310, 318]</en_expanded>
+      </summary>
+      <hash>R3aWuVCMuQDBkctAqD78k8Ikwgw=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:53-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.AEFVEVTK.L [249, 256]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.AEFVEVTK.L [249, 256]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.AEFVEVTK.L [249, 256]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.AEFVEVTK.L [249, 256]</en_expanded>
+      </summary>
+      <hash>uTwngeZHSQ85qQuxFUmZbJQ26Lw=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:52-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}R.HPYFYAPELLYYANK.Y [169, 183]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; R.HPYFYAPELLYYANK.Y [169, 183]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}R.HPYFYAPELLYYANK.Y [169, 183]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; R.HPYFYAPELLYYANK.Y [169, 183]</en_expanded>
+      </summary>
+      <hash>Sif8+NuGsIxvPkcfcKvd/ilCJdk=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:50-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.DDSPDLPK.L [131, 138]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.DDSPDLPK.L [131, 138]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.DDSPDLPK.L [131, 138]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.DDSPDLPK.L [131, 138]</en_expanded>
+      </summary>
+      <hash>qgWT0mpyUe2CzIFM55ewQGnf/FA=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:50-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}R.NECFLSHK.D [123, 130]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; R.NECFLSHK.D [123, 130]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}R.NECFLSHK.D [123, 130]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; R.NECFLSHK.D [123, 130]</en_expanded>
+      </summary>
+      <hash>AVlsOjEexjizkyBO62Zm1Q7gQ10=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:47-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.TCVADESHAGCEK.S [76, 88]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.TCVADESHAGCEK.S [76, 88]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.TCVADESHAGCEK.S [76, 88]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.TCVADESHAGCEK.S [76, 88]</en_expanded>
+      </summary>
+      <hash>CKmXaHB75s8NwXdv2l0tJsj+xkY=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:45-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.GLVLIAFSQYLQQCPFDEHVK.L [45, 65]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.GLVLIAFSQYLQQCPFDEHVK.L [45, 65]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.GLVLIAFSQYLQQCPFDEHVK.L [45, 65]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.GLVLIAFSQYLQQCPFDEHVK.L [45, 65]</en_expanded>
+      </summary>
+      <hash>ODjW6gDkrwsnz/hlqJ5Pwuwel7E=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:43-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.DLGEEHFK.G [37, 44]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.DLGEEHFK.G [37, 44]</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>deleted_target</type>
+        <name>sp|P02769|ALBU_BOVIN{2:PropertySeparator}K.DLGEEHFK.G [37, 44]</name>
+        <en_expanded>Deleted target sp|P02769|ALBU_BOVIN &gt; K.DLGEEHFK.G [37, 44]</en_expanded>
+      </summary>
+      <hash>VPJ72duWmbY+1Ng/Qz3WT3qwEpg=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:57:33-07:00" user="CRC\chughes">
+      <extra_info>{0:ImportResultsSettings_FileNames} = 
+[
+    "{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}",
+    "{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}",
+    "{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}",
+    "{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}",
+    "{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}",
+    "{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}",
+    "{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}",
+    "{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}",
+    "{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}",
+    "{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}",
+    "{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}"
+],
+{0:ImportResultsSettings_SingleInjectionReplicates} = {3:True},
+{0:ImportResultsSettings_FileImportOption} = "{6:ImportResultsSimultaneousFileOptions_many}",
+{0:ImportResultsSettings_Prefix} = "bsa"</extra_info>
+      <undo_redo>
+        <type>imported_results</type>
+        <name>11</name>
+        <en_expanded>Imported results from 11 files</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>imported_results</type>
+        <name>11</name>
+        <en_expanded>Imported results from 11 files</en_expanded>
+      </summary>
+      <all_info>
+        <type>contains</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_FileNames}</name>
+        <name>"{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}"</name>
+        <en_expanded>Import results settings &gt; File names : contains "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>contains</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_FileNames}</name>
+        <name>"{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}"</name>
+        <en_expanded>Import results settings &gt; File names : contains "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>contains</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_FileNames}</name>
+        <name>"{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}"</name>
+        <en_expanded>Import results settings &gt; File names : contains "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>contains</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_FileNames}</name>
+        <name>"{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}"</name>
+        <en_expanded>Import results settings &gt; File names : contains "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>contains</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_FileNames}</name>
+        <name>"{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}"</name>
+        <en_expanded>Import results settings &gt; File names : contains "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>contains</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_FileNames}</name>
+        <name>"{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}"</name>
+        <en_expanded>Import results settings &gt; File names : contains "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>contains</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_FileNames}</name>
+        <name>"{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}"</name>
+        <en_expanded>Import results settings &gt; File names : contains "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>contains</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_FileNames}</name>
+        <name>"{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}"</name>
+        <en_expanded>Import results settings &gt; File names : contains "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>contains</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_FileNames}</name>
+        <name>"{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}"</name>
+        <en_expanded>Import results settings &gt; File names : contains "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>contains</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_FileNames}</name>
+        <name>"{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}"</name>
+        <en_expanded>Import results settings &gt; File names : contains "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>contains</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_FileNames}</name>
+        <name>"{4:C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff}"</name>
+        <en_expanded>Import results settings &gt; File names : contains "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>is_</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_SingleInjectionReplicates}</name>
+        <name>{3:True}</name>
+        <en_expanded>Import results settings &gt; Add single-injection replicates in files is True</en_expanded>
+      </all_info>
+      <all_info>
+        <type>is_</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_FileImportOption}</name>
+        <name>"{6:ImportResultsSimultaneousFileOptions_many}"</name>
+        <en_expanded>Import results settings &gt; Files to import simultaneously is "Many"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>is_</type>
+        <name>{0:ImportResultsSettings}{2:PropertySeparator}{0:ImportResultsSettings_Prefix}</name>
+        <name>"bsa"</name>
+        <en_expanded>Import results settings &gt; Removed prefix is "bsa"</en_expanded>
+      </all_info>
+      <en_extra_info>File names = 
+[
+    "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff",
+    "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff",
+    "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff",
+    "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff",
+    "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff",
+    "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff",
+    "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff",
+    "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff",
+    "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff",
+    "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff",
+    "C:\Users\chughes\Documents\bccrc\projectsRepository\sorensenLab\relatedToDlg2\proteomics20220315_dlg2TargetedAssay\20220314_bsaSrmTestInjections.wiff"
+],
+Add single-injection replicates in files = True,
+Files to import simultaneously = "Many",
+Removed prefix = "bsa"</en_extra_info>
+      <hash>OXGWs+isqmVNv9e/kp/n8RwOq50=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:53:03-07:00" user="CRC\chughes">
+      <extra_info>&gt;sp|P02769|ALBU_BOVIN Albumin OS=Bos taurus OX=9913 GN=ALB PE=1 SV=4
+MKWVTFISLLLLFSSAYSRGVFRRDTHKSEIAHRFKDLGEEHFKGLVLIAFSQYLQQCPF
+DEHVKLVNELTEFAKTCVADESHAGCEKSLHTLFGDELCKVASLRETYGDMADCCEKQEP
+ERNECFLSHKDDSPDLPKLKPDPNTLCDEFKADEKKFWGKYLYEIARRHPYFYAPELLYY
+ANKYNGVFQECCQAEDKGACLLPKIETMREKVLASSARQRLRCASIQKFGERALKAWSVA
+RLSQKFPKAEFVEVTKLVTDLTKVHKECCHGDLLECADDRADLAKYICDNQDTISSKLKE
+CCDKPLLEKSHCIAEVEKDAIPENLPPLTADFAEDKDVCKNYQEAKDAFLGSFLYEYSRR
+HPEYAVSVLLRLAKEYEATLEECCAKDDPHACYSTVFDKLKHLVDEPQNLIKQNCDQFEK
+LGEYGFQNALIVRYTRKVPQVSTPTLVEVSRSLGKVGTRCCTKPESERMPCTEDYLSLIL
+NRLCVLHEKTPVSEKVTKCCTESLVNRRPCFSALTPDETYVPKAFDEKLFTFHADICTLP
+DTEKQIKKQTALVELLKHKPKATEEQLKTVMENFVAFVDKCCAADDKEACFAVEGPKLVV
+STQTALA</extra_info>
+      <undo_redo>
+        <type>inserted_proteins_fasta</type>
+        <name>sp|P02769|ALBU_BOVIN</name>
+        <en_expanded>Inserted sp|P02769|ALBU_BOVIN proteins from FASTA</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>inserted_proteins_fasta</type>
+        <name>sp|P02769|ALBU_BOVIN</name>
+        <en_expanded>Inserted sp|P02769|ALBU_BOVIN proteins from FASTA</en_expanded>
+      </summary>
+      <hash>IlLjHOIC/e8eS46d/dDaoO9EiJ4=</hash>
+    </audit_log_entry>
+    <audit_log_entry skyline_version="21.2.0.425-e653b4c5e (64-Bit)" time_stamp="2022-03-15T11:52:48-07:00" user="CRC\chughes">
+      <undo_redo>
+        <type>changed</type>
+        <name>{0:SrmSettings_TransitionSettings}{2:TabSeparator}{0:TransitionSettings_Prediction}</name>
+        <en_expanded>Transition Settings -- Prediction changed</en_expanded>
+      </undo_redo>
+      <summary>
+        <type>changed</type>
+        <name>{0:Settings}{2:PropertySeparator}{0:SrmSettings_TransitionSettings}{2:TabSeparator}{0:TransitionSettings_Prediction}</name>
+        <en_expanded>Settings &gt; Transition Settings -- Prediction changed</en_expanded>
+      </summary>
+      <all_info>
+        <type>changed_from_to</type>
+        <name>{0:Settings}{2:PropertySeparator}{0:SrmSettings_TransitionSettings}{2:TabSeparator}{0:TransitionSettings_Prediction}{2:PropertySeparator}{0:TransitionPrediction_NonNullCollisionEnergy}</name>
+        <name>"{2:None}"</name>
+        <name>"SCIEX"</name>
+        <en_expanded>Settings &gt; Transition Settings -- Prediction &gt; Collision energy changed from "None" to "SCIEX"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>contains</type>
+        <name>{0:Settings}{2:PropertySeparator}{0:SrmSettings_TransitionSettings}{2:TabSeparator}{0:TransitionSettings_Prediction}{2:PropertySeparator}{0:TransitionPrediction_NonNullCollisionEnergy}{2:PropertySeparator}{0:CollisionEnergyRegression_Conversions}</name>
+        <name>{ {0:ChargeRegressionLine_Charge} = {3:2}, {0:ChargeRegressionLine_Slope} = {3:0.049}, {0:ChargeRegressionLine_Intercept} = {3:-1} }</name>
+        <en_expanded>Settings &gt; Transition Settings -- Prediction &gt; Collision energy &gt; Regression parameters : contains { Charge = "2", Slope = "0.049", Intercept = "-1" }</en_expanded>
+      </all_info>
+      <all_info>
+        <type>contains</type>
+        <name>{0:Settings}{2:PropertySeparator}{0:SrmSettings_TransitionSettings}{2:TabSeparator}{0:TransitionSettings_Prediction}{2:PropertySeparator}{0:TransitionPrediction_NonNullCollisionEnergy}{2:PropertySeparator}{0:CollisionEnergyRegression_Conversions}</name>
+        <name>{ {0:ChargeRegressionLine_Charge} = {3:3}, {0:ChargeRegressionLine_Slope} = {3:0.048}, {0:ChargeRegressionLine_Intercept} = {3:-2} }</name>
+        <en_expanded>Settings &gt; Transition Settings -- Prediction &gt; Collision energy &gt; Regression parameters : contains { Charge = "3", Slope = "0.048", Intercept = "-2" }</en_expanded>
+      </all_info>
+      <all_info>
+        <type>contains</type>
+        <name>{0:Settings}{2:PropertySeparator}{0:SrmSettings_TransitionSettings}{2:TabSeparator}{0:TransitionSettings_Prediction}{2:PropertySeparator}{0:TransitionPrediction_NonNullCollisionEnergy}{2:PropertySeparator}{0:CollisionEnergyRegression_Conversions}</name>
+        <name>{ {0:ChargeRegressionLine_Charge} = {3:4}, {0:ChargeRegressionLine_Slope} = {3:0.05}, {0:ChargeRegressionLine_Intercept} = {3:-2} }</name>
+        <en_expanded>Settings &gt; Transition Settings -- Prediction &gt; Collision energy &gt; Regression parameters : contains { Charge = "4", Slope = "0.05", Intercept = "-2" }</en_expanded>
+      </all_info>
+      <all_info>
+        <type>is_</type>
+        <name>{0:Settings}{2:PropertySeparator}{0:SrmSettings_TransitionSettings}{2:TabSeparator}{0:TransitionSettings_Prediction}{2:PropertySeparator}{0:TransitionPrediction_NonNullCollisionEnergy}{2:PropertySeparator}{0:OptimizableRegression_StepSize}</name>
+        <name>{3:3}</name>
+        <en_expanded>Settings &gt; Transition Settings -- Prediction &gt; Collision energy &gt; Step size is "3"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>is_</type>
+        <name>{0:Settings}{2:PropertySeparator}{0:SrmSettings_TransitionSettings}{2:TabSeparator}{0:TransitionSettings_Prediction}{2:PropertySeparator}{0:TransitionPrediction_NonNullCollisionEnergy}{2:PropertySeparator}{0:OptimizableRegression_StepCount}</name>
+        <name>{3:3}</name>
+        <en_expanded>Settings &gt; Transition Settings -- Prediction &gt; Collision energy &gt; Step count is "3"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>changed_from_to</type>
+        <name>{0:Settings}{2:PropertySeparator}{0:SrmSettings_TransitionSettings}{2:TabSeparator}{0:TransitionSettings_Prediction}{2:PropertySeparator}{0:TransitionPrediction_NonNullDeclusteringPotential}</name>
+        <name>"{2:None}"</name>
+        <name>"SCIEX"</name>
+        <en_expanded>Settings &gt; Transition Settings -- Prediction &gt; Declustering potential changed from "None" to "SCIEX"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>is_</type>
+        <name>{0:Settings}{2:PropertySeparator}{0:SrmSettings_TransitionSettings}{2:TabSeparator}{0:TransitionSettings_Prediction}{2:PropertySeparator}{0:TransitionPrediction_NonNullDeclusteringPotential}{2:PropertySeparator}{0:NamedRegressionLine_Intercept}</name>
+        <name>{3:80}</name>
+        <en_expanded>Settings &gt; Transition Settings -- Prediction &gt; Declustering potential &gt; Intercept is "80"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>is_</type>
+        <name>{0:Settings}{2:PropertySeparator}{0:SrmSettings_TransitionSettings}{2:TabSeparator}{0:TransitionSettings_Prediction}{2:PropertySeparator}{0:TransitionPrediction_NonNullDeclusteringPotential}{2:PropertySeparator}{0:OptimizableRegression_StepSize}</name>
+        <name>{3:10}</name>
+        <en_expanded>Settings &gt; Transition Settings -- Prediction &gt; Declustering potential &gt; Step size is "10"</en_expanded>
+      </all_info>
+      <all_info>
+        <type>is_</type>
+        <name>{0:Settings}{2:PropertySeparator}{0:SrmSettings_TransitionSettings}{2:TabSeparator}{0:TransitionSettings_Prediction}{2:PropertySeparator}{0:TransitionPrediction_NonNullDeclusteringPotential}{2:PropertySeparator}{0:OptimizableRegression_StepCount}</name>
+        <name>{3:3}</name>
+        <en_expanded>Settings &gt; Transition Settings -- Prediction &gt; Declustering potential &gt; Step count is "3"</en_expanded>
+      </all_info>
+      <hash>SWa3j91lAX1xBiMsoGbTENk6Fys=</hash>
+    </audit_log_entry>
+  </audit_log>
+</audit_log_root>

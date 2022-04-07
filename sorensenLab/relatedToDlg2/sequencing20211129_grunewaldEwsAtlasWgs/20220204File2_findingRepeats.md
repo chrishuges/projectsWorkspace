@@ -32,3 +32,11 @@ done
 Test command
 
 /projects/ptx_analysis/chughes/softwareTools/tandemRepeatFinder-4.0.9/tandemRepeatFinder /projects/ptx_analysis/chughes/databases/projectEwsDlg2/baseGenomeFiles/individualChromosomes/testFile.fa 2 7 7 80 10 50 500 -f -h -d
+
+I processed the output from the tandem repeat analysis in order to make a bed file that I can use with bedtools closest.
+
+```shell
+/home/chughes/softwareTools/bedtools-2.3.0/bedtools closest -s -a /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeats.bed -b /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211129_grunewaldEwsAtlasWgs/dataset_gtfGenesOnly.bed > dataset_hg38MsatClosestGenes.tsv
+
+
+```

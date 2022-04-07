@@ -128,9 +128,11 @@ ggsurvplot(survivalFit,
           linetype = "strata", # Change line type by groups
           surv.median.line = "hv", # Specify median survival
           ggtheme = theme_classic(), # Change ggplot2 theme
-          palette = c(brewer.pal(8,'RdBu')[c(8,1)]))
+          palette = c(brewer.pal(3,'Blues')[3], brewer.pal(3,'OrRd')[3]),
+          title = 'DLG2 survival analysis',
+          legend = 'none')
 ggsave(paste(baseRepository, '/microarray20201203_dlg2PostelVinaySurvival/survival_dlg2SurvivalPostelVinay.pdf', sep = ''), 
-       width = 4, height = 4, useDingbats = FALSE)
+       width = 2, height = 2, useDingbats = FALSE)
 ```
 
 <div style="margin-bottom:50px;"></div>

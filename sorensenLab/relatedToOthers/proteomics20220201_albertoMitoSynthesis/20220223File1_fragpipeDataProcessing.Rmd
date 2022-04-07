@@ -38,20 +38,31 @@ First we can process the psm data.
 
 ```{r}
 ##########################################################################################
-psm = read_tsv(paste(baseRepository, '/fragpipeAnalysis/batch1/psm.tsv', sep = '')) %>%
-  dplyr::select(Peptide, `Protein ID`, Gene, Spectrum, `Assigned Modifications`) %>%
-  dplyr::rename(sequence = Peptide, 
-                accession = `Protein ID`,
-                gene = Gene,
-                scan = Spectrum,
-                mods = `Assigned Modifications`) %>%
-  dplyr::mutate(fraction = sub('.*Mito_B[1-3]F(.*)\\.[0-9]+\\.[0-9]+\\.[0-9]+','\\1',scan)) %>%
-  dplyr::mutate(batch = sub('.*Mito_B(.*)F[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+','\\1',scan)) %>%
-  dplyr::mutate(scan = as.numeric(sub('.*Mito_B[1-3]F[0-9]+\\.(.*)\\.[0-9]+\\.[0-9]+','\\1',scan))) %>%
-  dplyr::mutate(label = ifelse(grepl('R\\(10',mods),'heavy',
-                               ifelse(grepl('K\\(237',mods),'heavy','light'))) %>%
-  dplyr::filter(!grepl('CONT', accession), !is.na(gene), !grepl('-', gene)) %>%
-  dplyr::select(scan, batch, fraction, accession, gene, sequence, label)
+##this is the function we will use
+combinePsmFiles = function(filePath, ...){
+  psm = read_tsv(filePath) %>%
+    dplyr::select(Peptide, `Protein ID`, Gene, Spectrum, `Assigned Modifications`) %>%
+    dplyr::rename(sequence = Peptide, 
+                  accession = `Protein ID`,
+                  gene = Gene,
+                  scan = Spectrum,
+                  mods = `Assigned Modifications`) %>%
+    dplyr::mutate(fraction = sub('.*Mito_B[1-3]F(.*)\\.[0-9]+\\.[0-9]+\\.[0-9]+','\\1',scan)) %>%
+    dplyr::mutate(batch = sub('.*Mito_B(.*)F[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+','\\1',scan)) %>%
+    dplyr::mutate(scan = as.numeric(sub('.*Mito_B[1-3]F[0-9]+\\.(.*)\\.[0-9]+\\.[0-9]+','\\1',scan))) %>%
+    dplyr::mutate(label = ifelse(grepl('R\\(10',mods),'heavy',
+                                ifelse(grepl('K\\(237',mods),'heavy','light'))) %>%
+    dplyr::filter(!grepl('CONT', accession), !is.na(gene), !grepl('-', gene)) %>%
+    dplyr::select(scan, batch, fraction, accession, gene, sequence, label)
+  ##
+  return(psm)
+}
+
+##
+psmFiles = list.files(paste(baseRepository,'/fragpipeAnalysis',sep=''),
+                      pattern = 'psm.tsv', full.names = TRUE, recursive = TRUE)
+psmDataSet = lapply(psmFiles, combinePsmFiles)
+allPsmData = do.call('rbind', psmDataSet)
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -63,20 +74,22 @@ Now we can get the quant data.
 ##this is the function we will use
 combineQuantFiles = function(filePath, ...){
   quantData = read_tsv(filePath) %>%
-    dplyr::select(MS2ScanNumber, `126Intensity`:`131NIntensity`)
+    dplyr::select(MS2ScanNumber, `126Intensity`:`131CIntensity`)
   colnames(quantData) = c('scan','tmt126C','tmt127N','tmt127C','tmt128N',
-                  'tmt128C','tmt129N','tmt129C','tmt130N','tmt130C','tmt131N')
+                  'tmt128C','tmt129N','tmt129C','tmt130N','tmt130C','tmt131N','tmt131C')
   ##
-  fraction = sub('.*hPh_(.*)\\.raw_Matrix\\.txt$', '\\1', filePath)
+  fraction = sub('.*_Mito_B[1-3]F(.*)\\.raw_Matrix\\.txt', '\\1', filePath)
+  batch = sub('.*_Mito_B(.*)F[0-9]+\\.raw_Matrix\\.txt', '\\1', filePath)
   quantData$fraction = fraction
+  quantData$batch = batch
   print(paste('Processing file for fraction ', fraction, '.', sep = ''))
   ##
   return(quantData)
 }
 
 ##
-quantFiles = as.list(list.files(paste(baseRepository,'/setA/',sep=''),
-           pattern = '_Matrix.txt', full.names = TRUE))
+quantFiles = list.files(paste(baseRepository,'/quantFiles/',sep=''),
+           pattern = '_Matrix.txt', full.names = TRUE)
 quantDataSet = lapply(quantFiles, combineQuantFiles)
 allQuantData = do.call('rbind', quantDataSet)
 ```
@@ -87,11 +100,34 @@ Now combine the data.
 
 ```{r}
 ##########################################################################################
-combinedData = psm %>%
+combinedData = allPsmData %>%
   left_join(allQuantData)
+##
+saveRDS(combinedData, paste(baseRepository, '/dataset_processedIdAndQuantPsmData.rds', sep=''))
 ```
 
+<div style="margin-bottom:50px;"></div>
 
+Work with one of the batches to see how the data looks across the different sample types.
+
+```{r}
+##########################################################################################
+##first I will make a sample table that has the channel annotation
+tmtBatch = tibble('batch1' = c('lightMix','wtN2_1','kdN2_1','wtN1_1','kdN1_1','wtF1_1','kdF1_1','wtF1_4','empty','kdN2_4','boost'),
+                  'batch2' = c('lightMix','wtN2_2','kdN2_2','wtN1_2','kdN1_2','wtF1_2','kdF1_2','wtN1_4','empty','kdN1_4','boost'),
+                  'batch3' = c('lightMix','wtN2_3','kdN2_3','wtN1_3','kdN1_3','wtF1_3','kdF1_3','wtN2_4','empty','kdF1_4','boost'))
+
+##
+batchOfInterest = 1
+ptxData = readRDS(paste(baseRepository, '/dataset_processedIdAndQuantPsmData.rds', sep='')) %>%
+  dplyr::filter(batch == batchOfInterest, label == 'heavy') %>%
+  dplyr::select(scan:label, tmt127N:tmt129C)
+colnames(ptxData)[8:13] = tmtBatch[,batchOfInterest]$batch1[2:7]
+
+##
+ggplot(pivot_longer(ptxData, cols = 8:13), aes(name, log10(value))) +
+  geom_boxplot()
+```
 
 
 

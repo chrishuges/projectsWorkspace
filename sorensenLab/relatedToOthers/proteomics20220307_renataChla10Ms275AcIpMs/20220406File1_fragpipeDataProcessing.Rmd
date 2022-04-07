@@ -1,0 +1,141 @@
+---
+title: "Processing IP-MS data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details processing of acetyl IP-MS data. **I didn't end up using this because FragPipe gave better quant data**.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning = FALSE}
+###########################################################
+library('tidyverse')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Set the base folders where we will do the work.
+
+```{r}
+##########################################################################################
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'D:/msDataTemp/proteomics20220307_renataChla10Ms275AcIpMs'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the psm data and combine it to a single object.
+
+```{r}
+###########################################################
+##
+#find the locations of our psm files
+psmFiles = list.files(path = paste(baseRepository,'/fragpipeAnalysis', sep=''), 
+                      pattern = 'm.tsv',
+                      full.names = TRUE,
+                      recursive = TRUE)
+
+##
+#write a function to process the psm files
+psmProcess = function(psmInput, ...){
+  psmTemp1 = read_tsv(psmInput) %>%
+    dplyr::select(Spectrum, Peptide, `Protein ID`, Gene) %>%
+    dplyr::mutate(scan = as.numeric(sub('.*chla10_[a-z]+[123]\\.(.*)\\.[0-9]+\\.[0-9]+', '\\1', Spectrum))) %>%
+    dplyr::mutate(sampleId = sub('.*chla10_(.*)[1-3]\\.[0-9]+\\.[0-9]+\\.[0-9]+', '\\1', Spectrum)) %>%
+    dplyr::mutate(bioReplicate = sub('.*chla10_[a-z]+(.*)\\.[0-9]+\\.[0-9]+\\.[0-9]+', '\\1', Spectrum)) %>%
+    dplyr::rename('sequence' = Peptide, 'accession' = `Protein ID`, 'gene' = Gene) %>%
+    dplyr::select(sampleId, bioReplicate, accession, gene, sequence, scan)
+  ##
+  return(psmTemp1)
+}
+
+##
+#use the function to process all files in the psmFiles variable
+psmDataSet = lapply(psmFiles, psmProcess)
+allPsmData = do.call('rbind', psmDataSet)
+head(allPsmData)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can process the quant files and combine them to a single object. 
+
+```{r}
+###########################################################
+##
+#find the locations of our quant files
+quantFiles = list.files(path = paste(baseRepository,'/quant', sep=''), 
+                      pattern = 'Matrix.txt',
+                      full.names = TRUE,
+                      recursive = TRUE)
+
+##
+#write a function to process the psm files
+quantProcess = function(quantInput, ...){
+  quantTemp1 = read_tsv(quantFiles[1]) %>%
+    dplyr::select(MS2ScanNumber, ParentPeakArea) %>%
+    dplyr::rename('scan' = MS2ScanNumber, 'area' = ParentPeakArea) %>%
+    dplyr::mutate(sampleId = sub('.*chla10_(.*)[1-3]\\.raw_Matrix\\.txt', '\\1', quantInput)) %>%
+    dplyr::mutate(bioReplicate = sub('.*chla10_[a-z]+(.*)\\.raw_Matrix\\.txt', '\\1', quantInput))
+  ##
+  return(quantTemp1)
+}
+
+##
+#use the function to process all files in the psmFiles variable
+quantDataSet = lapply(quantFiles, quantProcess)
+allQuantData = do.call('rbind', quantDataSet)
+head(allQuantData)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now combine the data, do some basic filtering, and save it for future use.
+
+```{r}
+##########################################################################################
+##
+#combine the data and filter to remove peptides without area values or those assigned to contaminants
+combinedData = allPsmData %>%
+  left_join(allQuantData) %>%
+  dplyr::filter(!is.na(area), !grepl('contam',accession)) %>%
+  dplyr::group_by(sampleId, bioReplicate, accession, gene, sequence) %>%
+  dplyr::summarise(mArea = mean(area, na.rm = TRUE))
+
+##
+#write the peptide data
+saveRDS(combinedData, paste(baseRepository, '/dataset_processedIdAndQuantPsmData.rds', sep=''))
+write.table(combinedData, paste(baseRepository, '/dataset_processedIdAndQuantPsmData.tsv', sep=''),
+            quote = FALSE, col.names = TRUE, row.names = FALSE, sep = '\t')
+
+##
+#collapse into proteins
+proteinData = combinedData %>%
+  dplyr::ungroup() %>%
+  dplyr::group_by(sampleId, bioReplicate, accession, gene) %>%
+  dplyr::summarise(medArea = median(mArea, na.rm = TRUE)) %>%
+  tidyr::pivot_wider(id_cols = accession:gene, names_from = sampleId:bioReplicate, values_from = medArea) %>%
+  dplyr::select(accession, gene, igg_1:igg_3, dmso_1:dmso_3, entino_1:entino_3)
+
+##
+#save the protein data
+saveRDS(proteinData, paste(baseRepository, '/dataset_processedProteinData.rds', sep=''))
+write.table(proteinData, paste(baseRepository, '/dataset_processedProteinData.tsv', sep=''),
+            quote = FALSE, col.names = TRUE, row.names = FALSE, sep = '\t')
+```
+
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

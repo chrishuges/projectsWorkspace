@@ -1,0 +1,296 @@
+---
+title: "mike cr123b treatment"
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to look at cr131b treated osteosarcoma cells. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('DEqMS')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'D:/msDataTemp/proteomics20220331_ellaA673KnockoutClones'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First we can process the psm data.
+
+```{r}
+##########################################################################################
+##this is the function we will use
+combinePsmFiles = function(filePath, ...){
+  psm = read_tsv(filePath) %>%
+    dplyr::mutate(Gene = ifelse(grepl('^DLG2$', `Mapped Genes`), 'DLG2', Gene)) %>%
+    dplyr::select(Peptide, `Protein ID`, Gene, Spectrum, `Assigned Modifications`) %>%
+    dplyr::rename(sequence = Peptide, 
+                  accession = `Protein ID`,
+                  gene = Gene,
+                  scan = Spectrum,
+                  mods = `Assigned Modifications`) %>%
+    dplyr::mutate(fraction = sub('.*hph(.*)\\.[0-9]+\\.[0-9]+\\.[0-9]+','\\1',scan)) %>%
+    dplyr::mutate(scan = as.numeric(sub('.*_hph[0-9]+\\.(.*)\\.[0-9]+\\.[0-9]+','\\1',scan))) %>%
+    dplyr::filter(!grepl('CONT', accession), !is.na(gene), !grepl('-', gene)) %>%
+    dplyr::select(scan, fraction, accession, gene, sequence)
+  ##
+  return(psm)
+}
+
+##
+psmFiles = list.files(paste(baseRepository,'/fragpipeAnalysis',sep=''),
+                      pattern = 'psm.tsv', full.names = TRUE, recursive = TRUE)
+psmDataSet = lapply(psmFiles, combinePsmFiles)
+allPsmData = do.call('rbind', psmDataSet)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can get the quant data.
+
+```{r}
+##########################################################################################
+##this is the function we will use
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`131NIntensity`)
+  colnames(quantData) = c('scan','tmt126C','tmt127N','tmt128C','tmt129N','tmt130C','tmt131N')
+  ##
+  fraction = sub('.*_hph(.*)\\.raw_Matrix\\.txt', '\\1', filePath)
+  quantData$fraction = fraction
+  print(paste('Processing file for fraction ', fraction, '.', sep = ''))
+  ##
+  return(quantData)
+}
+
+##
+quantFiles = list.files(paste(baseRepository,'/quantFiles/',sep=''),
+           pattern = '_Matrix.txt', full.names = TRUE)
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+allQuantData = do.call('rbind', quantDataSet)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now combine the data.
+
+```{r}
+##########################################################################################
+combinedData = allPsmData %>%
+  left_join(allQuantData)
+
+##
+saveRDS(combinedData, paste(baseRepository, '/dataset_processedIdAndQuantPsmData.rds', sep=''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we will filter the expression data to discard any entries where the signal is just too low to be confident in the data. Here we also filter out genes that have no assigned gene name as this will cause problems with DEqMS later on. If you don't want to do this, I suggest using 'accession' instead of 'gene' in the DEqMS analysis below.
+
+Our sample layout is:
+
+* 126C - dmso.1
+* 127N - cr8.1
+* 127C - dmso.2
+* 128N - cr8.2
+* 128C - dmso.3
+* 129N - cr8.3
+* 129C - empty
+* 130N - empty
+* 130C - cr2.1
+* 131N - cr2.2
+* 131C - cr2.3
+
+```{r}
+##########################################################################################
+psmQuant = readRDS(paste(baseRepository, '/dataset_processedIdAndQuantPsmData.rds', sep=''))
+psmQuant$sampleSignal = rowSums(psmQuant[,c(7:12,15:17)])
+psmQuantFiltered = subset(psmQuant, psmQuant$sampleSignal >= 900 & !is.na(psmQuant$gene) & !grepl('-', psmQuant$gene))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We will also normalize the data to deal with any gross loading differences. We save both the non-normalized data here as well and check the normalization with a plot.
+
+```{r}
+##########################################################################################
+quantInput = psmQuantFiltered[,c(1:12,15:17)]
+saveRDS(quantInput, paste(baseRepository, '/dataset_peptideQuantDataPreDEqMS.rds', sep = ''))
+quantInputLog = quantInput[,c(6,5,7:15)]
+quantInputLog[,3:11][quantInputLog[,3:11] == 0] = NA
+quantInputLog[,3:11] = log2(quantInputLog[,3:11])
+quantInputNormalized = medianSweeping(quantInputLog, group_col = 2)
+boxplot(quantInputNormalized, las = 2, ylab = 'log2 ratio', main = 'normalized TMT data')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+All of the data look tight. Good. Lets continue with the DEqMS analysis. We need to build our sample table.
+
+```{r}
+##########################################################################################
+cond = as.factor(c('dmso','cr8','dmso','cr8','dmso','cr8','cr2','cr2','cr2'))
+design = model.matrix(~0+cond) 
+colnames(design) = gsub('cond', '', colnames(design))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can build the Limma model.
+
+```{r}
+##########################################################################################
+geneMatrix = as.matrix(quantInputNormalized)
+limmaFit1 = lmFit(geneMatrix, design)
+limmaContrasts = c('cr8 - dmso', 'cr8 - cr2', 'cr2 - dmso')
+limmaContrastDesign =  makeContrasts(contrasts = limmaContrasts, levels = design)
+limmaFit2 = eBayes(contrasts.fit(limmaFit1, contrasts = limmaContrastDesign))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now for the actual DEqMS work. We will first
+
+```{r}
+##########################################################################################
+psmCountTable = as.data.frame(table(quantInput$gene))
+rownames(psmCountTable) = psmCountTable$Var1
+limmaFit2$count = psmCountTable[rownames(limmaFit2$coefficients),2]
+limmaFit3 = spectraCounteBayes(limmaFit2)
+head(limmaFit3$coefficients)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 1)
+dim(deqmsResults)
+write.table(deqmsResults, 
+            paste(baseRepository, '/dataset_deqms_cr8-dmso.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 2)
+dim(deqmsResults)
+write.table(deqmsResults, 
+            paste(baseRepository, '/dataset_deqms_cr8-cr2.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 3)
+dim(deqmsResults)
+write.table(deqmsResults, 
+            paste(baseRepository, '/dataset_deqms_cr2-dmso.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Generate the variance plot to see the DEqMS model for the data.
+
+```{r}
+##########################################################################################
+VarianceBoxplot(limmaFit3, n=20, xlab = 'PSM count', main = 'DEqMS analysis of TMT data')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This looks as it should. Now let us make a volcano plot to show the data.
+
+```{r}
+##########################################################################################
+deqmsResults = outputResult(limmaFit3, coef_col = 1)
+deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
+                                     brewer.pal(8,'Greys')[6]))
+goi = c('IL1RAP','SLC7A11')
+deqmsResults$pText = ifelse(deqmsResults$gene %in% goi, deqmsResults$gene, '')
+##
+ggplot(deqmsResults, aes(logFC, plotPValue)) +
+  geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = -2, max.overlaps = 10000) +
+  labs(x = 'log2(cr8 - dmso)', y = '-log10(P-value)', title = 'CR8 vs. DMSO abundance') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
+  scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = 3, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/scatter_deqms_a673_cr8-dmso.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+##########################################################################################
+deqmsResults = outputResult(limmaFit3, coef_col = 2)
+deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
+                                     brewer.pal(8,'Greys')[6]))
+goi = c('IL1RAP','SLC7A11')
+deqmsResults$pText = ifelse(deqmsResults$gene %in% goi, deqmsResults$gene, '')
+##
+ggplot(deqmsResults, aes(logFC, plotPValue)) +
+  geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = -2, max.overlaps = 10000) +
+  labs(x = 'log2(cr8 - cr2)', y = '-log10(P-value)', title = 'CR8 vs CR2 protein abundance') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
+  scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = 3, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/scatter_deqms_a673_cr8-cr2.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+##########################################################################################
+deqmsResults = outputResult(limmaFit3, coef_col = 3)
+deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
+                                     brewer.pal(8,'Greys')[6]))
+goi = c('IL1RAP','SLC7A11')
+deqmsResults$pText = ifelse(deqmsResults$gene %in% goi, deqmsResults$gene, '')
+##
+ggplot(deqmsResults, aes(logFC, plotPValue)) +
+  geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = -2, max.overlaps = 10000) +
+  labs(x = 'log2(cr2 - dmso)', y = '-log10(P-value)', title = 'CR2 vs DMSO protein abundance') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
+  scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = 3, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/scatter_deqms_a673_cr2-dmso.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```
+
+
+
+
+
+
+
+
