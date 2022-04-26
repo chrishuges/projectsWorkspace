@@ -36,7 +36,9 @@ Test command
 I processed the output from the tandem repeat analysis in order to make a bed file that I can use with bedtools closest.
 
 ```shell
-/home/chughes/softwareTools/bedtools-2.3.0/bedtools closest -s -a /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeats.bed -b /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211129_grunewaldEwsAtlasWgs/dataset_gtfGenesOnly.bed > dataset_hg38MsatClosestGenes.tsv
+#for stranded processing
+/home/chughes/softwareTools/bedtools-2.3.0/bedtools closest -s -D "b" -a /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeats.bed -b /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211129_grunewaldEwsAtlasWgs/dataset_gtfGenesOnly.bed > dataset_hg38MsatClosestGenes.tsv
 
-
+#for unstranded processing
+/home/chughes/softwareTools/bedtools-2.3.0/bedtools closest -D "b" -a /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeats.bed -b /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211129_grunewaldEwsAtlasWgs/dataset_gtfGenesOnly.bed > dataset_hg38MsatClosestGenesUnstranded.tsv
 ```

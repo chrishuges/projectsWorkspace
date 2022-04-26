@@ -67,7 +67,16 @@ for (i in 1:length(repFiles)){
 }
 
 #
-saveRDS(allReps, paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsHg38NotAnnotated.rds',sep=''))
+allReps2 = allReps %>%
+  dplyr::mutate(chromosome = factor(chromosome, levels = c('chr1','chr2','chr3','chr4','chr5','chr6','chr7',
+                                                       'chr8','chr9','chr10','chr11','chr12','chr13','chr14',
+                                                       'chr15','chr16','chr17','chr18','chr19','chr20','chr21',
+                                                       'chr22','chrX','chrY'))) %>%
+  dplyr::arrange(chromosome, start) %>%
+  dplyr::mutate(score = seq(1,10370,1)) %>%
+  dplyr::mutate(msat_name = paste('msat',score, sep = ''))
+##
+saveRDS(allReps2, paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsHg38NotAnnotated.rds',sep=''))
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -90,7 +99,7 @@ Now we can use these gene regions to annotate the repeats data.
 ```{r}
 ###########################################################
 gtfGenes = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_genesOnlyFromGtf.rds',sep=''))
-msatRepeats = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsNotAnnotated.rds',sep=''))
+msatRepeats = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsHg38NotAnnotated.rds',sep=''))
 
 ##
 gfGtf = makeGRangesFromDataFrame(gtfGenes)
@@ -119,7 +128,7 @@ This theoretically works, but maybe we want to use [bedtools closest](https://be
 ```{r}
 ###########################################################
 gtfGenes = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_genesOnlyFromGtf.rds',sep=''))
-msatRepeats = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsNotAnnotated.rds',sep=''))
+msatRepeats = readRDS(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsHg38NotAnnotated.rds',sep=''))
 
 #
 gtfBed = gtfGenes %>%
@@ -138,19 +147,109 @@ write.table(gtfBed, paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlas
 
 #
 msatBed = msatRepeats %>%
-  dplyr::mutate(chromosome = factor(chromosome, levels = c('chr1','chr2','chr3','chr4','chr5','chr6','chr7',
-                                                       'chr8','chr9','chr10','chr11','chr12','chr13','chr14',
-                                                       'chr15','chr16','chr17','chr18','chr19','chr20','chr21',
-                                                       'chr22','chrX','chrY'))) %>%
-  dplyr::arrange(chromosome, start) %>%
-  dplyr::mutate(score = seq(1,2766,1)) %>%
-  dplyr::mutate(msat_name = paste('msat',score, sep = '')) %>%
   dplyr::select(chromosome, start, end, msat_name, score, strand)
 write.table(msatBed, paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeats.bed',sep = ''),
             col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+
 ```
 
 <div style="margin-bottom:50px;"></div>
+
+Combine the output from bedtools with the original msat data and with some RNA expression information.
+
+```{r}
+###########################################################
+##
+#read and combine the results
+closestGene = read_tsv(paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_hg38MsatClosestGenesUnstranded.tsv',sep=''),
+                       col_names = c('seqname_a','start_a','end_a','msat_name','index_a','strand_a',
+                                     'seqname_b','start_b','end_b','gene','index_b','strand_b','distanceAtoB')) %>%
+  left_join(msatRepeats)
+
+##
+#add rna expression data
+rnaExp = read_csv(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day7-day0.csv',sep=''),
+                  col_names = c('ensg','baseMean','log2FoldChange','lfcSE','stat','pvalue','padj','gene'))
+
+closestGeneRna = closestGene %>%
+  left_join(rnaExp)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Add EwS specificity scores.
+
+```{r}
+###########################################################
+##
+#get the ccle data for our genes of interest
+genesOfInterest = unique(closestGeneRna$gene)
+ccle = readRDS(paste(generalDatasets, '/depmap21Q4/CCLE_expression_parsed.rds', sep = ''))
+cells = ccle %>%
+  dplyr::select(gene, log2Tpm, lineage_subtype) %>%
+  dplyr::mutate(isEwing = ifelse(grepl('Ewing', lineage_subtype), 'yes', 'no')) %>%
+  dplyr::select(-lineage_subtype) %>%
+  dplyr::filter(gene %in% genesOfInterest)
+##
+
+ewsSpecScores = data.frame()
+for (i in 1:length(genesOfInterest)){
+  targetGene = cells %>%
+    dplyr::filter(gene == genesOfInterest[i]) %>%
+    group_by(isEwing) %>%
+    dplyr::summarise(medRna = median(log2Tpm, na.rm = TRUE))
+  if (nrow(targetGene) < 2){
+    #message('no value for ', rnaProGenes[i])
+    targetGeneScore = data.frame('gene' = genesOfInterest[i],
+                               'medRna' = NA)
+    ewsSpecScores = rbind(ewsSpecScores, targetGeneScore)
+  } else {
+      targetGeneScore = data.frame('gene' = genesOfInterest[i],
+                               'medRna' = targetGene[targetGene$isEwing == 'no', 'medRna'] - targetGene[targetGene$isEwing == 'yes', 'medRna'])
+      ewsSpecScores = rbind(ewsSpecScores, targetGeneScore)
+  }
+}
+ewsCellScores = ewsSpecScores %>%
+  dplyr::rename(cellScore = medRna)
+
+##
+#assign to our msat data
+closestGeneRnaEws = closestGeneRna %>%
+  left_join(ewsCellScores)
+
+##
+#save the data
+saveRDS(closestGeneRnaEws, paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsRnaEws.rds',sep=''))
+write.table(closestGeneRnaEws, paste(baseRepository, '/sequencing20211129_grunewaldEwsAtlasWgs/dataset_msatRepeatsRnaEws.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div style="margin-bottom:50px;"></div>
+
+We can do the same analysis for hg19, as below.
 
 Read in and process the tandem repeats data for the hg19 analysis.
 
