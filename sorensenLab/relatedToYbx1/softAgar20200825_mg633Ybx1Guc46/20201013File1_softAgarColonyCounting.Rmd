@@ -12,6 +12,7 @@ This document is to investigate the soft agar data for the YBX1 GUC crispr clone
 These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
 
 ```{r, message = FALSE, echo = FALSE}
+##########################################################################################
 library('tidyverse')
 library('ggplot2')
 library('RColorBrewer')
@@ -22,6 +23,7 @@ library('RColorBrewer')
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
 
 ```{r}
+##########################################################################################
 #generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
 #baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
 #baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
@@ -64,15 +66,15 @@ Now we are ready to make the plot.
 ```{r}
 ##########################################################################################
 ggplot(agarRows, aes(sample, count, color = sample)) +
-  geom_point(size = 4, position = position_jitterdodge(jitter.width = 0.25), alpha = 0.5) +
+  geom_point(size = 2, position = position_jitterdodge(jitter.width = 0.50)) +
   labs(x = 'Cell line', y = 'Number of colonies', title = 'YBX1 GUC clone colony formation') +
   scale_y_continuous(limits = c(0, 180), breaks = seq(0,180,20)) +
-  scale_color_manual(values = c(brewer.pal(8,'Greys')[4], rep(brewer.pal(8,'RdBu')[1],2))) +
+  scale_color_manual(values = c(brewer.pal(3,'Greys')[2], rep(brewer.pal(3,'OrRd')[3],2))) +
   theme_classic() +
   theme(legend.position = 'none')
 ggsave(paste(baseRepository, '/softAgar20200825_mg633Ybx1Guc46/scatter_mg633Ybx1GucColonyFormation.pdf', sep = ''),
-       height = 4,
-       width = 3,
+       height = 2,
+       width = 2,
        useDingbats = FALSE)
 ```
 

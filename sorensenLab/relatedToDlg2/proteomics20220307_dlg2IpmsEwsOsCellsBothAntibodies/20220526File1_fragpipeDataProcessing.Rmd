@@ -1,0 +1,99 @@
+---
+title: "Analysis of DLG2 IPMS Samples"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of IPMS samples using DLG2 as a bait (268 and 640 antibody). This was done in A673 Ewing sarcoma cells, using MNNG osteosarcoma cells (isogenic clone A) as a control population (negative for DLG2).
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message=FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the ip data for A673 cells and plot.
+
+```{r}
+##########################################################################################
+proteinFile = read_tsv('D:/msDataTemp/proteomics20220307_dlg2IpmsEwsOsCellsBothAntibodies/fragpipeAnalysis/combined_protein.tsv') %>%
+  dplyr::select(`Protein ID`, Gene,
+                `ab268_1_1 Spectral Count`,`ab268_2_2 Spectral Count`,`ab268_3_3 Spectral Count`,
+                `ab640_1_1 Spectral Count`,`ab640_2_2 Spectral Count`,`ab640_3_3 Spectral Count`,
+                `neg_1_1 Spectral Count`,`neg_2_2 Spectral Count`,`neg_3_3 Spectral Count`) %>%
+  dplyr::filter(!grepl('contam',`Protein ID`)) %>%
+  dplyr::rename('accession' = `Protein ID`, 'gene' = Gene) %>%
+  dplyr::mutate(gene = ifelse(accession == 'NP_001364907', 'DLG2', gene)) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(ab268 = median(`ab268_1_1 Spectral Count`:`ab268_3_3 Spectral Count`),
+                ab640 = median(`ab640_1_1 Spectral Count`:`ab640_3_3 Spectral Count`),
+                neg = median(`neg_1_1 Spectral Count`:`neg_3_3 Spectral Count`)) %>%
+  dplyr::select(accession, gene, ab268, ab640, neg) %>%
+  dplyr::mutate(ab268ratio = (ab268 + 1) / (neg + 1),
+                ab640ratio = (ab640 + 1) / (neg + 1)) %>%
+  dplyr::arrange(-ab268ratio)
+
+
+##ab268
+proteinPlotData = dplyr::filter(proteinFile, ab268ratio > 2) %>%
+  dplyr::arrange(-ab268ratio)
+proteinPlotData$rowIndex = seq(1,nrow(proteinPlotData),1)
+proteinPlotData$pText = ifelse(proteinPlotData$rowIndex <= 10, proteinPlotData$gene, '')
+
+#
+ggplot(proteinPlotData, aes(rowIndex,ab268ratio)) +
+  geom_point(size = 2) +
+  #scale_x_continuous(limits = c(0,1), breaks = seq(0,1,0.25)) +
+  scale_y_continuous(limits = c(0,15), breaks = seq(0,15,2)) +
+  geom_text_repel(label = proteinPlotData$pText, nudge_x = 25, max.overlaps = 1000) +
+  labs(x = 'Hit index', y = 'Enrichment relative to negative', title = 'ab268') +
+  geom_hline(yintercept = 2, linetype = 'dashed') +
+  #geom_vline(xintercept = 0.5, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20220307_dlg2IpmsEwsOsCellsBothAntibodies/scatter_dlg2IpmsAb268.pdf',sep=''),
+       height=2,width=2,useDingbats=FALSE)
+
+##ab268
+proteinPlotData = dplyr::filter(proteinFile, ab640ratio > 2) %>%
+  dplyr::arrange(-ab640ratio)
+proteinPlotData$rowIndex = seq(1,nrow(proteinPlotData),1)
+proteinPlotData$pText = ifelse(proteinPlotData$rowIndex <= 10, proteinPlotData$gene, '')
+
+#
+ggplot(proteinPlotData, aes(rowIndex,ab640ratio)) +
+  geom_point(size = 2) +
+  #scale_x_continuous(limits = c(0,1), breaks = seq(0,1,0.25)) +
+  scale_y_continuous(limits = c(0,15), breaks = seq(0,15,2)) +
+  geom_text_repel(label = proteinPlotData$pText, nudge_x = 25, max.overlaps = 1000) +
+  labs(x = 'Hit index', y = 'Enrichment relative to negative', title = 'ab640') +
+  geom_hline(yintercept = 2, linetype = 'dashed') +
+  #geom_vline(xintercept = 0.5, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20220307_dlg2IpmsEwsOsCellsBothAntibodies/scatter_dlg2IpmsAb640.pdf',sep=''),
+       height=2,width=2,useDingbats=FALSE)
+```

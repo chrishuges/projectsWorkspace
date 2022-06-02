@@ -14,6 +14,7 @@ This document contains code related to the analysis of incucyte data from MG63.3
 These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
 
 ```{r, message = FALSE, echo = FALSE}
+##########################################################################################
 library('tidyverse')
 library('ggplot2')
 library('RColorBrewer')
@@ -24,6 +25,7 @@ library('RColorBrewer')
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
 
 ```{r}
+##########################################################################################
 generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
 baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
 baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
@@ -55,15 +57,15 @@ Make a plot displaying the difference in confluence after 72-hours between the i
 ```{r}
 ##########################################################################################
 ggplot(incucyteData, aes(cells, difference, colour = cells)) +
-  geom_point(size = 4, position = position_jitterdodge(jitter.width = 0.50), alpha = 0.5) +
+  geom_point(size = 2, position = position_jitterdodge(jitter.width = 0.50)) +
   labs(x = 'Cell line', y = 'Wound confluence difference in 48h', title = 'YBX1 GUC clone migration') +
   scale_y_continuous(limits = c(0, 120), breaks = seq(0,120,10)) +
-  scale_colour_manual(values = c(brewer.pal(8,'Greys')[4], rep(brewer.pal(8,'RdBu')[1],2))) +
+  scale_color_manual(values = c(brewer.pal(3,'Greys')[2], rep(brewer.pal(3,'OrRd')[3],2))) +
   theme_classic() +
   theme(legend.position = 'none')
 ggsave(paste(baseRepository, '/incucyte20200717_mg633Ybx1Guc46ScratchWound/scatter_mg633Ybx1GucCloneMigration.pdf', sep = ''),
-       height = 4,
-       width = 3,
+       height = 2,
+       width = 2,
        useDingbats = FALSE)
 ```
 

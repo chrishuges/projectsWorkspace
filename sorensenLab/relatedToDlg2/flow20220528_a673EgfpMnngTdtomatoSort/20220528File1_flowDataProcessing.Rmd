@@ -1,0 +1,74 @@
+---
+title: "Analysis of eGFP flow data"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of FACS data for A673 cells expressing the eGFP-YBX1 fusion.
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message=FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the qPCR results data and process the sirna samples.
+
+```{r}
+##########################################################################################
+flowData1 = read_csv(paste(baseRepository, '/flow20220528_a673EgfpMnngTdtomatoSort/export_April 20 2022_A673 Empty_001_cells.csv', sep = '')) %>%
+  dplyr::select(`GFP-A`, Time) %>%
+  dplyr::rename(gfp = `GFP-A`) %>%
+  dplyr::mutate('dataset' = 'empty')
+
+flowData2 = read_csv(paste(baseRepository, '/flow20220528_a673EgfpMnngTdtomatoSort/export_April 20 2022_A673 EGFP_002_cells.csv', sep = '')) %>%
+  dplyr::select(`GFP-A`, Time) %>%
+  dplyr::rename(gfp = `GFP-A`) %>%
+  dplyr::mutate('dataset' = 'yb1')
+
+flowData3 = read_csv(paste(baseRepository, '/flow20220528_a673EgfpMnngTdtomatoSort/export_April 20 2022_MNNG Empty_003_cells.csv', sep = '')) %>%
+  dplyr::select(`GFP-A`, Time) %>%
+  dplyr::rename(gfp = `GFP-A`) %>%
+  dplyr::mutate('dataset' = 'mnng')
+
+flowDataAll = rbind(flowData1, flowData2, flowData3)
+
+ggplot(flowDataAll, aes(gfp, ..scaled.., fill = dataset)) +
+  geom_density(size = 1) +
+  scale_fill_manual(values = c(brewer.pal(3,'Greys')[2], brewer.pal(6,'Greens')[c(5,2)])) +
+  labs(x = 'eGFP Signal', y = 'Scaled density', title = 'eGFP Expression') +
+  theme_classic() +
+  theme(legend.position = 'none')
+#
+ggsave(paste(baseRepository, '/flow20220528_a673EgfpMnngTdtomatoSort/density_egfpSignalDistribution.pdf',sep=''),
+       height=2,width=2,useDingbats=FALSE)
+```
+
+
+
+
+

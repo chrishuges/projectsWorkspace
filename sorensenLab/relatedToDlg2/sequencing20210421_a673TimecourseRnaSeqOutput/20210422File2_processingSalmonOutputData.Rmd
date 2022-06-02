@@ -1,5 +1,5 @@
 ---
-title: "Analysis of A673 EF1 samples with IRS"
+title: "Analysis of A673 EWS-FLI1 RNAseq Timecourse"
 output:
   html_notebook:
       code_folding: none

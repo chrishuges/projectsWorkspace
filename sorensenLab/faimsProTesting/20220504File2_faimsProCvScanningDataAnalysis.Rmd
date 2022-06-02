@@ -1,0 +1,281 @@
+---
+title: "Analysis of FAIMS Pro CV Scans"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of MS data acquired across different CV values using the FAIMS Pro device on the Orbitrap Fusion MS. The sample was a tryptic digest of a HeLa cell lysate that was analyzed in both unlabeled and TMT labeled formats. The runs were all 60-minutes on a 150um ID x 20cm length column packed with 1.9um C18 beads, running at a flow rate of 0.8uL/min. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, echo = FALSE}
+###########################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Set the base folders where we will do the work.
+
+```{r}
+###########################################################
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/faimsProTesting'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/faimsProTesting'
+dataRepository = 'D:/msDataTemp/faimsProTesting'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing - unlabeled samples
+
+The first thing I want to look at is the charge state distribution across the different CV values. I will use the RawTools output files for this and only focus on things that triggered MS2 scans (regardless of whether they generated a peptide hit or not). 
+
+Read the files into a list.
+
+```{r, message = FALSE, warning = FALSE}
+###########################################################
+cvFiles = list.files(paste(dataRepository, '/singleCvRunsUnlabeled/', sep = ''), pattern = '_Matrix.txt', full.names = TRUE)
+cvData = lapply(cvFiles, read_tsv)
+names(cvData) = sub('.*400ng_(.*)\\.raw_Matrix\\.txt', '\\1', cvFiles)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Process the data for each list entry to get the scan numbers for each charge.
+
+```{r}
+###########################################################
+cvCharges = lapply(cvData, function(x) table(x$PrecursorCharge))
+names(cvCharges) = names(cvData)
+cvChargesDf = as.data.frame(do.call(rbind, cvCharges))
+colnames(cvChargesDf) = c('z2','z3','z4')
+cvChargesDf$sample = row.names(cvChargesDf)
+row.names(cvChargesDf) = NULL
+##
+cvChargesTib = as_tibble(cvChargesDf) %>%
+  filter(!grepl('_', sample)) %>%
+  mutate(cv = sub('CV(.*)$', '\\1', sample)) %>%
+  pivot_longer(cols = z2:z4, names_to = 'charge', values_to = 'numberOfPrecursors')
+cvChargesTib$cv = factor(cvChargesTib$cv, levels = seq(110,10,-5))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot of the non-TMT sample charge distributions per CV.
+
+```{r}
+###########################################################
+ggplot(cvChargesTib, aes(cv, numberOfPrecursors, group = charge, color = charge)) +
+  geom_point(size = 2) +
+  geom_line(size = 0.75) +
+  labs(x = 'CV', y = 'Number of Precursors', title = 'Unlabeled charge state distribution') +
+  scale_color_manual(values = brewer.pal(9,'Greys')[c(9,6,4)]) +
+  scale_y_continuous(limits = c(0, 2e4), breaks = seq(0,2e4,2500)) +
+  theme_classic() +
+  theme(panel.grid.major = element_line(size = 0.25), 
+        axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
+        legend.key.size = unit(0.5, 'cm'),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 8))
+ggsave(paste(baseRepository, '/scatter_cvChargeDistributionNonTmt.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This looks pretty similar to what has been shown in other papers related to FAIMS Pro by the Coon/Gygi/Olsen labs. This plot actually does a pretty good job of highlighting why a single CV isn't that useful as you end up filtering a lot of potential peptide ions out. 
+
+Plot the MS2 acquisition data.
+
+```{r}
+###########################################################
+cvMs2Scans = lapply(cvData, function(x) nrow(x))
+names(cvMs2Scans) = names(cvData)
+cvMs2ScansDf = as.data.frame(do.call(rbind, cvMs2Scans))
+colnames(cvMs2ScansDf) = 'ms2Scans'
+cvMs2ScansDf$sample = row.names(cvMs2ScansDf)
+row.names(cvMs2ScansDf) = NULL
+
+##
+cvMs2ScansTib = as_tibble(cvMs2ScansDf) %>%
+  mutate(cv = sub('CV(.*)$', '\\1', sample))
+cvMs2ScansTib$cv = factor(cvMs2ScansTib$cv, levels = seq(110,10,-5))
+
+##
+ggplot(cvMs2ScansTib, aes(cv, ms2Scans, group = 1)) +
+  geom_point(size = 2) +
+  geom_line(size = 0.75) +
+  scale_y_continuous(limits = c(0, 3e4), breaks = seq(0,3e4,5000)) +
+  labs(x = 'CV', y = 'Number of MS/MS', title = 'Unlabeled MS2 scan distribution') +
+  theme_classic() +
+  theme(panel.grid.major = element_line(size = 0.25), 
+        axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
+        legend.key.size = unit(0.5, 'cm'),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 8))
+ggsave(paste(baseRepository, '/scatter_cvMs2DistributionNonTmt.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Plot the identification data.
+
+```{r}
+###########################################################
+ids = read_csv(paste(dataRepository,'/singleCvRunsUnlabeled/rawtoolsQc/QcDataTable.csv',sep='')) %>%
+  dplyr::mutate(cv = factor(sub('.*400ng_CV(.*)\\.raw','\\1',RawFile), levels = seq(110,10,-5))) %>%
+  dplyr::select(cv, NumberOfPSMs) %>%
+  dplyr::rename('psms' = NumberOfPSMs)
+
+##
+ggplot(ids, aes(cv, psms, group = 1)) +
+  geom_point(size = 2) +
+  geom_line(size = 0.75) +
+  scale_y_continuous(limits = c(0, 8e3), breaks = seq(0,8e3,2000)) +
+  labs(x = 'CV', y = 'Number of PSMs', title = 'Unlabeled PSM distribution') +
+  theme_classic() +
+  theme(panel.grid.major = element_line(size = 0.25), 
+        axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
+        legend.key.size = unit(0.5, 'cm'),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 8))
+ggsave(paste(baseRepository, '/scatter_cvPsmDistributionNonTmt.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+
+
+
+
+
+
+## Data processing - labeled samples
+
+Same processing as above, but for TMT labeled samples.
+
+```{r, message = FALSE, warning = FALSE}
+###########################################################
+cvFiles = list.files(paste(dataRepository, '/singleCvRunsLabeled/', sep = ''), pattern = '_Matrix.txt', full.names = TRUE)
+cvData = lapply(cvFiles, read_tsv)
+names(cvData) = sub('.*400ng_(.*)\\.raw_Matrix\\.txt', '\\1', cvFiles)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Process the data for each list entry to get the scan numbers for each charge.
+
+```{r}
+###########################################################
+cvCharges = lapply(cvData, function(x) table(x$PrecursorCharge))
+names(cvCharges) = names(cvData)
+cvChargesDf = as.data.frame(do.call(rbind, cvCharges))
+colnames(cvChargesDf) = c('z2','z3','z4')
+cvChargesDf$sample = row.names(cvChargesDf)
+row.names(cvChargesDf) = NULL
+##
+cvChargesTib = as_tibble(cvChargesDf) %>%
+  filter(!grepl('_', sample)) %>%
+  mutate(cv = sub('CV(.*)$', '\\1', sample)) %>%
+  pivot_longer(cols = z2:z4, names_to = 'charge', values_to = 'numberOfPrecursors')
+cvChargesTib$cv = factor(cvChargesTib$cv, levels = seq(110,10,-5))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot of the TMT sample charge distributions per CV.
+
+```{r}
+###########################################################
+ggplot(cvChargesTib, aes(cv, numberOfPrecursors, group = charge, color = charge)) +
+  geom_point(size = 2) +
+  geom_line(size = 0.75) +
+  labs(x = 'CV', y = 'Number of Precursors', title = 'Labeled charge state distribution') +
+  scale_color_manual(values = brewer.pal(9,'Greys')[c(9,6,4)]) +
+  scale_y_continuous(limits = c(0, 2e4), breaks = seq(0,2e4,2500)) +
+  theme_classic() +
+  theme(panel.grid.major = element_line(size = 0.25), 
+        axis.text.x = element_text(size = 4),
+        axis.text.y = element_text(size = 6),
+        legend.key.size = unit(0.5, 'cm'),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 8))
+ggsave(paste(baseRepository, '/scatter_cvChargeDistributionTmt.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This looks pretty similar to what has been shown in other papers related to FAIMS Pro by the Coon/Gygi/Olsen labs. This plot actually does a pretty good job of highlighting why a single CV isn't that useful as you end up filtering a lot of potential peptide ions out. 
+
+Plot the MS2 acquisition data.
+
+```{r}
+###########################################################
+cvMs2Scans = lapply(cvData, function(x) nrow(x))
+names(cvMs2Scans) = names(cvData)
+cvMs2ScansDf = as.data.frame(do.call(rbind, cvMs2Scans))
+colnames(cvMs2ScansDf) = 'ms2Scans'
+cvMs2ScansDf$sample = row.names(cvMs2ScansDf)
+row.names(cvMs2ScansDf) = NULL
+
+##
+cvMs2ScansTib = as_tibble(cvMs2ScansDf) %>%
+  mutate(cv = sub('CV(.*)$', '\\1', sample))
+cvMs2ScansTib$cv = factor(cvMs2ScansTib$cv, levels = seq(110,10,-5))
+
+##
+ggplot(cvMs2ScansTib, aes(cv, ms2Scans, group = 1)) +
+  geom_point(size = 2) +
+  geom_line(size = 0.75) +
+  scale_y_continuous(limits = c(0, 3e4), breaks = seq(0,3e4,5000)) +
+  labs(x = 'CV', y = 'Number of MS/MS', title = 'Labeled MS2 scan distribution') +
+  theme_classic() +
+  theme(panel.grid.major = element_line(size = 0.25), 
+        axis.text.x = element_text(size = 4),
+        axis.text.y = element_text(size = 6),
+        legend.key.size = unit(0.5, 'cm'),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 8))
+ggsave(paste(baseRepository, '/scatter_cvMs2DistributionTmt.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Plot the identification data.
+
+```{r}
+###########################################################
+ids = read_csv(paste(dataRepository,'/singleCvRunsLabeled/rawtoolsQc/QcDataTable.csv',sep='')) %>%
+  dplyr::mutate(cv = factor(sub('.*400ng_CV(.*)\\.raw','\\1',RawFile), levels = seq(110,10,-5))) %>%
+  dplyr::select(cv, NumberOfPSMs) %>%
+  dplyr::rename('psms' = NumberOfPSMs)
+
+##
+ggplot(ids, aes(cv, psms, group = 1)) +
+  geom_point(size = 2) +
+  geom_line(size = 0.75) +
+  scale_y_continuous(limits = c(0, 8e3), breaks = seq(0,8e3,2000)) +
+  labs(x = 'CV', y = 'Number of PSMs', title = 'Unlabeled PSM distribution') +
+  theme_classic() +
+  theme(panel.grid.major = element_line(size = 0.25), 
+        axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
+        legend.key.size = unit(0.5, 'cm'),
+        legend.title = element_text(size = 8),
+        legend.text = element_text(size = 8))
+ggsave(paste(baseRepository, '/scatter_cvPsmDistributionTmt.pdf', sep = ''),
+       height = 4, width = 4, useDingbats = FALSE)
+```
+

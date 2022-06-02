@@ -167,3 +167,10 @@ do
   fi
 done
 ```
+
+HipSTR analysis
+
+```shell
+/projects/ptx_analysis/chughes/softwareTools/HipSTR-0.6.2/HipSTR --bams SRR11235335.sorted.bam --fasta /projects/ptx_analysis/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.fa --regions ../dataset_hg38MsatRepeats.bed --str-vcf str_calls.vcf.gz --bam-samps SAMPLE1 --bam-libs LIB1 --min-reads 15 --def-stutter-model
+```
+
