@@ -1,0 +1,81 @@
+---
+title: "Reprocessing RNAseq from CCLE"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of RNAseq data from DepMap, specifically focusing on cell lines that were profiled in the CCLE proteomics paper.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToCcle'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToCcle'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First I want to pull out the cell lines that were profiled so I can reprocess their RNAseq data from SRA. I downloaded a metadata table with all of the SRA accession details for PRJNA523380. 
+
+```{r}
+##########################################################################################
+##load in the table with SRA accessions from CCLE
+sra = read_csv(paste(generalDatasets,'/depmap21Q4/SraRunTable.txt',sep = '')) %>%
+  dplyr::select(Run, `Assay Type`, Cell_Line, `Sample Name`) %>%
+  dplyr::rename(cellLineRna = 'Cell_Line',
+                sra = 'Run',
+                assay = `Assay Type`,
+                sampleName = `Sample Name`)
+dim(sra)
+
+##load in the sample information table from the CCLE proteomics manuscript
+ptxRuns = read_tsv(paste(baseRepository, '/originalManuscript/sampleInformation.txt',sep='')) %>%
+  dplyr::rename(cellLinePtx = `Cell Line`,
+                sampleName = `CCLE Code`,
+                tissue = `Tissue of Origin`,
+                tmtBatchId = `Protein 10-Plex ID`,
+                tmtLabel = `Protein TMT Label`,
+                notes = 'Notes')
+dim(ptxRuns)
+
+##combine the two files
+allRuns = dplyr::left_join(ptxRuns, sra) %>%
+  dplyr::filter(!is.na(sra))
+dim(allRuns)
+
+
+##write the accessions to a file
+write.table(unique(allRuns$sra), paste(baseRepository,'/dataset_sraRunsWithPtxData.tsv', sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+It seems there are 4 cell lines that don't have RNA data available, but the rest do. I will reprocess the RNAseq data for these accessions.  
+
+<div style="margin-bottom:50px;"></div>
+
+## Session info
+
+```{r}
+sessionInfo()
+```

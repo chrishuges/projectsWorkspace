@@ -1,0 +1,98 @@
+---
+title: "yb1 rna-ip"
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to look the elution from an RNA-IP targeting ybx1-egfp expressed in A673 cells. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('DEqMS')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'D:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First we can process the psm and quant data.
+
+```{r}
+##########################################################################################
+##read the PSM data
+psmData = read_tsv('D:/msDataTemp/proteomics20220601_ybx1EgfpRipPtx/fragpipeAnalysis/yb1Rip_1/psm.tsv') %>%
+  dplyr::rename(sequence = Peptide,
+                accession = `Protein ID`,
+                gene = Gene) %>%
+  dplyr::mutate(scan = as.numeric(sub('.*80\\.(.*)\\.[0-9]+\\.[0-9]+','\\1',Spectrum))) %>%
+  dplyr::select(accession, gene, scan, sequence)
+
+##read the quant data
+quantData = read_tsv('D:/msDataTemp/proteomics20220601_ybx1EgfpRipPtx/ch20220601_ybx1EgfpRipPtx_tmt9_noFrac_faims40-60-80.raw_Matrix.txt') %>%
+    dplyr::select(MS2ScanNumber, 
+                  `126Intensity`,
+                  `127NIntensity`,
+                  `127CIntensity`,
+                  `128NIntensity`,
+                  `128CIntensity`,
+                  `129NIntensity`,
+                  `130CIntensity`,
+                  `131NIntensity`,
+                  `131CIntensity`)
+colnames(quantData) = c('scan','tmt126C','tmt127N','tmt127C','tmt128N','tmt128C','tmt129N','tmt130C','tmt131N','tmt131C')
+
+##join the data
+idData = psmData %>%
+  left_join(quantData)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Calculate some ratios.
+
+```{r}
+##########################################################################################
+expData = idData %>%
+  dplyr::filter(!grepl('contam', accession)) %>%
+  dplyr::group_by(accession, gene) %>%
+  dplyr::summarise_at(vars(tmt126C:tmt131C), median, na.rm = TRUE) %>% 
+  rowwise() %>%
+  dplyr::mutate(egfpMed = median(c(tmt126C,tmt127C,tmt128C)),
+                ybx1Med = median(c(tmt127N,tmt128N,tmt129N)),
+                iggMed = median(c(tmt130C,tmt131N,tmt131C))) %>%
+  dplyr::mutate(ybx1ToIgg = log2((ybx1Med + 1) / (iggMed + 1)),
+                egfpToIgg = log2((egfpMed + 1) / (iggMed + 1)))
+
+##
+ggplot(expData, aes(ybx1ToIgg, egfpToIgg)) +
+  geom_point() +
+  scale_x_continuous(limits = c(0,6), breaks = seq(0,6,1)) +
+  scale_y_continuous(limits = c(0,6), breaks = seq(0,6,1))
+```
+
+
+
+
+
+
