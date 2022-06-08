@@ -66,6 +66,13 @@ dim(allRuns)
 ##write the accessions to a file
 write.table(unique(allRuns$sra), paste(baseRepository,'/dataset_sraRunsWithPtxData.tsv', sep = ''),
             col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+##write it to a better file format for our script
+sraLine = vector()
+for (i in 1:length(unique(allRuns$sra))){
+  sraLine = c(sraLine, allRuns$sra[i])
+}
+writeLines(paste(sraLine, collapse = ' '), paste(baseRepository,'/dataset_sraRunsWithPtxDataLine.txt', sep = ''))
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -77,5 +84,6 @@ It seems there are 4 cell lines that don't have RNA data available, but the rest
 ## Session info
 
 ```{r}
+##########################################################################################
 sessionInfo()
 ```
