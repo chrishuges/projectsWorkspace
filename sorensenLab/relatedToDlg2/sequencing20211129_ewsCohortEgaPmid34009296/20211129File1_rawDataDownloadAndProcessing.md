@@ -272,3 +272,68 @@ do
   eval find ./ -name "${j}_[GATC]*.fastq.gz" -delete
 done
 ```
+
+There were some files that had an alternate naming system which I had to write a slightly modified script for. This script is also using an updated version of pyega3.
+
+```shell
+#!/bin/bash
+
+##set the location of software tools and the working directory where files will be stored
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211129_ewsCohortEgaPmid34009296"
+pyega3="/home/chughes/softwareTools/pyega3/ega-download-client-master"
+eval mkdir raw
+#eval mkdir results
+#eval mkdir quants
+
+##loop over the accessions
+for j in B95T{5..11} #was for j in T{1..50}
+do
+  eval cd ${workingDirectory}
+  printf "Downloading files associated with ${j}.\n\n"
+  ############get the files associated with an accession
+  egaFileId=($(awk 'BEGIN {FS="\t"; OFS="\t"} {print $3, $4}' EGAD00001004493/delimited_maps/Sample_File.map | grep "^${j}\\." | awk 'BEGIN {FS="\t"; OFS=" "} {print $2}'))
+  rnaFileId=($(awk 'BEGIN {FS="\t"; OFS="\t"} {print $3, $4}' EGAD00001004493/delimited_maps/Sample_File.map | grep "^${j}\\." | awk 'BEGIN {FS="\t"; OFS=" "} {print $1}'))
+  ############download the file
+  eval cd ${pyega3}
+  for i in $( seq 0 $(( ${#egaFileId[@]} - 1)) )
+  do
+    if [ -f "${workingDirectory}/raw/${rnaFileId[$i]::-4}" ]; then
+      printf "Raw file ${rnaFileId[$i]::-4} already exists, skipping file.\n\n"
+    else
+      while [ ! -f "${workingDirectory}/raw/${rnaFileId[$i]::-4}" ]
+      do
+        printf "File ${rnaFileId[$i]::-4} doesn't exist, attempting download.\n\n"
+        #eval python -m pyega3.pyega3 -c 10 -cf ${rawDataOutputDirectory}credential_file.json fetch ${egaFileId[$i]} --output-dir ${rawDataOutputDirectory}/raw/${rnaFileId[$i]::-4} #this is what this command used to be
+        eval pyega3 -c 10 -cf ${workingDirectory}/credential_file.json fetch ${egaFileId[$i]} --output-dir ${workingDirectory}/raw
+        eval mv ${workingDirectory}/raw/${egaFileId[$i]}/${rnaFileId[$i]::-4} ${workingDirectory}/raw
+        eval rm -r ${workingDirectory}/raw/${egaFileId[$i]}
+      done
+    fi
+  done
+
+  #############processing the files associated with an accession
+  eval cd ${workingDirectory}
+  printf "Combining read 1 files.\n\n"
+  eval cat raw/${j}*R1*.gz > raw/${j}_1.fastq.gz
+  printf "Combining read 2 files.\n\n"
+  eval cat raw/${j}*R2*.gz > raw/${j}_2.fastq.gz
+  printf "Removing precursor files.\n\n"
+  eval find ./ -name "${j}*R*.fastq.gz" -delete
+
+  #eval mv ${workingDirectory}/downloadedRaw/${j}*.fastq.gz ${workingDirectory}/raw
+  printf "Running snakemake.\n\n"
+  #eval conda activate snakemake
+  eval snakemake --cores 8
+  #eval conda deactivate
+  printf "Cleaning up."
+  eval rm ${workingDirectory}/raw/${j}*.fastq.gz
+  eval rm ${workingDirectory}/raw/${j}*.md5
+  #eval mv ${workingDirectory}/raw/${j}*.fastq.gz ${workingDirectory}/downloadedRaw
+  eval rm ${workingDirectory}/results/${j}*.clean.fastq.gz
+  eval rm ${workingDirectory}/*.out
+  eval rm ${workingDirectory}/*.tab
+  eval rm -r ${workingDirectory}/*STAR*
+  eval rm ${workingDirectory}/results/${j}*.bam
+  eval rm ${workingDirectory}/results/${j}*.bai
+done
+```
