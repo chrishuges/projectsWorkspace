@@ -313,7 +313,8 @@ ggplot(dlg2Final, aes(reorder(lineage_subtype, logAbundance, median, na.rm = TRU
 
 ```{r}
 library('vroom')
-test = vroom(paste(baseRepository, '/proteomics20210118_ccleProteomicsPmid31978347/ccle_protein_quant_with_peptides_14745.tsv.gz', sep = ''))
+test = vroom(paste('C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToCcle/gygiWebsiteData/ccle_protein_quant_with_peptides_14745.tsv.gz', sep = '')) %>%
+  dplyr::filter(grepl('DLG2', GeneSymbol))
 
 ```
 
