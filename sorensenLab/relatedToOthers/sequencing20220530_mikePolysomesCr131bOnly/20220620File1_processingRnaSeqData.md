@@ -181,8 +181,8 @@ do
   printf "Processing files associated with ${i}.\n"
   #eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}
   ##the file gets renamed upon download, but I just want it to have the SRR id and I can annotate it later
-  eval mv ${workingDirectory}/raw/${i}_1*.fastq.gz ${workingDirectory}/raw/${i}_1.fastq.gz
-  eval mv ${workingDirectory}/raw/${i}_2*.fastq.gz ${workingDirectory}/raw/${i}_2.fastq.gz
+  eval mv ${workingDirectory}/fastq/${i}_1*.fastq.gz ${workingDirectory}/raw/${i}_1.fastq.gz
+  eval mv ${workingDirectory}/fastq/${i}_2*.fastq.gz ${workingDirectory}/raw/${i}_2.fastq.gz
   #eval conda activate snakemake
   eval snakemake --cores 8 --latency-wait 300
   #eval conda deactivate
@@ -194,6 +194,8 @@ do
   eval rm -r ${workingDirectory}/*STAR*
   #eval rm ${workingDirectory}/results/${i}*.bam
   #eval rm ${workingDirectory}/results/${i}*.bai
+  eval mv ${workingDirectory}/raw/${i}_1.fastq.gz ${workingDirectory}/fastq/${i}_1.fastq.gz
+  eval mv ${workingDirectory}/raw/${i}_2.fastq.gz ${workingDirectory}/fastq/${i}_2.fastq.gz
 done
 ```
 
@@ -216,7 +218,8 @@ eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-for i in TCTAACGC-CGCCTTAT AGAAGCGT-AGTCAGGT CATTGCCT-GATCTCAG CGGATTGA-ACGTCGTT GTCTCCTT-TGCTTGCT ACTCGTTG-GCGTATCA AGGTTCGA-AAGCGACT TACATCGG-TCCACGTT TCGAAGGT-GCCTTAAC CTCAGAGT-AGCTTCAG CTGACACA-AGAAGGAC
+#for i in TCTAACGC-CGCCTTAT AGAAGCGT-AGTCAGGT CATTGCCT-GATCTCAG CGGATTGA-ACGTCGTT GTCTCCTT-TGCTTGCT ACTCGTTG-GCGTATCA AGGTTCGA-AAGCGACT TACATCGG-TCCACGTT TCGAAGGT-GCCTTAAC CTCAGAGT-AGCTTCAG CTGACACA-AGAAGGAC
+for i in AGTCTGTG-CCTACCTA CACAAGTC-ATCGCAAC TGCAGGTA-TCACGATG
 do
   printf "Processing files associated with ${i}.\n"
   #eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}

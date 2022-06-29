@@ -1,0 +1,122 @@
+---
+title: "exosome proteomics"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to look at various prep methods for purifying exosomes. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+#generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First we will read in the PSM tables from FragPipe. We will make a sample annotation table to make this task a little easier.
+
+```{r}
+##########################################################################################
+##make sample table
+sampleTable = tibble('sampleName' = rep(c('deaeEluate', 'deaeFlowthrough', 'oligoDtEluate', 'secPlusEvs', 'tc32EvsUc', 'tffPlusUc'), each = 2),
+                     'replicate' = rep(seq(1,2,1), 6))
+psmFiles = file.path('D:/msDataTemp/proteomics20220429_valentinaDeepuEvPrepMethods/fragpipeAnalysis', 
+                     paste(sampleTable$sampleName, '_', sampleTable$replicate, sep = ''),
+                     'psm.tsv')
+
+
+##use the sample table to read in the psm data for each sample
+allPsmData = tibble()
+for (i in 1:length(psmFiles)){
+  psmData = read_tsv(psmFiles[i]) %>%
+  dplyr::select(`Protein ID`, Gene, `Is Unique`, Spectrum, Peptide, Intensity) %>%
+  dplyr::rename(accession = `Protein ID`, 
+                gene = Gene, 
+                unique = `Is Unique`,
+                sequence = Peptide,
+                intensity = Intensity) %>%
+  dplyr::mutate(sampleName = sub('.*fragpipeAnalysis\\/(.*)_[1-2]\\/psm\\.tsv', '\\1', psmFiles[i])) %>%
+  dplyr::mutate(replicate = sub('.*fragpipeAnalysis\\/[A-Za-z0-9]+_(.*)\\/psm\\.tsv', '\\1', psmFiles[i])) %>%
+  dplyr::filter(!grepl('contam', accession)) %>%
+  dplyr::select(-Spectrum) %>%
+  dplyr::mutate(allPsm = 1, uniquePsm = ifelse(unique == TRUE, 1, 0)) %>%
+  dplyr::mutate(intensity = ifelse(intensity == 0, NA, intensity)) %>%
+  dplyr::filter(!is.na(intensity))
+  #
+  allPsmData = rbind(allPsmData, psmData)
+}
+
+##save the data
+saveRDS(allPsmData, paste(baseRepository, '/proteomics20220429_valentinaDeepuEvPrepMethods/dataset_evRawPsmData.rds', sep = ''))
+allPsmData
+```
+
+<div style="margin-bottom:50px;"></div>
+
+So now we have the PSM data in a more workable format. One thing we can see right away (RNASE1 for example, in the above table) is that there are multiple PSMs for the same peptide that we should collapse into a single entry. 
+
+```{r}
+##########################################################################################
+##collapse redundant PSMs
+psmData = readRDS(paste(baseRepository, '/proteomics20220429_valentinaDeepuEvPrepMethods/dataset_evRawPsmData.rds', sep = '')) %>%
+  dplyr::group_by(accession, gene, unique, sequence, sampleName, replicate) %>%
+  dplyr::summarise(across(allPsm:uniquePsm, sum, na.rm = TRUE), meanIntensity = mean(intensity, na.rm = TRUE))
+
+##take a look at what remains
+table(psmData$sampleName, psmData$replicate)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+From that table, we can see that a couple of the samples don't appear to have yielded much measurable signal (e.g. deaeEluate replicate 1), even if their other replicate was good. Because of this, I don't think it is appropriate to do any sort of normalization because we cannot make any real assumption that the replicates should be the same. There is just too much variability. What we can still do is combine the 'replicates' and do a very rough comparison between the sample types.
+
+```{r}
+##########################################################################################
+##roll the peptides into proteins, indepedent of the replicates
+proData = psmData %>%
+  dplyr::group_by(accession, gene, sampleName) %>%
+  dplyr::summarise(across(allPsm:uniquePsm, sum, na.rm = TRUE), intensity = median(meanIntensity, na.rm = TRUE)) %>%
+  tidyr::pivot_wider(id_cols = accession:gene, names_from = 'sampleName', values_from = c('allPsm','uniquePsm','intensity'))
+
+##compare all samples vs the tc32 EV preps
+expData = apply(proData[,15:20], 2, function(x) x / proData$intensity_tc32EvsUc)
+colnames(expData) = paste(colnames(expData),'_ratio',sep = '')
+proData = cbind(proData, expData)
+
+##save these data
+saveRDS(proData, paste(baseRepository, '/proteomics20220429_valentinaDeepuEvPrepMethods/dataset_evProteinData.rds', sep = ''))
+write.table(proData, paste(baseRepository, '/proteomics20220429_valentinaDeepuEvPrepMethods/dataset_evProteinData.tsv', sep = ''),
+            quote = FALSE, col.names = TRUE, row.names = FALSE, sep = '\t')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Finished. Not much else we can do with these data.
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

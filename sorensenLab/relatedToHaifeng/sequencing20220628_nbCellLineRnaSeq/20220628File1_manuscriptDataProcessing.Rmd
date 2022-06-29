@@ -1,0 +1,138 @@
+---
+title: "Analysis of NB cell line RNAseq"
+output:
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of RNAseq data from neuroblastoma cells from PMID: 28350380.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('ggrepel')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToHaifeng'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToHaifeng'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+Read in the FPKM data from the published paper. 
+
+```{r}
+##########################################################################################
+##I created a sample table in excel previously, read it in here
+rnaExp = read_tsv(paste(baseRepository, '/sequencing20220628_nbCellLineRnaSeq/GSE89413_2016-10-30-NBL-cell-line-STAR-fpkm.txt', sep = '')) %>%
+  dplyr::rename(gene = GeneID) %>%
+  dplyr::select(-HU.FETAL.BRAIN)
+
+##see if we can re-create their bar plot based on MYCN levels
+goi = rnaExp %>%
+  dplyr::filter(gene == 'MYCN') %>%
+  tidyr::pivot_longer(cols = CHP134:SMSSAN, names_to = 'cellLine', values_to = 'fpkm') %>%
+  dplyr::arrange(fpkm) %>%
+  dplyr::mutate(cellLine = factor(cellLine, levels = cellLine))
+
+ggplot(goi, aes(cellLine, fpkm)) +
+  geom_bar(stat = 'identity') +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This plot looks correct. Now we should build a table that helps classify these cell lines based on their known MYCN status.
+
+```{r}
+##########################################################################################
+##build an annotation table
+assayDetails = read_tsv(paste(baseRepository, '/sequencing20220628_nbCellLineRnaSeq/manuscriptTable3.txt', sep = '')) %>%
+  dplyr::rename(cellLine = `Cell Line`, 
+                mycnStatus = `MYCN status`) %>%
+  dplyr::select(cellLine, mycnStatus) %>%
+  dplyr::mutate(cellLine = gsub('-','',cellLine)) %>%
+  dplyr::mutate(cellLine = ifelse(grepl('COGN557', cellLine), 'COGN557', cellLine)) %>%
+  dplyr::mutate(cellLine = ifelse(grepl('FELIX', cellLine), 'FELIX', cellLine)) %>%
+  dplyr::mutate(cellLine = ifelse(grepl('NBEBc1', cellLine), 'NBEBC1', cellLine)) %>%
+  dplyr::mutate(cellLine = ifelse(grepl('NB1,691', cellLine), 'NB1691', cellLine)) %>%
+  dplyr::mutate(cellLine = ifelse(grepl('COGN471', cellLine), 'COGN471', cellLine)) %>%
+  dplyr::mutate(cellLine = ifelse(grepl('NB1,643', cellLine), 'NB1643', cellLine)) %>%
+  dplyr::mutate(cellLine = ifelse(grepl('SKNBE\\(2\\)C', cellLine), 'SKNBE2C', cellLine)) %>%
+  dplyr::mutate(cellLine = ifelse(grepl('SKNBE\\(2\\)', cellLine), 'SKNBE2', cellLine)) %>%
+  dplyr::mutate(cellLine = ifelse(grepl('IMR05', cellLine), 'IMR5', cellLine))
+
+##remake the plot above with mycn details
+goiMyc = goi %>%
+  dplyr::left_join(assayDetails) %>%
+  dplyr::arrange(fpkm) %>%
+  dplyr::mutate(cellLine = factor(cellLine, levels = cellLine))
+
+ggplot(goiMyc, aes(cellLine, fpkm, fill = mycnStatus)) +
+  geom_bar(stat = 'identity') +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = 'none')
+
+##what about GREB1
+goi = rnaExp %>%
+  dplyr::filter(gene == 'GREB1') %>%
+  tidyr::pivot_longer(cols = CHP134:SMSSAN, names_to = 'cellLine', values_to = 'fpkm') %>%
+  dplyr::arrange(fpkm) %>%
+  dplyr::mutate(cellLine = factor(cellLine, levels = cellLine))
+
+goiMyc = goi %>%
+  dplyr::left_join(assayDetails) %>%
+  dplyr::arrange(fpkm) %>%
+  dplyr::mutate(cellLine = factor(cellLine, levels = cellLine))
+
+ggplot(goiMyc, aes(cellLine, fpkm, fill = mycnStatus)) +
+  geom_bar(stat = 'identity') +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = 'none')
+
+#compare these two genes
+genesOfInterest = c('GREB1','MYCN')
+goi = rnaExp %>%
+  dplyr::filter(gene %in% genesOfInterest) %>%
+  tidyr::pivot_longer(cols = CHP134:SMSSAN, names_to = 'cellLine', values_to = 'fpkm') %>%
+  tidyr::pivot_wider(names_from = 'gene', values_from = 'fpkm') %>%
+  dplyr::left_join(assayDetails)
+
+ggplot(goi, aes(MYCN, GREB1, color = mycnStatus)) +
+  geom_point()
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Alright these data look good. So now we want to derive a signature by comparing mycn and non-mycn amplified genes. Easiest way to do this is probably with a comparison between mycn amplified and non-amplified sets by PCA or a heatmap, from which we can extract the genes. 
+
+```{r}
+##########################################################################################
+
+
+
+```
+
+
+
+
+
+
