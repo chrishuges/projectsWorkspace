@@ -1,0 +1,524 @@
+---
+title: "CR131b Translatome Analysis"
+author: "Christopher Hughes"
+format: html
+editor: visual
+---
+
+This document details the analysis of RNAseq data from osteosarcoma cells treated with different concentrations of the drug CR-1-31b. We are going to use the R package [anota2seq](https://link.springer.com/protocol/10.1007/978-1-0716-1920-9_15) to process these data.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('tximport')
+library('GenomicFeatures')
+library('RColorBrewer')
+library('anota2seq')
+library('limma')
+library('edgeR')
+library('gridExtra')
+library('org.Hs.eg.db')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+## Data processing - heavy samples
+
+Create a table of the sample annotation details that we can use during the transcript data import.
+
+```{r}
+##########################################################################################
+##I created a sample table in excel previously, read it in here
+samples = read_tsv(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/sampleInfoMaster.txt', sep = ''))
+
+##assign the path to the quant files
+##there are two steps here because the file naming was different from the sequencing core facility
+#samples$files = ifelse(grepl('IX.*', samples$mainFolder), 
+#                       file.path(baseRepository, 'sequencing20220530_mikePolysomesCr131bOnly/results', paste(samples$index, '.counts.txt', sep = '')),
+#                       file.path(baseRepository, 'sequencing20220530_mikePolysomesCr131bOnly/results', paste(samples$library, '.counts.txt', sep = '')))
+samples$files = ifelse(grepl('IX.*', samples$mainFolder), 
+                       file.path(baseRepository, 'sequencing20220530_mikePolysomesCr131bOnly/quants', samples$index, 'quant.sf'),
+                       file.path(baseRepository, 'sequencing20220530_mikePolysomesCr131bOnly/quants', samples$library, 'quant.sf'))
+
+
+##check if all of the quant files exist
+files = samples$files
+all(file.exists(files))
+
+##view the sample table
+samples
+```
+
+Next we will need to create a transcriptome database we can use to annotate our data. We will do this using the same GTF we used in our original alignment. This can be a bit slow.
+
+```{r}
+##########################################################################################
+##read the gtf
+myTxdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/projectEwSDlg2/baseGenomeFiles/genome.gtf')
+k = keys(myTxdb, keytype = 'TXNAME')
+tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
+```
+
+Now we can read the data using the tximport function. For now I have focused on the heavy polysome files only, just to see how well it works.
+
+```{r}
+##########################################################################################
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+
+##what columns do we have available
+names(txi)
+
+##take a look at the count table
+rnaCounts = txi$counts
+colnames(rnaCounts) = samples$sample
+head(rnaCounts)
+```
+
+Anota2seq seems to want a specific annotation table format. I will transform our samples table into this format.
+
+```{r}
+##########################################################################################
+anot = data.frame('sample' = samples$sample,
+                  'rna' = rep(c('total','poly_light','poly_heavy'), each = 12),
+                  'condition' = samples$treatment,
+                  'replicate' = rep(seq(1,3,1),12))
+rownames(anot) = anot$sample
+
+##look at this table
+anot
+```
+
+Perform a PCA analysis of the samples to see if the replicates and treatments cluster as expected.
+
+```{r}
+##########################################################################################
+##make the matrix for PCA analysis
+tmpPca = as.matrix(rnaCounts[,c(1:12,25:36)])
+
+##remote mRNAs with a 0 in at least 1 sample
+tmpPcaNoZero = tmpPca[!apply(tmpPca, 1, FUN = function(x) any(x == 0)),]
+
+##normalize and transform the data
+tmpPcaNorm = voom(calcNormFactors(DGEList(tmpPcaNoZero)))$E
+
+##calculate the standard deviations and remove mRNAs with an SD in the first 3 quartiles
+tmpSd = apply(tmpPcaNorm, 1, sd)
+sdQuantiles = quantile(tmpSd)
+tmpPcaSdFilt = tmpPcaNorm[tmpSd > sdQuantiles[4], ]
+
+##transpose the data and perform the PCA analysis
+tmpPcaTrans = t(tmpPcaSdFilt)
+pcaOut = prcomp(tmpPcaTrans)
+
+##generate a barplot of the proportion of variance
+pcaVarPlot = summary(pcaOut)$importance[2,]
+pcaVarPlotTib = tibble('pc' = factor(names(pcaVarPlot), levels = names(pcaVarPlot)),
+                       'var' = pcaVarPlot)
+ggplot(pcaVarPlotTib, aes(pc, var)) +
+  geom_bar(stat = 'identity', fill = brewer.pal(3,'Greys')[2], color = 'black', size = 0.8) +
+  geom_hline(yintercept = 0.05, linetype = 'dashed', color = brewer.pal(3,'OrRd')[3]) +
+  labs(x = 'Component', y = 'Proportion of variance', title = 'PCA variance') +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+##generate a barplot of the cumulative proportion of variance
+pcaVarPlot = summary(pcaOut)$importance[3,]
+pcaVarPlotTib = tibble('pc' = factor(names(pcaVarPlot), levels = names(pcaVarPlot)),
+                       'var' = pcaVarPlot)
+ggplot(pcaVarPlotTib, aes(pc, var)) +
+  geom_bar(stat = 'identity', fill = brewer.pal(3,'Greys')[2], color = 'black', size = 0.8) +
+  geom_hline(yintercept = 0.7, linetype = 'dashed', color = brewer.pal(3,'OrRd')[3]) +
+  labs(x = 'Component', y = 'Cumulative proportion of variance', title = 'PCA variance') +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+##merge the PCA output with the annotation file and plot the result
+pcaPlot = merge(pcaOut$x, anot[c(1:12,25:36),], by = 'row.names')
+ggplot(pcaPlot, aes(x = PC1, y = PC2, shape = rna, col = condition)) +
+  geom_point() +
+  geom_text(aes(label = replicate, vjust = 1, hjust = 1))
+```
+
+So it looks like PC1, the major source of variance, is the RNA source (e.g. total RNA vs polysomes), which is expected. The next largest source of variance is the CR1 drug concentration (PC2). 
+
+We can move on to the actual anota2seq analysis now. There is a specific format for the anota2seq table and I suggest reading their documentation to figure out it. We will make that object now.
+
+```{r}
+##########################################################################################
+##extract values for polysome and total RNA for the conditions you want to compare
+conditionsOfInterest = c('dmso','cr2','cr4','cr8')
+tmpDataP = rnaCounts[, anot[anot$rna == 'poly_heavy' & anot$condition %in% conditionsOfInterest, 'sample']]
+tmpDataT = rnaCounts[, anot[anot$rna == 'total' & anot$condition %in% conditionsOfInterest, 'sample']]
+colnames(tmpDataP)
+colnames(tmpDataT)
+
+##generate the phenoVec
+phenoVec = anot[anot$rna == 'poly_heavy' & anot$condition %in% conditionsOfInterest, 'condition']
+phenoVec
+```
+
+We can now initialize the anota2seq object.
+
+```{r}
+##########################################################################################
+ads = anota2seqDataSetFromMatrix(dataP = tmpDataP,
+                                 dataT = tmpDataT,
+                                 phenoVec = phenoVec,
+                                 dataType = 'RNAseq',
+                                 normalize = T)
+
+##view the data
+ads
+```
+
+Perofming quality control and testing model assumptions.
+
+```{r}
+##########################################################################################
+setwd(paste(baseRepository,'/sequencing20220530_mikePolysomesCr131bOnly/anota2seq/heavy',sep=''))
+ads = anota2seqPerformQC(ads)
+ads = anota2seqResidOutlierTest(ads)
+```
+
+I inspected the plots output from these QC steps and compared them to the anota2seq vignette, and they look appropriate. Now we can move on with performing contrasts.
+
+```{r}
+##########################################################################################
+myContrast = matrix(nrow = length(levels(as.factor(phenoVec))),
+                    ncol = length(levels(as.factor(phenoVec))) - 1)
+rownames(myContrast) = levels(as.factor(phenoVec))
+myContrast[,1] = c(1,0,0,-1)
+myContrast[,2] = c(0,1,0,-1)
+myContrast[,3] = c(0,0,1,-1)
+myContrast
+
+##run the algorithm to compare these conditions
+ads = anota2seqAnalyze(ads, contrasts = myContrast)
+
+##generate some plots
+setwd(paste(baseRepository,'/sequencing20220530_mikePolysomesCr131bOnly/anota2seq/heavy',sep=''))
+anota2seqPlotPvalues(ads, selContrast = 1, plotToFile = F)
+anota2seqPlotPvalues(ads, selContrast = 2, plotToFile = F)
+anota2seqPlotPvalues(ads, selContrast = 3, plotToFile = F)
+
+##apply significance thresholds to identify regulated mRNAs
+ads = anota2seqSelSigGenes(ads,
+                           maxPAdj = 0.15,
+                           selDeltaPT = log2(1.2),
+                           selDeltaTP = log2(1.2),
+                           selDeltaP = 0,
+                           selDeltaT = 0,
+                           minSlopeTranslation = -1,
+                           maxSlopeTranslation = 2,
+                           minSlopeBuffering = -2,
+                           maxSlopeBuffering = 1)
+
+##generate the anota2seq single gene plots
+#anota2seqPlotGenes(ads, selContrast = 1, analysis = 'buffering', plotToFile = F)
+
+##determine modes of gene expression regulation
+ads = anota2seqRegModes(ads)
+
+##visualize results with a fold change plot
+anota2seqPlotFC(ads, selContrast = 1, plotToFile = F)
+anota2seqPlotFC(ads, selContrast = 2, plotToFile = F)
+anota2seqPlotFC(ads, selContrast = 3, plotToFile = F)
+
+##output the data
+dataOut = anota2seqGetOutput(ads, output = 'singleDf', selContrast = 1)
+ens.str = substr(rownames(dataOut), 1, 15)
+dataOut$symbol = mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+write.table(dataOut, 
+            paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/anota2seq/heavy/dataset_anota2seq_heavy_dmso-cr2.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+dataOut = anota2seqGetOutput(ads, output = 'singleDf', selContrast = 2)
+ens.str = substr(rownames(dataOut), 1, 15)
+dataOut$symbol = mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+write.table(dataOut, 
+            paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/anota2seq/heavy/dataset_anota2seq_heavy_dmso-cr4.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+dataOut = anota2seqGetOutput(ads, output = 'singleDf', selContrast = 3)
+ens.str = substr(rownames(dataOut), 1, 15)
+dataOut$symbol = mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+write.table(dataOut, 
+            paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/anota2seq/heavy/dataset_anota2seq_heavy_dmso-cr8.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+
+## Data processing - light samples
+
+Create a table of the sample annotation details that we can use during the transcript data import.
+
+```{r}
+##########################################################################################
+##I created a sample table in excel previously, read it in here
+samples = read_tsv(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/sampleInfoMaster.txt', sep = ''))
+
+##assign the path to the quant files
+##there are two steps here because the file naming was different from the sequencing core facility
+#samples$files = ifelse(grepl('IX.*', samples$mainFolder), 
+#                       file.path(baseRepository, 'sequencing20220530_mikePolysomesCr131bOnly/results', paste(samples$index, '.counts.txt', sep = '')),
+#                       file.path(baseRepository, 'sequencing20220530_mikePolysomesCr131bOnly/results', paste(samples$library, '.counts.txt', sep = '')))
+samples$files = ifelse(grepl('IX.*', samples$mainFolder), 
+                       file.path(baseRepository, 'sequencing20220530_mikePolysomesCr131bOnly/quants', samples$index, 'quant.sf'),
+                       file.path(baseRepository, 'sequencing20220530_mikePolysomesCr131bOnly/quants', samples$library, 'quant.sf'))
+
+
+##check if all of the quant files exist
+files = samples$files
+all(file.exists(files))
+
+##view the sample table
+samples
+```
+
+Next we will need to create a transcriptome database we can use to annotate our data. We will do this using the same GTF we used in our original alignment. This can be a bit slow.
+
+```{r}
+##########################################################################################
+##read the gtf
+myTxdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/projectEwSDlg2/baseGenomeFiles/genome.gtf')
+k = keys(myTxdb, keytype = 'TXNAME')
+tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
+```
+
+Now we can read the data using the tximport function. For now I have focused on the heavy polysome files only, just to see how well it works.
+
+```{r}
+##########################################################################################
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+
+##what columns do we have available
+names(txi)
+
+##take a look at the count table
+rnaCounts = txi$counts
+colnames(rnaCounts) = samples$sample
+head(rnaCounts)
+```
+
+Anota2seq seems to want a specific annotation table format. I will transform our samples table into this format.
+
+```{r}
+##########################################################################################
+anot = data.frame('sample' = samples$sample,
+                  'rna' = rep(c('total','poly_light','poly_heavy'), each = 12),
+                  'condition' = samples$treatment,
+                  'replicate' = rep(seq(1,3,1),12))
+rownames(anot) = anot$sample
+
+##look at this table
+anot
+```
+
+Perform a PCA analysis of the samples to see if the replicates and treatments cluster as expected.
+
+```{r}
+##########################################################################################
+##make the matrix for PCA analysis
+tmpPca = as.matrix(rnaCounts[,c(1:24)])
+
+##remote mRNAs with a 0 in at least 1 sample
+tmpPcaNoZero = tmpPca[!apply(tmpPca, 1, FUN = function(x) any(x == 0)),]
+
+##normalize and transform the data
+tmpPcaNorm = voom(calcNormFactors(DGEList(tmpPcaNoZero)))$E
+
+##calculate the standard deviations and remove mRNAs with an SD in the first 3 quartiles
+tmpSd = apply(tmpPcaNorm, 1, sd)
+sdQuantiles = quantile(tmpSd)
+tmpPcaSdFilt = tmpPcaNorm[tmpSd > sdQuantiles[4], ]
+
+##transpose the data and perform the PCA analysis
+tmpPcaTrans = t(tmpPcaSdFilt)
+pcaOut = prcomp(tmpPcaTrans)
+
+##generate a barplot of the proportion of variance
+pcaVarPlot = summary(pcaOut)$importance[2,]
+pcaVarPlotTib = tibble('pc' = factor(names(pcaVarPlot), levels = names(pcaVarPlot)),
+                       'var' = pcaVarPlot)
+ggplot(pcaVarPlotTib, aes(pc, var)) +
+  geom_bar(stat = 'identity', fill = brewer.pal(3,'Greys')[2], color = 'black', size = 0.8) +
+  geom_hline(yintercept = 0.05, linetype = 'dashed', color = brewer.pal(3,'OrRd')[3]) +
+  labs(x = 'Component', y = 'Proportion of variance', title = 'PCA variance') +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+##generate a barplot of the cumulative proportion of variance
+pcaVarPlot = summary(pcaOut)$importance[3,]
+pcaVarPlotTib = tibble('pc' = factor(names(pcaVarPlot), levels = names(pcaVarPlot)),
+                       'var' = pcaVarPlot)
+ggplot(pcaVarPlotTib, aes(pc, var)) +
+  geom_bar(stat = 'identity', fill = brewer.pal(3,'Greys')[2], color = 'black', size = 0.8) +
+  geom_hline(yintercept = 0.7, linetype = 'dashed', color = brewer.pal(3,'OrRd')[3]) +
+  labs(x = 'Component', y = 'Cumulative proportion of variance', title = 'PCA variance') +
+  theme_classic() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+##merge the PCA output with the annotation file and plot the result
+pcaPlot = merge(pcaOut$x, anot[c(1:24),], by = 'row.names')
+ggplot(pcaPlot, aes(x = PC1, y = PC2, shape = rna, col = condition)) +
+  geom_point() +
+  geom_text(aes(label = replicate, vjust = 1, hjust = 1))
+```
+
+So it looks like PC1, the major source of variance, is the RNA source (e.g. total RNA vs polysomes), which is expected. The next largest source of variance is the CR1 drug concentration (PC2). 
+
+We can move on to the actual anota2seq analysis now. There is a specific format for the anota2seq table and I suggest reading their documentation to figure out it. We will make that object now.
+
+```{r}
+##########################################################################################
+##extract values for polysome and total RNA for the conditions you want to compare
+conditionsOfInterest = c('dmso','cr2','cr4','cr8')
+tmpDataP = rnaCounts[, anot[anot$rna == 'poly_light' & anot$condition %in% conditionsOfInterest, 'sample']]
+tmpDataT = rnaCounts[, anot[anot$rna == 'total' & anot$condition %in% conditionsOfInterest, 'sample']]
+colnames(tmpDataP)
+colnames(tmpDataT)
+
+##generate the phenoVec
+phenoVec = anot[anot$rna == 'poly_light' & anot$condition %in% conditionsOfInterest, 'condition']
+phenoVec
+```
+
+We can now initialize the anota2seq object.
+
+```{r}
+##########################################################################################
+ads = anota2seqDataSetFromMatrix(dataP = tmpDataP,
+                                 dataT = tmpDataT,
+                                 phenoVec = phenoVec,
+                                 dataType = 'RNAseq',
+                                 normalize = T)
+
+##view the data
+ads
+```
+
+Perofming quality control and testing model assumptions.
+
+```{r}
+##########################################################################################
+setwd(paste(baseRepository,'/sequencing20220530_mikePolysomesCr131bOnly/anota2seq/light',sep=''))
+ads = anota2seqPerformQC(ads)
+ads = anota2seqResidOutlierTest(ads)
+```
+
+I inspected the plots output from these QC steps and compared them to the anota2seq vignette, and they look appropriate. Now we can move on with performing contrasts.
+
+```{r}
+##########################################################################################
+myContrast = matrix(nrow = length(levels(as.factor(phenoVec))),
+                    ncol = length(levels(as.factor(phenoVec))) - 1)
+rownames(myContrast) = levels(as.factor(phenoVec))
+myContrast[,1] = c(1,0,0,-1)
+myContrast[,2] = c(0,1,0,-1)
+myContrast[,3] = c(0,0,1,-1)
+myContrast
+
+##run the algorithm to compare these conditions
+ads = anota2seqAnalyze(ads, contrasts = myContrast)
+
+##generate some plots
+setwd(paste(baseRepository,'/sequencing20220530_mikePolysomesCr131bOnly/anota2seq/light',sep=''))
+anota2seqPlotPvalues(ads, selContrast = 1, plotToFile = F)
+anota2seqPlotPvalues(ads, selContrast = 2, plotToFile = F)
+anota2seqPlotPvalues(ads, selContrast = 3, plotToFile = F)
+
+##apply significance thresholds to identify regulated mRNAs
+ads = anota2seqSelSigGenes(ads,
+                           maxPAdj = 0.15,
+                           selDeltaPT = log2(1.2),
+                           selDeltaTP = log2(1.2),
+                           selDeltaP = 0,
+                           selDeltaT = 0,
+                           minSlopeTranslation = -1,
+                           maxSlopeTranslation = 2,
+                           minSlopeBuffering = -2,
+                           maxSlopeBuffering = 1)
+
+##generate the anota2seq single gene plots
+#anota2seqPlotGenes(ads, selContrast = 1, analysis = 'buffering', plotToFile = F)
+
+##determine modes of gene expression regulation
+ads = anota2seqRegModes(ads)
+
+##visualize results with a fold change plot
+anota2seqPlotFC(ads, selContrast = 1, plotToFile = F)
+anota2seqPlotFC(ads, selContrast = 2, plotToFile = F)
+anota2seqPlotFC(ads, selContrast = 3, plotToFile = F)
+
+##output the data
+dataOut = anota2seqGetOutput(ads, output = 'singleDf', selContrast = 1)
+ens.str = substr(rownames(dataOut), 1, 15)
+dataOut$symbol = mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+write.table(dataOut, 
+            paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/anota2seq/light/dataset_anota2seq_light_dmso-cr2.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+dataOut = anota2seqGetOutput(ads, output = 'singleDf', selContrast = 2)
+ens.str = substr(rownames(dataOut), 1, 15)
+dataOut$symbol = mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+write.table(dataOut, 
+            paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/anota2seq/light/dataset_anota2seq_light_dmso-cr4.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+dataOut = anota2seqGetOutput(ads, output = 'singleDf', selContrast = 3)
+ens.str = substr(rownames(dataOut), 1, 15)
+dataOut$symbol = mapIds(org.Hs.eg.db,
+                     keys=ens.str,
+                     column="SYMBOL",
+                     keytype="ENSEMBL",
+                     multiVals="first")
+write.table(dataOut, 
+            paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/anota2seq/light/dataset_anota2seq_light_dmso-cr8.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Done for now.
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

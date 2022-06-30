@@ -142,7 +142,7 @@ ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
   geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
   theme_classic()
 ##
-ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_deseq2_', datasetFirst, '-', datasetSecond, '.pdf', sep = ''),
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_deseq2_total_', datasetFirst, '-', datasetSecond, '.pdf', sep = ''),
        height = 2, width = 2, useDingbats = FALSE)
 ```
 
