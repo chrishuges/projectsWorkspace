@@ -87,6 +87,8 @@ names(txi)
 rnaCounts = txi$counts
 colnames(rnaCounts) = samples$sample
 head(rnaCounts)
+saveRDS(rnaCounts,
+        paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/quants/dataset_allSamplesRawCounts.rds',sep=''))
 ```
 
 Anota2seq seems to want a specific annotation table format. I will transform our samples table into this format.
@@ -154,7 +156,7 @@ ggplot(pcaPlot, aes(x = PC1, y = PC2, shape = rna, col = condition)) +
   geom_text(aes(label = replicate, vjust = 1, hjust = 1))
 ```
 
-So it looks like PC1, the major source of variance, is the RNA source (e.g. total RNA vs polysomes), which is expected. The next largest source of variance is the CR1 drug concentration (PC2). 
+So it looks like PC1, the major source of variance, is the RNA source (e.g. total RNA vs polysomes), which is expected. The next largest source of variance is the CR1 drug concentration (PC2).
 
 We can move on to the actual anota2seq analysis now. There is a specific format for the anota2seq table and I suggest reading their documentation to figure out it. We will make that object now.
 
@@ -273,7 +275,6 @@ write.table(dataOut,
             paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/anota2seq/heavy/dataset_anota2seq_heavy_dmso-cr8.tsv',sep=''),
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
-
 
 ## Data processing - light samples
 
@@ -394,7 +395,7 @@ ggplot(pcaPlot, aes(x = PC1, y = PC2, shape = rna, col = condition)) +
   geom_text(aes(label = replicate, vjust = 1, hjust = 1))
 ```
 
-So it looks like PC1, the major source of variance, is the RNA source (e.g. total RNA vs polysomes), which is expected. The next largest source of variance is the CR1 drug concentration (PC2). 
+So it looks like PC1, the major source of variance, is the RNA source (e.g. total RNA vs polysomes), which is expected. The next largest source of variance is the CR1 drug concentration (PC2).
 
 We can move on to the actual anota2seq analysis now. There is a specific format for the anota2seq table and I suggest reading their documentation to figure out it. We will make that object now.
 
