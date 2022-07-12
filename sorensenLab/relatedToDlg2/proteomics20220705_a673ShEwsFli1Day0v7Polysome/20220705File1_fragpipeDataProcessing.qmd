@@ -1,0 +1,207 @@
+---
+title: "ews-fli1 shrna proteomics"
+author: "Christopher Hughes"
+format: html
+editor: visual
+---
+
+This document details the analysis of proteomics data acquired to look A673 cells treated with shRNAs against EWS-FLI1 (7 days). These cells were also used for polysome analysis. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+##########################################################################################
+library('tidyverse')
+library('DEqMS')
+library('RColorBrewer')
+library('ggrepel')
+library('tximport')
+library('GenomicFeatures')
+library('org.Hs.eg.db')
+library('corrr')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+
+## Raw data processing
+
+Process the psm and quant data.
+
+```{r}
+##########################################################################################
+##read the PSM data
+psmData = read_tsv('D:/msDataTemp/proteomics20220705_a673ShEwsFli1Day0v7Polysome/fragpipeAnalysisCombined/shEwsFli1/psm.tsv', show_col_types = FALSE) %>%
+  dplyr::rename(sequence = Peptide,
+                accession = `Protein ID`,
+                gene = Gene) %>%
+  dplyr::mutate(scan = as.numeric(sub('.*microFrac[0-9]+\\.(.*)\\.[0-9]+\\.[0-9]+','\\1',Spectrum))) %>%
+  dplyr::mutate(fraction = sub('.*microFrac(.*)\\.[0-9]+\\.[0-9]+\\.[0-9]+','\\1',Spectrum)) %>%
+  dplyr::select(accession, gene, scan, fraction, sequence) %>%
+  dplyr::mutate(gene = ifelse(grepl('NP_', accession), 'DLG2', gene))
+```
+
+Now we can get the quant data.
+
+```{r}
+##########################################################################################
+##this is the function we will use
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath, show_col_types = FALSE) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`131NIntensity`)
+  colnames(quantData) = c('scan','tmt126C','tmt127N','tmt128C','tmt129N','tmt130C','tmt131N')
+  ##
+  fraction = sub('.*microFrac(.*)\\.raw_Matrix\\.txt', '\\1', filePath)
+  quantData$fraction = fraction
+  print(paste('Processing file for fraction ', fraction, '.', sep = ''))
+  ##
+  return(quantData)
+}
+
+##
+quantFiles = list.files('D:/msDataTemp/proteomics20220705_a673ShEwsFli1Day0v7Polysome/',
+           pattern = '_Matrix.txt', full.names = TRUE)
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+allQuantData = do.call('rbind', quantDataSet)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now combine the data.
+
+```{r}
+##########################################################################################
+combinedData = psmData %>%
+  left_join(allQuantData)
+
+##
+saveRDS(combinedData, paste(baseRepository, '/proteomics20220705_a673ShEwsFli1Day0v7Polysome/dataset_processedIdAndQuantPsmData.rds', sep=''))
+```
+
+
+## Perform DeQMS analysis
+
+Now we will filter the expression data to discard any entries where the signal is just too low to be confident in the data. Here we also filter out genes that have no assigned gene name as this will cause problems with DEqMS later on. If you don't want to do this, I suggest using 'accession' instead of 'gene' in the DEqMS analysis below.
+
+Our sample layout is:
+
+* 126C - day0
+* 127N - day7
+* 128C - day0
+* 129N - day7
+* 130C - day0
+* 131N - day7
+
+```{r}
+##########################################################################################
+psmQuant = readRDS(paste(baseRepository, '/proteomics20220705_a673ShEwsFli1Day0v7Polysome/dataset_processedIdAndQuantPsmData.rds', sep=''))
+psmQuant$sampleSignal = rowSums(psmQuant[,c(6:11)])
+psmQuantFiltered = subset(psmQuant, psmQuant$sampleSignal >= 600 & !is.na(psmQuant$gene) & !grepl('-', psmQuant$gene))
+```
+
+We will also normalize the data to deal with any gross loading differences. We save both the non-normalized data here as well and check the normalization with a plot.
+
+```{r}
+##########################################################################################
+quantInput = psmQuantFiltered
+saveRDS(quantInput, paste(baseRepository, '/proteomics20220705_a673ShEwsFli1Day0v7Polysome/dataset_peptideQuantDataPreDEqMS.rds', sep = ''))
+quantInputLog = quantInput[,c(5,2,6:11)]
+quantInputLog[,3:8][quantInputLog[,3:8] == 0] = NA
+quantInputLog[,3:8] = log2(quantInputLog[,3:8])
+quantInputNormalized = medianSweeping(quantInputLog, group_col = 2)
+boxplot(quantInputNormalized, las = 2, ylab = 'log2 ratio', main = 'normalized TMT data')
+```
+
+All of the data look tight. Good. Lets continue with the DEqMS analysis. We need to build our sample table.
+
+```{r}
+##########################################################################################
+cond = as.factor(c('day0','day7','day0','day7','day0','day7'))
+design = model.matrix(~0+cond) 
+colnames(design) = gsub('cond', '', colnames(design))
+```
+
+Now we can build the Limma model.
+
+```{r}
+##########################################################################################
+geneMatrix = as.matrix(quantInputNormalized)
+limmaFit1 = lmFit(geneMatrix, design)
+limmaContrasts = c('day7 - day0')
+limmaContrastDesign =  makeContrasts(contrasts = limmaContrasts, levels = design)
+limmaFit2 = eBayes(contrasts.fit(limmaFit1, contrasts = limmaContrastDesign))
+```
+
+Now for the actual DEqMS work.
+
+```{r}
+##########################################################################################
+psmCountTable = as.data.frame(table(quantInput$gene))
+rownames(psmCountTable) = psmCountTable$Var1
+limmaFit2$count = psmCountTable[rownames(limmaFit2$coefficients),2]
+limmaFit3 = spectraCounteBayes(limmaFit2)
+head(limmaFit3$coefficients)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 1)
+dim(deqmsResults)
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20220705_a673ShEwsFli1Day0v7Polysome/dataset_deqms_day7-day0.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+```
+
+Generate the variance plot to see the DEqMS model for the data.
+
+```{r}
+##########################################################################################
+VarianceBoxplot(limmaFit3, n=20, xlab = 'PSM count', main = 'DEqMS analysis of TMT data')
+```
+
+This looks as it should. Now let us make a volcano plot to show the data.
+
+```{r}
+##########################################################################################
+##
+si132Results = as_tibble(outputResult(limmaFit3, coef_col = 1)) %>%
+  dplyr::rename(si132_fc = 'logFC', si132_pval = 'sca.P.Value') %>%
+  dplyr::select(si132_fc, si132_pval)
+si132Results$gene = row.names(outputResult(limmaFit3, coef_col = 1))
+
+##
+siBoth$pColors = ifelse(siBoth$si132_fc <= -0.5 & siBoth$si133_fc <= -0.5, brewer.pal(8,'RdBu')[8],
+                              ifelse(siBoth$si132_fc >= 0.5 & siBoth$si133_fc >= 0.5, brewer.pal(8,'RdBu')[1],
+                                     brewer.pal(8,'Greys')[6]))
+goi = c('DLG2')
+#siBoth$pText = ifelse(siBoth$gene %in% goi, siBoth$gene, '')
+siBoth$pText = ifelse(siBoth$si132_fc <= -1 & siBoth$si133_fc <= -1, siBoth$gene,
+                              ifelse(siBoth$si132_fc >= 1.2 & siBoth$si133_fc >= 1.2, siBoth$gene,
+                                     ''))
+##
+ggplot(siBoth, aes(si132_fc, si133_fc)) +
+  geom_point(size = 1, color = siBoth$pColors, alpha = 0.5) +
+  geom_text_repel(label = siBoth$pText, nudge_x = -2, max.overlaps = 10000) +
+  labs(x = 'log2(si132 - neg)', y = 'log2(si133 - neg)', title = 'siDLG2 in EwS abundance') +
+  scale_x_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  scale_y_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = c(-0.5,0.5), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/scatter_deqms_a673_siBoth.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+#
+write.table(siBoth, 
+            paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/dataset_deqms_siBoth.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+saveRDS(siBoth, paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/dataset_deqms_siBoth.rds', sep = ''))
+```

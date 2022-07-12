@@ -1,0 +1,482 @@
+---
+title: "ews-fli1 shrna proteomics"
+  html_notebook:
+      code_folding: none
+---
+
+This document details the analysis of proteomics data acquired to look A673 cells treated with shRNAs against EWS-FLI1 (7 days). These cells were also used for polysome analysis. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r, message = FALSE, warning=FALSE}
+##########################################################################################
+library('tidyverse')
+library('DEqMS')
+library('RColorBrewer')
+library('ggrepel')
+library('tximport')
+library('GenomicFeatures')
+library('org.Hs.eg.db')
+library('corrr')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
+#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+<div style="margin-bottom:50px;"></div>
+
+## Data processing
+
+First we can process the psm and quant data.
+
+```{r}
+##########################################################################################
+##read the PSM data
+psmData = read_tsv('D:/msDataTemp/proteomics20220601_dlg2SirnaA673a/fragpipeAnalysis/psm.tsv') %>%
+  dplyr::rename(sequence = Peptide,
+                accession = `Protein ID`,
+                gene = Gene) %>%
+  dplyr::mutate(scan = as.numeric(sub('.*[6580]+\\.(.*)\\.[0-9]+\\.[0-9]+','\\1',Spectrum))) %>%
+  dplyr::mutate(faims = sub('.*faims(.*)\\.[0-9]+\\.[0-9]+\\.[0-9]+','\\1',Spectrum)) %>%
+  dplyr::mutate(fraction = sub('.*frac(.*)_faims[0-9]+\\-[0-9]+\\.[0-9]+\\.[0-9]+\\.[0-9]+','\\1',Spectrum)) %>%
+  dplyr::select(accession, gene, scan, faims, fraction, sequence) %>%
+  dplyr::mutate(gene = ifelse(grepl('NP_', accession), 'DLG2', gene))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can get the quant data.
+
+```{r}
+##########################################################################################
+##this is the function we will use
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`131CIntensity`)
+  colnames(quantData) = c('scan','tmt126C','tmt127N','tmt127C','tmt128N','tmt128C','tmt129N',
+                          'tmt129C','tmt130N','tmt130C','tmt131N','tmt131C')
+  ##
+  faims = sub('.*faims(.*)\\.raw_Matrix\\.txt','\\1', filePath)
+  fraction = sub('.*_frac(.*)_faims[0-9]+\\-[0-9]+\\.raw_Matrix\\.txt', '\\1', filePath)
+  quantData$faims = faims
+  quantData$fraction = fraction
+  print(paste('Processing file for fraction ', fraction, '.', sep = ''))
+  ##
+  return(quantData)
+}
+
+##
+quantFiles = list.files('D:/msDataTemp/proteomics20220601_dlg2SirnaA673a/',
+           pattern = '_Matrix.txt', full.names = TRUE)
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+allQuantData = do.call('rbind', quantDataSet)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now combine the data.
+
+```{r}
+##########################################################################################
+combinedData = psmData %>%
+  left_join(allQuantData)
+
+##
+saveRDS(combinedData, paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/dataset_processedIdAndQuantPsmData.rds', sep=''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we will filter the expression data to discard any entries where the signal is just too low to be confident in the data. Here we also filter out genes that have no assigned gene name as this will cause problems with DEqMS later on. If you don't want to do this, I suggest using 'accession' instead of 'gene' in the DEqMS analysis below.
+
+Our sample layout is:
+
+* 126C - si132
+* 127N - si133
+* 127C - si132
+* 128N - si133
+* 128C - si132
+* 129N - si133
+* 129C - empty
+* 130N - empty
+* 130C - neg
+* 131N - neg
+* 131C - neg
+
+```{r}
+##########################################################################################
+psmQuant = readRDS(paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/dataset_processedIdAndQuantPsmData.rds', sep=''))
+psmQuant$sampleSignal = rowSums(psmQuant[,c(7:12,15:17)])
+psmQuantFiltered = subset(psmQuant, psmQuant$sampleSignal >= 900 & !is.na(psmQuant$gene) & !grepl('-', psmQuant$gene))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+We will also normalize the data to deal with any gross loading differences. We save both the non-normalized data here as well and check the normalization with a plot.
+
+```{r}
+##########################################################################################
+quantInput = psmQuantFiltered[,c(1:12,15:17)]
+saveRDS(quantInput, paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/dataset_peptideQuantDataPreDEqMS.rds', sep = ''))
+quantInputLog = quantInput[,c(6,2,7:15)]
+quantInputLog[,3:11][quantInputLog[,3:11] == 0] = NA
+quantInputLog[,3:11] = log2(quantInputLog[,3:11])
+quantInputNormalized = medianSweeping(quantInputLog, group_col = 2)
+boxplot(quantInputNormalized, las = 2, ylab = 'log2 ratio', main = 'normalized TMT data')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+All of the data look tight. Good. Lets continue with the DEqMS analysis. We need to build our sample table.
+
+```{r}
+##########################################################################################
+cond = as.factor(c('si132','si133','si132','si133','si132','si133','siNeg','siNeg','siNeg'))
+design = model.matrix(~0+cond) 
+colnames(design) = gsub('cond', '', colnames(design))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now we can build the Limma model.
+
+```{r}
+##########################################################################################
+geneMatrix = as.matrix(quantInputNormalized)
+limmaFit1 = lmFit(geneMatrix, design)
+limmaContrasts = c('si132 - siNeg', 'si133 - siNeg', 'si132 - si133')
+limmaContrastDesign =  makeContrasts(contrasts = limmaContrasts, levels = design)
+limmaFit2 = eBayes(contrasts.fit(limmaFit1, contrasts = limmaContrastDesign))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now for the actual DEqMS work. We will first
+
+```{r}
+##########################################################################################
+psmCountTable = as.data.frame(table(quantInput$gene))
+rownames(psmCountTable) = psmCountTable$Var1
+limmaFit2$count = psmCountTable[rownames(limmaFit2$coefficients),2]
+limmaFit3 = spectraCounteBayes(limmaFit2)
+head(limmaFit3$coefficients)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 1)
+dim(deqmsResults)
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/dataset_deqms_si132-neg.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 2)
+dim(deqmsResults)
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/dataset_deqms_si133-neg.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 3)
+dim(deqmsResults)
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/dataset_deqms_si132-si133.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Generate the variance plot to see the DEqMS model for the data.
+
+```{r}
+##########################################################################################
+VarianceBoxplot(limmaFit3, n=20, xlab = 'PSM count', main = 'DEqMS analysis of TMT data')
+```
+
+<div style="margin-bottom:50px;"></div>
+
+This looks as it should. Now let us make a volcano plot to show the data.
+
+```{r}
+##########################################################################################
+##
+si132Results = as_tibble(outputResult(limmaFit3, coef_col = 1)) %>%
+  dplyr::rename(si132_fc = 'logFC', si132_pval = 'sca.P.Value') %>%
+  dplyr::select(si132_fc, si132_pval)
+si132Results$gene = row.names(outputResult(limmaFit3, coef_col = 1))
+
+##
+si133Results = as_tibble(outputResult(limmaFit3, coef_col = 2)) %>%
+  dplyr::rename(si133_fc = 'logFC', si133_pval = 'sca.P.Value') %>%
+  dplyr::select(si133_fc, si133_pval)
+si133Results$gene = row.names(outputResult(limmaFit3, coef_col = 2))
+
+
+##
+siBoth = si132Results %>%
+  dplyr::inner_join(si133Results)
+
+
+##
+siBoth$pColors = ifelse(siBoth$si132_fc <= -0.5 & siBoth$si133_fc <= -0.5, brewer.pal(8,'RdBu')[8],
+                              ifelse(siBoth$si132_fc >= 0.5 & siBoth$si133_fc >= 0.5, brewer.pal(8,'RdBu')[1],
+                                     brewer.pal(8,'Greys')[6]))
+goi = c('DLG2')
+#siBoth$pText = ifelse(siBoth$gene %in% goi, siBoth$gene, '')
+siBoth$pText = ifelse(siBoth$si132_fc <= -1 & siBoth$si133_fc <= -1, siBoth$gene,
+                              ifelse(siBoth$si132_fc >= 1.2 & siBoth$si133_fc >= 1.2, siBoth$gene,
+                                     ''))
+##
+ggplot(siBoth, aes(si132_fc, si133_fc)) +
+  geom_point(size = 1, color = siBoth$pColors, alpha = 0.5) +
+  geom_text_repel(label = siBoth$pText, nudge_x = -2, max.overlaps = 10000) +
+  labs(x = 'log2(si132 - neg)', y = 'log2(si133 - neg)', title = 'siDLG2 in EwS abundance') +
+  scale_x_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  scale_y_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = c(-0.5,0.5), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/scatter_deqms_a673_siBoth.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+#
+write.table(siBoth, 
+            paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/dataset_deqms_siBoth.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+saveRDS(siBoth, paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/dataset_deqms_siBoth.rds', sep = ''))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+I did a quick enrichment analysis on gProfiler, and nothing really came up for genes changing in both siRNAs. But, we have a lot of sequencing data for EwS...can we leverage these to pull out candidates?
+
+```{r}
+##########################################################################################
+rnaTotal = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day7-day0.rds',sep='')) %>%
+  dplyr::select(log2FoldChange, symbol) %>%
+  dplyr::rename(gene = 'symbol', totalRnaFc = 'log2FoldChange')
+proTotal = read_csv(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_deqms_day7-day0.csv', sep = '')) %>%
+  dplyr::select(gene, logFC) %>%
+  dplyr::rename(totalProFc = 'logFC')
+
+##
+dlg2 = readRDS(paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/dataset_deqms_siBoth.rds', sep = '')) %>%
+  dplyr::filter(grepl('[A-Z]+',pText)) #18 genes pass this filter
+  
+  
+##depmap cell line expressionto define a specificity score
+ccle = readRDS(paste(generalDatasets, '/depmap21Q4/CCLE_expression_parsed.rds', sep = ''))
+targetGenes = unique(dlg2$gene)
+
+#
+cells = ccle %>%
+  dplyr::select(gene, log2Tpm, lineage_subtype) %>%
+  dplyr::mutate(isEwing = ifelse(grepl('Ewing', lineage_subtype), 'yes', 'no')) %>%
+  dplyr::select(-lineage_subtype) %>%
+  dplyr::filter(gene %in% targetGenes)
+
+ewsSpecScores = data.frame()
+for (i in 1:length(targetGenes)){
+  targetGene = cells %>%
+    dplyr::filter(gene == targetGenes[i]) %>%
+    group_by(isEwing) %>%
+    dplyr::summarise(medRna = median(log2Tpm, na.rm = TRUE))
+  if (nrow(targetGene) < 2){
+    #message('no value for ', rnaProGenes[i])
+    targetGeneScore = data.frame('gene' = targetGenes[i],
+                               'medRna' = NA)
+    ewsSpecScores = rbind(ewsSpecScores, targetGeneScore)
+  } else {
+      targetGeneScore = data.frame('gene' = targetGenes[i],
+                               'medRna' = targetGene[targetGene$isEwing == 'no', 'medRna'] - targetGene[targetGene$isEwing == 'yes', 'medRna'])
+      ewsSpecScores = rbind(ewsSpecScores, targetGeneScore)
+  }
+}
+ewsCellScores = ewsSpecScores %>%
+  dplyr::rename(cellScore = medRna)
+
+
+##
+##msc regulation
+msc = read_tsv(paste(baseRepository, '/sequencing20210419_survivalAndBafComplexIntersection/GSE94277_counts_matrix.txt.gz', sep = '')) %>%
+  dplyr::select(gene, MSC1.control.RNAseq:MSC1b.FLI1.RNAseq, MSC5.shGFP.control.RNAseq:MSC5b.shBRG1.EWSFLI1.RNAseq) %>%
+  dplyr::filter(gene %in% targetGenes) %>%
+  dplyr::mutate(fli1RepA = (MSC1.FLI1.RNAseq + 1) / (MSC1.EWSFLI1.RNAseq + 1), fli1RepB = (MSC1b.FLI1.RNAseq + 1) / (MSC1b.EWSFLI1.RNAseq + 1)) %>%
+  dplyr::mutate(brg1RepA = (MSC5.shBRG1.EWSFLI1.RNAseq + 1) / (MSC5.shGFP.EWSFLI1.RNAseq + 1), brg1RepB = (MSC5b.shBRG1.EWSFLI1.RNAseq + 1) / (MSC5b.shGFP.EWSFLI1.RNAseq + 1)) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(fli1Score = log2(mean(c(fli1RepA, fli1RepB), na.rm = TRUE)), brg1Score = log2(mean(c(brg1RepA, brg1RepB), na.rm = TRUE))) %>%
+  dplyr::select(gene, fli1Score, brg1Score)
+
+#
+dlg2All = dlg2 %>%
+  dplyr::left_join(rnaTotal) %>%
+  dplyr::left_join(proTotal) %>%
+  dplyr::left_join(ewsCellScores) %>%
+  dplyr::left_join(msc)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Make some plots of these data.
+
+```{r, message = FALSE}
+##########################################################################################
+##rna
+ggplot(dlg2All, aes(totalRnaFc, si133_fc)) +
+  geom_point(size = 1) +
+  geom_text_repel(label = dlg2All$gene, nudge_x = -2, max.overlaps = 10000) +
+  labs(x = 'log2(EWS-FLI1 low vs. high)', y = 'log2(si133 - neg)', title = 'EWS-FLI1 levels') +
+  #scale_x_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  #scale_y_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/scatter_siCandidatesVsEwsFli1TotalRna.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+##depmap
+ggplot(dlg2All, aes(cellScore, si133_fc)) +
+  geom_point(size = 1) +
+  geom_text_repel(label = dlg2All$gene, nudge_x = -2, max.overlaps = 10000) +
+  labs(x = 'EwS cell score', y = 'log2(si133 - neg)', title = 'EwS specificity') +
+  #scale_x_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  #scale_y_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/scatter_siCandidatesVsDepMap.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+##msc
+ggplot(dlg2All, aes(fli1Score, si133_fc)) +
+  geom_point(size = 1) +
+  geom_text_repel(label = dlg2All$gene, nudge_x = -2, max.overlaps = 10000) +
+  labs(x = 'log2(FLI1 vs EWS-FLI1 oe)', y = 'log2(si133 - neg)', title = 'EWS-FLI1 in MSCs') +
+  #scale_x_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  #scale_y_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/scatter_siCandidatesVsMscFli1.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+ggplot(dlg2All, aes(brg1Score, si133_fc)) +
+  geom_point(size = 1) +
+  geom_text_repel(label = dlg2All$gene, nudge_x = -2, max.overlaps = 10000) +
+  labs(x = 'log2(shBRG1 vs shGFP)', y = 'log2(si133 - neg)', title = 'BRG1 inhibition') +
+  #scale_x_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  #scale_y_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/scatter_siCandidatesVsMscBrg1.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+```
+
+<div style="margin-bottom:50px;"></div>
+
+See if there is any relationships to DLG2 expression in patient data.
+
+```{r}
+##########################################################################################
+##dbgap cohort
+samplesDbgap = tibble('tissue' = rep('EwS',92),
+                 'sample' = c(paste('SRR5163',seq(665,711,1),sep=''),
+                              paste('SRR5163',seq(713,757,1),sep='')))
+quantFilesDbgap = file.path(paste(baseRepository, '/sequencing20211120_ewsCohortDbgapPmid25010205/quants', sep = ''), samplesDbgap$sample, 'quant.sf')
+names(quantFilesDbgap) = samplesDbgap$sample
+
+
+##icgc cohort
+samplesIcgc = tibble('tissue' = rep('EwS',45),
+                 'sample' = c(paste('T',seq(1,6,1),sep=''),'T8',paste('T',seq(11,15,1),sep=''),paste('T',seq(17,22,1),sep=''),paste('T',seq(24,50,1),sep='')))
+quantFilesIcgc = file.path(paste(baseRepository, '/sequencing20211129_ewsCohortEgaPmid34009296/quants', sep = ''), samplesIcgc$sample, 'quant.sf')
+names(quantFilesIcgc) = samplesIcgc$sample
+
+
+##combine
+allSamples = rbind(samplesDbgap, samplesIcgc)
+allQuantFiles = c(quantFilesDbgap, quantFilesIcgc)
+all(file.exists(allQuantFiles))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Build the transcriptome index.
+
+```{r}
+##########################################################################################
+txdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(txdb, keytype = "TXNAME")
+tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Read the transcript data.
+
+```{r}
+##########################################################################################
+txi = tximport(allQuantFiles, type = 'salmon', tx2gene = tx2gene, countsFromAbundance = 'lengthScaledTPM')
+names(txi)
+txiAnnotated = tibble(as.data.frame(txi$counts)) %>%
+  mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$counts)))
+```
+
+
+<div style="margin-bottom:50px;"></div>
+
+Make a plot of these data.
+
+```{r}
+##########################################################################################
+geneSymbols = select(org.Hs.eg.db, txiAnnotated$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') 
+geneExpData = txiAnnotated %>%
+  left_join(geneSymbols) %>%
+  mutate(symbol = SYMBOL)
+
+##
+targetGenes = dlg2All$gene
+targetData = geneExpData %>%
+  dplyr::filter(symbol %in% targetGenes) %>%
+  tidyr::pivot_longer(cols = SRR5163665:T50, names_to = 'accession', values_to = 'tpm') %>%
+  dplyr::select(symbol,accession,tpm) %>%
+  dplyr::mutate(tpm = log2(tpm + 1)) %>%
+  tidyr::pivot_wider(id_cols = accession, names_from = 'symbol', values_from = 'tpm')
+
+##
+dlg2Corr = correlate(targetData[,2:19], quiet = TRUE)
+dlg2Corr
+
+##plot these data
+dlg2CorrSubset = dlg2Corr %>%
+  dplyr::rename(gene = 'term') %>%
+  dplyr::select(gene, DLG2) %>%
+  dplyr::rename(dlg2Corr = 'DLG2')
+dlg2All = dlg2All %>%
+  dplyr::left_join(dlg2CorrSubset)
+  
+ggplot(dlg2All, aes(dlg2Corr, si133_fc)) +
+  geom_point(size = 1) +
+  geom_text_repel(label = dlg2All$gene, nudge_x = -2, max.overlaps = 10000) +
+  labs(x = 'Pearson correlation', y = 'log2(si133 - neg)', title = 'Tumor cohort') +
+  #scale_x_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  #scale_y_continuous(limits = c(-3,3), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-0.25,0.25), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20220601_dlg2SirnaA673a/scatter_siCandidatesVsTumorCohort.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```

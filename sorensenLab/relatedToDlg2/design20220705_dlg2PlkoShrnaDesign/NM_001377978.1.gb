@@ -1,0 +1,345 @@
+LOCUS       NM_001377978            6040 bp    mRNA    linear   PRI 12-JUN-2022
+DEFINITION  Homo sapiens discs large MAGUK scaffold protein 2 (DLG2),
+            transcript variant 21, mRNA.
+ACCESSION   NM_001377978
+VERSION     NM_001377978.1
+KEYWORDS    RefSeq.
+SOURCE      Homo sapiens (human)
+  ORGANISM  Homo sapiens
+            Eukaryota; Metazoa; Chordata; Craniata; Vertebrata; Euteleostomi;
+            Mammalia; Eutheria; Euarchontoglires; Primates; Haplorrhini;
+            Catarrhini; Hominidae; Homo.
+REFERENCE   1  (bases 1 to 6040)
+  AUTHORS   Bertini V, Milone R, Cristofani P, Cambi F, Bosetti C, Barbieri F,
+            Bertelloni S, Cioni G, Valetto A and Battini R.
+  TITLE     Enhancing DLG2 Implications in Neuropsychiatric Disorders: Analysis
+            of a Cohort of Eight Patients with 11q14.1 Imbalances
+  JOURNAL   Genes (Basel) 13 (5), 859 (2022)
+   PUBMED   35627244
+  REMARK    GeneRIF: Enhancing DLG2 Implications in Neuropsychiatric Disorders:
+            Analysis of a Cohort of Eight Patients with 11q14.1 Imbalances.
+            Publication Status: Online-Only
+REFERENCE   2  (bases 1 to 6040)
+  AUTHORS   Prokopenko D, Lee S, Hecker J, Mullin K, Morgan S, Katsumata Y,
+            Weiner MW, Fardo DW, Laird N, Bertram L, Hide W, Lange C and Tanzi
+            RE.
+  CONSRTM   Alzheimer's Disease Neuroimaging Initiative (ADNI)
+  TITLE     Region-based analysis of rare genomic variants in whole-genome
+            sequencing datasets reveal two novel Alzheimer's disease-associated
+            genes: DTNB and DLG2
+  JOURNAL   Mol Psychiatry 27 (4), 1963-1969 (2022)
+   PUBMED   35246634
+  REMARK    GeneRIF: Region-based analysis of rare genomic variants in
+            whole-genome sequencing datasets reveal two novel Alzheimer's
+            disease-associated genes: DTNB and DLG2.
+REFERENCE   3  (bases 1 to 6040)
+  AUTHORS   Keane S, de Weerd HA and Ejeskar K.
+  TITLE     DLG2 impairs dsDNA break repair and maintains genome integrity in
+            neuroblastoma
+  JOURNAL   DNA Repair (Amst) 112, 103302 (2022)
+   PUBMED   35217496
+  REMARK    GeneRIF: DLG2 impairs dsDNA break repair and maintains genome
+            integrity in neuroblastoma.
+REFERENCE   4  (bases 1 to 6040)
+  AUTHORS   Sanders B, D'Andrea D, Collins MO, Rees E, Steward TGJ, Zhu Y,
+            Chapman G, Legge SE, Pardinas AF, Harwood AJ, Gray WP, O'Donovan
+            MC, Owen MJ, Errington AC, Blake DJ, Whitcomb DJ, Pocklington AJ
+            and Shin E.
+  TITLE     Transcriptional programs regulating neuronal differentiation are
+            disrupted in DLG2 knockout human embryonic stem cells and enriched
+            for schizophrenia and related disorders risk variants
+  JOURNAL   Nat Commun 13 (1), 27 (2022)
+   PUBMED   35031607
+  REMARK    GeneRIF: Transcriptional programs regulating neuronal
+            differentiation are disrupted in DLG2 knockout human embryonic stem
+            cells and enriched for schizophrenia and related disorders risk
+            variants.
+            Publication Status: Online-Only
+REFERENCE   5  (bases 1 to 6040)
+  AUTHORS   Stathakis DG, Lee D and Bryant PJ.
+  TITLE     Fine-scale physical map of the 11q21 region surrounding the human
+            DLG2 locus, the gene encoding Chapsyn-110
+  JOURNAL   Genomics 54 (1), 186-188 (1998)
+   PUBMED   9806853
+REFERENCE   6  (bases 1 to 6040)
+  AUTHORS   Irie M, Hata Y, Takeuchi M, Ichtchenko K, Toyoda A, Hirao K, Takai
+            Y, Rosahl TW and Sudhof TC.
+  TITLE     Binding of neuroligins to PSD-95
+  JOURNAL   Science 277 (5331), 1511-1515 (1997)
+   PUBMED   9278515
+REFERENCE   7  (bases 1 to 6040)
+  AUTHORS   Hsueh YP, Kim E and Sheng M.
+  TITLE     Disulfide-linked head-to-head multimerization in the mechanism of
+            ion channel clustering by PSD-95
+  JOURNAL   Neuron 18 (5), 803-814 (1997)
+   PUBMED   9182804
+REFERENCE   8  (bases 1 to 6040)
+  AUTHORS   Kim E, Cho KO, Rothschild A and Sheng M.
+  TITLE     Heteromultimerization and NMDA receptor-clustering activity of
+            Chapsyn-110, a member of the PSD-95 family of proteins
+  JOURNAL   Neuron 17 (1), 103-113 (1996)
+   PUBMED   8755482
+REFERENCE   9  (bases 1 to 6040)
+  AUTHORS   Brenman JE, Chao DS, Gee SH, McGee AW, Craven SE, Santillano DR, Wu
+            Z, Huang F, Xia H, Peters MF, Froehner SC and Bredt DS.
+  TITLE     Interaction of nitric oxide synthase with the postsynaptic density
+            protein PSD-95 and alpha1-syntrophin mediated by PDZ domains
+  JOURNAL   Cell 84 (5), 757-767 (1996)
+   PUBMED   8625413
+REFERENCE   10 (bases 1 to 6040)
+  AUTHORS   Kim E, Niethammer M, Rothschild A, Jan YN and Sheng M.
+  TITLE     Clustering of Shaker-type K+ channels by interaction with a family
+            of membrane-associated guanylate kinases
+  JOURNAL   Nature 378 (6552), 85-88 (1995)
+   PUBMED   7477295
+COMMENT     REVIEWED REFSEQ: This record has been curated by NCBI staff. The
+            reference sequence was derived from AP002370.5, AP000773.4 and
+            AP003026.2.
+            
+            Summary: This gene encodes a member of the membrane-associated
+            guanylate kinase (MAGUK) family. The encoded protein forms a
+            heterodimer with a related family member that may interact at
+            postsynaptic sites to form a multimeric scaffold for the clustering
+            of receptors, ion channels, and associated signaling proteins.
+            Multiple transcript variants encoding different isoforms have been
+            found for this gene. Additional transcript variants have been
+            described, but their full-length nature is not known. [provided by
+            RefSeq, Dec 2008].
+            
+            Publication Note:  This RefSeq record includes a subset of the
+            publications that are available for this gene. Please see the Gene
+            record to access additional publications.
+            
+            ##Evidence-Data-START##
+            Transcript exon combination :: SRR1803613.279788.1,
+                                           SRR14372080.3737996.1 [ECO:0000332]
+            RNAseq introns              :: mixed sample support SAMEA1965299,
+                                           SAMEA1966682 [ECO:0006172]
+            ##Evidence-Data-END##
+            COMPLETENESS: full length.
+PRIMARY     REFSEQ_SPAN         PRIMARY_IDENTIFIER PRIMARY_SPAN        COMP
+            1-131               AP002370.5         36849-36979         c
+            132-246             AP000773.4         82721-82835         c
+            247-423             AP003026.2         87446-87622         c
+            424-499             AP003026.2         78472-78547         c
+            500-599             AP003026.2         29893-29992         c
+            600-650             AP003026.2         18491-18541         c
+            651-752             AP003026.2         17390-17491         c
+            753-925             AP003026.2         14965-15137         c
+            926-1035            AP003026.2         12472-12581         c
+            1036-1127           AP003026.2         7766-7857           c
+            1128-6040           AP003026.2         776-5688            c
+FEATURES             Location/Qualifiers
+     source          1..6040
+                     /organism="Homo sapiens"
+                     /mol_type="mRNA"
+                     /db_xref="taxon:9606"
+                     /chromosome="11"
+                     /map="11q14.1"
+     gene            1..6040
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="discs large MAGUK scaffold protein 2"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+     exon            1..131
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /inference="alignment:Splign:2.1.0"
+     misc_feature    29..31
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="upstream in-frame stop codon"
+     exon            132..246
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /inference="alignment:Splign:2.1.0"
+     CDS             176..1234
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="isoform 21 is encoded by transcript variant 21;
+                     channel-associated protein of synapses, 110kDa;
+                     postsynaptic density protein PSD-93; channel-associated
+                     protein of synapse-110; discs, large homolog 2,
+                     chapsyn-110; protein phosphatase 1, regulatory subunit 58;
+                     disks large homolog 2"
+                     /codon_start=1
+                     /product="disks large homolog 2 isoform 21"
+                     /protein_id="NP_001364907.1"
+                     /db_xref="GeneID:1740"
+                     /db_xref="HGNC:HGNC:2901"
+                     /db_xref="MIM:603583"
+                     /translation="MMNHSMSSGSGSLRTNQKRSLYVRAMFDYDKSKDSGLPSQGLSF
+                     KYGDILHVINASDDEWWQARRVMLEGDSEEMGVIPSKRRVERKERARLKTVKFNAKPG
+                     VIDSKGSFNDKRKKSFIFSRKFPFYKNKEQSEQETSDPERGQEDLILSYEPVTRQEIN
+                     YTRPVIILGPMKDRINDDLISEFPDKFGSCVPHTTRPKRDYEVDGRDYHFVISREQME
+                     KDIQEHKFIEAGQYNDNLYGTSVQSVRFVAERGKHCILDVSGNAIKRLQVAQLYPIAI
+                     FIKPRSLEPLMEMNKRLTEEQAKKTYDRAIKLEQEFGEYFTAIVQGDTLEDIYNQCKL
+                     VIEEQSGPFIWIPSKEKL"
+     exon            247..423
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /inference="alignment:Splign:2.1.0"
+     exon            424..499
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /inference="alignment:Splign:2.1.0"
+     exon            500..599
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /inference="alignment:Splign:2.1.0"
+     exon            600..650
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /inference="alignment:Splign:2.1.0"
+     exon            651..752
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /inference="alignment:Splign:2.1.0"
+     exon            753..925
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /inference="alignment:Splign:2.1.0"
+     exon            926..1035
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /inference="alignment:Splign:2.1.0"
+     exon            1036..1127
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /inference="alignment:Splign:2.1.0"
+     exon            1128..6040
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /inference="alignment:Splign:2.1.0"
+     regulatory      5852..5857
+                     /regulatory_class="polyA_signal_sequence"
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="hexamer: AATAAA"
+     regulatory      5869..5874
+                     /regulatory_class="polyA_signal_sequence"
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="hexamer: TATAAA"
+     polyA_site      5879
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="major polyA site"
+     polyA_site      5894
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="major polyA site"
+     regulatory      6013..6018
+                     /regulatory_class="polyA_signal_sequence"
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+                     /note="hexamer: ATTAAA"
+     polyA_site      6040
+                     /gene="DLG2"
+                     /gene_synonym="chapsyn-110; PPP1R58; PSD-93; PSD93"
+ORIGIN      
+        1 gtcagagtct tagttataaa ggcaagtgtg aaccggacag cagacaggag aacctggcac
+       61 caaggagacg gagaagctgc ctttggtgcc tcctgcctcc tccctgcttt gttccaataa
+      121 ttttgtgctc gattacgctc gatttgaggc caaaatccat gacctacgag agcagatgat
+      181 gaaccacagc atgagctccg ggtccggatc cctgcgaacc aatcagaaac gctccctcta
+      241 cgtcagagcc atgttcgact acgacaagag caaggacagt gggctgccaa gtcaaggact
+      301 tagttttaaa tatggagata ttctccacgt tatcaatgcc tctgatgatg agtggtggca
+      361 agccaggaga gtcatgctgg agggagacag tgaggagatg ggggtcatcc ccagcaaaag
+      421 gagggtggaa agaaaggaac gtgcccgatt gaagacagtg aagtttaatg ccaaacctgg
+      481 agtgattgat tcgaaagggt cattcaatga caagcgtaaa aagagcttca tcttttcacg
+      541 aaaattccca ttctacaaga acaaggagca gagtgagcag gaaaccagtg atcctgaacg
+      601 aggacaagaa gacctcattc tttcctatga gcctgttaca aggcaggaaa taaactacac
+      661 ccggccggtg attatcctgg ggcccatgaa ggatcggatc aatgacgact tgatatctga
+      721 attccctgat aaatttggct cctgtgtgcc tcatactacg aggccaaagc gagactacga
+      781 ggtggatggc agagactatc actttgtcat ttccagagaa caaatggaga aagatatcca
+      841 agagcacaag tttatagaag ccggccagta caatgacaat ttatatggaa ccagtgtgca
+      901 gtctgtgaga tttgtagcag aaagaggcaa acactgtata cttgatgtat caggaaatgc
+      961 tatcaagcgg ttacaagttg cccagctcta tcccattgcc atcttcataa aacccaggtc
+     1021 tctggaacct cttatggaga tgaataagcg tctaacagag gaacaagcca agaaaaccta
+     1081 tgatcgagca attaagctag aacaagaatt tggagaatat tttacagcta ttgtccaagg
+     1141 agatacttta gaagatatat ataaccaatg caagcttgtt attgaagagc aatctgggcc
+     1201 tttcatctgg attccctcaa aggaaaagtt ataaattagc tactgcgcct ctgacaacga
+     1261 cagaagagca tttagaagaa caaaatatat ataacatact acttggaggc ttttatgttt
+     1321 ttgttgcatt tatgtttttg cagtcaatgt gaattcttac gaatgtacaa cacaaactgt
+     1381 atgaagccat gaaggaaaca gaggggccaa agggtgggac agaaaagaca ttgcagtatg
+     1441 aaggaaggct ttggtttgct caaagtgcca ggtgtaggga tgaacctctg acgggctttc
+     1501 tgcccaagag atgagatgag agcctcctca ccccagcaga tgtccagagc tgatttagct
+     1561 gcagagctct ctgtgtcttt tgctttaaag aaaaattgcc agcactcgaa cctcatcagc
+     1621 cttcccatta cccacatctg taattggtac actttgaatt ttataactat gcacatcttt
+     1681 tgatttctta acaagcaaat gaaagaaaga aggaaaaaag aaaggaatcc ctttggagat
+     1741 gacatactat cagggaagga taagtgtgta gttttttgac tggcatctgc aaagacaaga
+     1801 atttcataaa atttgcaagt gtatggagga ctaacctcac tgacaggagg ggattccacc
+     1861 tgggattagc tttatgattg ttgattgcct attttgccat ttataaactg aaagaaggca
+     1921 ctaaagatga gaataattta tacaataaaa atatattaaa tgtatagaaa caaatttcta
+     1981 taggttaaaa aagttttgtg aaatattttg taaagactaa tattgaaaga ctaaatgtat
+     2041 gcaacatcag cagatgatca aattcaagac ctgaaagttg cactctccct tttgttgcca
+     2101 atgatctgtt aagagcatct gagttccttt taagtctgac aaagacttct tcctcactta
+     2161 cctcccttcc acattagtga tacactctca tgcagcacat cccttaatga gttgccctca
+     2221 tggatatttt tggaagacat ttggttaatg cattttttta tgctgatggc ttttcagaga
+     2281 caaacttatg caaatgatct aaagggaagt ttttgctttc ctctagttaa ataacctgag
+     2341 cctgccatgc aaatagttga ataactttgt tcctagttac tgacatacaa ttcttaaagg
+     2401 accatttagc attttggcca acaatgagta attaggatta gtaccttttt gttttacaga
+     2461 gtaactgaga gttttgtaac atccagagat ggtactagag ccaatgagag atctgttcct
+     2521 agatgcacta tttctttgag gaagagagag aagagaagtg tctggttggg ggtgaggggg
+     2581 tgcagacttt tttgtttcta tgtacagagc aaagagatag agtcacaagg aaagacaatt
+     2641 aatgactttg agctcaacca actgaactgc ctttcttgga gctgcacctg gaccaagttt
+     2701 attttttaac aattataata acgatgattt aaaaaaagaa acctcccaaa gcctataaac
+     2761 tgaactagaa gagttggttt cccactttag agtggatggc gacatcagca ttgcttttgc
+     2821 ccatggtgtt tggggagaga cttttcagtg ataataacca ctctactctg ggttctgtgc
+     2881 atgcccagac taagccccat cgccttattt ctggggtaca tccagacctg gcagggattc
+     2941 tgccacactg tgcagcaaac cagcatgtag gctgggtagg agagcaagag atagagccat
+     3001 cagagtgatg gggcttcttc acagtaagaa catcggagct tagaatgaga gtctctttcc
+     3061 aaaaacaggc attgttcatc ttacgctaaa catcattgtc tgcctggcta cagtcaccaa
+     3121 aacaaaacag aaatgcaaaa ttatgcatct tcccatagtc ctgaggcttc ctttgccaat
+     3181 ggaagggcta gcaatgcatt ctccctctca tgaaagttaa atttccagag acttccttag
+     3241 attgctcaaa atgttaaaga tatgtccatg tctgcaattc gccagtttca ggtcaaggcc
+     3301 tactttcatc aatattgctc ccagaagttt tctgacacca gaatgccatt cctgatccca
+     3361 gctctatttt taggccacca cgataacttc tttggtttct caactgagca tgcaaccatt
+     3421 tatttaaaag actgtcatta atgagtagat gttttcgcgg gtcgtgtgat gtgctttcca
+     3481 tttactagtg ttgctgtggc taagtacaat caaattgaac caccaaccct tggttttgta
+     3541 gtaatataac tatttatttt cctagtgtag atgctttcag attagaattg gcatttgcac
+     3601 tgattttttt atgtagattt atataaatat atagatacat atatatttgc ttgaagaatc
+     3661 accaagcaaa ttggtgagag ggtcttttcc aatagaattt acacctccat ttgttgtgtt
+     3721 gtcttgcact tcccaatgtt gatgtctcta tggctccaat gaactggtgt attttgcagc
+     3781 aaatctgatg acttgtatgg aaatggcatg aaagttaccc agattacatc tggtgcaaat
+     3841 gcactcggag cctggggcca gactggtgct aacactgcaa actttgtcca gagctctctc
+     3901 caacctgaag gcttgctggg ggtgcaatgt caccttcaca catgctgggc cctttcagaa
+     3961 aagtgccaga tcgtgtaact ggtgctattt ttcatgctct ggtacaatgt gtagcaccac
+     4021 gggggtctca gctttaccaa aatcaaaatt ccatttgtca gctaagtgca gaggcatttg
+     4081 ttttttgctc tcctcccaca gaattgtcgg ccatttattt gcaggccttt tgcgggattt
+     4141 cttggctatt tatttgcagg ccttttttcc cagccccaaa ttcttgggtt ggctctgtct
+     4201 gcttaaagag cctgtcttca caaagctgca ctcgggtgcc tctgtgcgct gtcttagatc
+     4261 ctactgccgg cccttcagga ctccgagcca ggaaagaact ctccaacctc tggctcgaga
+     4321 ctctactttt tttctcattc ttttccttac tctcctcctc cttctacttc cgactaattc
+     4381 catctctttt tttttttgtt cctctccttt tcctattcct ccttcccacc atctctgagt
+     4441 tgttgacttt ctcctataat ccttctctat tccctttctc tttttgtcca cctctccttt
+     4501 agtctctgtt tctctgccct tcttattcct cttctgtcct ttctcctctc ctcaaatctc
+     4561 tgatcatctt ctcccgtaca tccctgtatt gatttttctg tcctctaaag ggctcatggc
+     4621 tgattcagac agcaagtcca tgcactggac taatgacaca aatactttag gtcgccgttt
+     4681 cacctactca gcccagaaag taaagctgag cgtgaggccc tgacctggag cctgctccag
+     4741 cccgcctccc ggagccagcc tgcaccgttg ccctggcagc gatgatgcat gtgctgtggg
+     4801 ccctgccggc gcctgagtgc ctctgcctga acactgctcc taagcgagcc cactcccagc
+     4861 actaccgcat ggctctgagg acattttctt tcaataaagg cagactctgg ccccaattat
+     4921 tctgatagca aacctcttcc tcctcattga agccatgcca tcaccttggt ttggagagag
+     4981 acattttttt cccattcata agctttcttt ttcccatttt tatgtgaagc cccctctgct
+     5041 tttcagctgg tgattgctct ggtgagactg aatggacttg ctggtgaaat gaaatctctt
+     5101 ctttcctgtc ttggtcctgc ctaaattcct acaaatatat ttaagccaag gactcaggct
+     5161 aattcctaag ttgatcacat taatttgtta ctcctagagg gaaaaagatc aattcccttg
+     5221 aagcatgtgg agtacctcct gtgacagctg acttgccagg ggactcccta cagaattctg
+     5281 tgatatacat tttacttctg tgtatgtatg gtatatatgg tatgtatacc atgtacacac
+     5341 gttacattga gtatgaatga ctgtggttgg aaacacacac acacactcaa gtctgtaaat
+     5401 atccttcctc actgaaacct gtgctttgga aatcatttct tgtacagctg tgcagtttct
+     5461 tgtaacagct gaggacaaag ctaagacagg cggacaattt agacaaagat catctaaaga
+     5521 gtatagtatc tccctagcaa ctcatgagga cagacaacca agtggcaagg ttgactccca
+     5581 atgggatggc agacttttct tctctccttt ttgagtttgt gtttcctaag tgtttcttaa
+     5641 cttctgagtg caccaggctg tacccgttag atcctttcaa tatgacagtt ttgtgcttct
+     5701 ctctgacagg atgtttctcc accgagctgt agcacaggat gggagggagg tgggaatact
+     5761 ccttgcctag gctggagttt acagagacac tgcacagctt acactcctgt taagtgtaaa
+     5821 tattcaacac ttccattcca tttgtgtaaa aaataaagca cacacgatta taaaatcaag
+     5881 atgtatattt catactcagt gtgtctgtgc atatttattg cgtttctagt tgtcagcggt
+     5941 gggtggcccc attgtaaaaa tgcctgatag agtgtttata aacatgtcat ggttttatta
+     6001 taagatataa atattaaaac attttatact ttatggcaaa
+//
+
