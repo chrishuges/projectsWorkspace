@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-0.9.260">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Christopher Hughes">
+
+<title>MYC-N shRNA data reprocessing</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<script src="20220713File2_processingSalmonOutput_files/libs/clipboard/clipboard.min.js"></script>
+<script src="20220713File2_processingSalmonOutput_files/libs/quarto-html/quarto.js"></script>
+<script src="20220713File2_processingSalmonOutput_files/libs/quarto-html/popper.min.js"></script>
+<script src="20220713File2_processingSalmonOutput_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="20220713File2_processingSalmonOutput_files/libs/quarto-html/anchor.min.js"></script>
+<link href="20220713File2_processingSalmonOutput_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link id="quarto-text-highlighting-styles" href="20220713File2_processingSalmonOutput_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet">
+<script src="20220713File2_processingSalmonOutput_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="20220713File2_processingSalmonOutput_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="20220713File2_processingSalmonOutput_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">MYC-N shRNA data reprocessing</h1>
+</div>
+
+
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Christopher Hughes </p>
+          </div>
+  </div>
+    
+    
+  </div>
+  
+
+</header>
+
+<p>This document details the analysis of RNAseq data from SHEP21 cells treated with an shRNA against MYC-N from PMID: 29379199.</p>
+<section id="setting-up-the-environment" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up-the-environment">Setting up the environment</h2>
+<p>These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'tidyverse'</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'RColorBrewer'</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'ggplot2'</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'tximport'</span>)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'GenomicFeatures'</span>)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'rtracklayer'</span>)</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'DESeq2'</span>)</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'org.Hs.eg.db'</span>)</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'ggrepel'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>generalDatasets <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>baseWorkspace <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToHaifeng'</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>baseRepository <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToHaifeng'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="data-processing" class="level2">
+<h2 class="anchored" data-anchor-id="data-processing">Data processing</h2>
+<p>First we will need to create a transcriptome database we can use to annotate our data. We will do this using the same GTF we used in our original alignment. This can be a bit slow, but you only need to do it once.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="do">##read the gtf</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">#myGtf = rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/projectEwSDlg2/baseGenomeFiles/genome.gtf')</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>myTxdb <span class="ot">=</span> <span class="fu">makeTxDbFromGFF</span>(<span class="st">'C:/Users/chughes/Documents/bccrc/databases/projectEwSDlg2/baseGenomeFiles/genome.gtf'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Import genomic features from the file as a GRanges object ... OK
+Prepare the 'metadata' data frame ... OK
+Make the TxDb object ... </code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in .get_cds_IDX(mcols0$type, mcols0$phase): The "phase" metadata column contains non-NA values for features of type
+  stop_codon. This information was ignored.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>OK</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>k <span class="ot">=</span> <span class="fu">keys</span>(myTxdb, <span class="at">keytype =</span> <span class="st">'TXNAME'</span>)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>tx2gene <span class="ot">=</span> AnnotationDbi<span class="sc">::</span><span class="fu">select</span>(myTxdb, k, <span class="st">'GENEID'</span>, <span class="st">'TXNAME'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>'select()' returned 1:1 mapping between keys and columns</code></pre>
+</div>
+</div>
+<p>Create a table of the sample annotation details that we can use during the transcript data import.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="do">##I created a sample table in excel previously, read it in here</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>samples <span class="ot">=</span> <span class="fu">read_tsv</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/sampleLayout.tsv'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>                   <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="do">##assign the path to the quant files</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>samples<span class="sc">$</span>files <span class="ot">=</span> <span class="fu">file.path</span>(baseRepository, <span class="st">'sequencing20220711_nbCellLineMycNPmid29379199/quants'</span>, samples<span class="sc">$</span>sra, <span class="st">'quant.sf'</span>)</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="do">##check if all of the quant files exist</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>files <span class="ot">=</span> samples<span class="sc">$</span>files</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="fu">all</span>(<span class="fu">file.exists</span>(files))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] TRUE</code></pre>
+</div>
+</div>
+<p>Now import the Salmon data using the files we created above.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>txi <span class="ot">=</span> <span class="fu">tximport</span>(files, </span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">type =</span> <span class="st">'salmon'</span>, </span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">tx2gene =</span> tx2gene)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>reading in files with read_tsv</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 
+summarizing abundance
+summarizing counts
+summarizing length</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(txi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "abundance"           "counts"              "length"             
+[4] "countsFromAbundance"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(txi<span class="sc">$</span>counts)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                       [,1]     [,2]     [,3]     [,4]     [,5]     [,6]
+ENSG00000000003.15 1807.000 2423.999 1368.999 1784.000 1470.001 1940.000
+ENSG00000000005.6     0.000    0.000    0.000    0.000    0.000    0.000
+ENSG00000000419.14 2393.001 3149.001 1890.000 2548.999 2082.998 2692.000
+ENSG00000000457.14  239.000  299.000  235.000  274.000  237.000  356.000
+ENSG00000000460.17 1511.999 1974.001 1215.000 1396.999 1211.002 1523.999
+ENSG00000000938.13    0.000    0.000    0.000    0.000    0.000    0.000
+                       [,7]     [,8]     [,9]    [,10]    [,11]    [,12]
+ENSG00000000003.15 1631.000 1643.000 2550.001 1683.001 1432.000 1423.000
+ENSG00000000005.6     1.000    0.000    0.000    0.000    0.000    0.000
+ENSG00000000419.14 2084.999 2282.999 3489.001 2333.001 1964.999 1988.999
+ENSG00000000457.14  365.000  370.000  498.000  449.000  303.000  345.000
+ENSG00000000460.17 1453.000 1520.000 1846.000 1269.000 1159.001 1176.001
+ENSG00000000938.13    0.000    0.000    0.000    0.000    0.000    0.000
+                      [,13]    [,14]    [,15]    [,16]    [,17]    [,18]
+ENSG00000000003.15 1360.000 1288.000 1765.000 1080.999 1194.000 1271.999
+ENSG00000000005.6     0.000    0.000    0.000    0.000    0.000    0.000
+ENSG00000000419.14 1812.000 1639.999 2206.000 1458.000 1541.001 1747.000
+ENSG00000000457.14  289.999  251.000  381.000  220.000  266.000  366.999
+ENSG00000000460.17 1101.999 1030.999 1879.999 1111.000 1193.000 1014.000
+ENSG00000000938.13    0.000    0.000    0.000    0.000    0.000    0.000
+                      [,19]    [,20]
+ENSG00000000003.15 1040.000 1243.000
+ENSG00000000005.6     0.000    0.000
+ENSG00000000419.14 1301.000 1591.463
+ENSG00000000457.14  260.000  305.999
+ENSG00000000460.17  853.999  940.000
+ENSG00000000938.13    0.000    0.000</code></pre>
+</div>
+</div>
+<p>Construct the DESeq2 dataset for differential expression analysis.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>ddsTxi <span class="ot">=</span> <span class="fu">DESeqDataSetFromTximport</span>(txi,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">colData =</span> samples,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">design =</span> <span class="sc">~</span> treatment)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in DESeqDataSet(se, design = design, ignoreRank): some variables in
+design formula are characters, converting to factors</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>using counts and average transcript lengths from tximport</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">=</span> <span class="fu">DESeq</span>(ddsTxi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>estimating size factors</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>using 'avgTxLength' from assays(dds), correcting for library size</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>estimating dispersions</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>gene-wise dispersion estimates</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>mean-dispersion relationship</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>final dispersion estimates</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>fitting model and testing</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>keep <span class="ot">=</span> <span class="fu">rowSums</span>(<span class="fu">counts</span>(dds)) <span class="sc">&gt;=</span> <span class="dv">50</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">=</span> dds[keep,]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Perform comparisons between samples.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>datasetFirst <span class="ot">=</span> <span class="fu">c</span>(<span class="st">'kd_2h'</span>,<span class="st">'kd_4h'</span>,<span class="st">'kd_6h'</span>,<span class="st">'kd_8h'</span>,<span class="st">'kd_16h'</span>,<span class="st">'kd_24h'</span>)</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>datasetSecond <span class="ot">=</span> <span class="st">'kd_0h'</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(datasetFirst)){</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  res <span class="ot">=</span> <span class="fu">results</span>(dds, <span class="at">contrast =</span> <span class="fu">c</span>(<span class="st">'treatment'</span>, datasetFirst[i], datasetSecond))</span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>  ens.str <span class="ot">=</span> <span class="fu">substr</span>(<span class="fu">rownames</span>(res), <span class="dv">1</span>, <span class="dv">15</span>)</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>  res<span class="sc">$</span>symbol <span class="ot">=</span> <span class="fu">mapIds</span>(org.Hs.eg.db,</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>                      <span class="at">keys=</span>ens.str,</span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>                      <span class="at">column=</span><span class="st">"SYMBOL"</span>,</span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>                      <span class="at">keytype=</span><span class="st">"ENSEMBL"</span>,</span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>                      <span class="at">multiVals=</span><span class="st">"first"</span>)</span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>  resOrdered <span class="ot">=</span> res[<span class="fu">order</span>(res<span class="sc">$</span>pvalue),]</span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">saveRDS</span>(<span class="fu">as.data.frame</span>(resOrdered), </span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>          <span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/dataset_deseq2_total_'</span>, datasetFirst[i], <span class="st">'-'</span>, datasetSecond, <span class="st">'.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write.csv</span>(<span class="fu">as.data.frame</span>(resOrdered), </span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>          <span class="at">file =</span> <span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/dataset_deseq2_total_'</span>, datasetFirst[i], <span class="st">'-'</span>, datasetSecond, <span class="st">'.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a>  <span class="co">#resLFC = lfcShrink(dds, coef = paste('treatment_',datasetFirst,'_vs_',datasetSecond, sep = ''), type = "apeglm")</span></span>
+<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a>  <span class="co">#resLFC</span></span>
+<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a>  <span class="co">#plotMA(resLFC, ylim = c(-2,2))</span></span>
+<span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a>  rnaExp <span class="ot">=</span> <span class="fu">as.data.frame</span>(resOrdered)</span>
+<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a>  rnaExp<span class="sc">$</span>logPValue <span class="ot">=</span> <span class="sc">-</span><span class="fu">log10</span>(rnaExp<span class="sc">$</span>padj)</span>
+<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a>  rnaExp<span class="sc">$</span>logPValueScaled <span class="ot">=</span> <span class="fu">ifelse</span>(rnaExp<span class="sc">$</span>logPValue <span class="sc">&gt;</span> <span class="dv">300</span>, <span class="dv">300</span>, rnaExp<span class="sc">$</span>logPValue)</span>
+<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a>  rnaExp<span class="sc">$</span>pColors <span class="ot">=</span> <span class="fu">ifelse</span>(rnaExp<span class="sc">$</span>padj <span class="sc">&lt;=</span> <span class="fl">0.001</span> <span class="sc">&amp;</span> rnaExp<span class="sc">$</span>log2FoldChange <span class="sc">&gt;=</span> <span class="dv">1</span>, <span class="fu">brewer.pal</span>(<span class="dv">3</span>,<span class="st">'OrRd'</span>)[<span class="dv">3</span>], </span>
+<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a>                          <span class="fu">ifelse</span>(rnaExp<span class="sc">$</span>padj <span class="sc">&lt;=</span> <span class="fl">0.001</span> <span class="sc">&amp;</span> rnaExp<span class="sc">$</span>log2FoldChange <span class="sc">&lt;=</span> <span class="sc">-</span><span class="dv">1</span>, <span class="fu">brewer.pal</span>(<span class="dv">3</span>,<span class="st">'Blues'</span>)[<span class="dv">3</span>], <span class="fu">brewer.pal</span>(<span class="dv">3</span>,<span class="st">'Greys'</span>)[<span class="dv">2</span>]))</span>
+<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a>  goi <span class="ot">=</span> <span class="fu">c</span>(<span class="st">'GREB1'</span>,<span class="st">'MYCN'</span>,<span class="st">'MYO1B'</span>)</span>
+<span id="cb30-32"><a href="#cb30-32" aria-hidden="true" tabindex="-1"></a>  rnaExp<span class="sc">$</span>pText <span class="ot">=</span> <span class="fu">ifelse</span>(rnaExp<span class="sc">$</span>symbol <span class="sc">%in%</span> goi, rnaExp<span class="sc">$</span>symbol, <span class="st">''</span>)</span>
+<span id="cb30-33"><a href="#cb30-33" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb30-34"><a href="#cb30-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(rnaExp, <span class="fu">aes</span>(log2FoldChange, logPValueScaled)) <span class="sc">+</span></span>
+<span id="cb30-35"><a href="#cb30-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">1</span>, <span class="at">color =</span> rnaExp<span class="sc">$</span>pColors, <span class="at">alpha =</span> <span class="fl">0.75</span>) <span class="sc">+</span></span>
+<span id="cb30-36"><a href="#cb30-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">paste</span>(<span class="st">'log2('</span>,datasetFirst[i],<span class="st">' - '</span>,datasetSecond,<span class="st">')'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">y =</span> <span class="st">'-log10(Adjusted p-value)'</span>, <span class="at">title =</span> <span class="fu">paste</span>(datasetFirst[i],<span class="st">' vs '</span>,datasetSecond, <span class="at">sep=</span><span class="st">''</span>)) <span class="sc">+</span></span>
+<span id="cb30-37"><a href="#cb30-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_text_repel</span>(<span class="at">label =</span> rnaExp<span class="sc">$</span>pText, <span class="at">nudge_x =</span> <span class="sc">-</span><span class="dv">3</span>, <span class="at">nudge_y =</span> <span class="sc">-</span><span class="dv">150</span>, <span class="at">max.overlaps =</span> <span class="dv">15000</span>) <span class="sc">+</span></span>
+<span id="cb30-38"><a href="#cb30-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_x_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">10</span>,<span class="dv">10</span>), <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">10</span>,<span class="dv">10</span>,<span class="dv">2</span>)) <span class="sc">+</span></span>
+<span id="cb30-39"><a href="#cb30-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_y_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">300</span>), <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">500</span>,<span class="dv">50</span>)) <span class="sc">+</span></span>
+<span id="cb30-40"><a href="#cb30-40" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="dv">1</span>), <span class="at">linetype =</span> <span class="st">'dashed'</span>) <span class="sc">+</span></span>
+<span id="cb30-41"><a href="#cb30-41" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">0.001</span>), <span class="at">linetype =</span> <span class="st">'dashed'</span>) <span class="sc">+</span></span>
+<span id="cb30-42"><a href="#cb30-42" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_classic</span>()</span>
+<span id="cb30-43"><a href="#cb30-43" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb30-44"><a href="#cb30-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/scatter_deseq2_'</span>, datasetFirst[i], <span class="st">'-'</span>, datasetSecond, <span class="st">'.pdf'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb30-45"><a href="#cb30-45" aria-hidden="true" tabindex="-1"></a>         <span class="at">height =</span> <span class="dv">2</span>, <span class="at">width =</span> <span class="dv">2</span>, <span class="at">useDingbats =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb30-46"><a href="#cb30-46" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>'select()' returned 1:many mapping between keys and columns</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 2495 rows containing missing values (geom_point).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 2495 rows containing missing values (geom_text_repel).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>'select()' returned 1:many mapping between keys and columns</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 4624 rows containing missing values (geom_point).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 4624 rows containing missing values (geom_text_repel).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>'select()' returned 1:many mapping between keys and columns</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1430 rows containing missing values (geom_point).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1430 rows containing missing values (geom_text_repel).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>'select()' returned 1:many mapping between keys and columns</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 721 rows containing missing values (geom_point).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 721 rows containing missing values (geom_text_repel).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>'select()' returned 1:many mapping between keys and columns</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1075 rows containing missing values (geom_point).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1075 rows containing missing values (geom_text_repel).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>'select()' returned 1:many mapping between keys and columns</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 9 rows containing missing values (geom_point).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 9 rows containing missing values (geom_text_repel).</code></pre>
+</div>
+</div>
+<p>Done for now.</p>
+<section id="session-info" class="level3">
+<h3 class="anchored" data-anchor-id="session-info">Session info</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.1.3 (2022-03-10)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19042)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_Canada.1252  LC_CTYPE=English_Canada.1252   
+[3] LC_MONETARY=English_Canada.1252 LC_NUMERIC=C                   
+[5] LC_TIME=English_Canada.1252    
+
+attached base packages:
+[1] stats4    stats     graphics  grDevices utils     datasets  methods  
+[8] base     
+
+other attached packages:
+ [1] ggrepel_0.9.1               org.Hs.eg.db_3.14.0        
+ [3] DESeq2_1.34.0               SummarizedExperiment_1.24.0
+ [5] MatrixGenerics_1.6.0        matrixStats_0.62.0         
+ [7] rtracklayer_1.54.0          GenomicFeatures_1.46.5     
+ [9] AnnotationDbi_1.56.2        Biobase_2.54.0             
+[11] GenomicRanges_1.46.1        GenomeInfoDb_1.30.1        
+[13] IRanges_2.28.0              S4Vectors_0.32.4           
+[15] BiocGenerics_0.40.0         tximport_1.22.0            
+[17] RColorBrewer_1.1-3          forcats_0.5.1              
+[19] stringr_1.4.0               dplyr_1.0.9                
+[21] purrr_0.3.4                 readr_2.1.2                
+[23] tidyr_1.2.0                 tibble_3.1.7               
+[25] ggplot2_3.3.6               tidyverse_1.3.1            
+
+loaded via a namespace (and not attached):
+ [1] colorspace_2.0-3         rjson_0.2.21             ellipsis_0.3.2          
+ [4] XVector_0.34.0           fs_1.5.2                 rstudioapi_0.13         
+ [7] farver_2.1.0             bit64_4.0.5              fansi_1.0.3             
+[10] lubridate_1.8.0          xml2_1.3.3               splines_4.1.3           
+[13] cachem_1.0.6             geneplotter_1.72.0       knitr_1.39              
+[16] jsonlite_1.8.0           Rsamtools_2.10.0         broom_0.8.0             
+[19] annotate_1.72.0          dbplyr_2.2.1             png_0.1-7               
+[22] compiler_4.1.3           httr_1.4.3               backports_1.4.1         
+[25] assertthat_0.2.1         Matrix_1.4-1             fastmap_1.1.0           
+[28] cli_3.3.0                htmltools_0.5.2          prettyunits_1.1.1       
+[31] tools_4.1.3              gtable_0.3.0             glue_1.6.2              
+[34] GenomeInfoDbData_1.2.7   rappdirs_0.3.3           Rcpp_1.0.8.3            
+[37] cellranger_1.1.0         vctrs_0.4.1              Biostrings_2.62.0       
+[40] xfun_0.31                rvest_1.0.2              lifecycle_1.0.1         
+[43] restfulr_0.0.15          XML_3.99-0.10            zlibbioc_1.40.0         
+[46] scales_1.2.0             vroom_1.5.7              hms_1.1.1               
+[49] parallel_4.1.3           yaml_2.3.5               curl_4.3.2              
+[52] memoise_2.0.1            biomaRt_2.50.3           stringi_1.7.6           
+[55] RSQLite_2.2.14           genefilter_1.76.0        BiocIO_1.4.0            
+[58] filelock_1.0.2           BiocParallel_1.28.3      rlang_1.0.3             
+[61] pkgconfig_2.0.3          bitops_1.0-7             evaluate_0.15           
+[64] lattice_0.20-45          GenomicAlignments_1.30.0 bit_4.0.4               
+[67] tidyselect_1.1.2         magrittr_2.0.3           R6_2.5.1                
+[70] generics_0.1.2           DelayedArray_0.20.0      DBI_1.1.3               
+[73] pillar_1.7.0             haven_2.5.0              withr_2.5.0             
+[76] survival_3.3-1           KEGGREST_1.34.0          RCurl_1.98-1.7          
+[79] modelr_0.1.8             crayon_1.5.1             utf8_1.2.2              
+[82] BiocFileCache_2.2.1      tzdb_0.3.0               rmarkdown_2.14          
+[85] progress_1.2.2           locfit_1.5-9.5           grid_4.1.3              
+[88] readxl_1.4.0             blob_1.2.3               reprex_2.0.1            
+[91] digest_0.6.29            xtable_1.8-4             munsell_0.5.0           </code></pre>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    setTimeout(function() {
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
