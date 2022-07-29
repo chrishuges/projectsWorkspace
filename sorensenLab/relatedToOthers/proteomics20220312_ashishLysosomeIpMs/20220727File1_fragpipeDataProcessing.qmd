@@ -1,0 +1,166 @@
+---
+title: "Proteomic data processing"
+author: "Christopher Hughes"
+format: html
+---
+
+This document details the analysis of proteomics data from cells treated with a drug in normoxia and hypoxia conditions. These were lysosomal IPs from Ashish. The data were acquired with a TMT-MS3 protocol and analyzed using FragPipe software.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+## Preparing the data
+
+We will read in the PSM data from FragPipe and combine it with the quantification data obtained using RawTools.
+
+```{r}
+##########################################################################################
+##read in the diaNN data...you have to use double slashes here for some reason
+setA = read_tsv('D:/msDataTemp/proteomics20220312_ashishLysosomeIpMs/fragpipeAnalysis/setA/psm.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(scan = as.numeric(sub('.*_A[1-4]\\.(.*)\\.[0-9]+\\.[1-5]', '\\1', Spectrum)),
+                fraction = as.numeric(sub('.*_A(.*)\\.[0-9]+\\.[0-9]+\\.[1-5]', '\\1', Spectrum)),
+                sampleSet = sub('.*_(.*)[1-4]\\.[0-9]+\\.[0-9]+\\.[1-5]', '\\1', Spectrum)) %>%
+  dplyr::rename(sequence = Peptide,
+                accession = `Protein ID`,
+                symbol = Gene) %>%
+  dplyr::select(accession, symbol, sequence, scan, fraction, sampleSet)
+
+#  
+setB = read_tsv('D:/msDataTemp/proteomics20220312_ashishLysosomeIpMs/fragpipeAnalysis/setB/psm.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(scan = as.numeric(sub('.*_B[1-4]\\.(.*)\\.[0-9]+\\.[1-5]', '\\1', Spectrum)),
+                fraction = as.numeric(sub('.*_B(.*)\\.[0-9]+\\.[0-9]+\\.[1-5]', '\\1', Spectrum)),
+                sampleSet = sub('.*_(.*)[1-4]\\.[0-9]+\\.[0-9]+\\.[1-5]', '\\1', Spectrum)) %>%
+  dplyr::rename(sequence = Peptide,
+                accession = `Protein ID`,
+                symbol = Gene) %>%
+  dplyr::select(accession, symbol, sequence, scan, fraction, sampleSet)
+
+##combine the sample sets
+psmData = rbind(setA, setB)
+
+
+##now get the quant data
+quantFiles = list.files('D:/msDataTemp/proteomics20220312_ashishLysosomeIpMs', pattern = '_Matrix.txt', full.names = TRUE)
+quantData = tibble()
+for (i in 1:length(quantFiles)){
+  quantTemp = read_tsv(quantFiles[i], show_col_types = FALSE) %>%
+    dplyr::rename(scan = MS2ScanNumber) %>%
+    dplyr::select(scan, `126Intensity`:`131CIntensity`) %>%
+    dplyr::rename(tmt126C = `126Intensity`,
+                  tmt127N = `127NIntensity`,
+                  tmt127C = `127CIntensity`,
+                  tmt128N = `128NIntensity`,
+                  tmt128C = `128CIntensity`,
+                  tmt129N = `129NIntensity`,
+                  tmt129C = `129CIntensity`,
+                  tmt130N = `130NIntensity`,
+                  tmt130C = `130CIntensity`,
+                  tmt131N = `131NIntensity`,
+                  tmt131C = `131CIntensity`) %>%
+    dplyr::mutate(fraction = as.numeric(sub('.*_hph_[AB](.*)\\.raw_Matrix\\.txt', '\\1', quantFiles[i])),
+                  sampleSet = sub('.*_hph_(.*)[1-4]\\.raw_Matrix\\.txt', '\\1', quantFiles[i]))
+  ##
+  quantData = rbind(quantData, quantTemp)
+}
+
+
+##combine the psm and quant data into a single object and save it
+allData = psmData %>%
+  left_join(quantData)
+saveRDS(allData, paste(baseRepository, '/proteomics20220312_ashishLysosomeIpMs/dataset_rawPsmData.rds', sep = ''))
+write.table(allData, paste(baseRepository, '/proteomics20220312_ashishLysosomeIpMs/dataset_rawPsmData.tsv', sep = ''),
+            quote = FALSE, col.names = TRUE, row.names = FALSE, sep = '\t')
+
+##as a quick final sanity check, list the data for LAMP1
+allData[grepl('^LAMP1$', allData$symbol),]
+```
+
+Now we will do some basic filtering of the data as well as assigning our sample annotation prior to doing any sort of comparisons. The sample layout is:
+
+tmt126C = normoxia HA 1
+tmt127N = hypoxia HA 1
+tmt127C = normoxia HA 2
+tmt128N = hypoxia HA 2
+tmt128C = normoxia HA 3
+tmt129N = hypoxia HA 3
+tmt129C = empty
+tmt130N = empty
+tmt130C = normoxia control 1 (setA), hypoxia control 1 (setB)
+tmt131N = normoxia control 2 (setA), hypoxia control 2 (setB)
+tmt131C = normoxia control 3 (setA), hypoxia control 3 (setB)
+
+```{r}
+##########################################################################################
+##read in the previously prepared data
+psmData = readRDS(paste(baseRepository, '/proteomics20220312_ashishLysosomeIpMs/dataset_rawPsmData.rds', sep = ''))
+
+##first we will log transform the expression values
+exprs = psmData[,7:17]
+exprs[exprs == 0] = NA
+
+##calculate the ratio to the control IP samples (background)
+exprs$backgroundMean = rowMeans(exprs[,9:11], na.rm = TRUE)
+exprs = apply(exprs[,1:6], 2, function(x) x / exprs$backgroundMean)
+
+##reinsert into the original data
+pepData = tibble('accession' = psmData$accession, 
+                 'symbol' = psmData$symbol, 
+                 as.data.frame(exprs))
+colnames(pepData)[3:8] = c('norm1','hyp1','norm2','hyp2','norm3','hyp3')
+
+##filter peptides that aren't completely present in at least one of the IP conditions
+pepData$normNA = rowSums(is.na(pepData[,c(3,5,7)]))
+pepData$hypNA = rowSums(is.na(pepData[,c(4,6,8)]))
+#pepData[,3:8] = log2(pepData[,3:8])
+proData = pepData %>%
+  dplyr::filter(normNA == 0 | hypNA == 0) %>%
+  dplyr::mutate(numPeps = 1) %>%
+  dplyr::group_by(accession, symbol) %>%
+  dplyr::summarise(across(norm1:hyp3, median, na.rm = TRUE), numPeps = sum(numPeps, na.rm = TRUE)) %>%
+  dplyr::select(accession, symbol, numPeps, norm1, norm2, norm3, hyp1, hyp2, hyp3)
+
+##calculate some summary values
+proData$meanNormoxia = rowMeans(proData[,c(4:6)], na.rm = TRUE)
+proData$meanHypoxia = rowMeans(proData[,c(7:9)], na.rm = TRUE)
+proData$ratio = log2(proData$meanHypoxia) - log2(proData$meanNormoxia)
+
+##check out LAMP1 for QC purposes
+proData[grepl('^LAMP1$', proData$symbol),]
+
+##save the data
+saveRDS(proData, paste(baseRepository, '/proteomics20220312_ashishLysosomeIpMs/dataset_proteinDataNoNormlization_hyp-norm.rds', sep = ''))
+write.table(proData, paste(baseRepository, '/proteomics20220312_ashishLysosomeIpMs/dataset_proteinDataNoNormalization_hyp-norm.tsv', sep = ''),
+            quote = FALSE, col.names = TRUE, row.names = FALSE, sep = '\t')
+```
+
+Done for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+

@@ -1,0 +1,124 @@
+---
+title: "Proteomic data processing"
+author: "Christopher Hughes"
+format: html
+---
+
+This document details the analysis of proteomics data from osteosarcoma cells treated with different concentrations of the drug CR-1-31b. The proteomic data were obtained using a DIA protocol and processed with [DiaNN software](https://github.com/vdemichev/DiaNN).
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('diann')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+## Preparing the data
+
+Basically all we have to do here is read in the peptide tables using the [DiaNN R package](https://github.com/vdemichev/diann-rpackage), and it will process them using the MaxLFQ algorithm.
+
+```{r}
+##########################################################################################
+##read in the diaNN data...you have to use double slashes here for some reason
+pepHighRaw = diann_load('D:\\msDataTemp\\proteomics20220703_mikeCr131bProteomeDia\\highAllReplicatesNoGrouping\\report.tsv')
+pepLowRaw = diann_load('D:\\msDataTemp\\proteomics20220703_mikeCr131bProteomeDia\\lowAllReplicatesNoGrouping\\report.tsv')
+
+##low mass processing, LFQ at peptide level
+pepLowLfq = diann_maxlfq(pepLowRaw[pepLowRaw$Q.Value <= 0.01 & pepLowRaw$Lib.PG.Q.Value <= 0.01 & pepLowRaw$Proteotypic == 1,], 
+                       group.header="Stripped.Sequence", 
+                       id.header = "Precursor.Id", 
+                       quantity.header = "Precursor.Normalised")
+gene.names = pepLowRaw$Genes[match(rownames(pepLowLfq), pepLowRaw$Stripped.Sequence)]
+accession.names = pepLowRaw$Protein.Group[match(rownames(pepLowLfq), pepLowRaw$Stripped.Sequence)]
+pepLowLfqAnno = data.frame('symbol' = gene.names,
+                           'accession' = accession.names,
+                           pepLowLfq)
+sampleNames = sub('.*Proteome_(.*)_dia[A-Za-z]+\\.raw','\\1',colnames(pepLowLfqAnno))
+colnames(pepLowLfqAnno) = c(sampleNames)
+pepLowLfqReorder = as.data.frame(pepLowLfqAnno[,c('symbol','accession',
+                                               'dmso_rep1','dmso_rep2','dmso_rep3',
+                                               'cr2_rep1','cr2_rep2','cr2_rep3',
+                                               'cr4_rep1','cr4_rep2','cr4_rep3',
+                                               'cr8_rep1','cr8_rep2','cr8_rep3')])
+pepLowLfqReorder$scanSet = 'lowMass'
+pepLowLfqReorder$numPeps = 1
+pepLowFinal = pepLowLfqReorder %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  as_tibble()
+
+
+##high mass processing, LFQ at peptide level
+pepHighLfq = diann_maxlfq(pepHighRaw[pepHighRaw$Q.Value <= 0.01 & pepHighRaw$Lib.PG.Q.Value <= 0.01 & pepHighRaw$Proteotypic == 1,], 
+                       group.header="Stripped.Sequence", 
+                       id.header = "Precursor.Id", 
+                       quantity.header = "Precursor.Normalised")
+gene.names = pepHighRaw$Genes[match(rownames(pepHighLfq), pepHighRaw$Stripped.Sequence)]
+accession.names = pepHighRaw$Protein.Group[match(rownames(pepHighLfq), pepHighRaw$Stripped.Sequence)]
+pepHighLfqAnno = data.frame('symbol' = gene.names,
+                           'accession' = accession.names,
+                           pepHighLfq)
+sampleNames = sub('.*Proteome_(.*)_dia[A-Za-z]+\\.raw','\\1',colnames(pepHighLfqAnno))
+colnames(pepHighLfqAnno) = c(sampleNames)
+pepHighLfqReorder = as.data.frame(pepHighLfqAnno[,c('symbol','accession',
+                                               'dmso_rep1','dmso_rep2','dmso_rep3',
+                                               'cr2_rep1','cr2_rep2','cr2_rep3',
+                                               'cr4_rep1','cr4_rep2','cr4_rep3',
+                                               'cr8_rep1','cr8_rep2','cr8_rep3')])
+pepHighLfqReorder$scanSet = 'highMass'
+pepHighLfqReorder$numPeps = 1
+pepHighFinal = pepHighLfqReorder %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  as_tibble()
+
+
+##combine and save the data
+allPeps = rbind(pepLowFinal, pepHighFinal)
+saveRDS(allPeps, paste(baseRepository,'/proteomics20220703_mikeCr131bProteomeDia/dataset_strippedPeptidesMaxLfqDiann.rds',sep=''))
+```
+
+Now we have a combined peptide table that we can work with. We can roll these peptide values up into proteins and check a couple of control genes we know should be changing.
+
+```{r}
+##########################################################################################
+##read in the peptide data and make a protein set
+rm(allPeps)
+pepData = readRDS(paste(baseRepository,'/proteomics20220703_mikeCr131bProteomeDia/dataset_strippedPeptidesMaxLfqDiann.rds',sep=''))
+pepData$dmsoNa = rowSums(is.na(pepData[,3:5]))
+pepData$cr2Na = rowSums(is.na(pepData[,6:8]))
+pepData$cr4Na = rowSums(is.na(pepData[,9:12]))
+pepData$cr8Na = rowSums(is.na(pepData[,12:14]))
+pepData[,3:14] = log2(pepData[,3:14])
+pepData = dplyr::filter(pepData, symbol != '') %>%
+  dplyr::filter(dmsoNa == 0 | cr2Na == 0 | cr4Na == 0 | cr8Na == 0) %>%
+  dplyr::group_by(symbol, accession) %>%
+  dplyr::summarise(across(dmso_rep1:cr8_rep3, median, na.rm = TRUE), numPeps = sum(numPeps, na.rm = TRUE))
+
+pepData$meanDmso = rowMeans(pepData[,3:5], na.rm = TRUE)
+pepData$meanCr8 = rowMeans(pepData[,12:14], na.rm = TRUE)
+pepData$ratio = pepData$meanCr8 - pepData$meanDmso
+```
+
+We are done here for now. Wrap up below.
+
+### Session info
+
+```{r}
+##########################################################################################
+
+```
+
+

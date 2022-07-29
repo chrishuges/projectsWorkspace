@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-0.9.260">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Christopher Hughes">
+
+<title>Proteomic data processing</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<script src="20220727File1_fragpipeDataProcessing_files/libs/clipboard/clipboard.min.js"></script>
+<script src="20220727File1_fragpipeDataProcessing_files/libs/quarto-html/quarto.js"></script>
+<script src="20220727File1_fragpipeDataProcessing_files/libs/quarto-html/popper.min.js"></script>
+<script src="20220727File1_fragpipeDataProcessing_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="20220727File1_fragpipeDataProcessing_files/libs/quarto-html/anchor.min.js"></script>
+<link href="20220727File1_fragpipeDataProcessing_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link id="quarto-text-highlighting-styles" href="20220727File1_fragpipeDataProcessing_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet">
+<script src="20220727File1_fragpipeDataProcessing_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="20220727File1_fragpipeDataProcessing_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="20220727File1_fragpipeDataProcessing_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Proteomic data processing</h1>
+</div>
+
+
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Christopher Hughes </p>
+          </div>
+  </div>
+    
+    
+  </div>
+  
+
+</header>
+
+<p>This document details the analysis of proteomics data from cells treated with a drug in normoxia and hypoxia conditions. These were lysosomal IPs from Ashish. The data were acquired with a TMT-MS3 protocol and analyzed using FragPipe software.</p>
+<section id="setting-up-the-environment" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up-the-environment">Setting up the environment</h2>
+<p>These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'tidyverse'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>generalDatasets <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>baseWorkspace <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>baseRepository <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="preparing-the-data" class="level2">
+<h2 class="anchored" data-anchor-id="preparing-the-data">Preparing the data</h2>
+<p>We will read in the PSM data from FragPipe and combine it with the quantification data obtained using RawTools.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="do">##read in the diaNN data...you have to use double slashes here for some reason</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>setA <span class="ot">=</span> <span class="fu">read_tsv</span>(<span class="st">'D:/msDataTemp/proteomics20220312_ashishLysosomeIpMs/fragpipeAnalysis/setA/psm.tsv'</span>, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">scan =</span> <span class="fu">as.numeric</span>(<span class="fu">sub</span>(<span class="st">'.*_A[1-4]</span><span class="sc">\\</span><span class="st">.(.*)</span><span class="sc">\\</span><span class="st">.[0-9]+</span><span class="sc">\\</span><span class="st">.[1-5]'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, Spectrum)),</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>                <span class="at">fraction =</span> <span class="fu">as.numeric</span>(<span class="fu">sub</span>(<span class="st">'.*_A(.*)</span><span class="sc">\\</span><span class="st">.[0-9]+</span><span class="sc">\\</span><span class="st">.[0-9]+</span><span class="sc">\\</span><span class="st">.[1-5]'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, Spectrum)),</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                <span class="at">sampleSet =</span> <span class="fu">sub</span>(<span class="st">'.*_(.*)[1-4]</span><span class="sc">\\</span><span class="st">.[0-9]+</span><span class="sc">\\</span><span class="st">.[0-9]+</span><span class="sc">\\</span><span class="st">.[1-5]'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, Spectrum)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">sequence =</span> Peptide,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>                <span class="at">accession =</span> <span class="st">`</span><span class="at">Protein ID</span><span class="st">`</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>                <span class="at">symbol =</span> Gene) <span class="sc">%&gt;%</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(accession, symbol, sequence, scan, fraction, sampleSet)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">#  </span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>setB <span class="ot">=</span> <span class="fu">read_tsv</span>(<span class="st">'D:/msDataTemp/proteomics20220312_ashishLysosomeIpMs/fragpipeAnalysis/setB/psm.tsv'</span>, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">scan =</span> <span class="fu">as.numeric</span>(<span class="fu">sub</span>(<span class="st">'.*_B[1-4]</span><span class="sc">\\</span><span class="st">.(.*)</span><span class="sc">\\</span><span class="st">.[0-9]+</span><span class="sc">\\</span><span class="st">.[1-5]'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, Spectrum)),</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>                <span class="at">fraction =</span> <span class="fu">as.numeric</span>(<span class="fu">sub</span>(<span class="st">'.*_B(.*)</span><span class="sc">\\</span><span class="st">.[0-9]+</span><span class="sc">\\</span><span class="st">.[0-9]+</span><span class="sc">\\</span><span class="st">.[1-5]'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, Spectrum)),</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>                <span class="at">sampleSet =</span> <span class="fu">sub</span>(<span class="st">'.*_(.*)[1-4]</span><span class="sc">\\</span><span class="st">.[0-9]+</span><span class="sc">\\</span><span class="st">.[0-9]+</span><span class="sc">\\</span><span class="st">.[1-5]'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, Spectrum)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">sequence =</span> Peptide,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>                <span class="at">accession =</span> <span class="st">`</span><span class="at">Protein ID</span><span class="st">`</span>,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>                <span class="at">symbol =</span> Gene) <span class="sc">%&gt;%</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(accession, symbol, sequence, scan, fraction, sampleSet)</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="do">##combine the sample sets</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>psmData <span class="ot">=</span> <span class="fu">rbind</span>(setA, setB)</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="do">##now get the quant data</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>quantFiles <span class="ot">=</span> <span class="fu">list.files</span>(<span class="st">'D:/msDataTemp/proteomics20220312_ashishLysosomeIpMs'</span>, <span class="at">pattern =</span> <span class="st">'_Matrix.txt'</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>quantData <span class="ot">=</span> <span class="fu">tibble</span>()</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(quantFiles)){</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>  quantTemp <span class="ot">=</span> <span class="fu">read_tsv</span>(quantFiles[i], <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">scan =</span> MS2ScanNumber) <span class="sc">%&gt;%</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">select</span>(scan, <span class="st">`</span><span class="at">126Intensity</span><span class="st">`</span><span class="sc">:</span><span class="st">`</span><span class="at">131CIntensity</span><span class="st">`</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">tmt126C =</span> <span class="st">`</span><span class="at">126Intensity</span><span class="st">`</span>,</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tmt127N =</span> <span class="st">`</span><span class="at">127NIntensity</span><span class="st">`</span>,</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tmt127C =</span> <span class="st">`</span><span class="at">127CIntensity</span><span class="st">`</span>,</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tmt128N =</span> <span class="st">`</span><span class="at">128NIntensity</span><span class="st">`</span>,</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tmt128C =</span> <span class="st">`</span><span class="at">128CIntensity</span><span class="st">`</span>,</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tmt129N =</span> <span class="st">`</span><span class="at">129NIntensity</span><span class="st">`</span>,</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tmt129C =</span> <span class="st">`</span><span class="at">129CIntensity</span><span class="st">`</span>,</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tmt130N =</span> <span class="st">`</span><span class="at">130NIntensity</span><span class="st">`</span>,</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tmt130C =</span> <span class="st">`</span><span class="at">130CIntensity</span><span class="st">`</span>,</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tmt131N =</span> <span class="st">`</span><span class="at">131NIntensity</span><span class="st">`</span>,</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>                  <span class="at">tmt131C =</span> <span class="st">`</span><span class="at">131CIntensity</span><span class="st">`</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">fraction =</span> <span class="fu">as.numeric</span>(<span class="fu">sub</span>(<span class="st">'.*_hph_[AB](.*)</span><span class="sc">\\</span><span class="st">.raw_Matrix</span><span class="sc">\\</span><span class="st">.txt'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, quantFiles[i])),</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>                  <span class="at">sampleSet =</span> <span class="fu">sub</span>(<span class="st">'.*_hph_(.*)[1-4]</span><span class="sc">\\</span><span class="st">.raw_Matrix</span><span class="sc">\\</span><span class="st">.txt'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, quantFiles[i]))</span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>  quantData <span class="ot">=</span> <span class="fu">rbind</span>(quantData, quantTemp)</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+New names:
+New names:
+New names:
+New names:
+New names:
+New names:
+New names:
+* `` -&gt; `...104`</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="do">##combine the psm and quant data into a single object and save it</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>allData <span class="ot">=</span> psmData <span class="sc">%&gt;%</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(quantData)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining, by = c("scan", "fraction", "sampleSet")</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(allData, <span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20220312_ashishLysosomeIpMs/dataset_rawPsmData.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(allData, <span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20220312_ashishLysosomeIpMs/dataset_rawPsmData.tsv'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">quote =</span> <span class="cn">FALSE</span>, <span class="at">col.names =</span> <span class="cn">TRUE</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">sep =</span> <span class="st">'</span><span class="sc">\t</span><span class="st">'</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="do">##as a quick final sanity check, list the data for LAMP1</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>allData[<span class="fu">grepl</span>(<span class="st">'^LAMP1$'</span>, allData<span class="sc">$</span>symbol),]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 14 x 17
+   accession symbol sequence     scan fraction sampleSet tmt126C tmt127N tmt127C
+   &lt;chr&gt;     &lt;chr&gt;  &lt;chr&gt;       &lt;dbl&gt;    &lt;dbl&gt; &lt;chr&gt;       &lt;dbl&gt;   &lt;dbl&gt;   &lt;dbl&gt;
+ 1 P11279    LAMP1  TVESITDIR   19439        1 A         277633. 478200. 338364.
+ 2 P11279    LAMP1  ALQATVGNSYK 17105        3 A          90590. 167117.  96889.
+ 3 P11279    LAMP1  AFSVNIFK    30739        3 A          53273. 105907.  55796.
+ 4 P11279    LAMP1  ALQATVGNSYK 17503        4 A         146490. 242954. 155306.
+ 5 P11279    LAMP1  ALQATVGNSYK 17509        4 A         135855. 261870. 173391.
+ 6 P11279    LAMP1  TVESITDIR   19245        4 A         105637. 203565. 139421.
+ 7 P11279    LAMP1  VWVQAFK     29120        4 A         253667. 432607. 260180.
+ 8 P11279    LAMP1  AFSVNIFK    31032        4 A         216525. 398134. 244344.
+ 9 P11279    LAMP1  ALQATVGNSYK 17600        1 B          46377.  85290.  57555.
+10 P11279    LAMP1  TVESITDIR   19360        1 B         125826. 233753. 156090.
+11 P11279    LAMP1  TVESITDIR   19477        1 B         274678. 502136. 309278.
+12 P11279    LAMP1  ALQATVGNSYK 17188        3 B         133959. 275296. 155411.
+13 P11279    LAMP1  ALQATVGNSYK 17132        4 B         128501. 268619. 163026.
+14 P11279    LAMP1  ALQATVGNSYK 17145        4 B         241789. 434124. 289705.
+# ... with 8 more variables: tmt128N &lt;dbl&gt;, tmt128C &lt;dbl&gt;, tmt129N &lt;dbl&gt;,
+#   tmt129C &lt;dbl&gt;, tmt130N &lt;dbl&gt;, tmt130C &lt;dbl&gt;, tmt131N &lt;dbl&gt;, tmt131C &lt;dbl&gt;</code></pre>
+</div>
+</div>
+<p>Now we will do some basic filtering of the data as well as assigning our sample annotation prior to doing any sort of comparisons. The sample layout is:</p>
+<p>tmt126C = normoxia HA 1 tmt127N = hypoxia HA 1 tmt127C = normoxia HA 2 tmt128N = hypoxia HA 2 tmt128C = normoxia HA 3 tmt129N = hypoxia HA 3 tmt129C = empty tmt130N = empty tmt130C = normoxia control 1 (setA), hypoxia control 1 (setB) tmt131N = normoxia control 2 (setA), hypoxia control 2 (setB) tmt131C = normoxia control 3 (setA), hypoxia control 3 (setB)</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="do">##read in the previously prepared data</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>psmData <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20220312_ashishLysosomeIpMs/dataset_rawPsmData.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="do">##first we will log transform the expression values</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>exprs <span class="ot">=</span> psmData[,<span class="dv">7</span><span class="sc">:</span><span class="dv">17</span>]</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>exprs[exprs <span class="sc">==</span> <span class="dv">0</span>] <span class="ot">=</span> <span class="cn">NA</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="do">##calculate the ratio to the control IP samples (background)</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>exprs<span class="sc">$</span>backgroundMean <span class="ot">=</span> <span class="fu">rowMeans</span>(exprs[,<span class="dv">9</span><span class="sc">:</span><span class="dv">11</span>], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>exprs <span class="ot">=</span> <span class="fu">apply</span>(exprs[,<span class="dv">1</span><span class="sc">:</span><span class="dv">6</span>], <span class="dv">2</span>, <span class="cf">function</span>(x) x <span class="sc">/</span> exprs<span class="sc">$</span>backgroundMean)</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="do">##reinsert into the original data</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>pepData <span class="ot">=</span> <span class="fu">tibble</span>(<span class="st">'accession'</span> <span class="ot">=</span> psmData<span class="sc">$</span>accession, </span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>                 <span class="st">'symbol'</span> <span class="ot">=</span> psmData<span class="sc">$</span>symbol, </span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">as.data.frame</span>(exprs))</span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(pepData)[<span class="dv">3</span><span class="sc">:</span><span class="dv">8</span>] <span class="ot">=</span> <span class="fu">c</span>(<span class="st">'norm1'</span>,<span class="st">'hyp1'</span>,<span class="st">'norm2'</span>,<span class="st">'hyp2'</span>,<span class="st">'norm3'</span>,<span class="st">'hyp3'</span>)</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="do">##filter peptides that aren't completely present in at least one of the IP conditions</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>pepData<span class="sc">$</span>normNA <span class="ot">=</span> <span class="fu">rowSums</span>(<span class="fu">is.na</span>(pepData[,<span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">5</span>,<span class="dv">7</span>)]))</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>pepData<span class="sc">$</span>hypNA <span class="ot">=</span> <span class="fu">rowSums</span>(<span class="fu">is.na</span>(pepData[,<span class="fu">c</span>(<span class="dv">4</span>,<span class="dv">6</span>,<span class="dv">8</span>)]))</span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="co">#pepData[,3:8] = log2(pepData[,3:8])</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>proData <span class="ot">=</span> pepData <span class="sc">%&gt;%</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(normNA <span class="sc">==</span> <span class="dv">0</span> <span class="sc">|</span> hypNA <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">numPeps =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(accession, symbol) <span class="sc">%&gt;%</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="fu">across</span>(norm1<span class="sc">:</span>hyp3, median, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">numPeps =</span> <span class="fu">sum</span>(numPeps, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(accession, symbol, numPeps, norm1, norm2, norm3, hyp1, hyp2, hyp3)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'accession'. You can override using the
+`.groups` argument.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="do">##calculate some summary values</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>proData<span class="sc">$</span>meanNormoxia <span class="ot">=</span> <span class="fu">rowMeans</span>(proData[,<span class="fu">c</span>(<span class="dv">4</span><span class="sc">:</span><span class="dv">6</span>)], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>proData<span class="sc">$</span>meanHypoxia <span class="ot">=</span> <span class="fu">rowMeans</span>(proData[,<span class="fu">c</span>(<span class="dv">7</span><span class="sc">:</span><span class="dv">9</span>)], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>proData<span class="sc">$</span>ratio <span class="ot">=</span> <span class="fu">log2</span>(proData<span class="sc">$</span>meanHypoxia) <span class="sc">-</span> <span class="fu">log2</span>(proData<span class="sc">$</span>meanNormoxia)</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="do">##check out LAMP1 for QC purposes</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>proData[<span class="fu">grepl</span>(<span class="st">'^LAMP1$'</span>, proData<span class="sc">$</span>symbol),]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 1 x 12
+# Groups:   accession [1]
+  accession symbol numPeps norm1 norm2 norm3  hyp1  hyp2  hyp3 meanNormoxia
+  &lt;chr&gt;     &lt;chr&gt;    &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;        &lt;dbl&gt;
+1 P11279    LAMP1       14  4.26  4.68  4.99  7.16  9.81  10.4         4.64
+# ... with 2 more variables: meanHypoxia &lt;dbl&gt;, ratio &lt;dbl&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="do">##save the data</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(proData, <span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20220312_ashishLysosomeIpMs/dataset_proteinDataNoNormlization_hyp-norm.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(proData, <span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20220312_ashishLysosomeIpMs/dataset_proteinDataNoNormalization_hyp-norm.tsv'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">quote =</span> <span class="cn">FALSE</span>, <span class="at">col.names =</span> <span class="cn">TRUE</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">sep =</span> <span class="st">'</span><span class="sc">\t</span><span class="st">'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Done for now.</p>
+<section id="session-info" class="level3">
+<h3 class="anchored" data-anchor-id="session-info">Session info</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.1.3 (2022-03-10)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19042)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_Canada.1252  LC_CTYPE=English_Canada.1252   
+[3] LC_MONETARY=English_Canada.1252 LC_NUMERIC=C                   
+[5] LC_TIME=English_Canada.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+[1] forcats_0.5.1   stringr_1.4.0   dplyr_1.0.9     purrr_0.3.4    
+[5] readr_2.1.2     tidyr_1.2.0     tibble_3.1.7    ggplot2_3.3.6  
+[9] tidyverse_1.3.1
+
+loaded via a namespace (and not attached):
+ [1] tidyselect_1.1.2 xfun_0.31        haven_2.5.0      colorspace_2.0-3
+ [5] vctrs_0.4.1      generics_0.1.2   htmltools_0.5.2  yaml_2.3.5      
+ [9] utf8_1.2.2       rlang_1.0.3      pillar_1.7.0     glue_1.6.2      
+[13] withr_2.5.0      DBI_1.1.3        bit64_4.0.5      dbplyr_2.2.1    
+[17] modelr_0.1.8     readxl_1.4.0     lifecycle_1.0.1  munsell_0.5.0   
+[21] gtable_0.3.0     cellranger_1.1.0 rvest_1.0.2      evaluate_0.15   
+[25] knitr_1.39       tzdb_0.3.0       fastmap_1.1.0    parallel_4.1.3  
+[29] fansi_1.0.3      broom_0.8.0      backports_1.4.1  scales_1.2.0    
+[33] vroom_1.5.7      jsonlite_1.8.0   bit_4.0.4        fs_1.5.2        
+[37] hms_1.1.1        digest_0.6.29    stringi_1.7.6    grid_4.1.3      
+[41] cli_3.3.0        tools_4.1.3      magrittr_2.0.3   crayon_1.5.1    
+[45] pkgconfig_2.0.3  ellipsis_0.3.2   xml2_1.3.3       reprex_2.0.1    
+[49] lubridate_1.8.0  assertthat_0.2.1 rmarkdown_2.14   httr_1.4.3      
+[53] rstudioapi_0.13  R6_2.5.1         compiler_4.1.3  </code></pre>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    setTimeout(function() {
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

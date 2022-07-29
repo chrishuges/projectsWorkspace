@@ -1,0 +1,66 @@
+---
+title: "DepMap RNA Data"
+author: "Christopher Hughes"
+format: html
+---
+
+This document details the analysis of RNAseq data from DepMap.
+
+### Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('vroom')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToHaifeng'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToHaifeng'
+```
+
+### Data processing
+
+Read the sample annotation detail.
+
+```{r}
+##########################################################################################
+cellAnnotation = read_csv(paste(generalDatasets, '/depmap22Q2/sample_info.csv', sep = ''), show_col_types = FALSE)
+```
+
+Read in the RNA data and do some basic processing on it.
+
+```{r}
+##########################################################################################
+rna = vroom(paste(generalDatasets, '/depmap22Q2/CCLE_expression.csv', sep = ''), show_col_types = FALSE) %>%
+  dplyr::rename(DepMap_ID = `...1`) %>% 
+  tidyr::pivot_longer(cols = `TSPAN6 (7105)`:`CDR1 (1038)`, names_to = 'symbol', values_to = 'log2Tpm') %>%
+  dplyr::filter(log2Tpm > 0 & !is.na(log2Tpm)) %>%
+  dplyr::mutate(gene = sub('(.*) \\(.*$', '\\1', symbol)) %>%
+  dplyr::select(DepMap_ID, gene, log2Tpm) %>%
+  dplyr::left_join(cellAnnotation)
+```
+
+Save the data for use downstream.
+
+```{r}
+##########################################################################################
+saveRDS(rna, paste(generalDatasets, '/depmap22Q2/CCLE_expression_parsed.rds', sep = ''))
+```
+
+Done for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

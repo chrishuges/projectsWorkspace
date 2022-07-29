@@ -145,7 +145,7 @@ rule bam_coverage:
   message:
       "Calculating coverage with deeptools."
   shell:
-      "{BAMCOVERAGE} -b {input.r1} -o {output} --binSize 10 --region chr11 --normalizeUsing BPM --smoothLength 30 --extendReads 150 --centerReads -p 6"
+      "{BAMCOVERAGE} -b {input.r1} -o {output} --binSize 10 --normalizeUsing BPM --smoothLength 30 --extendReads 150 --centerReads -p 6"
 ```
 
 Below is the shell script I will use to process these data with snakemake.

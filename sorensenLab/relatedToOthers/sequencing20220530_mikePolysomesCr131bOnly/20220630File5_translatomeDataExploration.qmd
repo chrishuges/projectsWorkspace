@@ -22,6 +22,7 @@ library('gridExtra')
 library('RColorBrewer')
 library('ggplot2')
 library('ggrepel')
+library('diann')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
@@ -32,7 +33,6 @@ generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDa
 baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
 baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
 ```
-
 
 ## Preparing the data
 
@@ -93,7 +93,6 @@ saveRDS(allData,
         paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/anota2seq/dataset_allAnota2seqDataCombined.rds', sep = ''))
 ```
 
-
 ## General differential expression
 
 In order to just look at global changes between the conditions, I will use the two datasets to just make broad comparisons between the datasets and see what we see. I will start with a PCA analysis to ensure the samples are appearing as they should in terms of treatments and replicates. For this I use a raw RNA counts dataset that was prepared in another script, rather than the deseq or anota2seq output.
@@ -133,31 +132,51 @@ pcaVarPlot = summary(pcaOut)$importance[2,]
 pcaVarPlotTib = tibble('pc' = factor(names(pcaVarPlot), levels = names(pcaVarPlot)),
                        'var' = pcaVarPlot)
 ggplot(pcaVarPlotTib, aes(pc, var)) +
-  geom_bar(stat = 'identity', fill = brewer.pal(3,'Greys')[2], color = 'black', size = 0.8) +
+  geom_bar(stat = 'identity', fill = brewer.pal(3,'Greys')[2], color = 'black', size = 0.5) +
   geom_hline(yintercept = 0.05, linetype = 'dashed', color = brewer.pal(3,'OrRd')[3]) +
   labs(x = 'Component', y = 'Proportion of variance', title = 'PCA variance') +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/barplot_pcaRnaDataIndividualComponents.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
 
 ##generate a barplot of the cumulative proportion of variance
 pcaVarPlot = summary(pcaOut)$importance[3,]
 pcaVarPlotTib = tibble('pc' = factor(names(pcaVarPlot), levels = names(pcaVarPlot)),
                        'var' = pcaVarPlot)
 ggplot(pcaVarPlotTib, aes(pc, var)) +
-  geom_bar(stat = 'identity', fill = brewer.pal(3,'Greys')[2], color = 'black', size = 0.8) +
+  geom_bar(stat = 'identity', fill = brewer.pal(3,'Greys')[2], color = 'black', size = 0.5) +
   geom_hline(yintercept = 0.7, linetype = 'dashed', color = brewer.pal(3,'OrRd')[3]) +
   labs(x = 'Component', y = 'Cumulative proportion of variance', title = 'PCA variance') +
   theme_classic() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/barplot_pcaRnaDataCummulativeVariance.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
 
 ##merge the PCA output with the annotation file and plot the result
 pcaPlot = merge(pcaOut$x, anot, by = 'row.names')
 ggplot(pcaPlot, aes(x = PC1, y = PC2, shape = rna, col = condition)) +
   geom_point() +
-  geom_text(aes(label = replicate, vjust = 1, hjust = 1))
+  geom_text(aes(label = replicate, vjust = 1, hjust = 1)) +
+  labs(title = 'Comparing components')
+  #theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/barplot_pcaPc1VsPc2.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
 ggplot(pcaPlot, aes(x = PC1, y = PC3, shape = rna, col = condition)) +
   geom_point() +
-  geom_text(aes(label = replicate, vjust = 1, hjust = 1))
+  geom_text(aes(label = replicate, vjust = 1, hjust = 1)) +
+  labs(title = 'Comparing components') +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/barplot_pcaPc1VsPc3.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
 ```
 
 So the data seems to primarily split into three sources of variation. PC1 appears to be split based on the rna type, in this case total RNA or polysome-derived RNA. This is expected. Next, PC2 appears to be variation derived from the drug treatment, with dmso and cr8 being the farthest apart. This is also expected, and nice to see. PC3 is a bit more confusing, but it appears to also be the RNA source, splitting up the two polysome types, light and heavy. In general, these data all look as expected and cluster as I would anticipate based on the experimental design.
@@ -166,9 +185,187 @@ Now I will look at differential expression to compare what changes we see betwee
 
 ```{r}
 ##########################################################################################
+##read the rna de data
+materials = rep(c('total','light','heavy'), each = 3)
+drugs = c('cr2','cr4','cr8')
+deFiles = file.path(baseRepository,
+                    'sequencing20220530_mikePolysomesCr131bOnly/deseq2',
+                    paste('dataset_deseq2_',materials,'_',drugs,'-dmso.rds',sep=''))
 
+deData = tibble()
+for (i in 1:length(deFiles)){
+  rawDe = tibble(readRDS(deFiles[i])) %>%
+    dplyr::rename(log2Fc = log2FoldChange) %>%
+    dplyr::mutate(fraction = sub('.*deseq2_(.*)_cr[0-9]\\-dmso\\.rds','\\1',deFiles[i])) %>%
+    dplyr::mutate(drug = sub('.*[lty]_(.*)\\-dmso\\.rds','\\1',deFiles[i])) %>%
+    dplyr::mutate(dataset = paste(drug,fraction,sep = '')) %>%
+    dplyr::mutate(dataset = factor(dataset, levels = c('cr2heavy','cr2light','cr2total',
+                                                       'cr4heavy','cr4light','cr4total',
+                                                       'cr8heavy','cr8light','cr8total'))) %>%
+    dplyr::filter(!is.na(symbol))
+  #
+  deData = rbind(deData, rawDe)
+}
 
+##save the data
+saveRDS(deData, paste(baseRepository,'/proteomics20220703_mikeCr131bProteomeDia/dataset_deseq2AllConditionsData.rds',sep=''))
 ```
+
+Now that we have the data prepared, we can plot them to see some general trends in expression.
+
+```{r}
+##########################################################################################
+##plot the data as a scatter
+deDataPlot = deData %>%
+  dplyr::filter(abs(log2Fc) > 1)
+ggplot(deDataPlot, aes(log2Fc, -log10(padj))) +
+  geom_point(size = 0.25) +
+  scale_y_continuous(limits = c(0,100)) +
+  scale_x_continuous(limits = c(-8,8)) +
+  labs(x = 'log2(Fold change, drug vs dmso)') +
+  geom_vline(xintercept = 0, linetype = 'dashed', color = brewer.pal(3,'Greys')[2], size = 1) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed', color = brewer.pal(3,'OrRd')[3], size = 1) +
+  facet_wrap(~dataset)
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_deseqOfAllConditions.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
+
+##can do the same for individual genes of interest
+genesOfInterest = c('MYC','CCND1','NFE2L2','BIRC3')
+
+#MYC
+goiData = deData %>%
+  dplyr::filter(symbol == 'MYC') %>%
+  dplyr::mutate(fraction = factor(fraction, levels = c('heavy','light','total')))
+ggplot(goiData, aes(drug, log2Fc, group = drug)) +
+  geom_point() +
+  labs(title = 'MYC abundance') +
+  facet_wrap(~fraction) +
+  theme_bw()
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_targetGenesMyc.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
+
+#CCND1
+goiData = deData %>%
+  dplyr::filter(symbol == 'CCND1') %>%
+  dplyr::mutate(fraction = factor(fraction, levels = c('heavy','light','total')))
+ggplot(goiData, aes(drug, log2Fc, group = drug)) +
+  geom_point() +
+  labs(title = 'CCND1 abundance') +
+  facet_wrap(~fraction) +
+  theme_bw()
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_targetGenesCcnd1.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
+
+#NFE2L2
+goiData = deData %>%
+  dplyr::filter(symbol == 'NFE2L2') %>%
+  dplyr::mutate(fraction = factor(fraction, levels = c('heavy','light','total')))
+ggplot(goiData, aes(drug, log2Fc, group = drug)) +
+  geom_point() +
+  labs(title = 'NRF2 abundance') +
+  facet_wrap(~fraction) +
+  theme_bw()
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_targetGenesNrf2.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
+
+#BIRC3
+goiData = deData %>%
+  dplyr::filter(symbol == 'BIRC3') %>%
+  dplyr::mutate(fraction = factor(fraction, levels = c('heavy','light','total')))
+ggplot(goiData, aes(drug, log2Fc, group = drug)) +
+  geom_point() +
+  labs(title = 'BIRC3 abundance') +
+  facet_wrap(~fraction) +
+  theme_bw()
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_targetGenesBirc3.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
+```
+
+We can also add in the proteomics data. This will need a bit of processing first before we can use it though as we still only have the raw data.
+
+
+
+Now we can interface the proteomics data with that from the transcriptome.
+
+```{r}
+##########################################################################################
+##read in the data
+pro = proLowCombine %>%
+  tidyr::pivot_longer(cols = cr2Ratio:cr8Ratio, names_to = 'sampleName', values_to = 'log2Fc') %>%
+  dplyr::mutate(fraction = 'proteome',
+                drug = sub('(.*)Ratio','\\1',sampleName)) %>%
+  dplyr::select(symbol, log2Fc, fraction, drug)
+deData = readRDS(paste(baseRepository,'/proteomics20220703_mikeCr131bProteomeDia/dataset_deseq2AllConditionsData.rds',sep='')) %>%
+  dplyr::select(symbol, log2Fc, fraction, drug)
+allData = rbind(pro, deData)
+
+#MYC
+goiData = allData %>%
+  dplyr::filter(symbol == 'MYC') %>%
+  dplyr::mutate(fraction = factor(fraction, levels = c('heavy','light','total','proteome')))
+ggplot(goiData, aes(drug, log2Fc, group = drug)) +
+  geom_point() +
+  labs(title = 'MYC abundance') +
+  facet_wrap(~fraction) +
+  theme_bw()
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_targetGenesWithProteomeMyc.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
+
+#CCND1
+goiData = allData %>%
+  dplyr::filter(symbol == 'CCND1') %>%
+  dplyr::mutate(fraction = factor(fraction, levels = c('heavy','light','total','proteome')))
+ggplot(goiData, aes(drug, log2Fc, group = drug)) +
+  geom_point() +
+  labs(title = 'CCND1 abundance') +
+  facet_wrap(~fraction) +
+  theme_bw()
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_targetGenesWithProteomeCcnd1.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
+
+#NFE2L2
+goiData = allData %>%
+  dplyr::filter(symbol == 'NFE2L2') %>%
+  dplyr::mutate(fraction = factor(fraction, levels = c('heavy','light','total','proteome')))
+ggplot(goiData, aes(drug, log2Fc, group = drug)) +
+  geom_point() +
+  labs(title = 'NRF2 abundance') +
+  facet_wrap(~fraction) +
+  theme_bw()
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_targetGenesWithProteomeNrf2.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
+
+#BIRC3
+goiData = allData %>%
+  dplyr::filter(symbol == 'BIRC3') %>%
+  dplyr::mutate(fraction = factor(fraction, levels = c('heavy','light','total','proteome')))
+ggplot(goiData, aes(drug, log2Fc, group = drug)) +
+  geom_point() +
+  labs(title = 'BIRC3 abundance') +
+  facet_wrap(~fraction) +
+  theme_bw()
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_targetGenesWithProteomeBirc3.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
+```
+
 
 ## EIF4E targets
 
@@ -195,13 +392,17 @@ rnaExp = readRDS(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bO
 
 ##plot the data as a scatter
 ggplot(rnaExp[rnaExp$eif4eTarget == 'target',], aes(log2FoldChange, -log10(padj))) +
-  geom_point(size = 1) +
+  geom_point(size = 0.5) +
   scale_y_continuous(limits = c(0,50)) +
   scale_x_continuous(limits = c(-4,4)) +
   labs(x = 'log2(Fold change, drug vs dmso)') +
   geom_vline(xintercept = 0, linetype = 'dashed', color = brewer.pal(3,'Greys')[2], size = 1) +
   geom_vline(xintercept = c(-1,1), linetype = 'dashed', color = brewer.pal(3,'OrRd')[3], size = 1) +
   facet_wrap(~dataset)
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_eif4eTargets.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
 
 ##plot the data as an ecdf
 p = ggplot(rnaExp, aes(log2FoldChange, colour = eif4eTarget)) +
@@ -210,8 +411,13 @@ p = ggplot(rnaExp, aes(log2FoldChange, colour = eif4eTarget)) +
   scale_color_manual(values = c(brewer.pal(3,'Greys')[3], brewer.pal(3, 'OrRd')[3])) +
   geom_vline(xintercept = 0, linetype = 'dashed', color = brewer.pal(3,'Greys')[2], size = 1) +
   labs(y = 'Fn(x)', x = 'log2(Fold change, drug vs dmso)') +
+  theme(legend.position = 'none') +
   facet_wrap(~dataset)
 p
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/distribution_eif4eTargets.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
 
 ##if you want to get the actual data for the ecdf function to do a statistical test, use: p.data <- layer_data(p)
 ```
@@ -232,6 +438,10 @@ ggplot(rnaExp[rnaExp$eif4eTarget == 'target',], aes(x = singleRegMode, fill = si
   geom_bar(position = position_dodge()) +
   facet_wrap(~dataset) +
   theme(axis.text.x = element_blank())
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/barplot_eif4eTargetsAssignment.pdf',sep=''),
+       height = 3, 
+       width = 3,
+       useDingbats = FALSE)
 ```
 
 So we definitely see an uptick in translation assigned EIF4E targets as the concentration of drug increases, but still many are not assigned as translation targets. It seems to mostly re-classify 'background' assignments to as now being translationally regulated. I think there is a big transcriptional response in these cells, possibly due to the fact that this is a 24-hour drug treatment. I think that by the time we are harvesting the cells, they are trying to adapt to the drug and are potentially upregulating the transcription of things that are being suppressed translationally in order to recover the levels. This would somewhat mask our ability to assign them as translation targets. But, nevertheless, I think there is a clear change in EIF4E targets, especially at high drug concentrations.
@@ -242,20 +452,10 @@ It has been suggested previously (PMID: 31723131) that CR1 treatment may modify 
 
 "Factors required for efficient translation of an mRNA are determined in large part by diverse features of its 5′ untranslated region (UTR), including its length, secondary structure, and sequence motifs. Therefore, we next sought to identify RNA features associated with the effects of CR-31 on mRNA translation. Consistent with a recent report examining the 5′- UTRs of eIF4A-dependent mRNAs, we did not observe an enrichment for (GGC) motifs, which are proposed to fold into G-quadruplexes, within the 5’-UTRs of mRNAs whose translation is suppressed by CR-31 (Supplementary Fig. 5a). We also did not observe an enrichment for polypurines in the 5′-UTRs of transcripts that are translationally suppressed in KP organoids after CR-31 treatment (Supplementary Fig. 5b). Instead, we found that transcripts which are negatively regulated by CR-31 treatment have slightly shorter 5′-UTRs (Supplementary Fig. 5c), exhibit an elevated GC content (Supplementary Fig. 5d), and are more structured (after adjustment of fold-energies for 5′-UTR lengths) than non-regulated transcripts (Supplementary Fig. 5e). Thus, the RNA helicase eIF4A supports an oncogenic translation program that is activated in pancreatic cancer cells and characterized by mRNAs with structured 5′-UTRs. Overall, our results indicate that while inhibition of eIF4A by CR-31 exhibits minimal impact on the translatome of N organoids, it effectively reprograms the translatome of KP organoids towards that of N organoids."
 
-If you look at their own data suggesting this, it is actually an extremely small change between the conditions, despite being significant, so I am not so confident this is a true observation, but I still think we should look at these properties in our own dataset for regulated mRNAs. They focused solely on mRNAs that have a reduction in translation, but I will show the data for all subclasses just in case something pops out. The first thing we need to do is to get the sets of genes we want to look at so that we can pull out their 5'-UTR sequences. 
+If you look at their own data suggesting this, it is actually an extremely small change between the conditions, despite being significant, so I am not so confident this is a true observation, but I still think we should look at these properties in our own dataset for regulated mRNAs. They focused solely on mRNAs that have a reduction in translation, but I will show the data for all subclasses just in case something pops out. The first thing we need to do is to get the sets of genes we want to look at so that we can pull out their 5'-UTR sequences.
 
 ```{r}
 ##########################################################################################
 
 
 ```
-
-
-
-
-
-
-
-
-
-
