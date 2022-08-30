@@ -1,0 +1,172 @@
+---
+title: "Proteomic data processing"
+author: "Christopher Hughes"
+format: html
+---
+
+This document details the analysis of proteomics data from MNNGa cells expressing DLG2s (clone 3 versus empty clone 2). The proteomic data were obtained using a DIA protocol and processed with [DiaNN software](https://github.com/vdemichev/DiaNN).
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('diann')
+library('DEqMS')
+library('matrixStats')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Preparing the data
+
+Basically all we have to do here is read in the peptide tables using the [DiaNN R package](https://github.com/vdemichev/diann-rpackage), and it will process them using the MaxLFQ algorithm.
+
+```{r}
+##########################################################################################
+##read in the diaNN data...you have to use double slashes here for some reason
+pepHighRaw = diann_load('D:\\msDataTemp\\proteomics20220808_ellaMnngEf1aDlg2s3\\highMassAllReplicatesNoGrouping\\report.tsv')
+pepLowRaw = diann_load('D:\\msDataTemp\\proteomics20220808_ellaMnngEf1aDlg2s3\\lowMassAllReplicatesNoGrouping\\report.tsv')
+
+##low mass processing, LFQ at peptide level
+pepLowLfq = diann_maxlfq(pepLowRaw[pepLowRaw$Q.Value <= 0.01 & pepLowRaw$Lib.PG.Q.Value <= 0.01 & pepLowRaw$Proteotypic == 1,], 
+                       group.header="Stripped.Sequence", 
+                       id.header = "Precursor.Id", 
+                       quantity.header = "Precursor.Normalised")
+gene.names = pepLowRaw$Genes[match(rownames(pepLowLfq), pepLowRaw$Stripped.Sequence)]
+accession.names = pepLowRaw$Protein.Group[match(rownames(pepLowLfq), pepLowRaw$Stripped.Sequence)]
+pepLowLfqAnno = data.frame('symbol' = gene.names,
+                           'accession' = accession.names,
+                           pepLowLfq)
+sampleNames = sub('.*Ef1a_(.*)_diaLow+\\.raw','\\1',colnames(pepLowLfqAnno))
+colnames(pepLowLfqAnno) = c(sampleNames)
+pepLowLfqReorder = as.data.frame(pepLowLfqAnno[,c('symbol','accession',
+                                               'dlg2s3_rep1','dlg2s3_rep2','dlg2s3_rep3',
+                                               'empty2_rep1','empty2_rep2','empty2_rep3')])
+pepLowLfqReorder$scanSet = 'lowMass'
+pepLowLfqReorder$numPeps = 1
+pepLowFinal = pepLowLfqReorder %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  as_tibble()
+
+
+##high mass processing, LFQ at peptide level
+pepHighLfq = diann_maxlfq(pepHighRaw[pepHighRaw$Q.Value <= 0.01 & pepHighRaw$Lib.PG.Q.Value <= 0.01 & pepHighRaw$Proteotypic == 1,], 
+                       group.header="Stripped.Sequence", 
+                       id.header = "Precursor.Id", 
+                       quantity.header = "Precursor.Normalised")
+gene.names = pepHighRaw$Genes[match(rownames(pepHighLfq), pepHighRaw$Stripped.Sequence)]
+accession.names = pepHighRaw$Protein.Group[match(rownames(pepHighLfq), pepHighRaw$Stripped.Sequence)]
+pepHighLfqAnno = data.frame('symbol' = gene.names,
+                           'accession' = accession.names,
+                           pepHighLfq)
+sampleNames = sub('.*Ef1a_(.*)_diaHigh+\\.raw','\\1',colnames(pepLowLfqAnno))
+colnames(pepHighLfqAnno) = c(sampleNames)
+pepHighLfqReorder = as.data.frame(pepHighLfqAnno[,c('symbol','accession',
+                                               'dlg2s3_rep1','dlg2s3_rep2','dlg2s3_rep3',
+                                               'empty2_rep1','empty2_rep2','empty2_rep3')])
+pepHighLfqReorder$scanSet = 'highMass'
+pepHighLfqReorder$numPeps = 1
+pepHighFinal = pepHighLfqReorder %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  as_tibble()
+
+
+##combine and save the data
+allPeps = rbind(pepLowFinal, pepHighFinal)
+saveRDS(allPeps, paste(baseRepository,'/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_strippedPeptidesMaxLfqDiann.rds',sep=''))
+```
+
+Now we have a combined peptide table that we can work with. We can roll these peptide values up into proteins and check a couple of control genes we know should be changing.
+
+```{r}
+##########################################################################################
+##read in the peptide data and make a protein set
+rm(allPeps)
+pepData = readRDS(paste(baseRepository,'/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_strippedPeptidesMaxLfqDiann.rds',sep=''))
+pepData$samples123 = rowSums(is.na(pepData[,3:5]))
+pepData$samples456 = rowSums(is.na(pepData[,6:8]))
+pepData[,3:8] = log2(pepData[,3:8])
+pepData = dplyr::filter(pepData, symbol != '') %>%
+  dplyr::filter(samples123 == 0 | samples456 == 0) %>%
+  dplyr::group_by(symbol, accession) %>%
+  dplyr::summarise(across(dlg2s3_rep1:empty2_rep3, median, na.rm = TRUE), numPeps = sum(numPeps, na.rm = TRUE))
+
+pepData$meanSamples123 = rowMeans(pepData[,3:5], na.rm = TRUE)
+pepData$meanSamples456 = rowMeans(pepData[,6:8], na.rm = TRUE)
+pepData$ratio = pepData$meanSamples456 - pepData$meanSamples123
+
+##save these data
+saveRDS(pepData, paste(baseRepository, '/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_rawDataProteinLevel_dlg2-empty.rds',sep = ''))
+write.table(pepData, paste(baseRepository, '/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_rawDataProteinLevel_dlg2-empty.tsv',sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Perform differential expression analysis.
+
+```{r}
+##########################################################################################
+##get the expression data and assign the row names with the accession code
+exprs = as.data.frame(pepData[,3:8])
+rownames(exprs) = pepData$accession
+exprs = na.omit(exprs)
+
+##check the centering of the data
+boxplot(exprs, las = 2, main = 'protein expression data')
+
+##make the design table
+cond = as.factor(c('dlg2','dlg2','dlg2','empty','empty','empty'))
+design = model.matrix(~0+cond)
+colnames(design) = gsub('cond','',colnames(design))
+
+##make contrasts
+contrastsToMake = c('dlg2-empty')
+contrast = makeContrasts(contrasts = contrastsToMake, levels = design)
+fit1 = lmFit(exprs, design)
+fit2 = contrasts.fit(fit1, contrasts = contrast)
+fit3 = eBayes(fit2)
+
+##deqms analysis
+pepCountData = as.data.frame(pepData[,3:9])
+pepCountData = na.omit(pepCountData)
+fit3$count = pepCountData$numPeps
+fit4 = spectraCounteBayes(fit3)
+
+##visualize the results
+VarianceBoxplot(fit4, n = 30, main = 'variance by psm - boxplot', xlab = 'psm count')
+VarianceScatterplot(fit4, main = 'variance by psm - scatter')
+
+##extract the results and save it
+deqmsResults = outputResult(fit4, coef_col = 1)
+geneSymbols = pepData[,1:2]
+deqmsOutput = as_tibble(deqmsResults) %>%
+  dplyr::mutate(accession = rownames(deqmsResults)) %>%
+  dplyr::left_join(geneSymbols) %>%
+  dplyr::select(accession, symbol, logFC:sca.adj.pval)
+deqmsOutput
+saveRDS(deqmsOutput, paste(baseRepository, '/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_deqmsProteinLevel_dlg2-empty.rds',sep = ''))
+write.table(deqmsOutput, paste(baseRepository, '/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_deqmsProteinLevel_dlg2-empty.tsv',sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+We are done here for now. Wrap up below.
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+

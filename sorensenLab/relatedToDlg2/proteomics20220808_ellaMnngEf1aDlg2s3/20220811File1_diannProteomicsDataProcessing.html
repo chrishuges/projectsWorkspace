@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-0.9.260">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Christopher Hughes">
+
+<title>Proteomic data processing</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<script src="20220811File1_diannProteomicsDataProcessing_files/libs/clipboard/clipboard.min.js"></script>
+<script src="20220811File1_diannProteomicsDataProcessing_files/libs/quarto-html/quarto.js"></script>
+<script src="20220811File1_diannProteomicsDataProcessing_files/libs/quarto-html/popper.min.js"></script>
+<script src="20220811File1_diannProteomicsDataProcessing_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="20220811File1_diannProteomicsDataProcessing_files/libs/quarto-html/anchor.min.js"></script>
+<link href="20220811File1_diannProteomicsDataProcessing_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link id="quarto-text-highlighting-styles" href="20220811File1_diannProteomicsDataProcessing_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet">
+<script src="20220811File1_diannProteomicsDataProcessing_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="20220811File1_diannProteomicsDataProcessing_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="20220811File1_diannProteomicsDataProcessing_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Proteomic data processing</h1>
+</div>
+
+
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Christopher Hughes </p>
+          </div>
+  </div>
+    
+    
+  </div>
+  
+
+</header>
+
+<p>This document details the analysis of proteomics data from MNNGa cells expressing DLG2s (clone 3 versus empty clone 2). The proteomic data were obtained using a DIA protocol and processed with <a href="https://github.com/vdemichev/DiaNN">DiaNN software</a>.</p>
+<section id="setting-up-the-environment" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up-the-environment">Setting up the environment</h2>
+<p>These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'tidyverse'</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'diann'</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'DEqMS'</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'matrixStats'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>generalDatasets <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>baseWorkspace <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>baseRepository <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="preparing-the-data" class="level2">
+<h2 class="anchored" data-anchor-id="preparing-the-data">Preparing the data</h2>
+<p>Basically all we have to do here is read in the peptide tables using the <a href="https://github.com/vdemichev/diann-rpackage">DiaNN R package</a>, and it will process them using the MaxLFQ algorithm.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="do">##read in the diaNN data...you have to use double slashes here for some reason</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>pepHighRaw <span class="ot">=</span> <span class="fu">diann_load</span>(<span class="st">'D:</span><span class="sc">\\</span><span class="st">msDataTemp</span><span class="sc">\\</span><span class="st">proteomics20220808_ellaMnngEf1aDlg2s3</span><span class="sc">\\</span><span class="st">highMassAllReplicatesNoGrouping</span><span class="sc">\\</span><span class="st">report.tsv'</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>pepLowRaw <span class="ot">=</span> <span class="fu">diann_load</span>(<span class="st">'D:</span><span class="sc">\\</span><span class="st">msDataTemp</span><span class="sc">\\</span><span class="st">proteomics20220808_ellaMnngEf1aDlg2s3</span><span class="sc">\\</span><span class="st">lowMassAllReplicatesNoGrouping</span><span class="sc">\\</span><span class="st">report.tsv'</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="do">##low mass processing, LFQ at peptide level</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>pepLowLfq <span class="ot">=</span> <span class="fu">diann_maxlfq</span>(pepLowRaw[pepLowRaw<span class="sc">$</span>Q.Value <span class="sc">&lt;=</span> <span class="fl">0.01</span> <span class="sc">&amp;</span> pepLowRaw<span class="sc">$</span>Lib.PG.Q.Value <span class="sc">&lt;=</span> <span class="fl">0.01</span> <span class="sc">&amp;</span> pepLowRaw<span class="sc">$</span>Proteotypic <span class="sc">==</span> <span class="dv">1</span>,], </span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>                       <span class="at">group.header=</span><span class="st">"Stripped.Sequence"</span>, </span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>                       <span class="at">id.header =</span> <span class="st">"Precursor.Id"</span>, </span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>                       <span class="at">quantity.header =</span> <span class="st">"Precursor.Normalised"</span>)</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>gene.names <span class="ot">=</span> pepLowRaw<span class="sc">$</span>Genes[<span class="fu">match</span>(<span class="fu">rownames</span>(pepLowLfq), pepLowRaw<span class="sc">$</span>Stripped.Sequence)]</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>accession.names <span class="ot">=</span> pepLowRaw<span class="sc">$</span>Protein.Group[<span class="fu">match</span>(<span class="fu">rownames</span>(pepLowLfq), pepLowRaw<span class="sc">$</span>Stripped.Sequence)]</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>pepLowLfqAnno <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="st">'symbol'</span> <span class="ot">=</span> gene.names,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>                           <span class="st">'accession'</span> <span class="ot">=</span> accession.names,</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>                           pepLowLfq)</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>sampleNames <span class="ot">=</span> <span class="fu">sub</span>(<span class="st">'.*Ef1a_(.*)_diaLow+</span><span class="sc">\\</span><span class="st">.raw'</span>,<span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>,<span class="fu">colnames</span>(pepLowLfqAnno))</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(pepLowLfqAnno) <span class="ot">=</span> <span class="fu">c</span>(sampleNames)</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>pepLowLfqReorder <span class="ot">=</span> <span class="fu">as.data.frame</span>(pepLowLfqAnno[,<span class="fu">c</span>(<span class="st">'symbol'</span>,<span class="st">'accession'</span>,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>                                               <span class="st">'dlg2s3_rep1'</span>,<span class="st">'dlg2s3_rep2'</span>,<span class="st">'dlg2s3_rep3'</span>,</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>                                               <span class="st">'empty2_rep1'</span>,<span class="st">'empty2_rep2'</span>,<span class="st">'empty2_rep3'</span>)])</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>pepLowLfqReorder<span class="sc">$</span>scanSet <span class="ot">=</span> <span class="st">'lowMass'</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>pepLowLfqReorder<span class="sc">$</span>numPeps <span class="ot">=</span> <span class="dv">1</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>pepLowFinal <span class="ot">=</span> pepLowLfqReorder <span class="sc">%&gt;%</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(symbol)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_tibble</span>()</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="do">##high mass processing, LFQ at peptide level</span></span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>pepHighLfq <span class="ot">=</span> <span class="fu">diann_maxlfq</span>(pepHighRaw[pepHighRaw<span class="sc">$</span>Q.Value <span class="sc">&lt;=</span> <span class="fl">0.01</span> <span class="sc">&amp;</span> pepHighRaw<span class="sc">$</span>Lib.PG.Q.Value <span class="sc">&lt;=</span> <span class="fl">0.01</span> <span class="sc">&amp;</span> pepHighRaw<span class="sc">$</span>Proteotypic <span class="sc">==</span> <span class="dv">1</span>,], </span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>                       <span class="at">group.header=</span><span class="st">"Stripped.Sequence"</span>, </span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>                       <span class="at">id.header =</span> <span class="st">"Precursor.Id"</span>, </span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>                       <span class="at">quantity.header =</span> <span class="st">"Precursor.Normalised"</span>)</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a>gene.names <span class="ot">=</span> pepHighRaw<span class="sc">$</span>Genes[<span class="fu">match</span>(<span class="fu">rownames</span>(pepHighLfq), pepHighRaw<span class="sc">$</span>Stripped.Sequence)]</span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>accession.names <span class="ot">=</span> pepHighRaw<span class="sc">$</span>Protein.Group[<span class="fu">match</span>(<span class="fu">rownames</span>(pepHighLfq), pepHighRaw<span class="sc">$</span>Stripped.Sequence)]</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>pepHighLfqAnno <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="st">'symbol'</span> <span class="ot">=</span> gene.names,</span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>                           <span class="st">'accession'</span> <span class="ot">=</span> accession.names,</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a>                           pepHighLfq)</span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a>sampleNames <span class="ot">=</span> <span class="fu">sub</span>(<span class="st">'.*Ef1a_(.*)_diaHigh+</span><span class="sc">\\</span><span class="st">.raw'</span>,<span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>,<span class="fu">colnames</span>(pepLowLfqAnno))</span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(pepHighLfqAnno) <span class="ot">=</span> <span class="fu">c</span>(sampleNames)</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>pepHighLfqReorder <span class="ot">=</span> <span class="fu">as.data.frame</span>(pepHighLfqAnno[,<span class="fu">c</span>(<span class="st">'symbol'</span>,<span class="st">'accession'</span>,</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>                                               <span class="st">'dlg2s3_rep1'</span>,<span class="st">'dlg2s3_rep2'</span>,<span class="st">'dlg2s3_rep3'</span>,</span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>                                               <span class="st">'empty2_rep1'</span>,<span class="st">'empty2_rep2'</span>,<span class="st">'empty2_rep3'</span>)])</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a>pepHighLfqReorder<span class="sc">$</span>scanSet <span class="ot">=</span> <span class="st">'highMass'</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>pepHighLfqReorder<span class="sc">$</span>numPeps <span class="ot">=</span> <span class="dv">1</span></span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a>pepHighFinal <span class="ot">=</span> pepHighLfqReorder <span class="sc">%&gt;%</span></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(symbol)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">as_tibble</span>()</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-50"><a href="#cb3-50" aria-hidden="true" tabindex="-1"></a><span class="do">##combine and save the data</span></span>
+<span id="cb3-51"><a href="#cb3-51" aria-hidden="true" tabindex="-1"></a>allPeps <span class="ot">=</span> <span class="fu">rbind</span>(pepLowFinal, pepHighFinal)</span>
+<span id="cb3-52"><a href="#cb3-52" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(allPeps, <span class="fu">paste</span>(baseRepository,<span class="st">'/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_strippedPeptidesMaxLfqDiann.rds'</span>,<span class="at">sep=</span><span class="st">''</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now we have a combined peptide table that we can work with. We can roll these peptide values up into proteins and check a couple of control genes we know should be changing.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="do">##read in the peptide data and make a protein set</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span>(allPeps)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>pepData <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository,<span class="st">'/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_strippedPeptidesMaxLfqDiann.rds'</span>,<span class="at">sep=</span><span class="st">''</span>))</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>pepData<span class="sc">$</span>samples123 <span class="ot">=</span> <span class="fu">rowSums</span>(<span class="fu">is.na</span>(pepData[,<span class="dv">3</span><span class="sc">:</span><span class="dv">5</span>]))</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>pepData<span class="sc">$</span>samples456 <span class="ot">=</span> <span class="fu">rowSums</span>(<span class="fu">is.na</span>(pepData[,<span class="dv">6</span><span class="sc">:</span><span class="dv">8</span>]))</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>pepData[,<span class="dv">3</span><span class="sc">:</span><span class="dv">8</span>] <span class="ot">=</span> <span class="fu">log2</span>(pepData[,<span class="dv">3</span><span class="sc">:</span><span class="dv">8</span>])</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>pepData <span class="ot">=</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(pepData, symbol <span class="sc">!=</span> <span class="st">''</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(samples123 <span class="sc">==</span> <span class="dv">0</span> <span class="sc">|</span> samples456 <span class="sc">==</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(symbol, accession) <span class="sc">%&gt;%</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="fu">across</span>(dlg2s3_rep1<span class="sc">:</span>empty2_rep3, median, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">numPeps =</span> <span class="fu">sum</span>(numPeps, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'symbol'. You can override using the
+`.groups` argument.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>pepData<span class="sc">$</span>meanSamples123 <span class="ot">=</span> <span class="fu">rowMeans</span>(pepData[,<span class="dv">3</span><span class="sc">:</span><span class="dv">5</span>], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>pepData<span class="sc">$</span>meanSamples456 <span class="ot">=</span> <span class="fu">rowMeans</span>(pepData[,<span class="dv">6</span><span class="sc">:</span><span class="dv">8</span>], <span class="at">na.rm =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>pepData<span class="sc">$</span>ratio <span class="ot">=</span> pepData<span class="sc">$</span>meanSamples456 <span class="sc">-</span> pepData<span class="sc">$</span>meanSamples123</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="do">##save these data</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(pepData, <span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_rawDataProteinLevel_dlg2-empty.rds'</span>,<span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(pepData, <span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_rawDataProteinLevel_dlg2-empty.tsv'</span>,<span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">col.names =</span> <span class="cn">TRUE</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>, <span class="at">sep =</span> <span class="st">'</span><span class="sc">\t</span><span class="st">'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Perform differential expression analysis.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="do">##get the expression data and assign the row names with the accession code</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>exprs <span class="ot">=</span> <span class="fu">as.data.frame</span>(pepData[,<span class="dv">3</span><span class="sc">:</span><span class="dv">8</span>])</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(exprs) <span class="ot">=</span> pepData<span class="sc">$</span>accession</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>exprs <span class="ot">=</span> <span class="fu">na.omit</span>(exprs)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="do">##check the centering of the data</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(exprs, <span class="at">las =</span> <span class="dv">2</span>, <span class="at">main =</span> <span class="st">'protein expression data'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="20220811File1_diannProteomicsDataProcessing_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="do">##make the design table</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>cond <span class="ot">=</span> <span class="fu">as.factor</span>(<span class="fu">c</span>(<span class="st">'dlg2'</span>,<span class="st">'dlg2'</span>,<span class="st">'dlg2'</span>,<span class="st">'empty'</span>,<span class="st">'empty'</span>,<span class="st">'empty'</span>))</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>design <span class="ot">=</span> <span class="fu">model.matrix</span>(<span class="sc">~</span><span class="dv">0</span><span class="sc">+</span>cond)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(design) <span class="ot">=</span> <span class="fu">gsub</span>(<span class="st">'cond'</span>,<span class="st">''</span>,<span class="fu">colnames</span>(design))</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="do">##make contrasts</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>contrastsToMake <span class="ot">=</span> <span class="fu">c</span>(<span class="st">'dlg2-empty'</span>)</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>contrast <span class="ot">=</span> <span class="fu">makeContrasts</span>(<span class="at">contrasts =</span> contrastsToMake, <span class="at">levels =</span> design)</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>fit1 <span class="ot">=</span> <span class="fu">lmFit</span>(exprs, design)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>fit2 <span class="ot">=</span> <span class="fu">contrasts.fit</span>(fit1, <span class="at">contrasts =</span> contrast)</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>fit3 <span class="ot">=</span> <span class="fu">eBayes</span>(fit2)</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="do">##deqms analysis</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>pepCountData <span class="ot">=</span> <span class="fu">as.data.frame</span>(pepData[,<span class="dv">3</span><span class="sc">:</span><span class="dv">9</span>])</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>pepCountData <span class="ot">=</span> <span class="fu">na.omit</span>(pepCountData)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>fit3<span class="sc">$</span>count <span class="ot">=</span> pepCountData<span class="sc">$</span>numPeps</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>fit4 <span class="ot">=</span> <span class="fu">spectraCounteBayes</span>(fit3)</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="do">##visualize the results</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="fu">VarianceBoxplot</span>(fit4, <span class="at">n =</span> <span class="dv">30</span>, <span class="at">main =</span> <span class="st">'variance by psm - boxplot'</span>, <span class="at">xlab =</span> <span class="st">'psm count'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="20220811File1_diannProteomicsDataProcessing_files/figure-html/unnamed-chunk-5-2.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">VarianceScatterplot</span>(fit4, <span class="at">main =</span> <span class="st">'variance by psm - scatter'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="20220811File1_diannProteomicsDataProcessing_files/figure-html/unnamed-chunk-5-3.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="do">##extract the results and save it</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>deqmsResults <span class="ot">=</span> <span class="fu">outputResult</span>(fit4, <span class="at">coef_col =</span> <span class="dv">1</span>)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>geneSymbols <span class="ot">=</span> pepData[,<span class="dv">1</span><span class="sc">:</span><span class="dv">2</span>]</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>deqmsOutput <span class="ot">=</span> <span class="fu">as_tibble</span>(deqmsResults) <span class="sc">%&gt;%</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">accession =</span> <span class="fu">rownames</span>(deqmsResults)) <span class="sc">%&gt;%</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(geneSymbols) <span class="sc">%&gt;%</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(accession, symbol, logFC<span class="sc">:</span>sca.adj.pval)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining, by = "accession"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>deqmsOutput</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 9,446 x 13
+   accession symbol  logFC AveExpr      t  P.Value  adj.P.Val     B gene   count
+   &lt;chr&gt;     &lt;chr&gt;   &lt;dbl&gt;   &lt;dbl&gt;  &lt;dbl&gt;    &lt;dbl&gt;      &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt;  &lt;dbl&gt;
+ 1 Q13303    KCNAB2 -4.20     18.6 -45.7  9.20e-10 0.00000869 11.2  Q13303    10
+ 2 P32004    L1CAM   4.38     18.7  21.7  1.44e- 7 0.000340    8.15 P32004    36
+ 3 P14210    HGF     3.55     23.8  30.7  1.38e- 8 0.0000653   9.83 P14210     2
+ 4 P23508    MCC     2.94     17.4  20.3  2.25e- 7 0.000354    7.78 P23508    15
+ 5 P46013    MKI67  -0.960    20.5  -9.93 2.61e- 5 0.00173     3.25 P46013   195
+ 6 P52655    GTF2A1  3.21     22.0  26.3  3.94e- 8 0.000124    9.13 P52655     4
+ 7 P12429    ANXA3   1.85     21.4  17.3  6.59e- 7 0.000444    6.85 P12429    27
+ 8 P16144    ITGB4   1.48     19.2  14.1  2.58e- 6 0.000697    5.57 P16144    48
+ 9 Q14315    FLNC    1.48     21.5  12.7  5.29e- 6 0.000921    4.87 Q14315   130
+10 O94900    TOX     4.37     18.3  18.7  4.02e- 7 0.000444    7.29 O94900     4
+# ... with 9,436 more rows, and 3 more variables: sca.t &lt;dbl&gt;,
+#   sca.P.Value &lt;dbl&gt;, sca.adj.pval &lt;dbl&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(deqmsOutput, <span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_deqmsProteinLevel_dlg2-empty.rds'</span>,<span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(deqmsOutput, <span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_deqmsProteinLevel_dlg2-empty.tsv'</span>,<span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">col.names =</span> <span class="cn">TRUE</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>, <span class="at">sep =</span> <span class="st">'</span><span class="sc">\t</span><span class="st">'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>We are done here for now. Wrap up below.</p>
+</section>
+<section id="session-info" class="level2">
+<h2 class="anchored" data-anchor-id="session-info">Session info</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.1.3 (2022-03-10)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19042)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_Canada.1252  LC_CTYPE=English_Canada.1252   
+[3] LC_MONETARY=English_Canada.1252 LC_NUMERIC=C                   
+[5] LC_TIME=English_Canada.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] DEqMS_1.12.1       limma_3.50.3       matrixStats_0.62.0 diann_1.0.1       
+ [5] forcats_0.5.1      stringr_1.4.0      dplyr_1.0.9        purrr_0.3.4       
+ [9] readr_2.1.2        tidyr_1.2.0        tibble_3.1.7       ggplot2_3.3.6     
+[13] tidyverse_1.3.1   
+
+loaded via a namespace (and not attached):
+ [1] Rcpp_1.0.8.3        lubridate_1.8.0     lattice_0.20-45    
+ [4] assertthat_0.2.1    digest_0.6.29       utf8_1.2.2         
+ [7] R6_2.5.1            cellranger_1.1.0    backports_1.4.1    
+[10] reprex_2.0.1        evaluate_0.15       httr_1.4.3         
+[13] pillar_1.7.0        rlang_1.0.3         readxl_1.4.0       
+[16] rstudioapi_0.13     data.table_1.14.2   Matrix_1.4-1       
+[19] rmarkdown_2.14      RcppEigen_0.3.3.9.2 munsell_0.5.0      
+[22] broom_0.8.0         compiler_4.1.3      modelr_0.1.8       
+[25] xfun_0.31           pkgconfig_2.0.3     htmltools_0.5.2    
+[28] tidyselect_1.1.2    fansi_1.0.3         crayon_1.5.1       
+[31] tzdb_0.3.0          dbplyr_2.2.1        withr_2.5.0        
+[34] grid_4.1.3          jsonlite_1.8.0      gtable_0.3.0       
+[37] lifecycle_1.0.1     DBI_1.1.3           magrittr_2.0.3     
+[40] scales_1.2.0        cli_3.3.0           stringi_1.7.6      
+[43] fs_1.5.2            xml2_1.3.3          ellipsis_0.3.2     
+[46] generics_0.1.2      vctrs_0.4.1         tools_4.1.3        
+[49] glue_1.6.2          hms_1.1.1           fastmap_1.1.0      
+[52] yaml_2.3.5          colorspace_2.0-3    rvest_1.0.2        
+[55] knitr_1.39          haven_2.5.0        </code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    setTimeout(function() {
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

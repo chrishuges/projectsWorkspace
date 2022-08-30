@@ -243,13 +243,156 @@ ENSG00000000457.14  260.000  305.999
 ENSG00000000460.17  853.999  940.000
 ENSG00000000938.13    0.000    0.000</code></pre>
 </div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="do">##write these raw count data</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>rnaCounts <span class="ot">=</span> <span class="fu">as.data.frame</span>(txi<span class="sc">$</span>counts)</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>rnaCounts<span class="sc">$</span>ensg <span class="ot">=</span> <span class="fu">row.names</span>(rnaCounts)</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>ens.str <span class="ot">=</span> <span class="fu">substr</span>(<span class="fu">rownames</span>(rnaCounts), <span class="dv">1</span>, <span class="dv">15</span>)</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>rnaCounts<span class="sc">$</span>symbol <span class="ot">=</span> <span class="fu">mapIds</span>(org.Hs.eg.db,</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>                      <span class="at">keys=</span>ens.str,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>                      <span class="at">column=</span><span class="st">"SYMBOL"</span>,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>                      <span class="at">keytype=</span><span class="st">"ENSEMBL"</span>,</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>                      <span class="at">multiVals=</span><span class="st">"first"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>'select()' returned 1:many mapping between keys and columns</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(rnaCounts)[<span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>] <span class="ot">=</span> samples<span class="sc">$</span>sampleName</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(rnaCounts, <span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/dataset_salmonRawRnaCounts.rds'</span>,<span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(rnaCounts, <span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/dataset_salmonRawRnaCounts.tsv'</span>,<span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">col.names =</span> <span class="cn">TRUE</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>, <span class="at">sep =</span> <span class="st">'</span><span class="sc">\t</span><span class="st">'</span>)</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="do">##write these raw abundance data</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>rnaCounts <span class="ot">=</span> <span class="fu">as.data.frame</span>(txi<span class="sc">$</span>abundance)</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>rnaCounts<span class="sc">$</span>ensg <span class="ot">=</span> <span class="fu">row.names</span>(rnaCounts)</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>ens.str <span class="ot">=</span> <span class="fu">substr</span>(<span class="fu">rownames</span>(rnaCounts), <span class="dv">1</span>, <span class="dv">15</span>)</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>rnaCounts<span class="sc">$</span>symbol <span class="ot">=</span> <span class="fu">mapIds</span>(org.Hs.eg.db,</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>                      <span class="at">keys=</span>ens.str,</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a>                      <span class="at">column=</span><span class="st">"SYMBOL"</span>,</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a>                      <span class="at">keytype=</span><span class="st">"ENSEMBL"</span>,</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a>                      <span class="at">multiVals=</span><span class="st">"first"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>'select()' returned 1:many mapping between keys and columns</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(rnaCounts)[<span class="dv">1</span><span class="sc">:</span><span class="dv">20</span>] <span class="ot">=</span> samples<span class="sc">$</span>sampleName</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(rnaCounts, <span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/dataset_salmonRawAbundance.rds'</span>,<span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(rnaCounts, <span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/dataset_salmonRawAbundance.tsv'</span>,<span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">col.names =</span> <span class="cn">TRUE</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>, <span class="at">sep =</span> <span class="st">'</span><span class="sc">\t</span><span class="st">'</span>)</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="do">##quick check of DTU for MYO1B</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>txi <span class="ot">=</span> <span class="fu">tximport</span>(files, </span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>               <span class="at">type =</span> <span class="st">'salmon'</span>, </span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>               <span class="at">tx2gene =</span> tx2gene,</span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>               <span class="at">countsFromAbundance =</span> <span class="st">'dtuScaledTPM'</span>,</span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>               <span class="at">txOut =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>reading in files with read_tsv
+1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(txi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "abundance"           "counts"              "length"             
+[4] "countsFromAbundance"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(txi<span class="sc">$</span>counts)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                      [,1]       [,2]     [,3]     [,4]      [,5]       [,6]
+ENST00000456328.2   0.0000   3.777132   0.0000   0.0000  5.218816   7.707866
+ENST00000450305.2   0.0000   0.000000   0.0000   0.0000  0.000000   0.000000
+ENST00000488147.1 148.6919 229.995934 146.7818 133.7411 96.788286 127.587669
+ENST00000619216.1   0.0000   0.000000   0.0000   0.0000  0.000000   0.000000
+ENST00000473358.1   0.0000   0.000000   0.0000   0.0000  0.000000   0.000000
+ENST00000469289.1   0.0000   0.000000   0.0000   0.0000  0.000000   0.000000
+                        [,7]     [,8]       [,9]    [,10]     [,11]     [,12]
+ENST00000456328.2   8.856357   0.0000   6.374189   0.0000  0.000000  2.820644
+ENST00000450305.2   0.000000   0.0000   0.000000   0.0000  0.000000  0.000000
+ENST00000488147.1 149.607070 122.9494 167.304958 150.0917 77.643484 92.656069
+ENST00000619216.1   0.000000   0.0000   0.000000   0.0000  0.000000  0.000000
+ENST00000473358.1   0.000000   0.0000   0.000000   0.0000  0.000000  0.000000
+ENST00000469289.1   0.000000   0.0000   0.000000   0.0000  1.940881  0.000000
+                      [,13]    [,14]    [,15]    [,16]      [,17]    [,18]
+ENST00000456328.2  4.363158 7.650565   0.0000   0.0000   7.974333  0.00000
+ENST00000450305.2  0.000000 0.000000   0.0000   0.0000   0.000000  0.00000
+ENST00000488147.1 88.624305 0.000000 231.7657 117.5141 188.261899 99.72674
+ENST00000619216.1  0.000000 0.000000   0.0000   0.0000   0.000000  0.00000
+ENST00000473358.1  0.000000 0.000000   0.0000   0.0000   0.000000  0.00000
+ENST00000469289.1  0.000000 0.000000   0.0000   0.0000   0.000000  0.00000
+                       [,19]  [,20]
+ENST00000456328.2   6.356814   0.00
+ENST00000450305.2   0.000000   0.00
+ENST00000488147.1 144.165344 105.81
+ENST00000619216.1   0.000000   0.00
+ENST00000473358.1   0.000000   0.00
+ENST00000469289.1   0.000000   0.00</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">=</span> <span class="fu">as.data.frame</span>(txi<span class="sc">$</span>abundance)</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>x<span class="sc">$</span>TXNAME <span class="ot">=</span> <span class="fu">row.names</span>(x)</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>x <span class="ot">=</span> dplyr<span class="sc">::</span><span class="fu">left_join</span>(x, tx2gene)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining, by = "TXNAME"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>ens.str <span class="ot">=</span> <span class="fu">substr</span>(x<span class="sc">$</span>GENEID, <span class="dv">1</span>, <span class="dv">15</span>)</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>x<span class="sc">$</span>symbol <span class="ot">=</span> <span class="fu">mapIds</span>(org.Hs.eg.db,</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>                      <span class="at">keys=</span>ens.str,</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>                      <span class="at">column=</span><span class="st">"SYMBOL"</span>,</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>                      <span class="at">keytype=</span><span class="st">"ENSEMBL"</span>,</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>                      <span class="at">multiVals=</span><span class="st">"first"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>'select()' returned 1:many mapping between keys and columns</code></pre>
+</div>
 </div>
 <p>Construct the DESeq2 dataset for differential expression analysis.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>ddsTxi <span class="ot">=</span> <span class="fu">DESeqDataSetFromTximport</span>(txi,</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">colData =</span> samples,</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">design =</span> <span class="sc">~</span> treatment)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>txi <span class="ot">=</span> <span class="fu">tximport</span>(files, </span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">type =</span> <span class="st">'salmon'</span>, </span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">tx2gene =</span> tx2gene)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>reading in files with read_tsv</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 
+summarizing abundance
+summarizing counts
+summarizing length</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(txi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "abundance"           "counts"              "length"             
+[4] "countsFromAbundance"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb37"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(txi<span class="sc">$</span>counts)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                       [,1]     [,2]     [,3]     [,4]     [,5]     [,6]
+ENSG00000000003.15 1807.000 2423.999 1368.999 1784.000 1470.001 1940.000
+ENSG00000000005.6     0.000    0.000    0.000    0.000    0.000    0.000
+ENSG00000000419.14 2393.001 3149.001 1890.000 2548.999 2082.998 2692.000
+ENSG00000000457.14  239.000  299.000  235.000  274.000  237.000  356.000
+ENSG00000000460.17 1511.999 1974.001 1215.000 1396.999 1211.002 1523.999
+ENSG00000000938.13    0.000    0.000    0.000    0.000    0.000    0.000
+                       [,7]     [,8]     [,9]    [,10]    [,11]    [,12]
+ENSG00000000003.15 1631.000 1643.000 2550.001 1683.001 1432.000 1423.000
+ENSG00000000005.6     1.000    0.000    0.000    0.000    0.000    0.000
+ENSG00000000419.14 2084.999 2282.999 3489.001 2333.001 1964.999 1988.999
+ENSG00000000457.14  365.000  370.000  498.000  449.000  303.000  345.000
+ENSG00000000460.17 1453.000 1520.000 1846.000 1269.000 1159.001 1176.001
+ENSG00000000938.13    0.000    0.000    0.000    0.000    0.000    0.000
+                      [,13]    [,14]    [,15]    [,16]    [,17]    [,18]
+ENSG00000000003.15 1360.000 1288.000 1765.000 1080.999 1194.000 1271.999
+ENSG00000000005.6     0.000    0.000    0.000    0.000    0.000    0.000
+ENSG00000000419.14 1812.000 1639.999 2206.000 1458.000 1541.001 1747.000
+ENSG00000000457.14  289.999  251.000  381.000  220.000  266.000  366.999
+ENSG00000000460.17 1101.999 1030.999 1879.999 1111.000 1193.000 1014.000
+ENSG00000000938.13    0.000    0.000    0.000    0.000    0.000    0.000
+                      [,19]    [,20]
+ENSG00000000003.15 1040.000 1243.000
+ENSG00000000005.6     0.000    0.000
+ENSG00000000419.14 1301.000 1591.463
+ENSG00000000457.14  260.000  305.999
+ENSG00000000460.17  853.999  940.000
+ENSG00000000938.13    0.000    0.000</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb39"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>ddsTxi <span class="ot">=</span> <span class="fu">DESeqDataSetFromTximport</span>(txi,</span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">colData =</span> samples,</span>
+<span id="cb39-3"><a href="#cb39-3" aria-hidden="true" tabindex="-1"></a>                                  <span class="at">design =</span> <span class="sc">~</span> treatment)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning in DESeqDataSet(se, design = design, ignoreRank): some variables in
 design formula are characters, converting to factors</code></pre>
@@ -257,80 +400,68 @@ design formula are characters, converting to factors</code></pre>
 <div class="cell-output cell-output-stderr">
 <pre><code>using counts and average transcript lengths from tximport</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">=</span> <span class="fu">DESeq</span>(ddsTxi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">=</span> <span class="fu">DESeq</span>(ddsTxi)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
-<pre><code>estimating size factors</code></pre>
+<pre><code>estimating size factors
+using 'avgTxLength' from assays(dds), correcting for library size
+estimating dispersions
+gene-wise dispersion estimates
+mean-dispersion relationship
+final dispersion estimates
+fitting model and testing</code></pre>
 </div>
-<div class="cell-output cell-output-stderr">
-<pre><code>using 'avgTxLength' from assays(dds), correcting for library size</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>estimating dispersions</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>gene-wise dispersion estimates</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>mean-dispersion relationship</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>final dispersion estimates</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>fitting model and testing</code></pre>
-</div>
-<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>keep <span class="ot">=</span> <span class="fu">rowSums</span>(<span class="fu">counts</span>(dds)) <span class="sc">&gt;=</span> <span class="dv">50</span></span>
-<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">=</span> dds[keep,]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>keep <span class="ot">=</span> <span class="fu">rowSums</span>(<span class="fu">counts</span>(dds)) <span class="sc">&gt;=</span> <span class="dv">50</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>dds <span class="ot">=</span> dds[keep,]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Perform comparisons between samples.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>datasetFirst <span class="ot">=</span> <span class="fu">c</span>(<span class="st">'kd_2h'</span>,<span class="st">'kd_4h'</span>,<span class="st">'kd_6h'</span>,<span class="st">'kd_8h'</span>,<span class="st">'kd_16h'</span>,<span class="st">'kd_24h'</span>)</span>
-<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>datasetSecond <span class="ot">=</span> <span class="st">'kd_0h'</span></span>
-<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
-<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(datasetFirst)){</span>
-<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  res <span class="ot">=</span> <span class="fu">results</span>(dds, <span class="at">contrast =</span> <span class="fu">c</span>(<span class="st">'treatment'</span>, datasetFirst[i], datasetSecond))</span>
-<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>  ens.str <span class="ot">=</span> <span class="fu">substr</span>(<span class="fu">rownames</span>(res), <span class="dv">1</span>, <span class="dv">15</span>)</span>
-<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>  res<span class="sc">$</span>symbol <span class="ot">=</span> <span class="fu">mapIds</span>(org.Hs.eg.db,</span>
-<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>                      <span class="at">keys=</span>ens.str,</span>
-<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>                      <span class="at">column=</span><span class="st">"SYMBOL"</span>,</span>
-<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>                      <span class="at">keytype=</span><span class="st">"ENSEMBL"</span>,</span>
-<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>                      <span class="at">multiVals=</span><span class="st">"first"</span>)</span>
-<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>  resOrdered <span class="ot">=</span> res[<span class="fu">order</span>(res<span class="sc">$</span>pvalue),]</span>
-<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
-<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">saveRDS</span>(<span class="fu">as.data.frame</span>(resOrdered), </span>
-<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a>          <span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/dataset_deseq2_total_'</span>, datasetFirst[i], <span class="st">'-'</span>, datasetSecond, <span class="st">'.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
-<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write.csv</span>(<span class="fu">as.data.frame</span>(resOrdered), </span>
-<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a>          <span class="at">file =</span> <span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/dataset_deseq2_total_'</span>, datasetFirst[i], <span class="st">'-'</span>, datasetSecond, <span class="st">'.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
-<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
-<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a>  <span class="co">#resLFC = lfcShrink(dds, coef = paste('treatment_',datasetFirst,'_vs_',datasetSecond, sep = ''), type = "apeglm")</span></span>
-<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a>  <span class="co">#resLFC</span></span>
-<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a>  <span class="co">#plotMA(resLFC, ylim = c(-2,2))</span></span>
-<span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a>  rnaExp <span class="ot">=</span> <span class="fu">as.data.frame</span>(resOrdered)</span>
-<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a>  rnaExp<span class="sc">$</span>logPValue <span class="ot">=</span> <span class="sc">-</span><span class="fu">log10</span>(rnaExp<span class="sc">$</span>padj)</span>
-<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a>  rnaExp<span class="sc">$</span>logPValueScaled <span class="ot">=</span> <span class="fu">ifelse</span>(rnaExp<span class="sc">$</span>logPValue <span class="sc">&gt;</span> <span class="dv">300</span>, <span class="dv">300</span>, rnaExp<span class="sc">$</span>logPValue)</span>
-<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a>  rnaExp<span class="sc">$</span>pColors <span class="ot">=</span> <span class="fu">ifelse</span>(rnaExp<span class="sc">$</span>padj <span class="sc">&lt;=</span> <span class="fl">0.001</span> <span class="sc">&amp;</span> rnaExp<span class="sc">$</span>log2FoldChange <span class="sc">&gt;=</span> <span class="dv">1</span>, <span class="fu">brewer.pal</span>(<span class="dv">3</span>,<span class="st">'OrRd'</span>)[<span class="dv">3</span>], </span>
-<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a>                          <span class="fu">ifelse</span>(rnaExp<span class="sc">$</span>padj <span class="sc">&lt;=</span> <span class="fl">0.001</span> <span class="sc">&amp;</span> rnaExp<span class="sc">$</span>log2FoldChange <span class="sc">&lt;=</span> <span class="sc">-</span><span class="dv">1</span>, <span class="fu">brewer.pal</span>(<span class="dv">3</span>,<span class="st">'Blues'</span>)[<span class="dv">3</span>], <span class="fu">brewer.pal</span>(<span class="dv">3</span>,<span class="st">'Greys'</span>)[<span class="dv">2</span>]))</span>
-<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a>  goi <span class="ot">=</span> <span class="fu">c</span>(<span class="st">'GREB1'</span>,<span class="st">'MYCN'</span>,<span class="st">'MYO1B'</span>)</span>
-<span id="cb30-32"><a href="#cb30-32" aria-hidden="true" tabindex="-1"></a>  rnaExp<span class="sc">$</span>pText <span class="ot">=</span> <span class="fu">ifelse</span>(rnaExp<span class="sc">$</span>symbol <span class="sc">%in%</span> goi, rnaExp<span class="sc">$</span>symbol, <span class="st">''</span>)</span>
-<span id="cb30-33"><a href="#cb30-33" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
-<span id="cb30-34"><a href="#cb30-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(rnaExp, <span class="fu">aes</span>(log2FoldChange, logPValueScaled)) <span class="sc">+</span></span>
-<span id="cb30-35"><a href="#cb30-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">1</span>, <span class="at">color =</span> rnaExp<span class="sc">$</span>pColors, <span class="at">alpha =</span> <span class="fl">0.75</span>) <span class="sc">+</span></span>
-<span id="cb30-36"><a href="#cb30-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">paste</span>(<span class="st">'log2('</span>,datasetFirst[i],<span class="st">' - '</span>,datasetSecond,<span class="st">')'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">y =</span> <span class="st">'-log10(Adjusted p-value)'</span>, <span class="at">title =</span> <span class="fu">paste</span>(datasetFirst[i],<span class="st">' vs '</span>,datasetSecond, <span class="at">sep=</span><span class="st">''</span>)) <span class="sc">+</span></span>
-<span id="cb30-37"><a href="#cb30-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_text_repel</span>(<span class="at">label =</span> rnaExp<span class="sc">$</span>pText, <span class="at">nudge_x =</span> <span class="sc">-</span><span class="dv">3</span>, <span class="at">nudge_y =</span> <span class="sc">-</span><span class="dv">150</span>, <span class="at">max.overlaps =</span> <span class="dv">15000</span>) <span class="sc">+</span></span>
-<span id="cb30-38"><a href="#cb30-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_x_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">10</span>,<span class="dv">10</span>), <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">10</span>,<span class="dv">10</span>,<span class="dv">2</span>)) <span class="sc">+</span></span>
-<span id="cb30-39"><a href="#cb30-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_y_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">300</span>), <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">500</span>,<span class="dv">50</span>)) <span class="sc">+</span></span>
-<span id="cb30-40"><a href="#cb30-40" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="dv">1</span>), <span class="at">linetype =</span> <span class="st">'dashed'</span>) <span class="sc">+</span></span>
-<span id="cb30-41"><a href="#cb30-41" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">0.001</span>), <span class="at">linetype =</span> <span class="st">'dashed'</span>) <span class="sc">+</span></span>
-<span id="cb30-42"><a href="#cb30-42" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_classic</span>()</span>
-<span id="cb30-43"><a href="#cb30-43" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
-<span id="cb30-44"><a href="#cb30-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/scatter_deseq2_'</span>, datasetFirst[i], <span class="st">'-'</span>, datasetSecond, <span class="st">'.pdf'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
-<span id="cb30-45"><a href="#cb30-45" aria-hidden="true" tabindex="-1"></a>         <span class="at">height =</span> <span class="dv">2</span>, <span class="at">width =</span> <span class="dv">2</span>, <span class="at">useDingbats =</span> <span class="cn">FALSE</span>)</span>
-<span id="cb30-46"><a href="#cb30-46" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb45"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a>datasetFirst <span class="ot">=</span> <span class="fu">c</span>(<span class="st">'kd_2h'</span>,<span class="st">'kd_4h'</span>,<span class="st">'kd_6h'</span>,<span class="st">'kd_8h'</span>,<span class="st">'kd_16h'</span>,<span class="st">'kd_24h'</span>)</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>datasetSecond <span class="ot">=</span> <span class="st">'kd_0h'</span></span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(datasetFirst)){</span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>  res <span class="ot">=</span> <span class="fu">results</span>(dds, <span class="at">contrast =</span> <span class="fu">c</span>(<span class="st">'treatment'</span>, datasetFirst[i], datasetSecond))</span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>  ens.str <span class="ot">=</span> <span class="fu">substr</span>(<span class="fu">rownames</span>(res), <span class="dv">1</span>, <span class="dv">15</span>)</span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>  res<span class="sc">$</span>symbol <span class="ot">=</span> <span class="fu">mapIds</span>(org.Hs.eg.db,</span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>                      <span class="at">keys=</span>ens.str,</span>
+<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a>                      <span class="at">column=</span><span class="st">"SYMBOL"</span>,</span>
+<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a>                      <span class="at">keytype=</span><span class="st">"ENSEMBL"</span>,</span>
+<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a>                      <span class="at">multiVals=</span><span class="st">"first"</span>)</span>
+<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a>  resOrdered <span class="ot">=</span> res[<span class="fu">order</span>(res<span class="sc">$</span>pvalue),]</span>
+<span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb45-17"><a href="#cb45-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">saveRDS</span>(<span class="fu">as.data.frame</span>(resOrdered), </span>
+<span id="cb45-18"><a href="#cb45-18" aria-hidden="true" tabindex="-1"></a>          <span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/dataset_deseq2_total_'</span>, datasetFirst[i], <span class="st">'-'</span>, datasetSecond, <span class="st">'.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb45-19"><a href="#cb45-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">write.csv</span>(<span class="fu">as.data.frame</span>(resOrdered), </span>
+<span id="cb45-20"><a href="#cb45-20" aria-hidden="true" tabindex="-1"></a>          <span class="at">file =</span> <span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/dataset_deseq2_total_'</span>, datasetFirst[i], <span class="st">'-'</span>, datasetSecond, <span class="st">'.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb45-21"><a href="#cb45-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb45-22"><a href="#cb45-22" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb45-23"><a href="#cb45-23" aria-hidden="true" tabindex="-1"></a>  <span class="co">#resLFC = lfcShrink(dds, coef = paste('treatment_',datasetFirst,'_vs_',datasetSecond, sep = ''), type = "apeglm")</span></span>
+<span id="cb45-24"><a href="#cb45-24" aria-hidden="true" tabindex="-1"></a>  <span class="co">#resLFC</span></span>
+<span id="cb45-25"><a href="#cb45-25" aria-hidden="true" tabindex="-1"></a>  <span class="co">#plotMA(resLFC, ylim = c(-2,2))</span></span>
+<span id="cb45-26"><a href="#cb45-26" aria-hidden="true" tabindex="-1"></a>  rnaExp <span class="ot">=</span> <span class="fu">as.data.frame</span>(resOrdered)</span>
+<span id="cb45-27"><a href="#cb45-27" aria-hidden="true" tabindex="-1"></a>  rnaExp<span class="sc">$</span>logPValue <span class="ot">=</span> <span class="sc">-</span><span class="fu">log10</span>(rnaExp<span class="sc">$</span>padj)</span>
+<span id="cb45-28"><a href="#cb45-28" aria-hidden="true" tabindex="-1"></a>  rnaExp<span class="sc">$</span>logPValueScaled <span class="ot">=</span> <span class="fu">ifelse</span>(rnaExp<span class="sc">$</span>logPValue <span class="sc">&gt;</span> <span class="dv">300</span>, <span class="dv">300</span>, rnaExp<span class="sc">$</span>logPValue)</span>
+<span id="cb45-29"><a href="#cb45-29" aria-hidden="true" tabindex="-1"></a>  rnaExp<span class="sc">$</span>pColors <span class="ot">=</span> <span class="fu">ifelse</span>(rnaExp<span class="sc">$</span>padj <span class="sc">&lt;=</span> <span class="fl">0.001</span> <span class="sc">&amp;</span> rnaExp<span class="sc">$</span>log2FoldChange <span class="sc">&gt;=</span> <span class="dv">1</span>, <span class="fu">brewer.pal</span>(<span class="dv">3</span>,<span class="st">'OrRd'</span>)[<span class="dv">3</span>], </span>
+<span id="cb45-30"><a href="#cb45-30" aria-hidden="true" tabindex="-1"></a>                          <span class="fu">ifelse</span>(rnaExp<span class="sc">$</span>padj <span class="sc">&lt;=</span> <span class="fl">0.001</span> <span class="sc">&amp;</span> rnaExp<span class="sc">$</span>log2FoldChange <span class="sc">&lt;=</span> <span class="sc">-</span><span class="dv">1</span>, <span class="fu">brewer.pal</span>(<span class="dv">3</span>,<span class="st">'Blues'</span>)[<span class="dv">3</span>], <span class="fu">brewer.pal</span>(<span class="dv">3</span>,<span class="st">'Greys'</span>)[<span class="dv">2</span>]))</span>
+<span id="cb45-31"><a href="#cb45-31" aria-hidden="true" tabindex="-1"></a>  goi <span class="ot">=</span> <span class="fu">c</span>(<span class="st">'GREB1'</span>,<span class="st">'MYCN'</span>,<span class="st">'MYO1B'</span>)</span>
+<span id="cb45-32"><a href="#cb45-32" aria-hidden="true" tabindex="-1"></a>  rnaExp<span class="sc">$</span>pText <span class="ot">=</span> <span class="fu">ifelse</span>(rnaExp<span class="sc">$</span>symbol <span class="sc">%in%</span> goi, rnaExp<span class="sc">$</span>symbol, <span class="st">''</span>)</span>
+<span id="cb45-33"><a href="#cb45-33" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb45-34"><a href="#cb45-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(rnaExp, <span class="fu">aes</span>(log2FoldChange, logPValueScaled)) <span class="sc">+</span></span>
+<span id="cb45-35"><a href="#cb45-35" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">1</span>, <span class="at">color =</span> rnaExp<span class="sc">$</span>pColors, <span class="at">alpha =</span> <span class="fl">0.75</span>) <span class="sc">+</span></span>
+<span id="cb45-36"><a href="#cb45-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">labs</span>(<span class="at">x =</span> <span class="fu">paste</span>(<span class="st">'log2('</span>,datasetFirst[i],<span class="st">' - '</span>,datasetSecond,<span class="st">')'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">y =</span> <span class="st">'-log10(Adjusted p-value)'</span>, <span class="at">title =</span> <span class="fu">paste</span>(datasetFirst[i],<span class="st">' vs '</span>,datasetSecond, <span class="at">sep=</span><span class="st">''</span>)) <span class="sc">+</span></span>
+<span id="cb45-37"><a href="#cb45-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_text_repel</span>(<span class="at">label =</span> rnaExp<span class="sc">$</span>pText, <span class="at">nudge_x =</span> <span class="sc">-</span><span class="dv">3</span>, <span class="at">nudge_y =</span> <span class="sc">-</span><span class="dv">150</span>, <span class="at">max.overlaps =</span> <span class="dv">15000</span>) <span class="sc">+</span></span>
+<span id="cb45-38"><a href="#cb45-38" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_x_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">10</span>,<span class="dv">10</span>), <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">10</span>,<span class="dv">10</span>,<span class="dv">2</span>)) <span class="sc">+</span></span>
+<span id="cb45-39"><a href="#cb45-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">scale_y_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="dv">0</span>,<span class="dv">300</span>), <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="dv">0</span>,<span class="dv">500</span>,<span class="dv">50</span>)) <span class="sc">+</span></span>
+<span id="cb45-40"><a href="#cb45-40" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_vline</span>(<span class="at">xintercept =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="dv">1</span>), <span class="at">linetype =</span> <span class="st">'dashed'</span>) <span class="sc">+</span></span>
+<span id="cb45-41"><a href="#cb45-41" aria-hidden="true" tabindex="-1"></a>    <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="sc">-</span><span class="fu">log10</span>(<span class="fl">0.001</span>), <span class="at">linetype =</span> <span class="st">'dashed'</span>) <span class="sc">+</span></span>
+<span id="cb45-42"><a href="#cb45-42" aria-hidden="true" tabindex="-1"></a>    <span class="fu">theme_classic</span>()</span>
+<span id="cb45-43"><a href="#cb45-43" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb45-44"><a href="#cb45-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggsave</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/sequencing20220711_nbCellLineMycNPmid29379199/scatter_deseq2_'</span>, datasetFirst[i], <span class="st">'-'</span>, datasetSecond, <span class="st">'.pdf'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb45-45"><a href="#cb45-45" aria-hidden="true" tabindex="-1"></a>         <span class="at">height =</span> <span class="dv">2</span>, <span class="at">width =</span> <span class="dv">2</span>, <span class="at">useDingbats =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb45-46"><a href="#cb45-46" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>'select()' returned 1:many mapping between keys and columns</code></pre>
 </div>
@@ -390,7 +521,7 @@ design formula are characters, converting to factors</code></pre>
 <section id="session-info" class="level3">
 <h3 class="anchored" data-anchor-id="session-info">Session info</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb49"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb64"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>R version 4.1.3 (2022-03-10)
 Platform: x86_64-w64-mingw32/x64 (64-bit)

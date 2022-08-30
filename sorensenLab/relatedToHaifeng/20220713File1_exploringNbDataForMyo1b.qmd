@@ -20,6 +20,7 @@ library('org.Hs.eg.db')
 library('ggplot2')
 library('ggrepel')
 library('rtracklayer')
+library('GenVisR')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
@@ -49,7 +50,7 @@ rnaAbundance = rna$abundance
 ##want to make an object that is better for plotting
 myo1b = tibble(as.data.frame(rnaAbundance)) %>%
   dplyr::mutate(ensg = row.names(rnaAbundance))
-colnames(myo1b)[1:22] = rnaAnnotation$sra
+colnames(myo1b)[1:39] = rnaAnnotation$sra
 ens.str = substr(myo1b$ensg, 1, 15)
 myo1b$symbol = mapIds(org.Hs.eg.db,
                       keys = ens.str,
@@ -58,8 +59,9 @@ myo1b$symbol = mapIds(org.Hs.eg.db,
                       multiVals = "first")
 myo1b = myo1b %>%
   dplyr::filter(!is.na(symbol)) %>%
-  tidyr::pivot_longer(cols = SRR4787012:SRR4787044, names_to = 'sra', values_to = 'abundance') %>%
-  dplyr::left_join(rnaAnnotation[,1:3])
+  tidyr::pivot_longer(cols = SRR4787012:SRR4787052, names_to = 'sra', values_to = 'abundance') %>%
+  dplyr::left_join(rnaAnnotation[,1:3]) %>%
+  dplyr::filter(!is.na(mycnStatus))
 
 
 ##now we can plot these data
@@ -94,11 +96,14 @@ for (i in 1:length(genesOfInterest)){
   #
   ggplot(goi, aes(sampleName, log2(abundance + 1), fill = mycnStatus)) +
     geom_bar(stat = 'identity') +
-    scale_y_continuous(limits = c(0,10)) +
+    scale_y_continuous(limits = c(0,12)) +
     labs(title = 'MYCN RNA abundance') +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
+  #
+  write.table(goi, paste(baseRepository,'/sequencing20220628_nbCellLineRnaSeq/dataset_nbCellLines_mycn.tsv',sep=''),
+              col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+  
   ##myo1b
   goi = myo1b %>%
     dplyr::filter(symbol == 'MYO1B') %>%
@@ -107,10 +112,13 @@ for (i in 1:length(genesOfInterest)){
   #
   ggplot(goi, aes(sampleName, log2(abundance + 1), fill = mycnStatus)) +
     geom_bar(stat = 'identity') +
-    scale_y_continuous(limits = c(0,10)) +
+    scale_y_continuous(limits = c(0,12)) +
     labs(title = 'MYO1B RNA abundance') +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  #
+  write.table(goi, paste(baseRepository,'/sequencing20220628_nbCellLineRnaSeq/dataset_nbCellLines_myo1b.tsv',sep=''),
+              col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
   
   ##greb1
   goi = myo1b %>%
@@ -120,10 +128,13 @@ for (i in 1:length(genesOfInterest)){
   #
   ggplot(goi, aes(sampleName, log2(abundance + 1), fill = mycnStatus)) +
     geom_bar(stat = 'identity') +
-    scale_y_continuous(limits = c(0,10)) +
+    scale_y_continuous(limits = c(0,12)) +
     labs(title = 'GREB1 RNA abundance') +
     theme_bw() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  #
+  write.table(goi, paste(baseRepository,'/sequencing20220628_nbCellLineRnaSeq/dataset_nbCellLines_greb1.tsv',sep=''),
+              col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
 
 So, it is pretty clear from these data that MYO1B is highly expressed in NB, and that this doesn't appear to depend on whether the cell is MYCN amplified or not. But, this doesn't mean that its expression isn't regulated by MYCN in general. One last thing to check here is if we see something different if we consider protein data. For this, I will use some recently published proteomics data from PMID: 35839778.
@@ -195,7 +206,7 @@ We can use some shRNA data we re-processed for this purpose, from PMID: 29379199
 ```{r}
 ##########################################################################################
 ##read in the processed rnaseq data
-rnaFiles = list.files(paste(baseRepository, '/sequencing20220711_nbCellLineMycNPmid29379199',sep = ''), pattern = '*.rds', full.names = TRUE)
+rnaFiles = list.files(paste(baseRepository, '/sequencing20220711_nbCellLineMycNPmid29379199',sep = ''), pattern = '*0h.rds', full.names = TRUE)
 
 ##process into a single object
 rnaData = tibble()
@@ -215,11 +226,17 @@ goiPlotData = rnaData %>%
   dplyr::mutate(symbol = factor(symbol, levels = c('MYCN','MYO1B','GREB1')))
 ggplot(goiPlotData, aes(symbol, log2FoldChange, fill = timepoint)) +
   geom_bar(stat = 'identity', position = position_dodge())
+
+##save the data
+write.table(goiPlotData, paste(baseRepository,'/sequencing20220711_nbCellLineMycNPmid29379199/dataset_nbShrnaMycn_allGenes.tsv',sep=''),
+              col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
 
 So MYO1B and GREB1 do appear to change a bit, but it is in the opposite direction of what is potentially expected. This is good. I think we can safely say that MYO1B is not regulated by MYCN at least based on expression data.
 
-## MYO1B is not a target of MYCN in ChIP data
+### MYO1B is not a target of MYCN in ChIP data
+
+For this I used ChIP data from the same manuscript as above.
 
 ```{r}
 ##########################################################################################
@@ -269,12 +286,12 @@ for (i in 1:nrow(sraData)){
     dplyr::filter(start > myoStart & end < myoEnd) %>%
     dplyr::mutate(midPoint = start + round(length / 2, 0),
                   cellLine = sraData$cellLine[i],
-                  timepoint = sraData$timePoint[i]) %>%
-    dplyr::filter(fold_enrichment >= 10)
+                  timepoint = sraData$timepoint[i]) %>%
+    dplyr::filter(fold_enrichment >= 0)
   #
   peakData = rbind(peakData, peakTemp)
 }
-
+peakData
 
 ##also want to do GREB1
 peakData = tibble()
@@ -284,18 +301,53 @@ for (i in 1:nrow(sraData)){
                       show_col_types = FALSE,
                       col_names = c('chr','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
     dplyr::filter(grepl('chr2', chr)) %>%
-    dplyr::filter(start > myoStart & end < myoEnd) %>%
+    dplyr::filter(start > grebStart & end < grebEnd) %>%
     dplyr::mutate(midPoint = start + round(length / 2, 0),
                   cellLine = sraData$cellLine[i],
-                  timepoint = sraData$timePoint[i]) %>%
-    dplyr::filter(fold_enrichment >= 10)
+                  timepoint = sraData$timepoint[i]) %>%
+    dplyr::filter(fold_enrichment >= 0)
   #
   peakData = rbind(peakData, peakTemp)
 }
-
+peakData
 
 
 ##positive control gene as a sanity check, in the paper they use NPM1
+peakData = tibble()
+for (i in 1:nrow(sraData)){
+  peakTemp = read_tsv(paste(baseRepository, '/sequencing20220711_nbCellLineMycNPmid29379199/chipSeq/',sraData$accession[i],'_peaks.xls', sep = ''),
+                      skip = 30,
+                      show_col_types = FALSE,
+                      col_names = c('chr','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+    dplyr::filter(grepl('chr5', chr)) %>%
+    dplyr::filter(start > npmStart & end < npmEnd) %>%
+    dplyr::mutate(midPoint = start + round(length / 2, 0),
+                  cellLine = sraData$cellLine[i],
+                  timepoint = sraData$timepoint[i]) %>%
+    dplyr::filter(fold_enrichment >= 0)
+  #
+  peakData = rbind(peakData, peakTemp)
+}
+peakData
+```
+
+So we do see a couple of MYO1B peaks around the MYO1B start codon, but they are very low enrichment. What if we do the same thing, but use the whole gene to see if there is a peak anywhere in the gene body?
+
+```{r}
+##########################################################################################
+##get the gene regions
+myoStart = totalGtf[totalGtf$gene_name == 'MYO1B', 'start'] - 1e4
+myoEnd = totalGtf[totalGtf$gene_name == 'MYO1B', 'end'] + 1e4
+grebStart = totalGtf[totalGtf$gene_name == 'GREB1', 'start'] - 1e4
+grebEnd = totalGtf[totalGtf$gene_name == 'GREB1', 'end'] + 1e4
+npmStart = totalGtf[totalGtf$gene_name == 'NPM1', 'start'] - 1e4
+npmEnd = totalGtf[totalGtf$gene_name == 'NPM1', 'end'] + 1e4
+
+sraData = tibble('accession' = c('SRR3356397','SRR3356408','SRR3356404','SRR5441928','SRR5441931','SRR5441934'),
+                 'cellLine' = c('SHEP21','SHEP21','SHEP21','SHEP','SHEP','SHEP'),
+                 'timepoint' = c(0,2,24,0,2,6))
+
+##look first for MYO1B in these data
 peakData = tibble()
 for (i in 1:nrow(sraData)){
   peakTemp = read_tsv(paste(baseRepository, '/sequencing20220711_nbCellLineMycNPmid29379199/chipSeq/',sraData$accession[i],'_peaks.xls', sep = ''),
@@ -306,22 +358,229 @@ for (i in 1:nrow(sraData)){
     dplyr::filter(start > myoStart & end < myoEnd) %>%
     dplyr::mutate(midPoint = start + round(length / 2, 0),
                   cellLine = sraData$cellLine[i],
-                  timepoint = sraData$timePoint[i]) %>%
-    dplyr::filter(fold_enrichment >= 10)
+                  timepoint = sraData$timepoint[i]) %>%
+    dplyr::filter(fold_enrichment >= 0)
   #
   peakData = rbind(peakData, peakTemp)
 }
+peakData
+
+##also want to do GREB1
+peakData = tibble()
+for (i in 1:nrow(sraData)){
+  peakTemp = read_tsv(paste(baseRepository, '/sequencing20220711_nbCellLineMycNPmid29379199/chipSeq/',sraData$accession[i],'_peaks.xls', sep = ''),
+                      skip = 30,
+                      show_col_types = FALSE,
+                      col_names = c('chr','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+    dplyr::filter(grepl('chr2', chr)) %>%
+    dplyr::filter(start > grebStart & end < grebEnd) %>%
+    dplyr::mutate(midPoint = start + round(length / 2, 0),
+                  cellLine = sraData$cellLine[i],
+                  timepoint = sraData$timepoint[i]) %>%
+    dplyr::filter(fold_enrichment >= 0)
+  #
+  peakData = rbind(peakData, peakTemp)
+}
+peakData
+
+
+##positive control gene as a sanity check, in the paper they use NPM1
+peakData = tibble()
+for (i in 1:nrow(sraData)){
+  peakTemp = read_tsv(paste(baseRepository, '/sequencing20220711_nbCellLineMycNPmid29379199/chipSeq/',sraData$accession[i],'_peaks.xls', sep = ''),
+                      skip = 30,
+                      show_col_types = FALSE,
+                      col_names = c('chr','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+    dplyr::filter(grepl('chr5', chr)) %>%
+    dplyr::filter(start > npmStart & end < npmEnd) %>%
+    dplyr::mutate(midPoint = start + round(length / 2, 0),
+                  cellLine = sraData$cellLine[i],
+                  timepoint = sraData$timepoint[i]) %>%
+    dplyr::filter(fold_enrichment >= 0)
+  #
+  peakData = rbind(peakData, peakTemp)
+}
+peakData
 ```
 
+So now there are a couple more peaks for MYO1B. It seems there is one peak in the gene body of MYO1B. It falls in an intron quite far into the gene itself. Still no preaks for GREB1 though. We should make some coverage plots for the MYO1B gene region to show this I think.
+
+### MYO1B changes along with GREB1
+
+We will use some RNAseq data to determine whether MYO1B changes as a result of GREB1 changes. I ended up downloading and reprocessing data from PMID: 30644358. 
+
+```{r}
+##########################################################################################
+rna = readRDS(paste(baseRepository,'/sequencing20220729_greb1ExpressionPmid30644358/dataset_deseq2_total_shGreb-dmso.rds', sep = ''))
+
+##look at the expression of our genes of interest
+rnaCounts = tibble(rna) %>%
+  dplyr::filter(symbol == 'GREB1' | symbol == 'MYO1B')
+rnaCounts
+##save the data
+write.table(rnaCounts, paste(baseRepository,'/sequencing20220729_greb1ExpressionPmid30644358/dataset_lncapShGreb1_shGreb1-Dmso.tsv',sep=''),
+              col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 
 
+##not a big change there...what about in the actual raw counts?
+rnaCounts = tibble(readRDS(paste(baseRepository, '/sequencing20220729_greb1ExpressionPmid30644358/dataset_salmonRawRnaCounts.rds',sep = ''))) %>%
+  dplyr::filter(symbol == 'GREB1' | symbol == 'MYO1B')
+rnaCounts
 
+##and the abundance (TPM)?
+rnaCounts = tibble(readRDS(paste(baseRepository, '/sequencing20220729_greb1ExpressionPmid30644358/dataset_salmonRawAbundance.rds',sep = ''))) %>%
+  dplyr::filter(symbol == 'GREB1' | symbol == 'MYO1B')
+rnaCounts
+```
 
+It looks like the GREB1 change is quite nice, and while MYO1B does look like it changes, it is not very substantial (albeit, significant). Make a quick plot of these data.
 
+```{r}
+##########################################################################################
+##read in the data and plot it
+rnaExp = as.data.frame(readRDS(paste(baseRepository,'/sequencing20220729_greb1ExpressionPmid30644358/dataset_deseq2_total_shGreb-dmso.rds', sep = '')))
+rnaExp$logPValue = -log10(rnaExp$padj)
+rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 100, 100, rnaExp$logPValue)
+rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(3,'OrRd')[3], 
+                        ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(3,'Blues')[3], brewer.pal(3,'Greys')[2]))
+goi = c('GREB1','MYCN','MYO1B')
+rnaExp$pText = ifelse(rnaExp$symbol %in% goi, rnaExp$symbol, '')
+##
+ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
+  geom_point(size = 1, color = rnaExp$pColors, alpha = 0.75) +
+  labs(x = 'log2(shGreb1 vs dmso', y = '-log10(Adjusted p-value)', title = 'shGreb1 vs dmso') +
+  geom_text_repel(label = rnaExp$pText, size = 2, nudge_x = -5, nudge_y = -50, max.overlaps = 15000) +
+  scale_x_continuous(limits = c(-6,6), breaks = seq(-8,8,2)) +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,500,50)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  theme_bw()
+```
 
+So, as indicated above, MYO1B doesn't appear to be a significant hit in the GREB1 data. 
 
+### MYO1B is a target of GREB1 based on ChIP seq data
 
+For this, I used data from PMID: 23403292. 
 
+```{r}
+##########################################################################################
+##the first thing we need is a GTF file to extract our gene regions
+genesOfInterest = c('MYO1B','GREB1','MYCN','NPM1')
+totalGtf = as.data.frame(rtracklayer::import.gff('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')) %>%
+  dplyr::filter(gene_name %in% genesOfInterest) %>%
+  dplyr::filter(type == 'gene')
+totalGtf
+
+##get the regions, they are all positive strand
+myoStart = totalGtf[totalGtf$gene_name == 'MYO1B', 'start'] - 1e4
+myoEnd = totalGtf[totalGtf$gene_name == 'MYO1B', 'start'] + 1e4
+grebStart = totalGtf[totalGtf$gene_name == 'GREB1', 'start'] - 1e4
+grebEnd = totalGtf[totalGtf$gene_name == 'GREB1', 'start'] + 1e4
+npmStart = totalGtf[totalGtf$gene_name == 'NPM1', 'start'] - 1e4
+npmEnd = totalGtf[totalGtf$gene_name == 'NPM1', 'start'] + 1e4
+```
+
+Prepare to make some coverage plots of these data.
+
+```{r}
+##########################################################################################
+#covData <- read.delim("http://genomedata.org/gen-viz-workshop/GenVisR/STAT1_mm9_coverage.tsv")
+##read in the coverage data and combine to a single set
+#sample13 = as.data.frame(rtracklayer::import.bw(paste(baseRepository, '/sequencing20220729_greb1ChipSeqPmid23403292/SRR587413.filtered.bw',sep='')))
+#colnames(sample13)[c(1,3,6)] = c('chromosome','end','cov')
+sample15 = as.data.frame(rtracklayer::import.bw(paste(baseRepository, '/sequencing20220729_greb1ChipSeqPmid23403292/SRR587415.filtered.bw',sep='')))
+colnames(sample15)[c(1,3,6)] = c('chromosome','end','cov')
+sample18 = as.data.frame(rtracklayer::import.bw(paste(baseRepository, '/sequencing20220729_greb1ChipSeqPmid23403292/SRR587418.filtered.bw',sep='')))
+colnames(sample18)[c(1,3,6)] = c('chromosome','end','cov')
+covData = list('sample15' = sample15[,c(1,3,6)], 
+               'sample18' = sample18[,c(1,3,6)])
+```
+
+Prepare the sequence annotation information that we need.
+
+```{r}
+##########################################################################################
+##check for the correct BSGenome object
+library('BSgenome')
+available.genomes()
+#BiocManager::install('BSgenome.Hsapiens.UCSC.hg38')
+library('BSgenome.Hsapiens.UCSC.hg38')
+genomeObject = BSgenome.Hsapiens.UCSC.hg38
+#BiocManager::install('TxDb.Hsapiens.UCSC.hg38.knownGene')
+library('TxDb.Hsapiens.UCSC.hg38.knownGene')
+txdbObject = TxDb.Hsapiens.UCSC.hg38.knownGene
+```
+
+Prepare a genomic ranges object that we can use for plotting. This should target your gene of interest.
+
+```{r}
+##########################################################################################
+##try this for myo1b first
+chromosome = as.character(totalGtf[totalGtf$gene_name == 'MYO1B', ]$seqnames)
+start = as.numeric(totalGtf[totalGtf$gene_name == 'MYO1B', ]$start) - 1e5
+end = as.numeric(totalGtf[totalGtf$gene_name == 'MYO1B', ]$end) + 1e5
+grObject = GRanges(seqnames = chromosome, ranges = IRanges(start = start, end = end))
+
+##create the plot
+genCov(x = covData,
+       txdb = txdbObject,
+       gr = grObject,
+       genome = genomeObject,
+       cov_plotType = 'bar',
+       gene_isoformSel = 'ENST00000392318.8',
+       gene_labelTranscript = FALSE
+       )
+```
+
+I am not a big fan of the way this looks. Lets try with wiggleplot.
+
+```{r}
+##########################################################################################
+#library('wiggleplotr')
+##
+goiGtf = as.data.frame(rtracklayer::import.gff('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')) %>%
+  filter(grepl('ENST00000392318.8$', transcript_id)) %>%
+  mutate('seqnames' = 'chr2')
+##
+goiMeta = tibble('transcript_id' = 'ENST00000392318.8',
+                  'gene_id' = 'ENSG00000128641.19',
+                  'gene_name' = 'MYO1B',
+                  'strand' = '+')
+##
+goiExons = makeGRangesListFromDataFrame(goiGtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+goiCds = makeGRangesListFromDataFrame(goiGtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+##
+sampleData = tibble(sample_id = c('SRR587413', 'SRR587415', 'SRR587418'), 
+                    condition = factor(c('input',rep('greb1',2)), levels = c('input','greb1')),
+                    scaling_factor = 1)
+##
+bigwigFiles = file.path(baseRepository,'sequencing20220729_greb1ChipSeqPmid23403292',paste(sampleData$sample_id,'.filtered.bw',sep=''))
+all(file.exists(bigwigFiles))
+
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles,
+                condition = c('input','rep1','rep2'))
+as.data.frame(sampleData)
+##
+trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+#trackData = dplyr::mutate(sampleData, track_id = sample_id, colour_group = condition)
+##
+plotCoverage(goiExons, 
+             goiCds, 
+             goiMeta, 
+             trackData,
+             #heights = c(2,1), 
+             fill_palette = c(brewer.pal(3,'Greys')[2], rep(brewer.pal(3,'OrRd')[3],2)),
+             rescale_introns = TRUE)
+##
+ggsave(paste(baseRepository, '/sequencing20220729_greb1ChipSeqPmid23403292/coverage_myo1bCoverage.pdf', sep = ''),
+         height = 3, width = 3, useDingbats = FALSE)
+```
 
 
 

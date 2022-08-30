@@ -73,12 +73,63 @@ txi = tximport(files,
                tx2gene = tx2gene)
 names(txi)
 head(txi$counts)
+
+##write these raw count data
+rnaCounts = as.data.frame(txi$counts)
+rnaCounts$ensg = row.names(rnaCounts)
+ens.str = substr(rownames(rnaCounts), 1, 15)
+rnaCounts$symbol = mapIds(org.Hs.eg.db,
+                      keys=ens.str,
+                      column="SYMBOL",
+                      keytype="ENSEMBL",
+                      multiVals="first")
+colnames(rnaCounts)[1:20] = samples$sampleName
+saveRDS(rnaCounts, paste(baseRepository, '/sequencing20220711_nbCellLineMycNPmid29379199/dataset_salmonRawRnaCounts.rds',sep = ''))
+write.table(rnaCounts, paste(baseRepository, '/sequencing20220711_nbCellLineMycNPmid29379199/dataset_salmonRawRnaCounts.tsv',sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+##write these raw abundance data
+rnaCounts = as.data.frame(txi$abundance)
+rnaCounts$ensg = row.names(rnaCounts)
+ens.str = substr(rownames(rnaCounts), 1, 15)
+rnaCounts$symbol = mapIds(org.Hs.eg.db,
+                      keys=ens.str,
+                      column="SYMBOL",
+                      keytype="ENSEMBL",
+                      multiVals="first")
+colnames(rnaCounts)[1:20] = samples$sampleName
+saveRDS(rnaCounts, paste(baseRepository, '/sequencing20220711_nbCellLineMycNPmid29379199/dataset_salmonRawAbundance.rds',sep = ''))
+write.table(rnaCounts, paste(baseRepository, '/sequencing20220711_nbCellLineMycNPmid29379199/dataset_salmonRawAbundance.tsv',sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+##quick check of DTU for MYO1B
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene,
+               countsFromAbundance = 'dtuScaledTPM',
+               txOut = TRUE)
+names(txi)
+head(txi$counts)
+x = as.data.frame(txi$abundance)
+x$TXNAME = row.names(x)
+x = dplyr::left_join(x, tx2gene)
+ens.str = substr(x$GENEID, 1, 15)
+x$symbol = mapIds(org.Hs.eg.db,
+                      keys=ens.str,
+                      column="SYMBOL",
+                      keytype="ENSEMBL",
+                      multiVals="first")
 ```
 
 Construct the DESeq2 dataset for differential expression analysis.
 
 ```{r}
 ##########################################################################################
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+names(txi)
+head(txi$counts)
 ddsTxi = DESeqDataSetFromTximport(txi,
                                   colData = samples,
                                   design = ~ treatment)
@@ -146,8 +197,3 @@ Done for now.
 ```{r}
 sessionInfo()
 ```
-
-
-
-
-

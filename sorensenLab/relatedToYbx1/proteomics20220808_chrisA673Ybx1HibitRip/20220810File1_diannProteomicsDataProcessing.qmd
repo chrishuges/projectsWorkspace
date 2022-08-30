@@ -1,0 +1,148 @@
+---
+title: "Proteomic data processing"
+author: "Christopher Hughes"
+format: html
+---
+
+This document details the analysis of proteomics data from A673 cells carrying a YB-1 HiBit tag fusion used for immunoprecipitation. The proteomic data were obtained using a DIA protocol and processed with [DiaNN software](https://github.com/vdemichev/DiaNN).
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('diann')
+library('DEqMS')
+library('matrixStats')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+## Preparing the data
+
+Basically all we have to do here is read in the peptide tables using the [DiaNN R package](https://github.com/vdemichev/diann-rpackage), and it will process them using the MaxLFQ algorithm.
+
+```{r}
+##########################################################################################
+##read in the diaNN data...you have to use double slashes here for some reason
+pepHighRaw = diann_load('D:\\msDataTemp\\proteomics20220808_chrisA673Ybx1HibitRip\\highMassNoGrouping\\report.tsv')
+pepLowRaw = diann_load('D:\\msDataTemp\\proteomics20220808_chrisA673Ybx1HibitRip\\lowMassNoGrouping\\report.tsv')
+
+##low mass processing, LFQ at peptide level
+pepLowLfq = diann_maxlfq(pepLowRaw[pepLowRaw$Q.Value <= 0.01 & pepLowRaw$Lib.PG.Q.Value <= 0.01 & pepLowRaw$Proteotypic == 1,], 
+                       group.header="Stripped.Sequence", 
+                       id.header = "Precursor.Id", 
+                       quantity.header = "Precursor.Normalised")
+gene.names = pepLowRaw$Genes[match(rownames(pepLowLfq), pepLowRaw$Stripped.Sequence)]
+accession.names = pepLowRaw$Protein.Group[match(rownames(pepLowLfq), pepLowRaw$Stripped.Sequence)]
+pepLowLfqAnno = data.frame('symbol' = gene.names,
+                           'accession' = accession.names,
+                           pepLowLfq)
+sampleNames = sub('.*HibitRip_(.*)_diaLow+\\.raw','\\1',colnames(pepLowLfqAnno))
+colnames(pepLowLfqAnno) = c(sampleNames)
+pepLowLfqReorder = as.data.frame(pepLowLfqAnno[,c('symbol','accession',
+                                               'neg_rep1','ybx1_rep1','ybx1_rep2','ybx1_rep3')])
+pepLowLfqReorder$scanSet = 'lowMass'
+pepLowLfqReorder$numPeps = 1
+pepLowFinal = pepLowLfqReorder %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  as_tibble()
+
+
+##high mass processing, LFQ at peptide level
+pepHighLfq = diann_maxlfq(pepHighRaw[pepHighRaw$Q.Value <= 0.01 & pepHighRaw$Lib.PG.Q.Value <= 0.01 & pepHighRaw$Proteotypic == 1,], 
+                       group.header="Stripped.Sequence", 
+                       id.header = "Precursor.Id", 
+                       quantity.header = "Precursor.Normalised")
+gene.names = pepHighRaw$Genes[match(rownames(pepHighLfq), pepHighRaw$Stripped.Sequence)]
+accession.names = pepHighRaw$Protein.Group[match(rownames(pepHighLfq), pepHighRaw$Stripped.Sequence)]
+pepHighLfqAnno = data.frame('symbol' = gene.names,
+                           'accession' = accession.names,
+                           pepHighLfq)
+sampleNames = sub('.*HibitRip_(.*)_diaHigh+\\.raw','\\1',colnames(pepLowLfqAnno))
+colnames(pepHighLfqAnno) = c(sampleNames)
+pepHighLfqReorder = as.data.frame(pepHighLfqAnno[,c('symbol','accession',
+                                               'neg_rep1','ybx1_rep1','ybx1_rep2','ybx1_rep3')])
+pepHighLfqReorder$scanSet = 'highMass'
+pepHighLfqReorder$numPeps = 1
+pepHighFinal = pepHighLfqReorder %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  as_tibble()
+
+
+##combine and save the data
+allPeps = rbind(pepLowFinal, pepHighFinal)
+saveRDS(allPeps, paste(baseRepository,'/proteomics20220808_chrisA673Ybx1HibitRip/dataset_strippedPeptidesMaxLfqDiann.rds',sep=''))
+```
+
+Now we have a combined peptide table that we can work with. We can roll these peptide values up into proteins and check a couple of control genes we know should be changing.
+
+```{r}
+##########################################################################################
+##read in the peptide data and make a protein set
+rm(allPeps)
+pepData = readRDS(paste(baseRepository,'/proteomics20220808_chrisA673Ybx1HibitRip/dataset_strippedPeptidesMaxLfqDiann.rds',sep=''))
+pepData$samples123 = rowSums(is.na(pepData[,4:6]))
+
+
+##normalize the IP replicates
+exp1Raw = pepData[,c(4:6)]
+target = min(colSums(exp1Raw, na.rm = TRUE))
+target
+normFacs = target / colSums(exp1Raw, na.rm = TRUE)
+exp1Sl = sweep(exp1Raw, 2, normFacs, FUN = "*")
+
+
+##filter the data and scale to the lowest negative intensity
+pepData[,3:6] = c(log2(pepData[,3]), log2(exp1Sl))
+pepDataMinIntensity = min(pepData[,3:6],na.rm = TRUE)
+pepData = dplyr::filter(pepData, symbol != '') %>%
+  dplyr::filter(samples123 == 0) %>%
+  dplyr::mutate(neg_rep1 = ifelse(is.na(neg_rep1), pepDataMinIntensity, neg_rep1)) %>%
+  dplyr::mutate(ybx1_rep1 = ybx1_rep1 - neg_rep1,
+                ybx1_rep2 = ybx1_rep2 - neg_rep1,
+                ybx1_rep3 = ybx1_rep3 - neg_rep1) %>%
+  dplyr::group_by(symbol, accession) %>%
+  dplyr::summarise(across(ybx1_rep1:ybx1_rep3, median, na.rm = TRUE), numPeps = sum(numPeps, na.rm = TRUE))
+
+pepData$meanSamples123 = rowMeans(pepData[,3:5], na.rm = TRUE)
+
+##save these data
+saveRDS(pepData, paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/dataset_rawDataProteinLevel_toNeg.rds',sep = ''))
+write.table(pepData, paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/dataset_rawDataProteinLevel_toNeg.tsv',sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+ggplot(pepData, aes(meanSamples123)) +
+  geom_histogram(bins = 100) +
+  scale_x_continuous(limits = c(-10,15), breaks = seq(-10,15,2))
+```
+
+Perform differential expression analysis.
+
+```{r}
+##########################################################################################
+##get the expression data and assign the row names with the accession code
+
+```
+
+We are done here for now. Wrap up below.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+

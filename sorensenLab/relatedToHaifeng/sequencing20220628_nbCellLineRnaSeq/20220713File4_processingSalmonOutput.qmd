@@ -87,7 +87,7 @@ colnames(txiCounts) = sampleTest$sra
 barplot(colSums(txiCounts))
 
 ##libraries left if we keep only those with at least 40 million aligned read counts
-libsToRemove = which(colSums(txiCounts) < 4e7)
+libsToRemove = which(colSums(txiCounts) < 2e7)
 
 ##remake the sample object with these data only
 samplesSub1 = sampleTest[!(sampleTest$sra %in% names(libsToRemove)),]

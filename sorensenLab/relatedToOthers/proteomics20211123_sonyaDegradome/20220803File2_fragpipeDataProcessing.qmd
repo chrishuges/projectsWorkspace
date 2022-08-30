@@ -1,0 +1,146 @@
+---
+title: "Sonya Degradome"
+author: "Christopher Hughes"
+format: html
+---
+
+This document details the analysis of proteomics data acquired to look at protein degradation. 
+
+### Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+##########################################################################################
+library('tidyverse')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+```
+
+### Data processing
+
+First we can process the psm data for the two replicate sets.
+
+```{r}
+##########################################################################################
+##get the list of psm files
+psmFiles = file.path('D:/msDataTemp/proteomics20211123_sonyaDegradome', c('setA','setB'),'psm.tsv')
+all(file.exists(psmFiles))
+
+##iterate over these files and combine into a single object
+psmData = tibble()
+for (i in 1:length(psmFiles)){
+  psmTemp = read_tsv(psmFiles[i], show_col_types = FALSE) %>%
+    dplyr::select(Peptide, `Protein ID`, Gene, Spectrum, `Assigned Modifications`) %>%
+    dplyr::rename(sequence = Peptide, 
+                  accession = `Protein ID`,
+                  gene = Gene,
+                  scan = Spectrum,
+                  mods = `Assigned Modifications`) %>%
+    dplyr::mutate(fraction = sub('.*hPh_(.*)\\.[0-9]+\\.[0-9]+\\.[0-9]+','\\1',scan)) %>%
+    dplyr::mutate(scan = as.numeric(sub('.*hPh_[0-9]+\\.(.*)\\.[0-9]+\\.[0-9]+','\\1',scan))) %>%
+    dplyr::mutate(label = ifelse(grepl('R\\(10',mods),'heavy',
+                                 ifelse(grepl('K\\(237',mods),'heavy','light'))) %>%
+    dplyr::filter(!grepl('CONT', accession), !is.na(gene), !grepl('-', gene)) %>%
+    dplyr::mutate(sampleSet = sub('.*Degradome/(.*)/psm\\.tsv','\\1',psmFiles[i])) %>%
+    dplyr::select(scan, fraction, accession, gene, sequence, label, sampleSet)
+  #
+  psmData = rbind(psmData, psmTemp)
+}
+```
+
+Now we can get the quant data and process it into a single object.
+
+```{r}
+##########################################################################################
+##this is the function we will use
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath, show_col_types = FALSE) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`131NIntensity`)
+  colnames(quantData) = c('scan','tmt126C','tmt127N','tmt127C','tmt128N',
+                  'tmt128C','tmt129N','tmt129C','tmt130N','tmt130C','tmt131N','tmt131C')
+  ##
+  fraction = sub('.*hPh_(.*)\\.raw_Matrix\\.txt$', '\\1', filePath)
+  quantData$fraction = fraction
+  sampleSet = sub('.*Degradome/(.*)/.*','\\1',filePath)
+  quantData$sampleSet = sampleSet
+  print(paste('Processing file for fraction ', fraction, '.', sep = ''))
+  ##
+  return(quantData)
+}
+
+##
+quantFilesA = file.path('D:/msDataTemp/proteomics20211123_sonyaDegradome/setA',
+                       paste('ch_20210628_sonyaProteinDegradationSet1_TMT11_hPh_',seq(1,24,1),'.raw_Matrix.txt',sep=''))
+quantFilesB = file.path('D:/msDataTemp/proteomics20211123_sonyaDegradome/setB',
+                       paste('ch_20210628_sonyaProteinDegradationSet2_TMT11_hPh_',seq(1,24,1),'.raw_Matrix.txt',sep=''))
+quantFiles = c(quantFilesA, quantFilesB)
+all(file.exists(quantFiles))
+
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+allQuantData = do.call('rbind', quantDataSet)
+```
+
+Now combine the data.
+
+```{r}
+##########################################################################################
+combinedData = psmData %>%
+  left_join(allQuantData)
+
+##save the data
+saveRDS(combinedData, paste(baseRepository,'/proteomics20211123_sonyaDegradome/dataset_rawPsmData.rds',sep=''))
+```
+The experiment layout is as below, so it would be good to look at some of the general trends in the data.
+
+SetA
+126 Set1-WT-0h
+127N Set1-KO-0h
+127C Set1-WT-3h
+128N Set1-KO-3h
+128C Set1-WT-6h
+129N Set1-KO-6h
+129C Set1-WT-17h
+130N Set1-KO-17h
+130C Set1-WT-24h
+131N Set1-KO-24h
+131C sample-11
+
+
+Set B
+126 Set2WT0h
+127N Set2KO0h
+127C Set2WT3h
+128N Set2KO3h
+128C Set2WT6h
+129N Set2KO6h
+129C Set2WT17h
+130N Set2KO17h
+130C Set2WT24h
+131N Set2KO24h
+131C sample11
+
+```{r}
+##########################################################################################
+##for each sample set, plot the tmt channels for heavy and light
+dataToPlot = readRDS(paste(baseRepository,'/proteomics20211123_sonyaDegradome/dataset_rawPsmData.rds',sep='')) %>%
+  dplyr::select(accession:label, sampleSet, tmt126C:tmt131N) %>%
+  tidyr::pivot_longer(cols = tmt126C:tmt131N, names_to = 'tmtLabel', values_to = 'tmtAbundance')
+ggplot(dataToPlot, aes(tmtLabel, log10(tmtAbundance))) +
+  geom_boxplot() +
+  facet_wrap(~sampleSet + label) +
+  theme_bw()
+
+
+```
+
+
+
+

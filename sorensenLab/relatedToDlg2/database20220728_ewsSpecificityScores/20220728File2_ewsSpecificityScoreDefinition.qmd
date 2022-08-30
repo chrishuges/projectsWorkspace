@@ -34,7 +34,7 @@ Get the RNA data already processed from DepMap.
 ```{r}
 ##########################################################################################
 ##read the rna data
-rna = readRDS(paste(generalDatasets, '/depmap22Q2/CCLE_expression_parsed.rds', sep = '')) %>%
+rna = readRDS(paste(generalDatasets, '/depmap22Q2/CCLE_expression_parsed.rds', sep = '')) 
   dplyr::select(gene, log2Tpm, lineage_subtype) %>%
   dplyr::mutate(isEwing = ifelse(grepl('Ewing', lineage_subtype), 'yes', 'no')) %>%
   dplyr::select(-lineage_subtype)

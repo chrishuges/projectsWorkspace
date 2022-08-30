@@ -183,7 +183,7 @@ do
 done
 ```
 
-Now we move on to peak calling using [MACS](https://github.com/macs3-project/MACS). There is a great walkthrough of this process [here](https://hbctraining.github.io/Intro-to-ChIPseq/lessons/05_peak_calling_macs.html). Also [here](https://deeptools.readthedocs.io/en/develop/content/tools/bamCoverage.html) for discussion of deepTools, specifically bamCoverage.
+Note - I had to go back and reprocess these data for coverage because I mistakenly had it only calculate for chr11, so this is why there is a 'coverageMapping.sh' script in the results directory. Otherwise, everything was done as above. Now we move on to peak calling using [MACS](https://github.com/macs3-project/MACS). There is a great walkthrough of this process [here](https://hbctraining.github.io/Intro-to-ChIPseq/lessons/05_peak_calling_macs.html). Also [here](https://deeptools.readthedocs.io/en/develop/content/tools/bamCoverage.html) for discussion of deepTools, specifically bamCoverage.
 
 The first file here is for narrow peak calling on the transcription factors.
 
