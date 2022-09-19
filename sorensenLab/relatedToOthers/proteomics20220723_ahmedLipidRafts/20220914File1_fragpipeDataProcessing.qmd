@@ -1,0 +1,84 @@
+---
+title: "Lipid raft proteome"
+author: "Christopher Hughes"
+format: html
+---
+
+This document details the analysis of proteomics data from sampes that Ahmed Gad sent me that are composed of lipid rafts. These are SILAC labeled samples derived from a mixed cell culture (e.g. one cell type is light, the other is heavy). 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('stringr')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+## Preparing the data
+
+We need to read in the data from Fragpipe and process it into a single table. I am going to use the 'ion_label_quant' table for each sample.
+
+```{r}
+##########################################################################################
+##prepare a sample table
+sampleInfo = tibble('sampleName' = paste('sample', seq(1,8,1), sep = ''),
+                    'annotation' = 'unknown',
+                    'filePath' = file.path('D:/msDataTemp/proteomics20220723_ahmedLipidRafts/fragpipeAnalysis', paste('sample', seq(1,8,1), sep = ''), 'ion.tsv'))
+all(file.exists(sampleInfo$filePath))
+
+##read in the data for each sample and combine
+allIons = tibble()
+for (i in 1:nrow(sampleInfo)){
+  ionTemp = read_tsv(sampleInfo$filePath[i], show_col_types = FALSE) %>%
+    dplyr::rename(sequence = `Peptide Sequence`,
+                  modificationSequence = `Modified Sequence`,
+                  abundance = Intensity,
+                  accession = `Protein ID`,
+                  symbol = Gene) %>%
+    dplyr::select(accession, symbol, sequence, modificationSequence, abundance) %>%
+    dplyr::filter(!grepl('contam_', accession), abundance > 0) %>%
+    dplyr::mutate(label = ifelse(grepl('8.0142', modificationSequence), 'heavy',
+                                 ifelse(grepl('10.0082', modificationSequence), 'heavy', 'light'))) %>%
+    dplyr::mutate(labelCount = str_count(modificationSequence, '\\[8\\.0142') + str_count(modificationSequence, '\\[10\\.0082')) %>%
+    dplyr::mutate(numPsms = 1) %>%
+    dplyr::select(-modificationSequence) %>%
+    dplyr::group_by(accession, symbol, sequence, label) %>%
+    dplyr::summarise(abundance = mean(abundance, na.rm = TRUE), numPsms = sum(numPsms)) %>%
+    dplyr::mutate(numPeptides = 1) %>%
+    dplyr::group_by(accession, symbol, label) %>%
+    dplyr::summarise(abundance = median(abundance, na.rm = TRUE), numPsms = sum(numPsms), numPeptides = sum(numPeptides)) %>%
+    tidyr::pivot_wider(id_cols = accession:symbol, names_from = 'label', values_from = abundance:numPeptides) %>%
+    dplyr::mutate(sampleSet = sampleInfo$sampleName[i])
+  #
+  allIons = rbind(allIons, ionTemp)
+}
+
+
+##save the data
+saveRDS(allIons, paste(baseRepository, '/proteomics20220723_ahmedLipidRafts/dataset_proteinDataAllSamples.rds', sep = ''))
+write.table(allIons, paste(baseRepository, '/proteomics20220723_ahmedLipidRafts/dataset_proteinDataAllSamples.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+```
+
+We are done here for now. Wrap up below.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+

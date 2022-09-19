@@ -40,18 +40,17 @@ Read in the sample annotation details and make the txdb that we can use later on
 #| label: read input data
 #| warning: false
 
-
 ##########################################################################################
 #read a table containing the sample information for our RNAseq runs
 samples = read_tsv(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/sampleInfo.txt', sep = ''))
 samples
 
 #use the sample info to build a file list
-files = file.path(baseRepository, 'sequencing20210421_a673TimecourseRnaSeqOutput', paste(samples$barcode, '_', samples$batch, '_quant', sep = ''), 'quant.sf')
+files = file.path(baseRepository, 'sequencing20210421_a673TimecourseRnaSeqOutput', 'quants', paste(samples$barcode, '_', samples$batch, sep = ''), 'quant.sf')
 all(file.exists(files))
 ```
 
-For Salmon analysis, I am generally following the documentation found [here](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html) and [here](http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html). When we import our data, we want a table that allows us to link gene and transcript identifiers. For this we use the GTF associated with our database files that we used during the alignment process. 
+For Salmon analysis, I am generally following the documentation found [here](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html) and [here](http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html). When we import our data, we want a table that allows us to link gene and transcript identifiers. For this we use the GTF associated with our database files that we used during the alignment process.
 
 ```{r}
 #| label: build txdb
@@ -99,7 +98,6 @@ Extract the DESeq data and plot for the different comparisons of interest.
 ```{r}
 #| label: extract and plot comparisons
 #| warning: false
-
 
 ##########################################################################################
 #parse the deseq data - change the first two values to get different comparisons
@@ -150,7 +148,12 @@ for (i in 1:length(daysToCompare)){
 }
 ```
 
+We are done here for now. Wrap up below.
 
+### Session info
 
-
+```{r}
+##########################################################################################
+sessionInfo()
+```
 

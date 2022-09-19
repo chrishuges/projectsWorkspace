@@ -1,0 +1,107 @@
+---
+title: "YBX1 degron testing"
+author: "Christopher Hughes"
+format: html
+---
+
+This document details the analysis of proteomics data from A673 cells carrying a YB-1 degron tag fusion. The proteomic data were obtained using a DIA protocol and processed with [DiaNN software](https://github.com/vdemichev/DiaNN).
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('diann')
+library('DEqMS')
+library('matrixStats')
+library('ggrepel')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+## Preparing the data
+
+Basically all we have to do here is read in the peptide tables using the [DiaNN R package](https://github.com/vdemichev/diann-rpackage), and it will process them using the MaxLFQ algorithm.
+
+```{r}
+##########################################################################################
+##read in the diaNN data...you have to use double slashes here for some reason
+pepLowRaw = diann_load('D:\\msDataTemp\\proteomics20220810_chrisA673Ybx1DegronClone1\\withDtagDatabase\\report.tsv')
+
+##low mass processing, LFQ at peptide level
+pepLowLfq = diann_maxlfq(pepLowRaw[pepLowRaw$Q.Value <= 0.01 & pepLowRaw$Lib.PG.Q.Value <= 0.01 & pepLowRaw$Proteotypic == 1,], 
+                       group.header="Stripped.Sequence", 
+                       id.header = "Precursor.Id", 
+                       quantity.header = "Precursor.Normalised")
+gene.names = pepLowRaw$Genes[match(rownames(pepLowLfq), pepLowRaw$Stripped.Sequence)]
+accession.names = pepLowRaw$Protein.Group[match(rownames(pepLowLfq), pepLowRaw$Stripped.Sequence)]
+pepLowLfqAnno = data.frame('symbol' = gene.names,
+                           'accession' = accession.names,
+                           pepLowLfq)
+sampleNames = sub('.*ch_20220810_chrisA673Ybx1Degron(.*)_diaLow+\\.raw','\\1',colnames(pepLowLfqAnno))
+colnames(pepLowLfqAnno) = c(sampleNames)
+pepLowLfqReorder = as.data.frame(pepLowLfqAnno[,c('symbol','accession',
+                                               'Clone1_0h','Clone1_2h','Clone1_4h','Clone1_6h')])
+pepLowLfqReorder$scanSet = 'lowMass'
+pepLowLfqReorder$numPeps = 1
+pepLowFinal = pepLowLfqReorder %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  as_tibble()
+
+
+##combine and save the data
+saveRDS(pepLowFinal, paste(baseRepository,'/proteomics20220810_chrisA673Ybx1DegronClone1/dataset_strippedPeptidesMaxLfqDiann.rds',sep=''))
+```
+
+Now we have a combined peptide table that we can work with. We can roll these peptide values up into proteins and check a couple of control genes we know should be changing.
+
+```{r}
+##########################################################################################
+##read in the peptide data and make a protein set
+pepData = readRDS(paste(baseRepository,'/proteomics20220810_chrisA673Ybx1DegronClone1/dataset_strippedPeptidesMaxLfqDiann.rds',sep=''))
+
+
+##transform to protein values
+pepDataSub = subset(pepData, rowSums(is.na(pepData[,3:6])) < 1)
+proData = pepDataSub %>%
+  dplyr::filter(symbol != '') %>%
+  dplyr::group_by(symbol, accession) %>%
+  dplyr::summarise(across(Clone1_0h:Clone1_6h, median, na.rm = TRUE))
+
+
+##plot the data
+goi = c('YBX1','YBX3')
+proDataPlot = proData %>%
+  dplyr::filter(symbol %in% goi) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(abundance0h = Clone1_0h / Clone1_0h,
+                abundance2h = Clone1_2h / Clone1_0h,
+                abundance4h = Clone1_4h / Clone1_0h) %>%
+  dplyr::select(accession, symbol, abundance0h, abundance2h, abundance4h) %>%
+  tidyr::pivot_longer(cols = abundance2h:abundance4h, names_to = 'timepoint', values_to = 'abundance')
+ggplot(proDataPlot) +
+  geom_col(aes(symbol, log2(abundance), fill = timepoint), position  = 'dodge') +
+  labs(x = 'Protein', y = 'log2(Abundance relative to 0h)', title = 'YB-1 Degron') +
+  scale_y_continuous(limits = c(-3.5,1), breaks = seq(-4,2,1)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/proteomics20220810_chrisA673Ybx1DegronClone1/barplot_ybx1DegronPtx.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+```
+
+
+
+
+
+

@@ -1,0 +1,248 @@
+---
+title: "Translatome DESeq Analysis"
+author: "Christopher Hughes"
+format: html
+editor: visual
+---
+
+This document details the analysis of RNAseq data from A673 EwS cells treated with dox to induce an shRNA against EWS-FLI1.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('tximport')
+library('GenomicFeatures')
+library('DESeq2')
+library('org.Hs.eg.db')
+library('ggrepel')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing - total RNA
+
+First we will need to create a transcriptome database we can use to annotate our data. We will do this using the same GTF we used in our original alignment. This can be a bit slow.
+
+```{r}
+##########################################################################################
+##read the gtf
+myTxdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/projectEwSDlg2/baseGenomeFiles/genome.gtf')
+k = keys(myTxdb, keytype = 'TXNAME')
+tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
+```
+
+Create a table of the sample annotation details that we can use during the transcript data import.
+
+```{r}
+##########################################################################################
+##I created a sample table in excel previously, read it in here
+samples = read_tsv(paste(baseRepository, '/sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/sampleInfoMaster.txt', sep = ''))
+
+##assign the path to the quant files
+##there are two steps here because the file naming was different from the sequencing core facility
+samples$files = ifelse(grepl('IX.*', samples$mainFolder), 
+                       file.path(baseRepository, 'sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/quants', samples$index, 'quant.sf'),
+                       file.path(baseRepository, 'sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/quants', samples$library, 'quant.sf'))
+
+##check if all of the quant files exist
+samplesToProcess = samples[grepl('Total', samples$sample), ]
+files = samplesToProcess$files
+all(file.exists(files))
+```
+
+Now import the Salmon data using the files we created above.
+
+```{r}
+##########################################################################################
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+names(txi)
+head(txi$counts)
+```
+
+Construct the DESeq2 dataset for differential expression analysis.
+
+```{r}
+##########################################################################################
+ddsTxi = DESeqDataSetFromTximport(txi,
+                                  colData = samplesToProcess,
+                                  design = ~ treatment)
+##
+dds = DESeq(ddsTxi)
+keep = rowSums(counts(dds)) >= 10
+dds = dds[keep,]
+```
+
+Perform comparisons between samples.
+
+```{r}
+##########################################################################################
+datasetFirst = 'dmso'
+datasetSecond = 'dox'
+
+##
+for (i in 1:length(datasetFirst)){
+  res = results(dds, contrast = c('treatment', datasetFirst[i], datasetSecond))
+  ens.str = substr(rownames(res), 1, 15)
+  res$symbol = mapIds(org.Hs.eg.db,
+                      keys=ens.str,
+                      column="SYMBOL",
+                      keytype="ENSEMBL",
+                      multiVals="first")
+  resOrdered = res[order(res$pvalue),]
+  
+  ##
+  saveRDS(as.data.frame(resOrdered), 
+          paste(baseRepository, '/sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/deseq2/dataset_deseq2_total_', datasetFirst[i], '-', datasetSecond, '.rds', sep = ''))
+  write.csv(as.data.frame(resOrdered), 
+          file = paste(baseRepository, '/sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/deseq2/dataset_deseq2_total_', datasetFirst[i], '-', datasetSecond, '.csv', sep = ''))
+
+  ##
+  #resLFC = lfcShrink(dds, coef = paste('treatment_',datasetFirst,'_vs_',datasetSecond, sep = ''), type = "apeglm")
+  #resLFC
+  #plotMA(resLFC, ylim = c(-2,2))
+  rnaExp = as.data.frame(resOrdered)
+  rnaExp$logPValue = -log10(rnaExp$padj)
+  rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 300, 300, rnaExp$logPValue)
+  rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(3,'OrRd')[3], 
+                          ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(3,'Blues')[3], brewer.pal(3,'Greys')[2]))
+  goi = c('NFE2L2','MYC','CCND1')
+  rnaExp$pText = ifelse(rnaExp$symbol %in% goi, rnaExp$symbol, '')
+  ##
+  ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
+    geom_point(size = 1, color = rnaExp$pColors, alpha = 0.75) +
+    labs(x = paste('log2(',datasetFirst[i],' - ',datasetSecond,')', sep = ''), y = '-log10(Adjusted p-value)', title = paste(datasetFirst[i],' vs ',datasetSecond, sep='')) +
+    geom_text_repel(label = rnaExp$pText, nudge_x = -3, nudge_y = -150, max.overlaps = 15000) +
+    scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+    scale_y_continuous(limits = c(0,300), breaks = seq(0,500,50)) +
+    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+    theme_classic()
+  ##
+  ggsave(paste(baseRepository, '/sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/deseq2/scatter_deseq2_total_', datasetFirst[i], '-', datasetSecond, '.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+}
+```
+
+## Data processing - polysomes
+
+Create a table of the sample annotation details that we can use during the transcript data import.
+
+```{r}
+##########################################################################################
+##I created a sample table in excel previously, read it in here
+samples = read_tsv(paste(baseRepository, '/sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/sampleInfoMaster.txt', sep = ''))
+
+##assign the path to the quant files
+##there are two steps here because the file naming was different from the sequencing core facility
+samples$files = ifelse(grepl('IX.*', samples$mainFolder), 
+                       file.path(baseRepository, 'sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/quants', samples$index, 'quant.sf'),
+                       file.path(baseRepository, 'sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/quants', samples$library, 'quant.sf'))
+
+##check if all of the quant files exist
+samplesToProcess = samples[grepl('Poly', samples$sample), ]
+files = samplesToProcess$files
+all(file.exists(files))
+```
+
+Now import the Salmon data using the files we created above.
+
+```{r}
+##########################################################################################
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+names(txi)
+head(txi$counts)
+```
+
+Construct the DESeq2 dataset for differential expression analysis.
+
+```{r}
+##########################################################################################
+ddsTxi = DESeqDataSetFromTximport(txi,
+                                  colData = samplesToProcess,
+                                  design = ~ treatment)
+##
+dds = DESeq(ddsTxi)
+keep = rowSums(counts(dds)) >= 10
+dds = dds[keep,]
+```
+
+Perform comparisons between samples.
+
+```{r}
+##########################################################################################
+datasetFirst = 'dmso'
+datasetSecond = 'dox'
+
+##
+for (i in 1:length(datasetFirst)){
+  res = results(dds, contrast = c('treatment', datasetFirst[i], datasetSecond))
+  ens.str = substr(rownames(res), 1, 15)
+  res$symbol = mapIds(org.Hs.eg.db,
+                      keys=ens.str,
+                      column="SYMBOL",
+                      keytype="ENSEMBL",
+                      multiVals="first")
+  resOrdered = res[order(res$pvalue),]
+  
+  ##
+  saveRDS(as.data.frame(resOrdered), 
+          paste(baseRepository, '/sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/deseq2/dataset_deseq2_poly_', datasetFirst[i], '-', datasetSecond, '.rds', sep = ''))
+  write.csv(as.data.frame(resOrdered), 
+          file = paste(baseRepository, '/sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/deseq2/dataset_deseq2_poly_', datasetFirst[i], '-', datasetSecond, '.csv', sep = ''))
+
+  ##
+  #resLFC = lfcShrink(dds, coef = paste('treatment_',datasetFirst,'_vs_',datasetSecond, sep = ''), type = "apeglm")
+  #resLFC
+  #plotMA(resLFC, ylim = c(-2,2))
+  rnaExp = as.data.frame(resOrdered)
+  rnaExp$logPValue = -log10(rnaExp$padj)
+  rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 300, 300, rnaExp$logPValue)
+  rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(3,'OrRd')[3], 
+                          ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(3,'Blues')[3], brewer.pal(3,'Greys')[2]))
+  goi = c('DLG2','LOX','PRKCB')
+  rnaExp$pText = ifelse(rnaExp$symbol %in% goi, rnaExp$symbol, '')
+  ##
+  ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
+    geom_point(size = 1, color = rnaExp$pColors, alpha = 0.75) +
+    labs(x = paste('log2(',datasetFirst[i],' - ',datasetSecond,')', sep = ''), y = '-log10(Adjusted p-value)', title = paste(datasetFirst[i],' vs ',datasetSecond, sep='')) +
+    geom_text_repel(label = rnaExp$pText, nudge_x = -3, nudge_y = -150, max.overlaps = 15000) +
+    scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
+    scale_y_continuous(limits = c(0,300), breaks = seq(0,500,50)) +
+    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+    theme_classic()
+  ##
+  ggsave(paste(baseRepository, '/sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/deseq2/scatter_deseq2_poly_', datasetFirst[i], '-', datasetSecond, '.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+}
+```
+
+We are done here for now. Wrap up below.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+

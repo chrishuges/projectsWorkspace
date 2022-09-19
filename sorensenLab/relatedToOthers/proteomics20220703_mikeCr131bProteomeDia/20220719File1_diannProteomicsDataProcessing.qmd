@@ -16,6 +16,8 @@ These are packages you will need for this notebook. For exact versions used, ple
 ##########################################################################################
 library('tidyverse')
 library('diann')
+library('DEqMS')
+library('matrixStats')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
@@ -110,6 +112,49 @@ pepData = dplyr::filter(pepData, symbol != '') %>%
 pepData$meanDmso = rowMeans(pepData[,3:5], na.rm = TRUE)
 pepData$meanCr8 = rowMeans(pepData[,12:14], na.rm = TRUE)
 pepData$ratio = pepData$meanCr8 - pepData$meanDmso
+
+##save this data
+saveRDS(pepData, paste(baseRepository,'/proteomics20220703_mikeCr131bProteomeDia/dataset_proteinsMaxLfqDiann.rds',sep=''))
+
+##run a deqms analysis
+dat.log = as.matrix(pepData[,3:14])
+rownames(dat.log) = pepData$accession
+dat.log = na.omit(dat.log)
+boxplot(dat.log,las=2,main="diann data")
+cond = as.factor(c('dmso','dmso','dmso',
+                   'cr2','cr2','cr2',
+                   'cr4','cr4','cr4',
+                   'cr8','cr8','cr8'))
+design = model.matrix(~0+cond)
+colnames(design) = gsub("cond","",colnames(design))
+x <- c('cr2-dmso','cr4-dmso','cr8-dmso')
+contrast =  makeContrasts(contrasts=x,levels=design)
+fit1 <- lmFit(dat.log, design)
+fit2 <- contrasts.fit(fit1,contrasts = contrast)
+fit3 <- eBayes(fit2)
+psm.count.table = data.frame(count = pepData[,15], row.names =  pepData$accession)
+fit3$count = psm.count.table[rownames(fit3$coefficients),"numPeps"]
+fit4 = spectraCounteBayes(fit3)
+VarianceBoxplot(fit4,n=30,main="deqms data",xlab="PSM count")
+VarianceScatterplot(fit4,main="deqms data")
+
+##extract the deqms data
+head(fit4$coefficients)
+deqmsResults = tibble()
+for (i in 1:length(x)){
+  deqmsTemp = outputResult(fit4,coef_col = i) %>%
+    dplyr::as_tibble() %>%
+    dplyr::mutate(dataset = x[i])
+  #
+  deqmsResults = rbind(deqmsResults, deqmsTemp)
+}
+geneSymbols = pepData[,1:2]
+deqmsResults = deqmsResults %>%
+  dplyr::rename(accession = gene) %>%
+  dplyr::left_join(geneSymbols)
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20220703_mikeCr131bProteomeDia/dataset_deqmsResultsAllComparisons.rds', sep = ''))
+write.table(deqmsResults, paste(baseRepository, '/proteomics20220703_mikeCr131bProteomeDia/dataset_deqmsResultsAllComparisons.tsv', sep = ''),
+            row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
 ```
 
 We are done here for now. Wrap up below.

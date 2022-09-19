@@ -54,7 +54,7 @@ Make the plot.
 ```{r}
 ##########################################################################################
 goi = c('Ybx1','Ybx3')
-riboInt$pColor = ifelse(riboInt$symbol %in% goi, brewer.pal(8,'Spectral')[1], brewer.pal(11,'RdGy')[10])
+riboInt$pColor = ifelse(riboInt$symbol %in% goi, brewer.pal(3,'OrRd')[3], brewer.pal(3,'Greys')[2])
 riboInt$pText = ifelse(riboInt$symbol %in% goi, riboInt$symbol, '')
 ggplot(riboInt, aes(log2MaxFoldChange_eL36_eS17, maxSAINTprob_eL36_eS17)) +
   geom_point(size = 3, color = riboInt$pColor, alpha = 0.75) +
@@ -66,5 +66,5 @@ ggplot(riboInt, aes(log2MaxFoldChange_eL36_eS17, maxSAINTprob_eL36_eS17)) +
   geom_hline(yintercept = 0.8, linetype = 'dashed') +
   theme_classic()
 ggsave(paste(baseRepository, '/proteomics20210305_ribosomeInteractionsSimsek/scatter_ribosomeProteinInteractions.pdf', sep = ''),
-       width = 4, height = 4, useDingbats = FALSE)
+       width = 2, height = 2, useDingbats = FALSE)
 ```

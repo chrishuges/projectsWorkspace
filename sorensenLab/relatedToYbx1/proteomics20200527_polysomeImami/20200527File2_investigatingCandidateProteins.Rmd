@@ -56,8 +56,8 @@ riboOnly = polyData %>% filter(!is.na(complexId))
 for (i in 1:length(geneOfInterest)){
   targetOnly = polyData %>% filter(gene %in% geneOfInterest[i])
   ggplot(targetOnly, aes(fraction, silacRatio, group = gene)) +
-    geom_line(data = riboOnly, aes(fraction, silacRatio, group = gene), color = brewer.pal(8,'Greys')[3], size = 0.5) +
-    geom_line(size = 1, color = brewer.pal(8,'RdBu')[2]) + 
+    geom_line(data = riboOnly, aes(fraction, silacRatio, group = gene), color = brewer.pal(3,'Greys')[2], size = 0.5) +
+    geom_line(size = 1, color = brewer.pal(4,'OrRd')[4]) + 
     scale_y_continuous(limits = c(0,3.5), breaks = seq(0,5,1)) +
     labs(x = 'Sucrose gradient fraction', y = 'SILAC ratio to GFP control', title = paste(geneOfInterest[i], ' protein abundance', sep = '')) +
     theme_classic() +
@@ -66,8 +66,8 @@ for (i in 1:length(geneOfInterest)){
   ##save the plot to a file
   ggsave(paste(baseRepository, '/proteomics20200527_polysomeImami/lineplot_', geneOfInterest[i], 'AbundanceReplicates.pdf', sep = ''),
          useDingbats = FALSE,
-         height = 4,
-         width = 4)
+         height = 2,
+         width = 2)
   message(paste('Plot completed for ', geneOfInterest[i], sep = ''))
 }
 ```
@@ -92,15 +92,15 @@ for (i in 1:length(geneOfInterest)){
     dplyr::group_by(gene, fraction) %>%
     dplyr::summarise(meanRatio = mean(silacRatio, na.rm = TRUE))
   ggplot(targetOnly, aes(fraction, meanRatio, group = gene)) +
-    geom_line(data = riboOnly, aes(fraction, meanRatio, group = gene), color = brewer.pal(11,'RdGy')[8], size = 0.5) +
-    geom_line(size = 1, color = brewer.pal(8,'Spectral')[1]) + 
+    geom_line(data = riboOnly, aes(fraction, meanRatio, group = gene), color = brewer.pal(3,'Greys')[2], size = 0.5) +
+    geom_line(size = 1, color = brewer.pal(4,'OrRd')[4]) + 
     scale_y_continuous(limits = c(0,3.5), breaks = seq(0,5,1)) +
     labs(x = 'Sucrose gradient fraction', y = 'SILAC ratio to GFP control', title = paste(geneOfInterest[i], ' protein abundance', sep = '')) +
     theme_classic() +
     theme(legend.position = 'none')
   ##save the plot to a file
   ggsave(paste(baseRepository, '/proteomics20200527_polysomeImami/lineplot_', geneOfInterest[i], 'Abundance.pdf', sep = ''),
-         useDingbats = FALSE, height = 4, width = 4)
+         useDingbats = FALSE, height = 2, width = 2)
   message(paste('Plot completed for ', geneOfInterest[i], sep = ''))
 }
 ```

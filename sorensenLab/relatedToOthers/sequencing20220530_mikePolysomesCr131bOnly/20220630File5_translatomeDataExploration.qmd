@@ -293,9 +293,9 @@ ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatte
 
 We can also add in the proteomics data. This will need a bit of processing first before we can use it though as we still only have the raw data.
 
-
-
 Now we can interface the proteomics data with that from the transcriptome.
+
+These data need to be re-written using the processed proteome data (this code won't work for now).
 
 ```{r}
 ##########################################################################################
@@ -305,8 +305,14 @@ pro = proLowCombine %>%
   dplyr::mutate(fraction = 'proteome',
                 drug = sub('(.*)Ratio','\\1',sampleName)) %>%
   dplyr::select(symbol, log2Fc, fraction, drug)
+
+
+
+proData = readRDS(paste(baseRepository, '/proteomics20220703_mikeCr131bProteomeDia/dataset_deqmsResultsAllComparisons.rds', sep = ''))
 deData = readRDS(paste(baseRepository,'/proteomics20220703_mikeCr131bProteomeDia/dataset_deseq2AllConditionsData.rds',sep='')) %>%
   dplyr::select(symbol, log2Fc, fraction, drug)
+
+
 allData = rbind(pro, deData)
 
 #MYC
@@ -366,7 +372,6 @@ ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatte
        useDingbats = FALSE)
 ```
 
-
 ## EIF4E targets
 
 I want to look at a set of EIF4E targets determined in a previous study, PMID: 17638893. First I will use the deseq2 data to look at changes in all of the conditions, specifically for the target genes.
@@ -402,6 +407,25 @@ ggplot(rnaExp[rnaExp$eif4eTarget == 'target',], aes(log2FoldChange, -log10(padj)
 ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_eif4eTargets.pdf',sep=''),
        height = 3, 
        width = 3,
+       useDingbats = FALSE)
+
+##plot the data individually for the purposes of a grant figure
+rnaExpSub = rnaExp %>%
+  dplyr::filter(eif4eTarget == 'target', 
+                dataset == 'cr8total') %>%
+  dplyr::mutate(pColor = ifelse(log2FoldChange >= 1 & padj <= 0.01, brewer.pal(4,'OrRd')[4],
+                                ifelse(log2FoldChange <= -1 & padj <= 0.01, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2])))
+ggplot(rnaExpSub, aes(log2FoldChange, -log10(padj))) +
+  geom_point(size = 1, color = rnaExpSub$pColor) +
+  scale_y_continuous(limits = c(0,50)) +
+  scale_x_continuous(limits = c(-4,4)) +
+  labs(x = 'log2(Fold change, CR-1-31B vs dmso)', y = '-log10(Adjusted p-value)', title = 'CR-1-31B transcriptome') +
+  geom_vline(xintercept = 0, linetype = 'dashed', color = brewer.pal(3,'Greys')[2], size = 1) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed', color = brewer.pal(3,'OrRd')[3], size = 1) +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/scatter_eif4eTargets_cr8total.pdf',sep=''),
+       height = 2, 
+       width = 2,
        useDingbats = FALSE)
 
 ##plot the data as an ecdf
@@ -445,6 +469,34 @@ ggsave(paste(baseRepository, '/sequencing20220530_mikePolysomesCr131bOnly/barplo
 ```
 
 So we definitely see an uptick in translation assigned EIF4E targets as the concentration of drug increases, but still many are not assigned as translation targets. It seems to mostly re-classify 'background' assignments to as now being translationally regulated. I think there is a big transcriptional response in these cells, possibly due to the fact that this is a 24-hour drug treatment. I think that by the time we are harvesting the cells, they are trying to adapt to the drug and are potentially upregulating the transcription of things that are being suppressed translationally in order to recover the levels. This would somewhat mask our ability to assign them as translation targets. But, nevertheless, I think there is a clear change in EIF4E targets, especially at high drug concentrations.
+
+We want to show the EIF4 targets from above in the proteomics data. This initial analysis was quite crude and just done for the purposes of a grant.
+
+```{r}
+##########################################################################################
+##read in the protein data
+proData = readRDS(paste(baseRepository, '/proteomics20220703_mikeCr131bProteomeDia/dataset_deqmsResultsAllComparisons.rds', sep = '')) %>%
+  dplyr::mutate(eif4eTarget = ifelse(symbol %in% eif4Genes, 'target', 'background'))
+
+##make the plot
+proDataSub = proData %>%
+  dplyr::filter(eif4eTarget == 'target', 
+                dataset == 'cr8-dmso') %>%
+  dplyr::mutate(pColor = ifelse(logFC >= 1 & P.Value <= 0.01, brewer.pal(4,'OrRd')[4],
+                                ifelse(logFC <= -1 & P.Value <= 0.01, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2])))
+ggplot(proDataSub, aes(logFC, -log10(P.Value))) +
+  geom_point(size = 1, color = proDataSub$pColor) +
+  #scale_y_continuous(limits = c(0,50)) +
+  scale_x_continuous(limits = c(-4,4)) +
+  labs(x = 'log2(Fold change, CR-1-31B vs dmso)', y = '-log10(Adjusted p-value)', title = 'CR-1-31B proteome') +
+  geom_vline(xintercept = 0, linetype = 'dashed', color = brewer.pal(3,'Greys')[2], size = 1) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed', color = brewer.pal(3,'OrRd')[3], size = 1) +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20220703_mikeCr131bProteomeDia/scatter_eif4eTargets_cr8proteome.pdf',sep=''),
+       height = 2, 
+       width = 2,
+       useDingbats = FALSE)
+```
 
 ## RNA features
 
