@@ -55,7 +55,7 @@ Next we point at our quant files.
 
 ```{r}
 ##########################################################################################
-quantFiles = file.path(paste(baseRepository, '/sequencing20211109_ewsCohortDbgapPmid25010205/quants', sep = ''), samples$sample, 'quant.sf')
+quantFiles = file.path(paste(baseRepository, '/sequencing20211120_ewsCohortDbgapPmid25010205/quants', sep = ''), samples$sample, 'quant.sf')
 names(quantFiles) = samples$sample
 all(file.exists(quantFiles))
 ```
@@ -95,7 +95,7 @@ geneExpData = txiAnnotated %>%
   mutate(symbol = SYMBOL)
 
 ##
-targetGenes = c('DLG2')
+targetGenes = c('CNMD')
 targetData = geneExpData %>%
   dplyr::filter(symbol %in% targetGenes) %>%
   tidyr::pivot_longer(cols = SRR5163671:SRR5163757, names_to = 'accession', values_to = 'tpm') %>%
@@ -106,11 +106,11 @@ targetData = geneExpData %>%
 ggplot(targetData, aes(symbol, tpm, fill = symbol)) +
   geom_violin(size = 0.5, color = brewer.pal(3,'Greys')[3]) +
   geom_point(size = 0.5, color = brewer.pal(3,'Greys')[3]) +
-  labs(x = 'gene symbol', y = 'log2(TPM + 1)', title = 'EWS-FLI1 target genes') +
+  labs(x = 'gene symbol', y = 'log2(TPM + 1)', title = 'CNMD in EwS cohort') +
   scale_fill_manual(values = rep(brewer.pal(3,'OrRd')[3],6)) +
   theme_classic() +
   theme(legend.position = 'none')
-ggsave(paste(baseRepository, '/sequencing20211109_ewsCohortDbgapPmid25010205/scatter_ewsFli1TargetsAcrossCohort.pdf', sep = ''),
+ggsave(paste(baseRepository, '/sequencing20211109_ewsCohortDbgapPmid25010205/scatter_cnmdAcrossCohort.pdf', sep = ''),
       height = 2, width = 2, useDingbats = FALSE)
 ```
 

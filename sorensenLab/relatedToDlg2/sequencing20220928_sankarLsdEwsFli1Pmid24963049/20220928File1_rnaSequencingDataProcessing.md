@@ -2,8 +2,8 @@
 
 This document describes the reprocessing of some RNAseq data from a manuscript. Specifically:
 
-"Expression profiling of EWS/FLI identifies NKX2.2 as a critical target gene in Ewing's sarcoma"
-PMID: 16697960, GEO: GSE53066, SRA: PRJNA230789
+"Reversible LSD1 inhibition interferes with global EWS/ETS transcriptional activity and impedes Ewing sarcoma tumor growth"
+PMID: 24963049, SRA: PRJNA176544
 
 ### Description
 
@@ -26,7 +26,7 @@ This is kind of a useful website for a general pipeline, [here](https://www.bioc
 First we will move into our working directory and create our shell and snakemake scripts.
 
 ```shell
-cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211221_a673Ef1SmithPmid16697960
+cd /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20220928_sankarLsdEwsFli1Pmid24963049
 touch sraDataProcessingScript.sh
 chmod +x sraDataProcessingScript.sh
 touch snakefile
@@ -38,7 +38,7 @@ Edit the contents of the snakefile to include the text below. I use vim for this
 """
 Author: Christopher Hughes
 Affiliation: BCCRC
-Aim: Workflow for RNA-Seq data
+Aim: Workflow for single end RNA-Seq data
 Date: 20211105
 """
 
@@ -72,7 +72,7 @@ FASTA = DATABASE_DIR + "/baseGenomeFiles/genome.fa"
 
 ###############################
 #get our list of sample files
-SAMPLES, = glob_wildcards("raw/{smp}_1.fastq.gz")
+SAMPLES, = glob_wildcards("raw/{smp}.fastq.gz")
 print("There are " + str(len(SAMPLES)) + " total samples to be processed.")
 for smp in SAMPLES:
   print("Sample " + smp + " will be processed")
@@ -89,26 +89,23 @@ rule all:
 
 rule bbduk:
   input:
-      r1 = "raw/{smp}_1.fastq.gz",
-      r2 = "raw/{smp}_2.fastq.gz"
+      r1 = "raw/{smp}.fastq.gz"
   output:
-      ro1 = "results/{smp}_1.clean.fastq.gz",
-      ro2 = "results/{smp}_2.clean.fastq.gz"
+      ro1 = "results/{smp}.clean.fastq.gz"
   message:
       "Processing with BBDuk."
   shell:
-      "{BBDUK} in1={input.r1} in2={input.r2} ref=adapters out1={output.ro1} out2={output.ro2} ktrim=r k=23 mink=11 hdist=1 tpe tbo"
+      "{BBDUK} in={input.r1} ref=adapters out={output.ro1} ktrim=r k=23 mink=11 hdist=1"
 
 rule star:
   input:
-      r1 = "results/{smp}_1.clean.fastq.gz",
-      r2 = "results/{smp}_2.clean.fastq.gz"
+      r1 = "results/{smp}.clean.fastq.gz"
   output:
       "results/{smp}.sorted.bam"
   message:
       "Aligning with STAR."
   shell:
-      "{STAR} --runThreadN 8 --genomeDir {STARINDEX} --readFilesIn {input.r1} {input.r2} --readFilesCommand zcat --sjdbGTFfile {GTF} --outStd SAM | {SAMTOOLS} sort -o {output}"
+      "{STAR} --runThreadN 8 --genomeDir {STARINDEX} --readFilesIn {input.r1} --readFilesCommand zcat --sjdbGTFfile {GTF} --outStd SAM | {SAMTOOLS} sort -o {output}"
 
 rule bam_indexing:
   input:
@@ -141,12 +138,11 @@ rule featurecounts:
   message:
       "Counting reads with featureCounts."
   shell:
-      "{FEATURECOUNTS} -p --countReadPairs -t exon -g gene_id -a {GTF} -o {output} {input.r1}"
+      "{FEATURECOUNTS} -t exon -g gene_id -a {GTF} -o {output} {input.r1}"
 
 rule salmon:
   input:
-      r1 = "results/{smp}_1.clean.fastq.gz",
-      r2 = "results/{smp}_2.clean.fastq.gz",
+      r1 = "results/{smp}.clean.fastq.gz",
       w3 = "results/{smp}.counts.txt"
   output:
       "quants/{smp}/quant.sf"
@@ -155,7 +151,7 @@ rule salmon:
   message:
       "Quantifying with salmon."
   shell:
-      "{SALMON} quant -i {SALMONINDEX} -l A -p 8 --gcBias --validateMappings -o {params.dir} -1 {input.r1} -2 {input.r2}"
+      "{SALMON} quant -i {SALMONINDEX} -l A -p 8 --gcBias --validateMappings -o {params.dir} -r {input.r1}"
 ```
 
 Below is the shell script I will use to process these data with snakemake.
@@ -168,21 +164,20 @@ sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
 #sraDownloader="/projects/ptx_analysis/chughes/softwareTools/sradownloader-3.8/sradownloader"
 sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
 #sraCacheLocation="/projects/ptx_results/Sequencing/sraCache"
-workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211221_a673Ef1SmithPmid16697960"
-#workingDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211221_a673Ef1SmithPmid16697960"
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20220928_sankarLsdEwsFli1Pmid24963049"
+#workingDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20220928_sankarLsdEwsFli1Pmid24963049"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results
 eval mkdir quants
 
 ##loop over the accessions
-for i in SRR10440{55..70}
+for i in SRR5793{82..87} SRR579513
 do
   printf "Downloading files associated with ${i}."
   eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}
   ##the file gets renamed upon download, but I just want it to have the SRR id and I can annotate it later
-  eval mv ${workingDirectory}/raw/${i}*_1.fastq.gz ${workingDirectory}/raw/${i}_1.fastq.gz
-  eval mv ${workingDirectory}/raw/${i}*_2.fastq.gz ${workingDirectory}/raw/${i}_2.fastq.gz
+  eval mv ${workingDirectory}/raw/${i}*_1.fastq.gz ${workingDirectory}/raw/${i}.fastq.gz
   #eval conda activate snakemake
   eval snakemake --cores 8 --latency-wait 300
   #eval conda deactivate

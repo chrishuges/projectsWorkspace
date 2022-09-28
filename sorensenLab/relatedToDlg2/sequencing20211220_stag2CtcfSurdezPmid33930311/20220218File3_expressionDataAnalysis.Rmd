@@ -98,7 +98,7 @@ geneExpData = txiAnnotated %>%
   mutate(symbol = SYMBOL)
 
 ##
-targetGenes = c('DLG2')
+targetGenes = c('CNMD')
 targetData = geneExpData %>%
   dplyr::filter(symbol %in% targetGenes) %>%
   tidyr::pivot_longer(cols = SRR14217762:SRR9326210, names_to = 'accession', values_to = 'tpm') %>%
@@ -113,19 +113,21 @@ sampleColors = c(rep(brewer.pal(3,'Blues')[3],41),
                  rep(brewer.pal(3,'Blues')[3],11),
                  rep(brewer.pal(3,'OrRd')[3],2),
                  rep(brewer.pal(3,'Blues')[3],3))
+samples$sampleColors = sampleColors
                  
-ggplot(targetData, aes(Genotype, tpm, color = Genotype)) +
-  geom_point(aes(x=Genotype, y=tpm), data = targetData, size = 2, alpha = 0.75, position = position_jitter(w = 0.1, h = 0)) +
+ggplot(targetData[40:46,], aes(Genotype, tpm, color = Cell_Line)) +
+  geom_point() +
+  #geom_point(aes(x=Genotype, y=tpm), data = targetData, size = 2, alpha = 0.75, position = position_jitter(w = 0.1, h = 0)) +
   scale_color_manual(values = samples$sampleColors) +
-  labs(y = 'log2(TPM + 1)', title = 'DLG2 in EWIma cells') +
-  scale_y_continuous(limits = c(0,16), breaks = seq(0,16,2)) +
+  labs(y = 'log2(TPM + 1)', title = 'CNMD in Surdez data') +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0,16,2)) +
   theme_classic() +
-  theme(legend.position = 'none'
-        #axis.title.x=element_blank(),
-        #axis.text.x = element_text(angle = 45, hjust = 1)
+  theme(legend.position = 'none',
+        axis.title.x=element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1)
         )
-ggsave(paste(baseRepository, '/sequencing20211220_stag2CtcfSurdezPmid33930311/rnaSeq/scatter_dlg2RnaExpressionLevels.pdf', sep = ''),
-      height = 2, width = 2, useDingbats = FALSE)
+ggsave(paste(baseRepository, '/sequencing20211220_stag2CtcfSurdezPmid33930311/rnaSeq/scatter_cnmdRnaExpressionLevels.pdf', sep = ''),
+      height = 4, width = 4, useDingbats = FALSE)
 ```
 
 

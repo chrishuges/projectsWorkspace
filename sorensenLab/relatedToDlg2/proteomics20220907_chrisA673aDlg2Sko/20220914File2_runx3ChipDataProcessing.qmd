@@ -1,0 +1,111 @@
+---
+title: "RUNX3 DNA binding"
+author: "Christopher Hughes"
+format: html
+---
+
+This document details the analysis of ChIP-seq data for the transcription factor RUNX3. I am specifically using the ENCODE data for [RUNX3](https://www.encodeproject.org/experiments/ENCSR000BRI/). I am going to be basing my analysis on a processed peak file: ENCFF965LJE, bed narrowPeak conservative IDR thresholded peaks	1, 2.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('tximport')
+library('GenomicFeatures')
+library('ggplot2')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+### ChIPseq
+
+Read in the bed file to start. I also use bedtools below to get the gene closest to the runx3 peaks. 
+
+```{r}
+##########################################################################################
+##read the bed data
+##I am not actually sure what the column names here because I can't find the documentation for it from ENCODE, so I am using the MACS coding
+##actually, I found it [here](https://genome.ucsc.edu/FAQ/FAQformat.html#format12)
+##-1 values appear to mean 'no value assigned'
+runxPeaks = read_tsv(paste(baseRepository, '/proteomics20220907_chrisA673aDlg2Sko/ENCFF965LJE.bed', sep = ''),
+                     show_col_types = FALSE, 
+                     col_names = c('seq','start','end','name','score','strand','signalValue','pValue','qValue','peak'))
+
+
+##we want to assign the closest gene to these. We have done this before with bedtools closest, perhaps it is best to use it again.
+##below is the bedtools command I used. I ended up using a GTF I created as part of the msat we did previously
+
+#/home/chughes/softwareTools/bedtools-2.3.0/bedtools sort -i /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/proteomics20220907_chrisA673aDlg2Sko/ENCFF965LJE.bed > #/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/proteomics20220907_chrisA673aDlg2Sko/ENCFF965LJE.sorted.bed
+
+#/home/chughes/softwareTools/bedtools-2.3.0/bedtools closest -D "b" -a #/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/proteomics20220907_chrisA673aDlg2Sko/ENCFF965LJE.sorted.bed -b #/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211129_grunewaldEwsAtlasWgs/dataset_gtfGenesOnly.sorted.be
+#d > dataset_runx3ChipSeqEncode_hg38ClosestGenes.tsv
+
+##read in the bedtools data
+runxClosest = read_tsv(paste(baseRepository, '/proteomics20220907_chrisA673aDlg2Sko/dataset_runx3ChipSeqEncode_hg38ClosestGenes.tsv',sep=''),
+                       show_col_types = FALSE,
+                       col_names = c('seqname_a','start_a','end_a','name','score','strand','signalValue','pValue','qValue','peak',
+                                     'seqname_b','start_b','end_b','symbol','index','strand_b','distanceTo')) %>%
+  dplyr::filter(!grepl('RP[0-9]+\\-', symbol) & !grepl('LINC[0-9]+', symbol))
+
+#so a distance of zero here means it is right in the gene
+#a positive value means it is downstream, and negative means upstream (dependent on the strand)
+runxGenes = unique(runxClosest$symbol)
+```
+
+### RNAseq
+
+Read in RNAseq data from Ewing cells that describes what happens during RUNX3 knockdown.
+
+```{r}
+##########################################################################################
+##read the gtf
+myTxdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/projectEwSDlg2/baseGenomeFiles/genome.gtf')
+k = keys(myTxdb, keytype = 'TXNAME')
+tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
+
+##create a sample info matrix
+sampleInfo = tibble('sampleName' = c('SRR1249342_GSM1370911_NT_Pool_tRNA_Homo_sapiens_RNA-Seq','SRR1249341_GSM1370910_813Pool_tRNA_Homo_sapiens_RNA-Seq'),
+                    'treatment' = c('control','knockdown')) %>%
+  dplyr::mutate(filePath = file.path(baseRepository, 'sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/quants', sampleInfo$sampleName, 'quant.sf'))
+all(file.exists(sampleInfo$filePath))
+
+##read in the salmon data
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+head(txi$counts)
+```
+
+### Combination
+
+We want to parse EWS-FLI1 hits from these data. For this, I will use the data I compiled previously on EWS-FLI1 targets.
+
+```{r}
+##########################################################################################
+##read in the EWS-FLI1 target data
+
+
+```
+
+
+
+
+
+
+
+
+

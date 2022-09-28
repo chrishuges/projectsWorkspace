@@ -38,37 +38,32 @@ Edit the contents of the snakefile to include the text below. I use vim for this
 """
 Author: Christopher Hughes
 Affiliation: BCCRC
-Aim: Workflow for RNA-Seq data
+Aim: Workflow for single end RNA-Seq data
 Date: 20211105
 """
 
 ###############################
-#working directory
-#BASE_DIR = "/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211221_a673RnaHePmid27760381"
-BASE_DIR = "/projects/ptx_results/Sequencing/publishedStudies/sequencing20211221_a673RnaHePmid27760381"
-
-###############################
 #locations of tools we will use
-#BBDUK = "/home/chughes/softwareTools/bbmap-38.90/bbduk.sh"
-BBDUK = "/projects/ptx_analysis/chughes/softwareTools/bbmap-38.90/bbduk.sh"
-#SALMON = "/home/chughes/softwareTools/salmon-1.5.2/bin/salmon"
-SALMON = "/projects/ptx_analysis/chughes/softwareTools/salmon-1.5.2/bin/salmon"
+BBDUK = "/home/chughes/softwareTools/bbmap-38.90/bbduk.sh"
+#BBDUK = "/projects/ptx_analysis/chughes/softwareTools/bbmap-38.90/bbduk.sh"
+SALMON = "/home/chughes/softwareTools/salmon-1.5.2/bin/salmon"
+#SALMON = "/projects/ptx_analysis/chughes/softwareTools/salmon-1.5.2/bin/salmon"
 #HISAT2 = "/home/chughes/softwareTools/hisat2-2.2.1/hisat2"
-#STAR = "/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
-STAR = "/projects/ptx_analysis/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
-#SAMTOOLS="/home/chughes/softwareTools/samtools-1.12/samtools"
-SAMTOOLS="/gsc/software/linux-x86_64-centos7/samtools-1.14/bin/samtools"
+STAR = "/home/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
+#STAR = "/projects/ptx_analysis/chughes/softwareTools/STAR-2.7.9a/bin/Linux_x86_64/STAR"
+SAMTOOLS="/home/chughes/softwareTools/samtools-1.12/samtools"
+#SAMTOOLS="/gsc/software/linux-x86_64-centos7/samtools-1.14/bin/samtools"
 #SAMBAMBA="/home/chughes/softwareTools/sambamba-0.8.1/sambamba"
-#FEATURECOUNTS="/home/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
-FEATURECOUNTS="/projects/ptx_analysis/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
-#BAMCOVERAGE="/home/chughes/virtualPython368/bin/bamCoverage"
-BAMCOVERAGE="/home/chughes/Virtual_Python383/bin/bamCoverage"
+FEATURECOUNTS="/home/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
+#FEATURECOUNTS="/projects/ptx_analysis/chughes/softwareTools/subread-2.0.3/bin/featureCounts"
+BAMCOVERAGE="/home/chughes/virtualPython368/bin/bamCoverage"
+#BAMCOVERAGE="/home/chughes/Virtual_Python383/bin/bamCoverage"
 
 
 ###############################
 #locations of our index files
-#DATABASE_DIR = "/home/chughes/databases/projectEwsDlg2"
-DATABASE_DIR = "/projects/ptx_analysis/chughes/databases/projectEwsDlg2"
+DATABASE_DIR = "/home/chughes/databases/projectEwsDlg2"
+#DATABASE_DIR = "/projects/ptx_analysis/chughes/databases/projectEwsDlg2"
 STARINDEX = DATABASE_DIR + "/starIndex"
 SALMONINDEX = DATABASE_DIR + "/salmonIndex/salmon_index"
 GTF = DATABASE_DIR + "/baseGenomeFiles/genome.gtf"
@@ -77,7 +72,7 @@ FASTA = DATABASE_DIR + "/baseGenomeFiles/genome.fa"
 
 ###############################
 #get our list of sample files
-SAMPLES, = glob_wildcards("raw/{smp}_1.fastq.gz")
+SAMPLES, = glob_wildcards("raw/{smp}.fastq.gz")
 print("There are " + str(len(SAMPLES)) + " total samples to be processed.")
 for smp in SAMPLES:
   print("Sample " + smp + " will be processed")
@@ -94,9 +89,9 @@ rule all:
 
 rule bbduk:
   input:
-      r1 = "raw/{smp}_1.fastq.gz"
+      r1 = "raw/{smp}.fastq.gz"
   output:
-      ro1 = "results/{smp}_1.clean.fastq.gz"
+      ro1 = "results/{smp}.clean.fastq.gz"
   message:
       "Processing with BBDuk."
   shell:
@@ -104,7 +99,7 @@ rule bbduk:
 
 rule star:
   input:
-      r1 = "results/{smp}_1.clean.fastq.gz"
+      r1 = "results/{smp}.clean.fastq.gz"
   output:
       "results/{smp}.sorted.bam"
   message:
@@ -147,7 +142,7 @@ rule featurecounts:
 
 rule salmon:
   input:
-      r1 = "results/{smp}_1.clean.fastq.gz",
+      r1 = "results/{smp}.clean.fastq.gz",
       w3 = "results/{smp}.counts.txt"
   output:
       "quants/{smp}/quant.sf"
@@ -165,12 +160,12 @@ Below is the shell script I will use to process these data with snakemake.
 #!/bin/bash
 
 ##set the location of software tools and the working directory where files will be stored
-#sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
-sraDownloader="/projects/ptx_analysis/chughes/softwareTools/sradownloader-3.8/sradownloader"
-#sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
-sraCacheLocation="/projects/ptx_results/Sequencing/sraCache"
-#workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211221_a673RnaHePmid27760381"
-workingDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211221_a673RnaHePmid27760381"
+sraDownloader="/home/chughes/softwareTools/sradownloader-3.8/sradownloader"
+#sraDownloader="/projects/ptx_analysis/chughes/softwareTools/sradownloader-3.8/sradownloader"
+sraCacheLocation="/mnt/Data/chughes/sratoolsRepository"
+#sraCacheLocation="/projects/ptx_results/Sequencing/sraCache"
+workingDirectory="/mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211221_a673RnaHePmid27760381"
+#workingDirectory="/projects/ptx_results/Sequencing/publishedStudies/sequencing20211221_a673RnaHePmid27760381"
 eval cd ${workingDirectory}
 eval mkdir raw
 eval mkdir results
@@ -182,7 +177,7 @@ do
   printf "Downloading files associated with ${i}."
   eval ${sraDownloader} --outdir ${workingDirectory}/raw ${i}
   ##the file gets renamed upon download, but I just want it to have the SRR id and I can annotate it later
-  eval mv ${workingDirectory}/raw/${i}*_1.fastq.gz ${workingDirectory}/raw/${i}_1.fastq.gz
+  eval mv ${workingDirectory}/raw/${i}*_1.fastq.gz ${workingDirectory}/raw/${i}.fastq.gz
   #eval conda activate snakemake
   eval snakemake --cores 8 --latency-wait 300
   #eval conda deactivate

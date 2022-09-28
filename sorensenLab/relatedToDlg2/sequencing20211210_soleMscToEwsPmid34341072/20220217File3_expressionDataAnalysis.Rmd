@@ -84,8 +84,8 @@ Next we point at our quant files.
 
 ```{r}
 ##########################################################################################
-quantFiles = file.path(paste(baseRepository, '/sequencing20211210_soleMscToEwsPmid34341072/rnaSeq/quants', sep = ''), samples$Run, 'quant.sf')
-names(quantFiles) = samples$Run
+quantFiles = file.path(paste(baseRepository, '/sequencing20211210_soleMscToEwsPmid34341072/rnaSeq/quants', sep = ''), samples$accession, 'quant.sf')
+names(quantFiles) = samples$accession
 all(file.exists(quantFiles))
 ```
 
@@ -124,7 +124,7 @@ geneExpData = txiAnnotated %>%
   mutate(symbol = SYMBOL)
 
 ##
-targetGenes = c('DLG2')
+targetGenes = c('CNMD')
 targetData = geneExpData %>%
   dplyr::filter(symbol %in% targetGenes) %>%
   tidyr::pivot_longer(cols = SRR11807630:SRR14743630, names_to = 'accession', values_to = 'tpm') %>%
@@ -146,15 +146,15 @@ sampleColors = c(brewer.pal(3,'OrRd')[3],
 ggplot(targetData, aes(sampleNames, tpm, color = sampleNames)) +
   geom_point(aes(x=sampleNames, y=tpm), data = targetData, size = 0.5, alpha = 0.75, position = position_jitter(w = 0.1, h = 0)) +
   scale_color_manual(values = sampleColors) +
-  labs(y = 'log2(TPM + 1)', title = 'DLG2 in EWIma cells') +
+  labs(y = 'log2(TPM + 1)', title = 'CNMD in EWIma cells') +
   scale_y_continuous(limits = c(0,16), breaks = seq(0,16,2)) +
   theme_classic() +
-  theme(legend.position = 'none'
-        #axis.title.x=element_blank(),
-        #axis.text.x = element_text(angle = 45, hjust = 1)
+  theme(legend.position = 'none',
+        axis.title.x=element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1)
         )
-ggsave(paste(baseRepository, '/sequencing20211210_soleMscToEwsPmid34341072/rnaSeq/scatter_dlg2RnaExpressionLevels.pdf', sep = ''),
-      height = 2, width = 2, useDingbats = FALSE)
+ggsave(paste(baseRepository, '/sequencing20211210_soleMscToEwsPmid34341072/rnaSeq/scatter_cnmdRnaExpressionLevels.pdf', sep = ''),
+      height = 4, width = 4, useDingbats = FALSE)
 ```
 
 
