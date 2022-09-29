@@ -17,6 +17,7 @@ These are packages you will need for this notebook. For exact versions used, ple
 library('tidyverse')
 library('tximport')
 library('GenomicFeatures')
+library('org.Hs.eg.db')
 library('ggplot2')
 ```
 
@@ -80,14 +81,23 @@ tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
 ##create a sample info matrix
 sampleInfo = tibble('sampleName' = c('SRR1249342_GSM1370911_NT_Pool_tRNA_Homo_sapiens_RNA-Seq','SRR1249341_GSM1370910_813Pool_tRNA_Homo_sapiens_RNA-Seq'),
                     'treatment' = c('control','knockdown')) %>%
-  dplyr::mutate(filePath = file.path(baseRepository, 'sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/quants', sampleInfo$sampleName, 'quant.sf'))
+  dplyr::mutate(filePath = file.path(baseRepository, 'sequencing20220914_runx3ShrnaPmid24812032/quants', sampleName, 'quant.sf'))
 all(file.exists(sampleInfo$filePath))
 
 ##read in the salmon data
-txi = tximport(files, 
+txi = tximport(sampleInfo$filePath, 
                type = 'salmon', 
                tx2gene = tx2gene)
-head(txi$counts)
+runxExp = as.data.frame(txi$abundance)
+ens.str = substr(rownames(runxExp), 1, 15)
+runxExp$symbol = mapIds(org.Hs.eg.db,
+                    keys=ens.str,
+                    column="SYMBOL",
+                    keytype="ENSEMBL",
+                    multiVals="first")
+colnames(runxExp)[1:2] = sampleInfo$treatment
+runxExp$log2FC = log2(runxExp$knockdown / runxExp$control)
+runxExpSub = subset(runxExp, runxExp$control >= 1 | runxExp$knockdown >= 1)
 ```
 
 ### Combination

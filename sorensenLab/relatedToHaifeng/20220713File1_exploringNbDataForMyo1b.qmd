@@ -582,7 +582,60 @@ ggsave(paste(baseRepository, '/sequencing20220729_greb1ChipSeqPmid23403292/cover
          height = 3, width = 3, useDingbats = FALSE)
 ```
 
+Want to add gene annotation to the peak lists in order to see which gene is closest to each binding site.
 
+```{r}
+##########################################################################################
+##MACS bed annotation details are [here](https://genome.ucsc.edu/FAQ/FAQformat.html#format12)
+
+##we want to assign the closest gene to these. We have done this before with bedtools closest, perhaps it is best to use it again.
+##below is the bedtools command I used. I ended up using a GTF I created as part of the msat we did previously
+
+#/home/chughes/softwareTools/bedtools-2.3.0/bedtools sort -i /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToHaifeng/sequencing20220729_greb1ChipSeqPmid23403292/results/SRR587415_summits.bed > /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToHaifeng/sequencing20220729_greb1ChipSeqPmid23403292/results/SRR587415_summits.sorted.bed
+
+#/home/chughes/softwareTools/bedtools-2.3.0/bedtools closest -D "b" -a /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToHaifeng/sequencing20220729_greb1ChipSeqPmid23403292/results/SRR587415_summits.sorted.bed -b /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211129_grunewaldEwsAtlasWgs/dataset_gtfGenesOnly.sorted.bed > dataset_greb1ChipSeqRep1_hg38ClosestGenes.tsv
+
+##read in the bedtools data
+rep1Closest = read_tsv(paste(baseRepository, '/sequencing20220729_greb1ChipSeqPmid23403292/dataset_greb1ChipSeqRep1_hg38ClosestGenes.tsv',sep=''),
+                       show_col_types = FALSE,
+                       col_names = c('chr','peakStart','peakEnd','peakName','negLog10PValue',
+                                     'geneChr','geneStart','geneEnd','geneSymbol','geneIndex','geneStrand','distanceToPeak')) %>%
+  dplyr::select(peakName, geneChr:distanceToPeak)
+#
+rep2Closest = read_tsv(paste(baseRepository, '/sequencing20220729_greb1ChipSeqPmid23403292/dataset_greb1ChipSeqRep2_hg38ClosestGenes.tsv',sep=''),
+                       show_col_types = FALSE,
+                       col_names = c('chr','peakStart','peakEnd','peakName','negLog10PValue',
+                                     'geneChr','geneStart','geneEnd','geneSymbol','geneIndex','geneStrand','distanceToPeak')) %>%
+  dplyr::select(peakName, geneChr:distanceToPeak)
+
+##read in the MACS data
+rep1 = read_tsv(paste(baseRepository, '/sequencing20220729_greb1ChipSeqPmid23403292/SRR587415_peaks.txt', sep = ''),
+                show_col_types = FALSE, skip = 1,
+                col_names = c('chr', 'peakStart', 'peakEnd', 'peakLength', 'peakSummit',
+                              'peakPileup', 'negLog10Pvalue', 'foldEnrichment', 'negLog10Qvalue',
+                              'peakName')) %>%
+  dplyr::left_join(rep1Closest) %>%
+  dplyr::mutate(dataset = sub('.*\\/results\\/(.*)_peak.*', '\\1', peakName),
+                peakName = sub('.*SRR587415_(.*)', '\\1', peakName))
+
+#
+rep2 = read_tsv(paste(baseRepository, '/sequencing20220729_greb1ChipSeqPmid23403292/SRR587418_peaks.txt', sep = ''),
+                show_col_types = FALSE, skip = 1,
+                col_names = c('chr', 'peakStart', 'peakEnd', 'peakLength', 'peakSummit',
+                              'peakPileup', 'negLog10Pvalue', 'foldEnrichment', 'negLog10Qvalue',
+                              'peakName')) %>%
+  dplyr::left_join(rep2Closest) %>%
+  dplyr::mutate(dataset = sub('.*\\/results\\/(.*)_peak.*', '\\1', peakName),
+                peakName = sub('.*SRR587418_(.*)', '\\1', peakName))
+
+
+#so a distance of zero here means it is right in the gene
+#a positive value means it is downstream, and negative means upstream (dependent on the strand)
+allData = rbind(rep1, rep2)
+write.table(allData, paste(baseRepository, '/sequencing20220729_greb1ChipSeqPmid23403292/dataset_greb1AllPeaksAnnotated.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+```
 
 
 
