@@ -1,0 +1,98 @@
+---
+title: "gollavilliRna"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('tximport')
+library('GenomicFeatures')
+library('org.Hs.eg.db')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+First we will need to create a transcriptome database we can use to annotate our data. We will do this using the same GTF we used in our original alignment. This can be a bit slow.
+
+```{r}
+##########################################################################################
+##read the gtf
+myTxdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/projectEwSDlg2/baseGenomeFiles/genome.gtf')
+k = keys(myTxdb, keytype = 'TXNAME')
+tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
+```
+
+Create a table of the sample annotation details that we can use during the transcript data import.
+
+```{r}
+##########################################################################################
+##I created a sample table here
+samples = tibble('tissue' = c('dmso.1','dmso.2','jq1.1','jq1.2','shEF1.1','shEF1.2','shBRD4.1','shBRD4.2'),
+                 'cellLine' = c('CHLA10','CHLA10','CHLA10','CHLA10','CHLA10','CHLA10','CHLA10','CHLA10'),
+                 'sample' = c('SRR7059715','SRR7059716','SRR7059717','SRR7059718','SRR7059719','SRR7059720','SRR7059721','SRR7059722'))
+
+##assign the path to the quant files
+quantFiles = file.path(paste(baseRepository, '/database20220929_ewsExpressionDatabase/gollavilliRna', sep = ''), samples$sample, 'quant.sf')
+names(quantFiles) = samples$sample
+all(file.exists(quantFiles))
+```
+
+Now import the Salmon data using the files we created above.
+
+```{r}
+##########################################################################################
+##use tximport to get the data in
+txi = tximport(quantFiles, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+
+##pull out the abundance values that we will use to calculate a ratio (there are not enough replicates for DE analysis)
+rnaAbundance = as.data.frame(txi$abundance)
+ensg = substr(rownames(rnaAbundance), 1, 15)
+rnaAbundance$symbol = mapIds(org.Hs.eg.db,
+                    keys = ensg,
+                    column = 'SYMBOL',
+                    keytype= 'ENSEMBL',
+                    multiVals = 'first')
+
+##calculate the ratio between the samples
+rnaSet = tibble(dplyr::select(rnaAbundance, symbol, SRR7059715:SRR7059716, SRR7059719:SRR7059720)) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(meanHigh = mean(SRR7059715:SRR7059716),
+                meanLow = mean(SRR7059719:SRR7059720)) %>%
+  dplyr::filter(meanHigh > 1 | meanLow > 1) %>%
+  dplyr::mutate(gollavilliRna = log2(meanHigh + 1) - log2(meanLow + 1)) %>%
+  dplyr::select(symbol, gollavilliRna) %>%
+  dplyr::filter(!is.na(symbol))
+
+##save the data
+saveRDS(rnaSet, paste(baseRepository, '/database20220929_ewsExpressionDatabase/gollavilliRna/dataset_gollavilliRna.rds', sep = ''))
+write.table(rnaSet, paste(baseRepository, '/database20220929_ewsExpressionDatabase/gollavilliRna/dataset_gollavilliRna.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Finish up.
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

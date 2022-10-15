@@ -1,0 +1,120 @@
+---
+title: "ReMap data"
+author: "Christopher Hughes"
+format: html
+---
+
+This document details the analysis of data from [ReMap](https://remap.univ-amu.fr/). I downloaded the data from the 2022 release. 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('rtracklayer')
+library('stringr')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Preparing the data
+
+The data is provided as a bed file, so I just need to read it in. Keep in mind this is a huge file, so we will want to filter it down quickly. You need to have a decent amount of RAM on your system to handle this file. Maybe I can use awk to filter this down in a more efficient way. Note - this latter option is what I ended up doing, it only took a few seconds. The command I used was:
+
+zcat remap2022_all_macs2_hg38_v1_0.bed.gz | awk 'OFS="\t" {if ($1=="chr11") {print $1,$2,$3,$4,$5}}' > remap2022_all_macs2_hg38_v1_0_chr11.bed
+ 
+Now we can proceed with our analysis. 
+
+```{r}
+##########################################################################################
+##read in the data
+rmPeaks = read_tsv(paste(generalDatasets, '/remap2022/remap2022_all_macs2_hg38_v1_0_chr11.bed', sep = ''), show_col_types = FALSE,
+                   col_names = c('seqname','start','end','sample','score'))
+```
+
+We need to extract the start site of DLG2 so we can search for peaks around it. 
+
+```{r}
+##########################################################################################
+##read in the gtf file
+totalGtf = as.data.frame(rtracklayer::import.gff('D:/databases/projectEwsDlg2/refseqFiles/GRCh38_latest_genomic.gtf.gz')) %>%
+  dplyr::filter(grepl('NM_001377978', transcript_id)) %>%
+  dplyr::rename(gene_name = gene_id, gene_id = seqnames) %>%
+  dplyr::mutate('seqnames' = 'chr11') %>%
+  dplyr::filter(type == 'start_codon')
+
+##extract the TSS for DLG2n3
+dlg2Tss = totalGtf$end
+```
+
+Now we can use the extracted TSS to find peaks from the remap data.
+
+```{r}
+##########################################################################################
+##look for peaks in the remap data
+dlg2Peaks = rmPeaks %>%
+  dplyr::filter(start >= dlg2Tss & end <= (dlg2Tss + 1e5)) %>%
+  dplyr::filter(score >= 10) %>%
+  dplyr::mutate(tFactor = sapply(str_split(sample, '\\.'), '[', 2),
+                cellSample = sapply(str_split(sample, '\\.'), '[', 3))
+
+
+##calculate some metrics for the TFs
+tfCounts = dlg2Peaks %>%
+  dplyr::mutate(tfCounts = 1) %>%
+  dplyr::group_by(tFactor) %>%
+  dplyr::summarise(tfCounts = sum(tfCounts)) %>%
+  dplyr::mutate(tfProportion = (tfCounts / sum(tfCounts)) * 100)
+
+
+##calculate some metrics for the TFs
+cellCounts = dlg2Peaks %>%
+  dplyr::mutate(cellCounts = 1) %>%
+  dplyr::group_by(cellSample) %>%
+  dplyr::summarise(cellCounts = sum(cellCounts)) %>%
+  dplyr::mutate(cellProportion = (cellCounts / sum(cellCounts)) * 100)
+
+
+##calculate coverage across the specified genomic range
+tfOfInterest = c('CTCF', 'FOXA1', 'AR', 'TP53')
+tfDataset = tibble()
+for (i in 1:length(tfOfInterest)){
+  tempRange = GenomicRanges::makeGRangesFromDataFrame(dlg2Peaks[dlg2Peaks$tFactor == tfOfInterest[i],])
+  tempCoverage = as.numeric(coverage(tempRange)$chr11)
+  tempCoverageDf = tibble('position' = seq(1, length(tempCoverage)),
+                          'coverage' = tempCoverage) %>%
+    dplyr::filter(coverage >= 1) 
+    #dplyr::mutate(coverage = coverage / max(coverage))
+  tempCoverageDf$tFactor = tfOfInterest[i]
+  #
+  tfDataset = rbind(tfDataset, tempCoverageDf)
+}
+
+ggplot(tfDataset, aes(position, coverage)) +
+  geom_point() +
+  scale_x_continuous(limits = c(dlg2Tss, dlg2Tss + 1e5), breaks = seq(dlg2Tss, dlg2Tss + 1e5, 2.5e4)) +
+  scale_y_continuous(breaks = seq(0,500,25)) +
+  labs(x = 'Chromosome position', y = 'Number of peaks', title = 'TF peaks upstream of DLG2') +
+  theme_classic() +
+  facet_wrap(~tFactor, ncol = 2, scales = "free_y")
+ggsave(paste(baseRepository, '/database20221013_remapDlg2Hunting/barplot_tfPeaksAroundDlg2n3.pdf', sep=''),
+       height = 3, width = 3, useDingbats = FALSE)
+```
+
+
+
+
+
+
+

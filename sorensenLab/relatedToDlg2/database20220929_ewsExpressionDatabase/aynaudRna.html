@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-0.9.260">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Christopher Hughes">
+
+<title>aynaudRna</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<script src="aynaudRna_files/libs/clipboard/clipboard.min.js"></script>
+<script src="aynaudRna_files/libs/quarto-html/quarto.js"></script>
+<script src="aynaudRna_files/libs/quarto-html/popper.min.js"></script>
+<script src="aynaudRna_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="aynaudRna_files/libs/quarto-html/anchor.min.js"></script>
+<link href="aynaudRna_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link id="quarto-text-highlighting-styles" href="aynaudRna_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet">
+<script src="aynaudRna_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="aynaudRna_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="aynaudRna_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">aynaudRna</h1>
+</div>
+
+
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Christopher Hughes </p>
+          </div>
+  </div>
+    
+    
+  </div>
+  
+
+</header>
+
+<section id="setting-up-the-environment" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up-the-environment">Setting up the environment</h2>
+<p>These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'tidyverse'</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'vroom'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>generalDatasets <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>baseWorkspace <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>baseRepository <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="data-processing" class="level2">
+<h2 class="anchored" data-anchor-id="data-processing">Data processing</h2>
+<p>Read in the bed file to start. I also use bedtools below to get the gene closest to the runx3 peaks.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="do">##First I need to read the count data table. I think the 'd7' column, for example, is a summary of all cells for that time point (actually no this is not true, it is a naming artifact so we should keep it). We will remove those entries and just keep the single cells.</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>rna <span class="ot">=</span> <span class="fu">vroom</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/aynaudRna/GSE130019_a673.count.table.txt.gz'</span>, <span class="at">sep =</span> <span class="st">''</span>), </span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>               <span class="at">skip =</span> <span class="dv">1</span>, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">ensg =</span> <span class="st">`</span><span class="at">...1</span><span class="st">`</span>, <span class="at">symbol =</span> type) <span class="sc">%&gt;%</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(ensg, symbol, <span class="st">`</span><span class="at">d7...3</span><span class="st">`</span><span class="sc">:</span><span class="st">`</span><span class="at">d0_Xeno...600</span><span class="st">`</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="st">`</span><span class="at">d7...3</span><span class="st">`</span><span class="sc">:</span><span class="st">`</span><span class="at">d0_Xeno...600</span><span class="st">`</span>, <span class="at">names_to =</span> <span class="st">'annotation'</span>, <span class="at">values_to =</span> <span class="st">'counts'</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(counts <span class="sc">&gt;</span> <span class="dv">0</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">day =</span> <span class="fu">ifelse</span>(<span class="fu">grepl</span>(<span class="st">'Xeno'</span>, annotation), </span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>                             <span class="fu">sub</span>(<span class="st">'(.*)_Xeno.*'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, annotation),</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>                             <span class="fu">sub</span>(<span class="st">'(.*)</span><span class="sc">\\</span><span class="st">.</span><span class="sc">\\</span><span class="st">.</span><span class="sc">\\</span><span class="st">..*'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, annotation))) <span class="sc">%&gt;%</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">cell =</span> <span class="fu">sub</span>(<span class="st">'.*</span><span class="sc">\\</span><span class="st">.</span><span class="sc">\\</span><span class="st">.</span><span class="sc">\\</span><span class="st">.(.*)'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, annotation)) <span class="sc">%&gt;%</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">type =</span> <span class="fu">ifelse</span>(<span class="fu">grepl</span>(<span class="st">'Xeno'</span>, annotation), <span class="st">'xeno'</span>, <span class="st">'cell'</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...1`
+* `d7` -&gt; `d7...3`
+* `d7` -&gt; `d7...4`
+* `d7` -&gt; `d7...5`
+* `d7` -&gt; `d7...6`
+* `d7` -&gt; `d7...7`
+* `d7` -&gt; `d7...8`
+* `d7` -&gt; `d7...9`
+* `d7` -&gt; `d7...10`
+* `d7` -&gt; `d7...11`
+* `d7` -&gt; `d7...12`
+* `d7` -&gt; `d7...13`
+* `d7` -&gt; `d7...14`
+* `d7` -&gt; `d7...15`
+* `d7` -&gt; `d7...16`
+* `d7` -&gt; `d7...17`
+* `d7` -&gt; `d7...18`
+* `d7` -&gt; `d7...19`
+* `d7` -&gt; `d7...20`
+* `d7` -&gt; `d7...21`
+* `d7` -&gt; `d7...22`
+* `d7` -&gt; `d7...23`
+* `d7` -&gt; `d7...24`
+* `d7` -&gt; `d7...25`
+* `d7` -&gt; `d7...26`
+* `d7` -&gt; `d7...27`
+* `d7` -&gt; `d7...28`
+* `d7` -&gt; `d7...29`
+* `d7` -&gt; `d7...30`
+* `d7` -&gt; `d7...31`
+* `d7` -&gt; `d7...32`
+* `d7` -&gt; `d7...33`
+* `d7` -&gt; `d7...34`
+* `d7` -&gt; `d7...35`
+* `d7` -&gt; `d7...36`
+* `d7` -&gt; `d7...37`
+* `d7` -&gt; `d7...38`
+* `d7` -&gt; `d7...39`
+* `d7` -&gt; `d7...40`
+* `d7` -&gt; `d7...41`
+* `d7` -&gt; `d7...42`
+* `d7` -&gt; `d7...43`
+* `d7` -&gt; `d7...44`
+* `d7` -&gt; `d7...45`
+* `d7` -&gt; `d7...46`
+* `d7` -&gt; `d7...47`
+* `d7` -&gt; `d7...48`
+* `d7` -&gt; `d7...49`
+* `d7` -&gt; `d7...50`
+* `d7+2` -&gt; `d7+2...51`
+* `d7+2` -&gt; `d7+2...52`
+* `d7+2` -&gt; `d7+2...53`
+* `d7+2` -&gt; `d7+2...54`
+* `d7+2` -&gt; `d7+2...55`
+* `d7+2` -&gt; `d7+2...56`
+* `d7+2` -&gt; `d7+2...57`
+* `d7+2` -&gt; `d7+2...58`
+* `d7+2` -&gt; `d7+2...59`
+* `d7+2` -&gt; `d7+2...60`
+* `d7+2` -&gt; `d7+2...61`
+* `d7+2` -&gt; `d7+2...62`
+* `d7+2` -&gt; `d7+2...63`
+* `d7+2` -&gt; `d7+2...64`
+* `d7+2` -&gt; `d7+2...65`
+* `d7+2` -&gt; `d7+2...66`
+* `d7+2` -&gt; `d7+2...67`
+* `d7+2` -&gt; `d7+2...68`
+* `d7+2` -&gt; `d7+2...69`
+* `d7+2` -&gt; `d7+2...70`
+* `d7+2` -&gt; `d7+2...71`
+* `d7+2` -&gt; `d7+2...72`
+* `d7+2` -&gt; `d7+2...73`
+* `d7+2` -&gt; `d7+2...74`
+* `d7+2` -&gt; `d7+2...75`
+* `d7+2` -&gt; `d7+2...76`
+* `d7+2` -&gt; `d7+2...77`
+* `d7+2` -&gt; `d7+2...78`
+* `d7+2` -&gt; `d7+2...79`
+* `d7+2` -&gt; `d7+2...80`
+* `d7+2` -&gt; `d7+2...81`
+* `d7+2` -&gt; `d7+2...82`
+* `d7+2` -&gt; `d7+2...83`
+* `d7+2` -&gt; `d7+2...84`
+* `d7+2` -&gt; `d7+2...85`
+* `d7+2` -&gt; `d7+2...86`
+* `d7+2` -&gt; `d7+2...87`
+* `d7+2` -&gt; `d7+2...88`
+* `d7+2` -&gt; `d7+2...89`
+* `d7+2` -&gt; `d7+2...90`
+* `d7+2` -&gt; `d7+2...91`
+* `d7+2` -&gt; `d7+2...92`
+* `d7+2` -&gt; `d7+2...93`
+* `d7+2` -&gt; `d7+2...94`
+* `d7+2` -&gt; `d7+2...95`
+* `d7+2` -&gt; `d7+2...96`
+* `d7+2` -&gt; `d7+2...97`
+* `d7+2` -&gt; `d7+2...98`
+* `d7+3` -&gt; `d7+3...99`
+* `d7+3` -&gt; `d7+3...100`
+* `d7+3` -&gt; `d7+3...101`
+* `d7+3` -&gt; `d7+3...102`
+* `d7+3` -&gt; `d7+3...103`
+* `d7+3` -&gt; `d7+3...104`
+* `d7+3` -&gt; `d7+3...105`
+* `d7+3` -&gt; `d7+3...106`
+* `d7+3` -&gt; `d7+3...107`
+* `d7+3` -&gt; `d7+3...108`
+* `d7+3` -&gt; `d7+3...109`
+* `d7+3` -&gt; `d7+3...110`
+* `d7+3` -&gt; `d7+3...111`
+* `d7+3` -&gt; `d7+3...112`
+* `d7+3` -&gt; `d7+3...113`
+* `d7+3` -&gt; `d7+3...114`
+* `d7+3` -&gt; `d7+3...115`
+* `d7+3` -&gt; `d7+3...116`
+* `d7+3` -&gt; `d7+3...117`
+* `d7+3` -&gt; `d7+3...118`
+* `d7+3` -&gt; `d7+3...119`
+* `d7+3` -&gt; `d7+3...120`
+* `d7+3` -&gt; `d7+3...121`
+* `d7+3` -&gt; `d7+3...122`
+* `d7+3` -&gt; `d7+3...123`
+* `d7+3` -&gt; `d7+3...124`
+* `d7+3` -&gt; `d7+3...125`
+* `d7+3` -&gt; `d7+3...126`
+* `d7+3` -&gt; `d7+3...127`
+* `d7+3` -&gt; `d7+3...128`
+* `d7+3` -&gt; `d7+3...129`
+* `d7+3` -&gt; `d7+3...130`
+* `d7+3` -&gt; `d7+3...131`
+* `d7+3` -&gt; `d7+3...132`
+* `d7+3` -&gt; `d7+3...133`
+* `d7+3` -&gt; `d7+3...134`
+* `d7+3` -&gt; `d7+3...135`
+* `d7+3` -&gt; `d7+3...136`
+* `d7+3` -&gt; `d7+3...137`
+* `d7+3` -&gt; `d7+3...138`
+* `d7+3` -&gt; `d7+3...139`
+* `d7+3` -&gt; `d7+3...140`
+* `d7+3` -&gt; `d7+3...141`
+* `d7+3` -&gt; `d7+3...142`
+* `d7+3` -&gt; `d7+3...143`
+* `d7+3` -&gt; `d7+3...144`
+* `d7+3` -&gt; `d7+3...145`
+* `d7+3` -&gt; `d7+3...146`
+* `d7+4` -&gt; `d7+4...147`
+* `d7+4` -&gt; `d7+4...148`
+* `d7+4` -&gt; `d7+4...149`
+* `d7+4` -&gt; `d7+4...150`
+* `d7+4` -&gt; `d7+4...151`
+* `d7+4` -&gt; `d7+4...152`
+* `d7+4` -&gt; `d7+4...153`
+* `d7+4` -&gt; `d7+4...154`
+* `d7+4` -&gt; `d7+4...155`
+* `d7+4` -&gt; `d7+4...156`
+* `d7+4` -&gt; `d7+4...157`
+* `d7+4` -&gt; `d7+4...158`
+* `d7+4` -&gt; `d7+4...159`
+* `d7+4` -&gt; `d7+4...160`
+* `d7+4` -&gt; `d7+4...161`
+* `d7+4` -&gt; `d7+4...162`
+* `d7+4` -&gt; `d7+4...163`
+* `d7+4` -&gt; `d7+4...164`
+* `d7+4` -&gt; `d7+4...165`
+* `d7+4` -&gt; `d7+4...166`
+* `d7+4` -&gt; `d7+4...167`
+* `d7+4` -&gt; `d7+4...168`
+* `d7+4` -&gt; `d7+4...169`
+* `d7+4` -&gt; `d7+4...170`
+* `d7+4` -&gt; `d7+4...171`
+* `d7+4` -&gt; `d7+4...172`
+* `d7+4` -&gt; `d7+4...173`
+* `d7+4` -&gt; `d7+4...174`
+* `d7+4` -&gt; `d7+4...175`
+* `d7+4` -&gt; `d7+4...176`
+* `d7+4` -&gt; `d7+4...177`
+* `d7+4` -&gt; `d7+4...178`
+* `d7+4` -&gt; `d7+4...179`
+* `d7+4` -&gt; `d7+4...180`
+* `d7+4` -&gt; `d7+4...181`
+* `d7+4` -&gt; `d7+4...182`
+* `d7+4` -&gt; `d7+4...183`
+* `d7+4` -&gt; `d7+4...184`
+* `d7+4` -&gt; `d7+4...185`
+* `d7+4` -&gt; `d7+4...186`
+* `d7+4` -&gt; `d7+4...187`
+* `d7+4` -&gt; `d7+4...188`
+* `d7+4` -&gt; `d7+4...189`
+* `d7+4` -&gt; `d7+4...190`
+* `d7+4` -&gt; `d7+4...191`
+* `d7+4` -&gt; `d7+4...192`
+* `d7+4` -&gt; `d7+4...193`
+* `d7+4` -&gt; `d7+4...194`
+* `d7+4` -&gt; `d7+4...195`
+* `d7+4` -&gt; `d7+4...196`
+* `d7+4` -&gt; `d7+4...197`
+* `d7+4` -&gt; `d7+4...198`
+* `d7+4` -&gt; `d7+4...199`
+* `d7+4` -&gt; `d7+4...200`
+* `d7+4` -&gt; `d7+4...201`
+* `d7+4` -&gt; `d7+4...202`
+* `d7+4` -&gt; `d7+4...203`
+* `d7+4` -&gt; `d7+4...204`
+* `d7+4` -&gt; `d7+4...205`
+* `d7+4` -&gt; `d7+4...206`
+* `d7+4` -&gt; `d7+4...207`
+* `d7+4` -&gt; `d7+4...208`
+* `d7+4` -&gt; `d7+4...209`
+* `d7+4` -&gt; `d7+4...210`
+* `d7+4` -&gt; `d7+4...211`
+* `d7+4` -&gt; `d7+4...212`
+* `d7+4` -&gt; `d7+4...213`
+* `d7+4` -&gt; `d7+4...214`
+* `d7+4` -&gt; `d7+4...215`
+* `d7+4` -&gt; `d7+4...216`
+* `d7+4` -&gt; `d7+4...217`
+* `d7+4` -&gt; `d7+4...218`
+* `d7+4` -&gt; `d7+4...219`
+* `d7+4` -&gt; `d7+4...220`
+* `d7+4` -&gt; `d7+4...221`
+* `d7+4` -&gt; `d7+4...222`
+* `d7+4` -&gt; `d7+4...223`
+* `d7+4` -&gt; `d7+4...224`
+* `d7+4` -&gt; `d7+4...225`
+* `d7+4` -&gt; `d7+4...226`
+* `d7+4` -&gt; `d7+4...227`
+* `d7+4` -&gt; `d7+4...228`
+* `d7+4` -&gt; `d7+4...229`
+* `d7+4` -&gt; `d7+4...230`
+* `d7+4` -&gt; `d7+4...231`
+* `d7+4` -&gt; `d7+4...232`
+* `d7+4` -&gt; `d7+4...233`
+* `d7+4` -&gt; `d7+4...234`
+* `d7+4` -&gt; `d7+4...235`
+* `d7+4` -&gt; `d7+4...236`
+* `d7+4` -&gt; `d7+4...237`
+* `d7+4` -&gt; `d7+4...238`
+* `d7+4` -&gt; `d7+4...239`
+* `d7+4` -&gt; `d7+4...240`
+* `d7+4` -&gt; `d7+4...241`
+* `d7+4` -&gt; `d7+4...242`
+* `d7+7` -&gt; `d7+7...243`
+* `d7+7` -&gt; `d7+7...244`
+* `d7+7` -&gt; `d7+7...245`
+* `d7+7` -&gt; `d7+7...246`
+* `d7+7` -&gt; `d7+7...247`
+* `d7+7` -&gt; `d7+7...248`
+* `d7+7` -&gt; `d7+7...249`
+* `d7+7` -&gt; `d7+7...250`
+* `d7+7` -&gt; `d7+7...251`
+* `d7+7` -&gt; `d7+7...252`
+* `d7+7` -&gt; `d7+7...253`
+* `d7+7` -&gt; `d7+7...254`
+* `d7+7` -&gt; `d7+7...255`
+* `d7+7` -&gt; `d7+7...256`
+* `d7+7` -&gt; `d7+7...257`
+* `d7+7` -&gt; `d7+7...258`
+* `d7+7` -&gt; `d7+7...259`
+* `d7+7` -&gt; `d7+7...260`
+* `d7+7` -&gt; `d7+7...261`
+* `d7+7` -&gt; `d7+7...262`
+* `d7+7` -&gt; `d7+7...263`
+* `d7+7` -&gt; `d7+7...264`
+* `d7+7` -&gt; `d7+7...265`
+* `d7+7` -&gt; `d7+7...266`
+* `d7+7` -&gt; `d7+7...267`
+* `d7+7` -&gt; `d7+7...268`
+* `d7+7` -&gt; `d7+7...269`
+* `d7+7` -&gt; `d7+7...270`
+* `d7+7` -&gt; `d7+7...271`
+* `d7+7` -&gt; `d7+7...272`
+* `d7+7` -&gt; `d7+7...273`
+* `d7+7` -&gt; `d7+7...274`
+* `d7+7` -&gt; `d7+7...275`
+* `d7+7` -&gt; `d7+7...276`
+* `d7+7` -&gt; `d7+7...277`
+* `d7+7` -&gt; `d7+7...278`
+* `d7+7` -&gt; `d7+7...279`
+* `d7+7` -&gt; `d7+7...280`
+* `d7+7` -&gt; `d7+7...281`
+* `d7+7` -&gt; `d7+7...282`
+* `d7+7` -&gt; `d7+7...283`
+* `d7+7` -&gt; `d7+7...284`
+* `d7+7` -&gt; `d7+7...285`
+* `d7+7` -&gt; `d7+7...286`
+* `d7+7` -&gt; `d7+7...287`
+* `d7+7` -&gt; `d7+7...288`
+* `d7+7` -&gt; `d7+7...289`
+* `d7+7` -&gt; `d7+7...290`
+* `d7+10` -&gt; `d7+10...291`
+* `d7+10` -&gt; `d7+10...292`
+* `d7+10` -&gt; `d7+10...293`
+* `d7+10` -&gt; `d7+10...294`
+* `d7+10` -&gt; `d7+10...295`
+* `d7+10` -&gt; `d7+10...296`
+* `d7+10` -&gt; `d7+10...297`
+* `d7+10` -&gt; `d7+10...298`
+* `d7+10` -&gt; `d7+10...299`
+* `d7+10` -&gt; `d7+10...300`
+* `d7+10` -&gt; `d7+10...301`
+* `d7+10` -&gt; `d7+10...302`
+* `d7+10` -&gt; `d7+10...303`
+* `d7+10` -&gt; `d7+10...304`
+* `d7+10` -&gt; `d7+10...305`
+* `d7+10` -&gt; `d7+10...306`
+* `d7+10` -&gt; `d7+10...307`
+* `d7+10` -&gt; `d7+10...308`
+* `d7+10` -&gt; `d7+10...309`
+* `d7+10` -&gt; `d7+10...310`
+* `d7+10` -&gt; `d7+10...311`
+* `d7+10` -&gt; `d7+10...312`
+* `d7+10` -&gt; `d7+10...313`
+* `d7+10` -&gt; `d7+10...314`
+* `d7+10` -&gt; `d7+10...315`
+* `d7+10` -&gt; `d7+10...316`
+* `d7+10` -&gt; `d7+10...317`
+* `d7+10` -&gt; `d7+10...318`
+* `d7+10` -&gt; `d7+10...319`
+* `d7+10` -&gt; `d7+10...320`
+* `d7+10` -&gt; `d7+10...321`
+* `d7+10` -&gt; `d7+10...322`
+* `d7+10` -&gt; `d7+10...323`
+* `d7+10` -&gt; `d7+10...324`
+* `d7+10` -&gt; `d7+10...325`
+* `d7+10` -&gt; `d7+10...326`
+* `d7+10` -&gt; `d7+10...327`
+* `d7+10` -&gt; `d7+10...328`
+* `d7+10` -&gt; `d7+10...329`
+* `d7+10` -&gt; `d7+10...330`
+* `d7+10` -&gt; `d7+10...331`
+* `d7+10` -&gt; `d7+10...332`
+* `d7+10` -&gt; `d7+10...333`
+* `d7+10` -&gt; `d7+10...334`
+* `d7+10` -&gt; `d7+10...335`
+* `d7+10` -&gt; `d7+10...336`
+* `d7+10` -&gt; `d7+10...337`
+* `d7+15` -&gt; `d7+15...338`
+* `d7+15` -&gt; `d7+15...339`
+* `d7+15` -&gt; `d7+15...340`
+* `d7+15` -&gt; `d7+15...341`
+* `d7+15` -&gt; `d7+15...342`
+* `d7+15` -&gt; `d7+15...343`
+* `d7+15` -&gt; `d7+15...344`
+* `d7+15` -&gt; `d7+15...345`
+* `d7+15` -&gt; `d7+15...346`
+* `d7+15` -&gt; `d7+15...347`
+* `d7+15` -&gt; `d7+15...348`
+* `d7+15` -&gt; `d7+15...349`
+* `d7+15` -&gt; `d7+15...350`
+* `d7+15` -&gt; `d7+15...351`
+* `d7+15` -&gt; `d7+15...352`
+* `d7+15` -&gt; `d7+15...353`
+* `d7+15` -&gt; `d7+15...354`
+* `d7+15` -&gt; `d7+15...355`
+* `d7+15` -&gt; `d7+15...356`
+* `d7+15` -&gt; `d7+15...357`
+* `d7+15` -&gt; `d7+15...358`
+* `d7+15` -&gt; `d7+15...359`
+* `d7+15` -&gt; `d7+15...360`
+* `d7+15` -&gt; `d7+15...361`
+* `d7+15` -&gt; `d7+15...362`
+* `d7+15` -&gt; `d7+15...363`
+* `d7+15` -&gt; `d7+15...364`
+* `d7+15` -&gt; `d7+15...365`
+* `d7+15` -&gt; `d7+15...366`
+* `d7+15` -&gt; `d7+15...367`
+* `d7+15` -&gt; `d7+15...368`
+* `d7+15` -&gt; `d7+15...369`
+* `d7+15` -&gt; `d7+15...370`
+* `d7+15` -&gt; `d7+15...371`
+* `d7+15` -&gt; `d7+15...372`
+* `d7+15` -&gt; `d7+15...373`
+* `d7+15` -&gt; `d7+15...374`
+* `d7+15` -&gt; `d7+15...375`
+* `d7+15` -&gt; `d7+15...376`
+* `d7+15` -&gt; `d7+15...377`
+* `d7+15` -&gt; `d7+15...378`
+* `d7+15` -&gt; `d7+15...379`
+* `d7+15` -&gt; `d7+15...380`
+* `d7+15` -&gt; `d7+15...381`
+* `d7+15` -&gt; `d7+15...382`
+* `d7+15` -&gt; `d7+15...383`
+* `d7+15` -&gt; `d7+15...384`
+* `d7+15` -&gt; `d7+15...385`
+* `d0_Xeno` -&gt; `d0_Xeno...386`
+* `d0_Xeno` -&gt; `d0_Xeno...387`
+* `d0_Xeno` -&gt; `d0_Xeno...388`
+* `d0_Xeno` -&gt; `d0_Xeno...389`
+* `d0_Xeno` -&gt; `d0_Xeno...390`
+* `d0_Xeno` -&gt; `d0_Xeno...391`
+* `d0_Xeno` -&gt; `d0_Xeno...392`
+* `d0_Xeno` -&gt; `d0_Xeno...393`
+* `d0_Xeno` -&gt; `d0_Xeno...394`
+* `d0_Xeno` -&gt; `d0_Xeno...395`
+* `d0_Xeno` -&gt; `d0_Xeno...396`
+* `d0_Xeno` -&gt; `d0_Xeno...397`
+* `d0_Xeno` -&gt; `d0_Xeno...398`
+* `d0_Xeno` -&gt; `d0_Xeno...399`
+* `d0_Xeno` -&gt; `d0_Xeno...400`
+* `d0_Xeno` -&gt; `d0_Xeno...401`
+* `d0_Xeno` -&gt; `d0_Xeno...402`
+* `d0_Xeno` -&gt; `d0_Xeno...403`
+* `d0_Xeno` -&gt; `d0_Xeno...404`
+* `d0_Xeno` -&gt; `d0_Xeno...405`
+* `d0_Xeno` -&gt; `d0_Xeno...406`
+* `d0_Xeno` -&gt; `d0_Xeno...407`
+* `d0_Xeno` -&gt; `d0_Xeno...408`
+* `d0_Xeno` -&gt; `d0_Xeno...409`
+* `d0_Xeno` -&gt; `d0_Xeno...410`
+* `d0_Xeno` -&gt; `d0_Xeno...411`
+* `d0_Xeno` -&gt; `d0_Xeno...412`
+* `d0_Xeno` -&gt; `d0_Xeno...413`
+* `d0_Xeno` -&gt; `d0_Xeno...414`
+* `d0_Xeno` -&gt; `d0_Xeno...415`
+* `d0_Xeno` -&gt; `d0_Xeno...416`
+* `d0_Xeno` -&gt; `d0_Xeno...417`
+* `d0_Xeno` -&gt; `d0_Xeno...418`
+* `d0_Xeno` -&gt; `d0_Xeno...419`
+* `d0_Xeno` -&gt; `d0_Xeno...420`
+* `d0_Xeno` -&gt; `d0_Xeno...421`
+* `d0_Xeno` -&gt; `d0_Xeno...422`
+* `d0_Xeno` -&gt; `d0_Xeno...423`
+* `d0_Xeno` -&gt; `d0_Xeno...424`
+* `d0_Xeno` -&gt; `d0_Xeno...425`
+* `d0_Xeno` -&gt; `d0_Xeno...426`
+* `d0_Xeno` -&gt; `d0_Xeno...427`
+* `d0_Xeno` -&gt; `d0_Xeno...428`
+* `d0_Xeno` -&gt; `d0_Xeno...429`
+* `d0_Xeno` -&gt; `d0_Xeno...430`
+* `d0_Xeno` -&gt; `d0_Xeno...431`
+* `d0_Xeno` -&gt; `d0_Xeno...432`
+* `d0_Xeno` -&gt; `d0_Xeno...433`
+* `d0_Xeno` -&gt; `d0_Xeno...434`
+* `d0_Xeno` -&gt; `d0_Xeno...435`
+* `d0_Xeno` -&gt; `d0_Xeno...436`
+* `d0_Xeno` -&gt; `d0_Xeno...437`
+* `d0_Xeno` -&gt; `d0_Xeno...438`
+* `d0_Xeno` -&gt; `d0_Xeno...439`
+* `d0_Xeno` -&gt; `d0_Xeno...440`
+* `d0_Xeno` -&gt; `d0_Xeno...441`
+* `d0_Xeno` -&gt; `d0_Xeno...442`
+* `d0_Xeno` -&gt; `d0_Xeno...443`
+* `d0_Xeno` -&gt; `d0_Xeno...444`
+* `d0_Xeno` -&gt; `d0_Xeno...445`
+* `d0_Xeno` -&gt; `d0_Xeno...446`
+* `d0_Xeno` -&gt; `d0_Xeno...447`
+* `d0_Xeno` -&gt; `d0_Xeno...448`
+* `d0_Xeno` -&gt; `d0_Xeno...449`
+* `d0_Xeno` -&gt; `d0_Xeno...450`
+* `d0_Xeno` -&gt; `d0_Xeno...451`
+* `d0_Xeno` -&gt; `d0_Xeno...452`
+* `d0_Xeno` -&gt; `d0_Xeno...453`
+* `d0_Xeno` -&gt; `d0_Xeno...454`
+* `d0_Xeno` -&gt; `d0_Xeno...455`
+* `d0_Xeno` -&gt; `d0_Xeno...456`
+* `d0_Xeno` -&gt; `d0_Xeno...457`
+* `d0_Xeno` -&gt; `d0_Xeno...458`
+* `d0_Xeno` -&gt; `d0_Xeno...459`
+* `d0_Xeno` -&gt; `d0_Xeno...460`
+* `d0_Xeno` -&gt; `d0_Xeno...461`
+* `d0_Xeno` -&gt; `d0_Xeno...462`
+* `d0_Xeno` -&gt; `d0_Xeno...463`
+* `d0_Xeno` -&gt; `d0_Xeno...464`
+* `d0_Xeno` -&gt; `d0_Xeno...465`
+* `d0_Xeno` -&gt; `d0_Xeno...466`
+* `d0_Xeno` -&gt; `d0_Xeno...467`
+* `d0_Xeno` -&gt; `d0_Xeno...468`
+* `d0_Xeno` -&gt; `d0_Xeno...469`
+* `d0_Xeno` -&gt; `d0_Xeno...470`
+* `d0_Xeno` -&gt; `d0_Xeno...471`
+* `d0_Xeno` -&gt; `d0_Xeno...472`
+* `d0_Xeno` -&gt; `d0_Xeno...473`
+* `d0_Xeno` -&gt; `d0_Xeno...474`
+* `d0_Xeno` -&gt; `d0_Xeno...475`
+* `d0_Xeno` -&gt; `d0_Xeno...476`
+* `d0_Xeno` -&gt; `d0_Xeno...477`
+* `d0_Xeno` -&gt; `d0_Xeno...478`
+* `d0_Xeno` -&gt; `d0_Xeno...479`
+* `d0_Xeno` -&gt; `d0_Xeno...480`
+* `d7_Xeno` -&gt; `d7_Xeno...481`
+* `d7_Xeno` -&gt; `d7_Xeno...482`
+* `d7_Xeno` -&gt; `d7_Xeno...483`
+* `d7_Xeno` -&gt; `d7_Xeno...484`
+* `d7_Xeno` -&gt; `d7_Xeno...485`
+* `d7_Xeno` -&gt; `d7_Xeno...486`
+* `d7_Xeno` -&gt; `d7_Xeno...487`
+* `d7_Xeno` -&gt; `d7_Xeno...488`
+* `d7_Xeno` -&gt; `d7_Xeno...489`
+* `d7_Xeno` -&gt; `d7_Xeno...490`
+* `d7_Xeno` -&gt; `d7_Xeno...491`
+* `d7_Xeno` -&gt; `d7_Xeno...492`
+* `d7_Xeno` -&gt; `d7_Xeno...493`
+* `d7_Xeno` -&gt; `d7_Xeno...494`
+* `d7_Xeno` -&gt; `d7_Xeno...495`
+* `d7_Xeno` -&gt; `d7_Xeno...496`
+* `d7_Xeno` -&gt; `d7_Xeno...497`
+* `d7_Xeno` -&gt; `d7_Xeno...498`
+* `d7_Xeno` -&gt; `d7_Xeno...499`
+* `d7_Xeno` -&gt; `d7_Xeno...500`
+* `d7_Xeno` -&gt; `d7_Xeno...501`
+* `d7_Xeno` -&gt; `d7_Xeno...502`
+* `d7_Xeno` -&gt; `d7_Xeno...503`
+* `d7_Xeno` -&gt; `d7_Xeno...504`
+* `d7_Xeno` -&gt; `d7_Xeno...505`
+* `d7_Xeno` -&gt; `d7_Xeno...506`
+* `d7_Xeno` -&gt; `d7_Xeno...507`
+* `d7_Xeno` -&gt; `d7_Xeno...508`
+* `d7_Xeno` -&gt; `d7_Xeno...509`
+* `d7_Xeno` -&gt; `d7_Xeno...510`
+* `d7_Xeno` -&gt; `d7_Xeno...511`
+* `d7_Xeno` -&gt; `d7_Xeno...512`
+* `d7_Xeno` -&gt; `d7_Xeno...513`
+* `d7_Xeno` -&gt; `d7_Xeno...514`
+* `d7_Xeno` -&gt; `d7_Xeno...515`
+* `d7_Xeno` -&gt; `d7_Xeno...516`
+* `d7_Xeno` -&gt; `d7_Xeno...517`
+* `d7_Xeno` -&gt; `d7_Xeno...518`
+* `d7_Xeno` -&gt; `d7_Xeno...519`
+* `d7_Xeno` -&gt; `d7_Xeno...520`
+* `d7_Xeno` -&gt; `d7_Xeno...521`
+* `d7_Xeno` -&gt; `d7_Xeno...522`
+* `d7_Xeno` -&gt; `d7_Xeno...523`
+* `d7_Xeno` -&gt; `d7_Xeno...524`
+* `d7_Xeno` -&gt; `d7_Xeno...525`
+* `d7_Xeno` -&gt; `d7_Xeno...526`
+* `d7_Xeno` -&gt; `d7_Xeno...527`
+* `d7_Xeno` -&gt; `d7_Xeno...528`
+* `d7_Xeno` -&gt; `d7_Xeno...529`
+* `d7_Xeno` -&gt; `d7_Xeno...530`
+* `d7_Xeno` -&gt; `d7_Xeno...531`
+* `d7_Xeno` -&gt; `d7_Xeno...532`
+* `d7_Xeno` -&gt; `d7_Xeno...533`
+* `d7_Xeno` -&gt; `d7_Xeno...534`
+* `d7_Xeno` -&gt; `d7_Xeno...535`
+* `d7_Xeno` -&gt; `d7_Xeno...536`
+* `d7_Xeno` -&gt; `d7_Xeno...537`
+* `d7_Xeno` -&gt; `d7_Xeno...538`
+* `d7_Xeno` -&gt; `d7_Xeno...539`
+* `d7_Xeno` -&gt; `d7_Xeno...540`
+* `d7_Xeno` -&gt; `d7_Xeno...541`
+* `d7_Xeno` -&gt; `d7_Xeno...542`
+* `d7_Xeno` -&gt; `d7_Xeno...543`
+* `d7_Xeno` -&gt; `d7_Xeno...544`
+* `d7_Xeno` -&gt; `d7_Xeno...545`
+* `d7_Xeno` -&gt; `d7_Xeno...546`
+* `d7_Xeno` -&gt; `d7_Xeno...547`
+* `d7_Xeno` -&gt; `d7_Xeno...548`
+* `d7_Xeno` -&gt; `d7_Xeno...549`
+* `d7_Xeno` -&gt; `d7_Xeno...550`
+* `d7_Xeno` -&gt; `d7_Xeno...551`
+* `d7_Xeno` -&gt; `d7_Xeno...552`
+* `d7_Xeno` -&gt; `d7_Xeno...553`
+* `d7_Xeno` -&gt; `d7_Xeno...554`
+* `d7_Xeno` -&gt; `d7_Xeno...555`
+* `d7_Xeno` -&gt; `d7_Xeno...556`
+* `d7_Xeno` -&gt; `d7_Xeno...557`
+* `d7_Xeno` -&gt; `d7_Xeno...558`
+* `d7_Xeno` -&gt; `d7_Xeno...559`
+* `d7_Xeno` -&gt; `d7_Xeno...560`
+* `d7_Xeno` -&gt; `d7_Xeno...561`
+* `d7_Xeno` -&gt; `d7_Xeno...562`
+* `d7_Xeno` -&gt; `d7_Xeno...563`
+* `d7_Xeno` -&gt; `d7_Xeno...564`
+* `d7_Xeno` -&gt; `d7_Xeno...565`
+* `d7_Xeno` -&gt; `d7_Xeno...566`
+* `d7_Xeno` -&gt; `d7_Xeno...567`
+* `d7_Xeno` -&gt; `d7_Xeno...568`
+* `d7_Xeno` -&gt; `d7_Xeno...569`
+* `d7_Xeno` -&gt; `d7_Xeno...570`
+* `d7_Xeno` -&gt; `d7_Xeno...571`
+* `d7_Xeno` -&gt; `d7_Xeno...572`
+* `d7_Xeno` -&gt; `d7_Xeno...573`
+* `d7_Xeno` -&gt; `d7_Xeno...574`
+* `d7_Xeno` -&gt; `d7_Xeno...575`
+* `d7_Xeno` -&gt; `d7_Xeno...576`
+* `d7_Xeno` -&gt; `d7_Xeno...577`
+* `d7_Xeno` -&gt; `d7_Xeno...578`
+* `d7_Xeno` -&gt; `d7_Xeno...579`
+* `d7_Xeno` -&gt; `d7_Xeno...580`
+* `d7_Xeno` -&gt; `d7_Xeno...581`
+* `d7_Xeno` -&gt; `d7_Xeno...582`
+* `d7_Xeno` -&gt; `d7_Xeno...583`
+* `d7_Xeno` -&gt; `d7_Xeno...584`
+* `d7_Xeno` -&gt; `d7_Xeno...585`
+* `d7_Xeno` -&gt; `d7_Xeno...586`
+* `d7_Xeno` -&gt; `d7_Xeno...587`
+* `d7_Xeno` -&gt; `d7_Xeno...588`
+* `d7_Xeno` -&gt; `d7_Xeno...589`
+* `d0_Xeno` -&gt; `d0_Xeno...590`
+* `d0_Xeno` -&gt; `d0_Xeno...591`
+* `d0_Xeno` -&gt; `d0_Xeno...592`
+* `d0_Xeno` -&gt; `d0_Xeno...593`
+* `d0_Xeno` -&gt; `d0_Xeno...594`
+* `d0_Xeno` -&gt; `d0_Xeno...595`
+* `d0_Xeno` -&gt; `d0_Xeno...596`
+* `d0_Xeno` -&gt; `d0_Xeno...597`
+* `d0_Xeno` -&gt; `d0_Xeno...598`
+* `d0_Xeno` -&gt; `d0_Xeno...599`
+* `d0_Xeno` -&gt; `d0_Xeno...600`</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="do">##basically we just want one ratio, so we will compare the mean of day 22 to day 7</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>rnaCompare <span class="ot">=</span> dplyr<span class="sc">::</span><span class="fu">filter</span>(rna, day <span class="sc">==</span> <span class="st">'d7'</span> <span class="sc">|</span> day <span class="sc">==</span> <span class="st">'d7+15'</span> <span class="sc">|</span> day <span class="sc">==</span> <span class="st">'d0'</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>ensg, <span class="sc">-</span>annotation, <span class="sc">-</span>cell) <span class="sc">%&gt;%</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(symbol, type, day) <span class="sc">%&gt;%</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">medianCounts =</span> <span class="fu">median</span>(counts, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_wider</span>(<span class="at">id_cols =</span> symbol, <span class="at">names_from =</span> <span class="fu">c</span>(<span class="st">'type'</span>,<span class="st">'day'</span>), <span class="at">values_from =</span> <span class="st">'medianCounts'</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">ungroup</span>() <span class="sc">%&gt;%</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">aynaudRnaCell =</span> <span class="fu">log2</span>(<span class="st">`</span><span class="at">cell_d7+15</span><span class="st">`</span> <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">-</span> <span class="fu">log2</span>(cell_d7 <span class="sc">+</span> <span class="dv">1</span>),</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>                <span class="at">aynaudRnaXeno =</span> <span class="fu">log2</span>(xeno_d0 <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">-</span> <span class="fu">log2</span>(xeno_d7 <span class="sc">+</span> <span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(symbol, aynaudRnaCell, aynaudRnaXeno) <span class="sc">%&gt;%</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(aynaudRnaCell) <span class="sc">|</span> <span class="sc">!</span><span class="fu">is.na</span>(aynaudRnaXeno))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`summarise()` has grouped output by 'symbol', 'type'. You can override using
+the `.groups` argument.</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">##save the data</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(rnaCompare, <span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/aynaudRna/dataset_aynaudRna.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(rnaCompare, <span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/aynaudRna/dataset_aynaudRna.tsv'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">col.names =</span> <span class="cn">TRUE</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>, <span class="at">sep =</span> <span class="st">'</span><span class="sc">\t</span><span class="st">'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Finish up.</p>
+</section>
+<section id="session-info" class="level2">
+<h2 class="anchored" data-anchor-id="session-info">Session info</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.1.3 (2022-03-10)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19042)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_Canada.1252  LC_CTYPE=English_Canada.1252   
+[3] LC_MONETARY=English_Canada.1252 LC_NUMERIC=C                   
+[5] LC_TIME=English_Canada.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] vroom_1.5.7     forcats_0.5.2   stringr_1.4.1   dplyr_1.0.9    
+ [5] purrr_0.3.4     readr_2.1.2     tidyr_1.2.0     tibble_3.1.8   
+ [9] ggplot2_3.3.6   tidyverse_1.3.2
+
+loaded via a namespace (and not attached):
+ [1] tidyselect_1.1.2    xfun_0.32           haven_2.5.1        
+ [4] gargle_1.2.0        colorspace_2.0-3    vctrs_0.4.1        
+ [7] generics_0.1.3      htmltools_0.5.3     yaml_2.3.5         
+[10] utf8_1.2.2          rlang_1.0.4         pillar_1.8.1       
+[13] withr_2.5.0         glue_1.6.2          DBI_1.1.3          
+[16] bit64_4.0.5         dbplyr_2.2.1        modelr_0.1.9       
+[19] readxl_1.4.1        lifecycle_1.0.1     munsell_0.5.0      
+[22] gtable_0.3.0        cellranger_1.1.0    rvest_1.0.3        
+[25] htmlwidgets_1.5.4   evaluate_0.16       knitr_1.40         
+[28] tzdb_0.3.0          fastmap_1.1.0       parallel_4.1.3     
+[31] fansi_1.0.3         broom_1.0.1         backports_1.4.1    
+[34] scales_1.2.1        googlesheets4_1.0.1 jsonlite_1.8.0     
+[37] bit_4.0.4           fs_1.5.2            hms_1.1.2          
+[40] digest_0.6.29       stringi_1.7.8       grid_4.1.3         
+[43] cli_3.3.0           tools_4.1.3         magrittr_2.0.3     
+[46] crayon_1.5.1        pkgconfig_2.0.3     ellipsis_0.3.2     
+[49] xml2_1.3.3          reprex_2.0.2        googledrive_2.0.0  
+[52] lubridate_1.8.0     assertthat_0.2.1    rmarkdown_2.16     
+[55] httr_1.4.4          rstudioapi_0.14     R6_2.5.1           
+[58] compiler_4.1.3     </code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    setTimeout(function() {
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

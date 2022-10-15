@@ -1,0 +1,72 @@
+---
+title: "aynaudRna"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('vroom')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+Read in the bed file to start. I also use bedtools below to get the gene closest to the runx3 peaks. 
+
+```{r}
+##########################################################################################
+##First I need to read the count data table. I think the 'd7' column, for example, is a summary of all cells for that time point (actually no this is not true, it is a naming artifact so we should keep it). We will remove those entries and just keep the single cells.
+rna = vroom(paste(baseRepository, '/database20220929_ewsExpressionDatabase/aynaudRna/GSE130019_a673.count.table.txt.gz', sep = ''), 
+               skip = 1, show_col_types = FALSE) %>%
+  dplyr::mutate(ensg = `...1`, symbol = type) %>%
+  dplyr::select(ensg, symbol, `d7...3`:`d0_Xeno...600`) %>%
+  tidyr::pivot_longer(cols = `d7...3`:`d0_Xeno...600`, names_to = 'annotation', values_to = 'counts') %>%
+  dplyr::filter(counts > 0) %>%
+  dplyr::mutate(day = ifelse(grepl('Xeno', annotation), 
+                             sub('(.*)_Xeno.*', '\\1', annotation),
+                             sub('(.*)\\.\\.\\..*', '\\1', annotation))) %>%
+  dplyr::mutate(cell = sub('.*\\.\\.\\.(.*)', '\\1', annotation)) %>%
+  dplyr::mutate(type = ifelse(grepl('Xeno', annotation), 'xeno', 'cell'))
+  
+##basically we just want one ratio, so we will compare the mean of day 22 to day 7
+rnaCompare = dplyr::filter(rna, day == 'd7' | day == 'd7+15' | day == 'd0') %>%
+  dplyr::select(-ensg, -annotation, -cell) %>%
+  dplyr::group_by(symbol, type, day) %>%
+  dplyr::summarise(medianCounts = median(counts, na.rm = TRUE)) %>%
+  tidyr::pivot_wider(id_cols = symbol, names_from = c('type','day'), values_from = 'medianCounts') %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(aynaudRnaCell = log2(`cell_d7+15` + 1) - log2(cell_d7 + 1),
+                aynaudRnaXeno = log2(xeno_d0 + 1) - log2(xeno_d7 + 1)) %>%
+  dplyr::select(symbol, aynaudRnaCell, aynaudRnaXeno) %>%
+  dplyr::filter(!is.na(aynaudRnaCell) | !is.na(aynaudRnaXeno))
+
+##save the data
+saveRDS(rnaCompare, paste(baseRepository, '/database20220929_ewsExpressionDatabase/aynaudRna/dataset_aynaudRna.rds', sep = ''))
+write.table(rnaCompare, paste(baseRepository, '/database20220929_ewsExpressionDatabase/aynaudRna/dataset_aynaudRna.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Finish up.
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

@@ -1,0 +1,371 @@
+---
+title: "Proteomic data processing"
+author: "Christopher Hughes"
+format: html
+---
+
+This document details the analysis of proteomics data from osteo cells treated with CR1 and oxidative stress. The proteomic data were obtained using a DIA protocol and processed with [DiaNN software](https://github.com/vdemichev/DiaNN).
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('diann')
+library('DEqMS')
+library('matrixStats')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+## Preparing the data
+
+Basically all we have to do here is read in the peptide tables using the [DiaNN R package](https://github.com/vdemichev/diann-rpackage), and it will process them using the MaxLFQ algorithm.
+
+```{r}
+##########################################################################################
+##read in the diaNN data...you have to use double slashes here for some reason
+pepHighRaw = diann_load('D:\\msDataTemp\\proteomics20221003_mikeCr131b4nMTbhq\\highMassAllReplicates\\report.tsv')
+pepLowRaw = diann_load('D:\\msDataTemp\\proteomics20221003_mikeCr131b4nMTbhq\\lowMassAllReplicates\\report.tsv')
+
+##low mass processing, LFQ at peptide level
+pepLowLfq = diann_maxlfq(pepLowRaw[pepLowRaw$Q.Value <= 0.01 & pepLowRaw$Lib.PG.Q.Value <= 0.01 & pepLowRaw$Proteotypic == 1,], 
+                       group.header="Stripped.Sequence", 
+                       id.header = "Precursor.Id", 
+                       quantity.header = "Precursor.Normalised")
+gene.names = pepLowRaw$Genes[match(rownames(pepLowLfq), pepLowRaw$Stripped.Sequence)]
+accession.names = pepLowRaw$Protein.Group[match(rownames(pepLowLfq), pepLowRaw$Stripped.Sequence)]
+pepLowLfqAnno = data.frame('symbol' = gene.names,
+                           'accession' = accession.names,
+                           pepLowLfq)
+sampleNames = sub('.*ch_20221003_mikeCr131b4nMTbhq_(.*)_diaLow+\\.raw','\\1',colnames(pepLowLfqAnno))
+colnames(pepLowLfqAnno) = c(sampleNames)
+pepLowLfqReorder = as.data.frame(pepLowLfqAnno[,c('symbol','accession',
+                                               'combo_rep1','combo_rep2','combo_rep3',
+                                               'cr1_rep1','cr1_rep2','cr1_rep3',
+                                               'dmso_rep1','dmso_rep2','dmso_rep3',
+                                               'tbhq_rep1','tbhq_rep2','tbhq_rep3')])
+pepLowLfqReorder$scanSet = 'lowMass'
+pepLowLfqReorder$numPeps = 1
+pepLowFinal = pepLowLfqReorder %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  as_tibble()
+
+
+##high mass processing, LFQ at peptide level
+pepHighLfq = diann_maxlfq(pepHighRaw[pepHighRaw$Q.Value <= 0.01 & pepHighRaw$Lib.PG.Q.Value <= 0.01 & pepHighRaw$Proteotypic == 1,], 
+                       group.header="Stripped.Sequence", 
+                       id.header = "Precursor.Id", 
+                       quantity.header = "Precursor.Normalised")
+gene.names = pepHighRaw$Genes[match(rownames(pepHighLfq), pepHighRaw$Stripped.Sequence)]
+accession.names = pepHighRaw$Protein.Group[match(rownames(pepHighLfq), pepHighRaw$Stripped.Sequence)]
+pepHighLfqAnno = data.frame('symbol' = gene.names,
+                           'accession' = accession.names,
+                           pepHighLfq)
+sampleNames = sub('.*ch_20221003_mikeCr131b4nMTbhq_(.*)_diaHigh+\\.raw','\\1',colnames(pepLowLfqAnno))
+colnames(pepHighLfqAnno) = c(sampleNames)
+pepHighLfqReorder = as.data.frame(pepHighLfqAnno[,c('symbol','accession',
+                                               'combo_rep1','combo_rep2','combo_rep3',
+                                               'cr1_rep1','cr1_rep2','cr1_rep3',
+                                               'dmso_rep1','dmso_rep2','dmso_rep3',
+                                               'tbhq_rep1','tbhq_rep2','tbhq_rep3')])
+pepHighLfqReorder$scanSet = 'highMass'
+pepHighLfqReorder$numPeps = 1
+pepHighFinal = pepHighLfqReorder %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  as_tibble()
+
+
+##combine and save the data
+allPeps = rbind(pepLowFinal, pepHighFinal)
+saveRDS(allPeps, paste(baseRepository,'/proteomics20221003_mikeCr131b4nMTbhq/dataset_strippedPeptidesMaxLfqDiann.rds',sep=''))
+```
+
+Now we have a combined peptide table that we can work with. We can roll these peptide values up into proteins and check a couple of control genes we know should be changing.
+
+```{r}
+##########################################################################################
+##read in the peptide data and make a protein set
+rm(allPeps)
+pepData = readRDS(paste(baseRepository,'/proteomics20221003_mikeCr131b4nMTbhq/dataset_strippedPeptidesMaxLfqDiann.rds',sep=''))
+pepData$samples123 = rowSums(is.na(pepData[,3:5]))
+pepData$samples456 = rowSums(is.na(pepData[,6:8]))
+pepData$samples789 = rowSums(is.na(pepData[,9:11]))
+pepData$samples101112 = rowSums(is.na(pepData[,12:14]))
+pepData[,3:14] = log2(pepData[,3:14])
+pepData = dplyr::filter(pepData, symbol != '') %>%
+  dplyr::filter(samples123 == 0 | samples456 == 0 | samples789 == 0 | samples101112 == 0) %>%
+  dplyr::group_by(symbol, accession) %>%
+  dplyr::summarise(across(combo_rep1:tbhq_rep3, median, na.rm = TRUE), numPeps = sum(numPeps, na.rm = TRUE))
+
+pepData$meanSamples123 = rowMeans(pepData[,3:5], na.rm = TRUE)
+pepData$meanSamples456 = rowMeans(pepData[,6:8], na.rm = TRUE)
+pepData$meanSamples789 = rowMeans(pepData[,9:11], na.rm = TRUE)
+pepData$meanSamples101112 = rowMeans(pepData[,12:14], na.rm = TRUE)
+
+pepData$tbhq = pepData$meanSamples101112 - pepData$meanSamples789
+pepData$cr1 = pepData$meanSamples456 - pepData$meanSamples789
+pepData$combo = pepData$meanSamples123 - pepData$meanSamples789
+
+##save these data
+saveRDS(pepData, paste(baseRepository, '/proteomics20221003_mikeCr131b4nMTbhq/dataset_rawDataProteinLevel.rds',sep = ''))
+write.table(pepData, paste(baseRepository, '/proteomics20221003_mikeCr131b4nMTbhq/dataset_rawDataProteinLevel.tsv',sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Perform differential expression analysis.
+
+```{r}
+##########################################################################################
+##get the expression data and assign the row names with the accession code
+exprs = as.data.frame(pepData[,3:14])
+rownames(exprs) = pepData$accession
+exprs = na.omit(exprs)
+
+##check the centering of the data
+boxplot(exprs, las = 2, main = 'protein expression data')
+
+##make the design table
+cond = as.factor(c('combo','combo','combo','cr1','cr1','cr1','dmso','dmso','dmso','tbhq','tbhq','tbhq'))
+design = model.matrix(~0+cond)
+colnames(design) = gsub('cond','',colnames(design))
+
+##make contrasts
+contrastsToMake = c('tbhq-dmso','cr1-dmso','combo-dmso')
+contrast = makeContrasts(contrasts = contrastsToMake, levels = design)
+fit1 = lmFit(exprs, design)
+fit2 = contrasts.fit(fit1, contrasts = contrast)
+fit3 = eBayes(fit2)
+
+##deqms analysis
+pepCountData = as.data.frame(pepData[,3:15])
+pepCountData = na.omit(pepCountData)
+fit3$count = pepCountData$numPeps
+fit4 = spectraCounteBayes(fit3)
+
+##visualize the results
+VarianceBoxplot(fit4, n = 30, main = 'variance by psm - boxplot', xlab = 'psm count')
+VarianceScatterplot(fit4, main = 'variance by psm - scatter')
+
+##extract the results and save it
+proAnno = dplyr::select(pepData, symbol:accession)
+deqmsResults = tibble(outputResult(fit4, coef_col = 1)) %>%
+  dplyr::rename(accession = gene) %>%
+  dplyr::left_join(proAnno)
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20221003_mikeCr131b4nMTbhq/dataset_deqmsProteinLevel_tbhq-dmso.rds',sep = ''))
+write.table(deqmsResults, paste(baseRepository, '/proteomics20221003_mikeCr131b4nMTbhq/dataset_deqmsProteinLevel_tbhq-dmso.tsv',sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+#
+proAnno = dplyr::select(pepData, symbol:accession)
+deqmsResults = tibble(outputResult(fit4, coef_col = 2)) %>%
+  dplyr::rename(accession = gene) %>%
+  dplyr::left_join(proAnno)
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20221003_mikeCr131b4nMTbhq/dataset_deqmsProteinLevel_cr1-dmso.rds',sep = ''))
+write.table(deqmsResults, paste(baseRepository, '/proteomics20221003_mikeCr131b4nMTbhq/dataset_deqmsProteinLevel_cr1-dmso.tsv',sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+#
+proAnno = dplyr::select(pepData, symbol:accession)
+deqmsResults = tibble(outputResult(fit4, coef_col = 3)) %>%
+  dplyr::rename(accession = gene) %>%
+  dplyr::left_join(proAnno)
+saveRDS(deqmsResults, paste(baseRepository, '/proteomics20221003_mikeCr131b4nMTbhq/dataset_deqmsProteinLevel_combo-dmso.rds',sep = ''))
+write.table(deqmsResults, paste(baseRepository, '/proteomics20221003_mikeCr131b4nMTbhq/dataset_deqmsProteinLevel_combo-dmso.tsv',sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Combine the data from the two sko samples and bring in the MNNG data so we can narrow down any co-regulated candidate genes.
+
+```{r}
+##########################################################################################
+##read in the ews set for sko3
+sko3 = readRDS(paste(baseRepository, '/proteomics20220907_chrisA673aDlg2Sko/dataset_rawDataProteinLevel_sko-wt.rds',sep = '')) %>%
+  dplyr::select(symbol:accession, numPeps, sko3_rep1:sko3_rep3, wt_rep1:wt_rep3)
+sko3$skoNa = rowSums(is.na(sko3[,4:6]))
+sko3$wtNa = rowSums(is.na(sko3[,7:9]))
+sko3 = dplyr::filter(sko3, (skoNa == 0 & wtNa == 3) | (wtNa == 0 & skoNa == 3) | (wtNa == 0 & skoNa == 0)) %>%
+  dplyr::mutate(sko_mean = rowMeans(across(sko3_rep1:sko3_rep3))) %>%
+  dplyr::mutate(wt_mean = rowMeans(across(wt_rep1:wt_rep3))) %>%
+  dplyr::mutate(sko_wt_ratio = sko_mean - wt_mean) %>%
+  dplyr::mutate(sko_wt_ratio_na = ifelse(is.na(sko_wt_ratio) & skoNa > 0, -4,
+                                      ifelse(is.na(sko_wt_ratio) & wtNa > 0, 4, sko_wt_ratio))) %>%
+  dplyr::select(accession, symbol, numPeps, sko3_rep1:sko3_rep3, sko_wt_ratio_na) %>%
+  dplyr::rename(sko3_peps = numPeps, sko3_ratio = sko_wt_ratio_na)
+
+##read in the ews set for sko7
+sko7 = readRDS(paste(baseRepository, '/proteomics20220907_chrisA673aDlg2Sko/dataset_rawDataProteinLevel_sko-wt.rds',sep = '')) %>%
+  dplyr::select(symbol:accession, numPeps, sko7_rep1:sko7_rep3, wt_rep1:wt_rep3)
+sko7$skoNa = rowSums(is.na(sko7[,4:6]))
+sko7$wtNa = rowSums(is.na(sko7[,7:9]))
+sko7 = dplyr::filter(sko7, (skoNa == 0 & wtNa == 3) | (wtNa == 0 & skoNa == 3) | (wtNa == 0 & skoNa == 0)) %>%
+  dplyr::mutate(sko_mean = rowMeans(across(sko7_rep1:sko7_rep3))) %>%
+  dplyr::mutate(wt_mean = rowMeans(across(wt_rep1:wt_rep3))) %>%
+  dplyr::mutate(sko_wt_ratio = sko_mean - wt_mean) %>%
+  dplyr::mutate(sko_wt_ratio_na = ifelse(is.na(sko_wt_ratio) & skoNa > 0, -4,
+                                      ifelse(is.na(sko_wt_ratio) & wtNa > 0, 4, sko_wt_ratio))) %>%
+  dplyr::select(accession, symbol, numPeps, sko7_rep1:sko7_rep3, sko_wt_ratio_na) %>%
+  dplyr::rename(sko7_peps = numPeps, sko7_ratio = sko_wt_ratio_na)
+
+##bring the data together
+ews = sko3 %>%
+  dplyr::inner_join(sko7) %>%
+  dplyr::mutate(pColor = ifelse(sko3_ratio >= 1 & sko7_ratio >= 1, brewer.pal(4,'OrRd')[4],
+                                ifelse(sko3_ratio <= -1 & sko7_ratio <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))) %>%
+  dplyr::mutate(pText = ifelse(sko3_ratio >= 1 & sko7_ratio >= 1, symbol,
+                                ifelse(sko3_ratio <= -1 & sko7_ratio <= -1, symbol, '')))
+
+##make a plot
+ggplot(ews, aes(sko3_ratio, sko7_ratio)) +
+  geom_point(size = 1, color = ews$pColor) +
+  geom_text_repel(label = ews$pText, size = 2, max.overlaps = 10000) +
+  labs(x = 'log2(sko3 vs wt)', y = 'log2(sko7 vs wt)', title = 'EwS DLG2 KO') +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ewsHits = dplyr::filter(ews, pColor != brewer.pal(3,'Greys')[2])
+
+##now process the osteosarcoma data
+os = readRDS(paste(baseRepository, '/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_rawDataProteinLevel_dlg2-empty.rds',sep = '')) %>%
+  dplyr::select(symbol:accession, numPeps, empty2_rep1:empty2_rep3, dlg2s3_rep1:dlg2s3_rep3)
+os$wtNa = rowSums(is.na(os[,4:6]))
+os$oeNa = rowSums(is.na(os[,7:9]))
+os = dplyr::filter(os, (oeNa == 0 & wtNa == 3) | (wtNa == 0 & oeNa == 3) | (wtNa == 0 & oeNa == 0)) %>%
+  dplyr::mutate(wt_mean = rowMeans(across(empty2_rep1:empty2_rep3))) %>%
+  dplyr::mutate(oe_mean = rowMeans(across(dlg2s3_rep1:dlg2s3_rep3))) %>%
+  dplyr::mutate(wt_oe_ratio = wt_mean - oe_mean) %>%
+  dplyr::mutate(wt_oe_ratio_na = ifelse(is.na(wt_oe_ratio) & wtNa > 0, -4,
+                                      ifelse(is.na(wt_oe_ratio) & oeNa > 0, 4, wt_oe_ratio))) %>%
+  dplyr::select(accession, symbol, numPeps, wt_oe_ratio_na) %>%
+  dplyr::rename(os_peps = numPeps, os_ratio = wt_oe_ratio_na) %>%
+  dplyr::inner_join(ewsHits)
+
+##make a plot
+ggplot(os, aes(sko3_ratio, os_ratio)) +
+  geom_point()
+
+##write these data to a file
+write.table(os, paste(baseRepository, '/proteomics20220907_chrisA673aDlg2Sko/dataset_hitsOverlapOsteo.tsv',sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+saveRDS(os, paste(baseRepository, '/proteomics20220907_chrisA673aDlg2Sko/dataset_hitsOverlapOsteo.rds',sep = ''))
+```
+
+I want to combine these target hits with some other information, to help put them in context of EwS and OS biology. This may help us assign some interest into candidate hits we want to investigate further. 
+
+```{r}
+##########################################################################################
+##read in the different data sets
+ewsHits1 = readRDS(paste(baseRepository, '/sequencing20210421_a673TimecourseRnaSeqOutput/dataset_deseq2_day0-day7.rds', sep = '')) %>%
+  dplyr::select(symbol, log2FoldChange) %>%
+  dplyr::rename(ewsShrna1 = log2FoldChange) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(ewsShrna1 = median(ewsShrna1, na.rm = TRUE))
+
+#
+ewsHits2 = readRDS(paste(baseRepository, '/sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/deseq2/dataset_deseq2_total_dmso-dox.rds', sep = '')) %>%
+  dplyr::select(symbol, log2FoldChange) %>%
+  dplyr::rename(ewsShrna2Total = log2FoldChange) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(ewsShrna2Total = median(ewsShrna2Total, na.rm = TRUE))
+
+#
+ewsHits3 = readRDS(paste(baseRepository, '/sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/deseq2/dataset_deseq2_poly_dmso-dox.rds', sep = '')) %>%
+  dplyr::select(symbol, log2FoldChange) %>%
+  dplyr::rename(ewsShrna2Poly = log2FoldChange) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(ewsShrna2Poly = median(ewsShrna2Poly, na.rm = TRUE))
+
+#
+ewsSpec = readRDS(paste(baseRepository, '/database20220728_ewsSpecificityScores/dataset_proteomicsEwsRnaProSpecificityScores.rds', sep = '')) %>%
+  dplyr::rename(symbol = gene)
+
+#
+rnaExp = readRDS(paste(generalDatasets, '/depmap22Q2/CCLE_expression_parsed.rds', sep = '')) %>%
+  dplyr::select(gene, log2Tpm, lineage_subtype) %>%
+  dplyr::mutate(isEwing = ifelse(grepl('Ewing', lineage_subtype), 'yes', 'no')) %>%
+  dplyr::mutate(isOsteo = ifelse(grepl('osteosarcoma', lineage_subtype), 'yes', 'no')) %>%
+  dplyr::select(-lineage_subtype) %>%
+  dplyr::filter(isEwing == 'yes' | isOsteo == 'yes')
+ewsTpm = rnaExp %>%
+  dplyr::filter(isEwing == 'yes') %>%
+  dplyr::group_by(gene) %>%
+  dplyr::summarise(ewsTpm = median(log2Tpm, na.rm = TRUE)) %>%
+  dplyr::rename(symbol = gene)
+osTpm = rnaExp %>%
+  dplyr::filter(isOsteo == 'yes') %>%
+  dplyr::group_by(gene) %>%
+  dplyr::summarise(osTpm = median(log2Tpm, na.rm = TRUE)) %>%
+  dplyr::rename(symbol = gene)
+
+#
+cellSurface = read_tsv(paste(generalDatasets, '/bauschFluckInSilicoCellSurfaceProteomePmid30373828/combinedSurfaceomeProteins.txt', sep = '')) %>%
+  dplyr::rename(symbol = `UniProt gene`, surfaceAnno = `Surfaceome Label`) %>%
+  dplyr::select(symbol, surfaceAnno) %>%
+  unique()
+
+#
+vesicles = read_tsv(paste('C:/Users/chughes/Documents/bccrc/databases/vesiclepedia/VESICLEPEDIA_PROTEIN_MRNA_DETAILS_4.1.txt',sep = ''), 
+                    show_col_types = FALSE) %>%
+  dplyr::rename(experimentId = `EXPERIMENT ID`, 
+                moleculeType = `CONTENT TYPE`,
+                symbol = `GENE SYMBOL`,
+                species = `SPECIES`) %>%
+  dplyr::filter(species == 'Homo sapiens') %>%
+  dplyr::select(symbol, experimentId, moleculeType)
+vesiclePro = vesicles %>%
+  dplyr::filter(moleculeType == 'protein', !grepl('-', symbol)) %>%
+  dplyr::select(-moleculeType) %>%
+  dplyr::mutate(numberOfStudies = 1) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(evProteinStudies = sum(numberOfStudies))
+vesicleRna = vesicles %>%
+  dplyr::filter(grepl('mRNA', moleculeType) | grepl('mrna', moleculeType),
+                !grepl('-', symbol)) %>%
+  dplyr::select(-moleculeType) %>%
+  dplyr::mutate(numberOfStudies = 1) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(evRnaStudies = sum(numberOfStudies))
+
+#                          
+dlg2Hits = readRDS(paste(baseRepository, '/proteomics20220907_chrisA673aDlg2Sko/dataset_hitsOverlapOsteo.rds',sep = '')) %>%
+  dplyr::select(accession, symbol, os_peps, os_ratio, sko3_peps, sko3_ratio, sko7_peps, sko7_ratio) %>%
+  dplyr::left_join(ewsHits1) %>%
+  dplyr::left_join(ewsHits2) %>%
+  dplyr::left_join(ewsHits3) %>%
+  dplyr::left_join(ewsSpec) %>%
+  dplyr::left_join(ewsTpm) %>%
+  dplyr::left_join(osTpm) %>%
+  dplyr::left_join(cellSurface) %>%
+  dplyr::left_join(vesiclePro) %>%
+  dplyr::left_join(vesicleRna)
+
+##ZFTA is also known as C11orf95, this is why it isn't giving data sometimes
+##save the data
+write.table(dlg2Hits, paste(baseRepository, '/proteomics20220907_chrisA673aDlg2Sko/dataset_hitsOverlapAllData.tsv',sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+saveRDS(dlg2Hits, paste(baseRepository, '/proteomics20220907_chrisA673aDlg2Sko/dataset_hitsOverlapAllData.rds',sep = ''))
+```
+
+
+
+We are done here for now. Wrap up below.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
