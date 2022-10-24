@@ -193,7 +193,7 @@ proSort = pro %>%
   arrange(-cloneVariance) %>%
   filter(Freq > 1)
 
-pheatmap(proSort[1:500,1:15], labels_row = proSort$gene, fontsize_row = 5)
+pheatmap(proSort[1:150,1:15], labels_row = proSort$gene, fontsize_row = 5)
 ```
 
 <div style="margin-bottom:50px;"></div>

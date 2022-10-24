@@ -1,0 +1,112 @@
+---
+title: "YBX1 RIP Seq Analysis"
+author: "Christopher Hughes"
+format: html
+editor: visual
+---
+
+This document details the analysis of RNAseq data from A673 EwS cells expressing a HiBit tagged version of YB-1 where we have performed a RIP.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('tximport')
+library('GenomicFeatures')
+library('ggrepel')
+library('DESeq2')
+library('org.Hs.eg.db')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+## Data processing
+
+First we will need to create a transcriptome database we can use to annotate our data. We will do this using the same GTF we used in our original alignment. This can be a bit slow.
+
+```{r}
+##########################################################################################
+##read the gtf
+myTxdb = makeTxDbFromGFF('C:/Users/chughes/Documents/bccrc/databases/projectEwSDlg2/baseGenomeFiles/genome.gtf')
+k = keys(myTxdb, keytype = 'TXNAME')
+tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
+```
+
+Create a table of the sample annotation details that we can use during the transcript data import.
+
+```{r}
+##########################################################################################
+##I created a sample table in excel previously, read it in here
+samples = read_tsv(paste(baseRepository, '/sequencing20221011_ybx1HibitRip/sampleInfoMaster.txt', sep = ''))
+
+##assign the path to the quant files
+##there are two steps here because the file naming was different from the sequencing core facility
+samples$files = ifelse(grepl('IX.*', samples$mainFolder), 
+                       file.path(baseRepository, 'sequencing20221011_ybx1HibitRip/quants', samples$index, 'quant.sf'),
+                       file.path(baseRepository, 'sequencing20221011_ybx1HibitRip/quants', samples$library, 'quant.sf'))
+
+##check if all of the quant files exist
+samplesToProcess = samples[grepl('Rip', samples$sample), ]
+files = samplesToProcess$files
+all(file.exists(files))
+```
+
+Now import the Salmon data using the files we created above.
+
+```{r}
+##########################################################################################
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+names(txi)
+head(txi$counts)
+```
+
+Extract the TPM values and assign gene names.
+
+```{r}
+##########################################################################################
+##get out the TPM values and assign gene names
+yb1Rip = as.data.frame(txi$abundance)
+ens.str = substr(rownames(yb1Rip), 1, 15)
+yb1Rip$symbol = mapIds(org.Hs.eg.db,
+                       keys = ens.str,
+                       column = 'SYMBOL',
+                       keytype = 'ENSEMBL',
+                       multiVals = 'first')
+##filter out non-hits
+keep = rowSums(yb1Rip[,1:3]) >= 10
+yb1Rip = yb1Rip[keep,]
+colnames(yb1Rip)[1:3] = c('rep1','rep2','rep3')
+yb1Rip$avgTpm = rowMeans(yb1Rip[,1:3], na.rm = TRUE)
+
+
+##save the data
+saveRDS(yb1Rip, paste(baseRepository, '/sequencing20221011_ybx1HibitRip/dataset_yb1HibitRipAllRnas.rds', sep = ''))
+write.table(yb1Rip, paste(baseRepository, '/sequencing20221011_ybx1HibitRip/dataset_yb1HibitRipAllRnas.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+```
+
+We are done here for now. Wrap up below.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

@@ -1,0 +1,362 @@
+---
+title: "sorensenTimecourseProtein"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('limma')
+library('RColorBrewer')
+library('DESeq2')
+library('DEqMS')
+library('ggrepel')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+Read in the peptide spectral match data. The TMT layout is as follows:
+
+126 pool
+127N empty
+127C empty
+128N day0
+128C day7
+129N day9
+129C day10
+130N day11
+130C day14
+131N day17
+131C day22
+132N empty
+132C empty
+133N pool
+133C empty
+134N empty
+
+```{r}
+##########################################################################################
+##set the file locations
+sampleInfo = c('setA','setB','setC')
+annotation = c('a','b','c')
+psmFiles = file.path(baseRepository, 'proteomics20201220_a673ShEwsFli1DoxTimecourse/fragpipeAnalysis', sampleInfo, 'psm.tsv')
+all(file.exists(psmFiles))
+
+##process the identification data
+psmData = tibble()
+for (i in 1:length(sampleInfo)){
+  psmTemp = read_tsv(psmFiles[i], show_col_types = FALSE) %>%
+    dplyr::select(Peptide, `Protein ID`, Gene, Spectrum) %>%
+    dplyr::rename(sequence = Peptide, 
+                  accession = `Protein ID`,
+                  symbol = Gene) %>%
+    dplyr::mutate(dataset = tolower(sampleInfo[i]),
+                  scan = as.numeric(sub('.*_HpH_[0-9]+\\.(.*)\\.[0-9]+\\.[0-9]+', '\\1', Spectrum)),
+                  fraction = sub('.*_HpH_(.*)\\.[0-9]+\\.[0-9]+\\.[0-9]+', '\\1', Spectrum)) %>%
+    dplyr::select(-Spectrum)
+  ##
+  psmData = rbind(psmData, psmTemp)
+}
+psmData
+
+##this is the function we will use to process the quant data
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath, show_col_types = FALSE) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`134NIntensity`)
+  colnames(quantData) = c('scan','tmt126C','tmt127N','tmt127C','tmt128N','tmt128C','tmt129N',
+                          'tmt129C','tmt130N','tmt130C','tmt131N','tmt131C','tmt132N','tmt132C','tmt133N','tmt133C','tmt134N')
+  ##
+  fraction = sub('.*_HpH_(.*)\\.raw_Matrix\\.txt', '\\1', filePath)
+  dataset = sub('.*ch20201223_A673ShEwsFli1DoxTimecourse(.*)_TMT16_HpH_[0-9]+\\.raw_Matrix\\.txt', '\\1', filePath)
+  quantData$fraction = fraction
+  quantData$dataset = tolower(dataset)
+  ##
+  return(quantData)
+}
+
+##process the quant data
+quantFiles = list.files(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/quants/', sep = ''),
+                        pattern = '_Matrix.txt', full.names = TRUE)
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+allQuantData = do.call('rbind', quantDataSet)
+
+##combine all of the data
+psmQuant = psmData %>%
+  left_join(allQuantData)
+
+##filter the psm data
+psmQuant = psmQuant %>%
+  dplyr::select(-tmt127N, -tmt127C, -tmt132N, -tmt132C, -tmt133C, -tmt134N) %>%
+  dplyr::filter(!is.na(tmt126C)) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(sampleSignal = sum(tmt128N:tmt131C, na.rm = TRUE)) %>%
+  dplyr::filter(sampleSignal >= 800)
+
+##roll into proteins
+pro = psmQuant %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-sampleSignal) %>%
+  dplyr::mutate(psmCount = 1) %>%
+  dplyr::group_by(sequence, accession, symbol, dataset) %>%
+  dplyr::summarise(across(tmt126C:tmt133N, mean, na.rm = TRUE), psmCount = sum(psmCount, na.rm = TRUE)) %>%
+  dplyr::mutate(pepCount = 1) %>%
+  dplyr::group_by(dataset, accession, symbol) %>%
+  dplyr::summarise(across(tmt126C:tmt133N, median, na.rm = TRUE), psmCount = sum(psmCount, na.rm = TRUE), pepCount = sum(pepCount, na.rm = TRUE))
+
+##save the data
+saveRDS(pro[pro$dataset == 'seta',], paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_rawProteinDatasetA.rds', sep = ''))
+saveRDS(pro[pro$dataset == 'setb',], paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_rawProteinDatasetB.rds', sep = ''))
+saveRDS(pro[pro$dataset == 'setc',], paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_rawProteinDatasetC.rds', sep = ''))
+```
+
+Perform the IRS normalization.
+
+```{r}
+##########################################################################################
+proteinSet1 = readRDS(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_rawProteinDatasetA.rds', sep = '')) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-dataset) %>%
+  dplyr::rename(pool1a = tmt126C,
+                day0a = tmt128N,
+                day7a = tmt128C,
+                day9a = tmt129N,
+                day10a = tmt129C,
+                day11a = tmt130N,
+                day14a = tmt130C,
+                day17a = tmt131N,
+                day22a = tmt131C,
+                pool2a = tmt133N,
+                psma = psmCount,
+                pepa = pepCount)
+proteinSet2 = readRDS(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_rawProteinDatasetB.rds', sep = '')) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-dataset) %>%
+  dplyr::rename(pool1b = tmt126C,
+                day0b = tmt128N,
+                day7b = tmt128C,
+                day9b = tmt129N,
+                day10b = tmt129C,
+                day11b = tmt130N,
+                day14b = tmt130C,
+                day17b = tmt131N,
+                day22b = tmt131C,
+                pool2b = tmt133N,
+                psmb = psmCount,
+                pepb = pepCount)
+proteinSet3 = readRDS(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_rawProteinDatasetC.rds', sep = '')) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-dataset) %>%
+  dplyr::rename(pool1c = tmt126C,
+                day0c = tmt128N,
+                day7c = tmt128C,
+                day9c = tmt129N,
+                day10c = tmt129C,
+                day11c = tmt130N,
+                day14c = tmt130C,
+                day17c = tmt131N,
+                day22c = tmt131C,
+                pool2c = tmt133N,
+                psmc = psmCount,
+                pepc = pepCount)
+proteinSet = proteinSet1 %>%
+  left_join(proteinSet2) %>%
+  left_join(proteinSet3)
+
+##raw data check
+targetSamples = proteinSet[,c(1:2, which(grepl('day', colnames(proteinSet))))]
+pooledSamples = proteinSet[,c(which(grepl('pool', colnames(proteinSet))))]
+psmSamples = proteinSet[,c(which(grepl('psm', colnames(proteinSet))))]
+rawData = cbind(targetSamples, pooledSamples, psmSamples)
+rawData[rawData == 0] = NA
+rawData = subset(rawData, rowSums(is.na(rawData[,3:10])) < 5 & rowSums(is.na(rawData[,11:18])) < 5 & rowSums(is.na(rawData[,19:26])) < 5)
+boxplot(log2(rawData[,3:26]), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+        notch = TRUE, main = 'Raw data: setA (red), setB (green), setC (blue)',
+        xlab = 'TMT Samples', ylab = 'log2 of Intensity')
+plotDensities(log2(rawData[,3:26]), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+              main = 'Raw data')
+format(round(colSums(rawData[,3:26], na.rm = TRUE), digits = 0), big.mark = ",")
+
+##sample loading normalization
+exp1Raw = rawData[c(3:10)]
+exp2Raw = rawData[c(11:18)]
+exp3Raw = rawData[c(19:26)]
+target = mean(c(colSums(exp1Raw, na.rm = TRUE), colSums(exp2Raw, na.rm = TRUE), colSums(exp3Raw, na.rm = TRUE)))
+normFacs = target / colSums(exp1Raw, na.rm = TRUE)
+exp1Sl = sweep(exp1Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp2Raw, na.rm = TRUE)
+exp2Sl = sweep(exp2Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp3Raw, na.rm = TRUE)
+exp3Sl = sweep(exp3Raw, 2, normFacs, FUN = "*")
+dataSl = cbind(exp1Sl, exp2Sl, exp3Sl)
+boxplot(log2(dataSl), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+        notch = TRUE, main = "Sample Loading (SL) normalized data: \nsetA (red), setB (green), setC (blue)",
+        xlab = 'TMT Sample', ylab = 'log2 of Intensity')
+plotDensities(log2(dataSl), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), main = "SL normalization")
+
+##IRS normalization
+irs = tibble(rowSums(rawData[,27:28], na.rm = TRUE), rowSums(rawData[,29:30], na.rm = TRUE), rowSums(rawData[,31:32], na.rm = TRUE))
+colnames(irs) = c('sum1','sum2','sum3')
+irs$average = apply(irs, 1, function(x) exp(mean(log(x),na.rm = TRUE)))
+irs$fac1 = irs$average / irs$sum1
+irs$fac2 = irs$average / irs$sum2
+irs$fac3 = irs$average / irs$sum3
+dataIrs = exp1Sl * irs$fac1
+dataIrs = cbind(dataIrs, exp2Sl * irs$fac2)
+dataIrs = cbind(dataIrs, exp3Sl * irs$fac3)
+boxplot(log2(dataIrs), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+        main = "Internal Reference Scaling (IRS) normalized data: \nsetA (red), setB (green), setC (blue)",
+        xlab = 'TMT Sample', ylab = 'log2 of Intensity', notch = TRUE)
+plotDensities(log2(dataIrs), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), main = "IRS data")
+format(round(colSums(dataIrs, na.rm = TRUE), digits = 0), big.mark = ",")
+
+
+##post-normalization clustering
+colVec = c(rep('red',8),rep('blue',8),rep('green',8))
+plotMDS(log2(dataIrs), col = colVec, main = "IRS clusters group by condition")
+```
+
+So the data look great. There is doesn't appear to be any batch/replicate effect (y-axis), and the individual days themselves seem to be driving the biggest difference (x-axis). Remake this PCA plot to better correspond with the RNA data.
+
+```{r}
+##########################################################################################
+#need to build a DESeq object
+prepIrs = dataIrs
+prepIrs[prepIrs == 0] = NA
+row.names(prepIrs) = rawData$accession
+cts = log2(prepIrs[complete.cases(prepIrs),])
+cts = apply(cts, 2, function(x) as.integer(x))
+coldata = data.frame('sampleCol' = colnames(dataIrs),
+                     'sampleName' = rep(c('day0','day7','day9','day10','day11','day14','day17','day22'), 3),
+                     'batch' = rep(c('setA','setB','setC'),each = 8))
+dds = DESeqDataSetFromMatrix(countData = cts,
+                              colData = coldata,
+                              design = ~ sampleName)
+
+##
+mdsPlot = plotPCA(DESeqTransform(dds), intgroup = c('sampleName','batch'), returnData = TRUE)
+mdsPlot$sampleName = factor(mdsPlot$sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22'))
+percentVar = round(100 * attr(mdsPlot, 'percentVar'))
+#make the ggplot
+ggplot(mdsPlot, aes(PC1, PC2, color = sampleName, shape = batch)) +
+  geom_point(size = 3, alpha = 0.75) +
+  scale_color_manual(values = rep(c(brewer.pal(3,'Blues')[3], brewer.pal(3,'OrRd')[3], brewer.pal(7,'Blues')[1:6]),3)) +
+  scale_x_continuous(limits = c(-30,20), breaks = seq(-30,20,8)) +
+  scale_y_continuous(limits = c(-10,16), breaks = seq(-20,20,4)) +
+  labs(x = paste0('PC1: ', percentVar[1], '% variance'), 
+       y = paste0('PC2: ', percentVar[2], '% variance'), 
+       title = 'A673 protein groups') +
+  theme_classic() +
+  theme(legend.position = 'none')
+#save the plot
+ggsave(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/pcaplot_a673ShEwsFli1AbundanceLog.pdf', sep = ''), 
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+Recombine the data with the accessions and look at a few target proteins.
+
+```{r}
+##########################################################################################
+finalIrsData = as_tibble(cbind(rawData[,c(1:2,33:35)], dataIrs))
+finalIrsData[grepl('DLG2', finalIrsData$symbol),]
+##save data
+saveRDS(finalIrsData, paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_proteinSetABCIrsNormalized.rds', sep = ''))
+```
+
+Perform a differential expression analysis using DEqMS between specific timepoints.
+
+```{r}
+##########################################################################################
+dataIrsRaw = as.data.frame(readRDS(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_proteinSetABCIrsNormalized.rds', sep = '')))
+row.names(dataIrsRaw) = dataIrsRaw$accession
+dataIrs = dataIrsRaw[,c(which(grepl('day0', colnames(dataIrsRaw)) | grepl('day7', colnames(dataIrsRaw))))] #I only keep the two time points I want to compare here
+dataIrsLog = log2(dataIrs)
+dataIrsLog = na.omit(dataIrsLog)
+
+##make the design table and fit the model
+cond = as.factor(rep(c('day0','day7'),3))
+design = model.matrix(~0+cond) # 0 means no intercept for the linear model
+colnames(design) = gsub('cond','',colnames(design))
+contrast =  makeContrasts(contrasts = 'day7-day0', levels = design)
+fit1 = lmFit(dataIrsLog, design)
+fit2 = contrasts.fit(fit1,contrasts = contrast)
+fit3 = eBayes(fit2)
+
+##DEqMS analysis
+count_columns = seq(3,5,1)
+psm.count.table = data.frame(count = rowMins(as.matrix(dataIrsRaw[,count_columns])), row.names =  dataIrsRaw$accession)
+fit3$count = psm.count.table[rownames(fit3$coefficients),'count']
+fit4 = spectraCounteBayes(fit3)
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Outputs of spectraCounteBayes:
+object is augmented form of “fit” object from eBayes in Limma, with the additions being:
+sca.t - Spectra Count Adjusted posterior t-value
+sca.p - Spectra Count Adjusted posterior p-value
+sca.dfprior - DEqMS estimated prior degrees of freedom
+sca.priorvar- DEqMS estimated prior variance
+sca.postvar - DEqMS estimated posterior variance
+model - fitted model
+
+Visualize the fit curve.
+
+```{r}
+##########################################################################################
+# n=30 limits the boxplot to show only proteins quantified by <= 30 PSMs.
+VarianceBoxplot(fit4, n = 30, main = 'A673 IRS data', xlab = 'PSM count')
+VarianceScatterplot(fit4,main = 'A673 IRS data')
+
+##
+deqmsResults = tibble(outputResult(fit4, coef_col = 1)) %>%
+  dplyr::rename(accession  = gene) %>%
+  left_join(dataIrsRaw[,c('accession','symbol')])
+#if you are not sure which coef_col refers to the specific contrast,type
+head(fit4$coefficients)
+head(deqmsResults)
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_deqms_day0-day7.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+
+
+##volcano plot in our usualy style
+deqmsResults$logFC = -deqmsResults$logFC
+deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(4,'GnBu')[4],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(4,'OrRd')[4],
+                                     brewer.pal(3,'Greys')[2]))
+#goi = c('PRKCB','LOX','DLG2')
+goi = c('IL1RAP','STEAP1','STEAP2','PRKCB','LOX','DLG2')
+deqmsResults$pText = ifelse(deqmsResults$symbol %in% goi, deqmsResults$symbol, '')
+##
+ggplot(deqmsResults, aes(logFC, plotPValue)) +
+  geom_point(size = 1, color = deqmsResults$pColors) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = 2, nudge_y = 1, max.overlaps = 10000) +
+  labs(x = 'log2(day0 - day7)', y = '-log10(P-value)', title = 'Differential protein abundance') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,20,4)) +
+  scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = 3, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/scatter_deqmsIrsDay0-Day7.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+
+

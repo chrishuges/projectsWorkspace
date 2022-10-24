@@ -55,7 +55,7 @@ Next we point at our quant files.
 
 ```{r}
 ##########################################################################################
-quantFiles = file.path(paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903', sep = ''), paste(samples$sample, '_quant', sep = ''), 'quant.sf')
+quantFiles = file.path(paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/archive', sep = ''), paste(samples$sample, '_quant', sep = ''), 'quant.sf')
 names(quantFiles) = samples$sample
 all(file.exists(quantFiles))
 ```
@@ -91,20 +91,24 @@ Make a plot of these data.
 
 ```{r}
 ##########################################################################################
-geneSymbols = select(org.Hs.eg.db, txiAnnotated$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') 
-geneExpData = txiAnnotated %>%
-  left_join(geneSymbols) %>%
-  mutate(symbol = SYMBOL)
+#geneSymbols = select(org.Hs.eg.db, txiAnnotated$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') 
+#geneExpData = txiAnnotated %>%
+#  left_join(geneSymbols) %>%
+#  mutate(symbol = SYMBOL)
+
+geneExpData = read_csv(paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/archive/dataset_riggiSalmonRnaSeqProcessedData.csv', sep = '')) %>%
+  dplyr::mutate(a673Fc = -a673Fc,
+                sknmcFc = -sknmcFc)
 ##now make the plots
-targetGenes = c('DLG2','PRKCB','LOX')
+targetGenes = c('IL1RAP','STEAP1','STEAP2','PRKCB','LOX')
 for (i in 1:length(targetGenes)){
   geneExpData$pText = ifelse(geneExpData$symbol %in% targetGenes[i], geneExpData$symbol, '')
-  geneExpData$pColors = ifelse(geneExpData$a673Fc <= -1 & geneExpData$sknmcFc <= -1, brewer.pal(8,'RdBu')[8],
-                              ifelse(geneExpData$a673Fc >= 1 & geneExpData$sknmcFc >= 1, brewer.pal(8,'RdBu')[1],
-                                     brewer.pal(8,'Greys')[6]))
+  geneExpData$pColors = ifelse(geneExpData$a673Fc <= -1 & geneExpData$sknmcFc <= -1, brewer.pal(4,'GnBu')[4],
+                              ifelse(geneExpData$a673Fc >= 1 & geneExpData$sknmcFc >= 1, brewer.pal(4,'OrRd')[4],
+                                     brewer.pal(3,'Greys')[2]))
   ggplot(geneExpData, aes(a673Fc, sknmcFc)) +
-    geom_point(size = 1, color = geneExpData$pColors, alpha = 0.5) +
-    geom_text_repel(label = geneExpData$pText) +
+    geom_point(size = 1, color = geneExpData$pColors) +
+    geom_text_repel(label = geneExpData$pText, max.overlaps = 10000) +
     labs(x = 'log2(shEWS-FLI1 vs shGFP in A673)', y = 'log2(shEWS-FLI1 vs shGFP in SKNMC)', title = paste(targetGenes[i], 'expression in Ewing sarcoma')) +
     geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
     geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
@@ -116,13 +120,13 @@ for (i in 1:length(targetGenes)){
 }
 
 #combo plot
-targetGenes = c('DLG2','PRKCB','LOX')
+targetGenes = c('IL1RAP','STEAP1','STEAP2','PRKCB','LOX')
 geneExpData$pText = ifelse(geneExpData$symbol %in% targetGenes, geneExpData$symbol, '')
-geneExpData$pColors = ifelse(geneExpData$a673Fc <= -1 & geneExpData$sknmcFc <= -1, brewer.pal(3,'Blues')[3],
-                            ifelse(geneExpData$a673Fc >= 1 & geneExpData$sknmcFc >= 1, brewer.pal(3,'OrRd')[3],
-                                    brewer.pal(3,'Greys')[2]))
+geneExpData$pColors = ifelse(geneExpData$a673Fc <= -1 & geneExpData$sknmcFc <= -1, brewer.pal(4,'GnBu')[4],
+                              ifelse(geneExpData$a673Fc >= 1 & geneExpData$sknmcFc >= 1, brewer.pal(4,'OrRd')[4],
+                                     brewer.pal(3,'Greys')[2]))
 ggplot(geneExpData, aes(a673Fc, sknmcFc)) +
-  geom_point(size = 1, color = geneExpData$pColors, alpha = 0.5) +
+  geom_point(size = 1, color = geneExpData$pColors) +
   geom_text_repel(label = geneExpData$pText, max.overlaps = 15000, nudge_y = -6, nudge_x = -4) +
   labs(x = 'log2(shEWS-FLI1 vs shGFP in A673)', y = 'log2(shEWS-FLI1 vs shGFP in SKNMC)', title = 'Bulk RNAseq counts') +
   geom_vline(xintercept = c(-1,1), linetype = 'dashed') +

@@ -126,16 +126,16 @@ for (i in 1:length(daysToCompare)){
   rnaExp = as.data.frame(resOrdered)
   rnaExp$logPValue = -log10(rnaExp$padj)
   rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 300, 300, rnaExp$logPValue)
-  rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(3,'OrRd')[3], 
-                          ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(3,'Blues')[3], brewer.pal(3,'Greys')[2]))
+  rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(4,'OrRd')[4], 
+                          ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
   
   #assign text labels to specific genes of interest
-  goi = c('DLG2','LOX','PRKCB')
-  rnaExp$pText = ifelse(rnaExp$symbol %in% goi, rnaExp$symbol, '')
+  targetGenes = c('IL1RAP','STEAP1','STEAP2','PRKCB','LOX')
+  rnaExp$pText = ifelse(rnaExp$symbol %in% targetGenes, rnaExp$symbol, '')
 
   #create the plot and save it
   ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
-    geom_point(size = 1, color = rnaExp$pColors, alpha = 0.75) +
+    geom_point(size = 1, color = rnaExp$pColors) +
     labs(x = paste('log2(',datasetFirst,' - ',datasetSecond,')', sep = ''), y = '-log10(Adjusted p-value)', title = paste(datasetFirst,' vs ',datasetSecond, sep='')) +
     geom_text_repel(label = rnaExp$pText, nudge_x = -3, nudge_y = -150, max.overlaps = 15000) +
     scale_x_continuous(limits = c(-10,10), breaks = seq(-10,10,2)) +
@@ -156,4 +156,3 @@ We are done here for now. Wrap up below.
 ##########################################################################################
 sessionInfo()
 ```
-

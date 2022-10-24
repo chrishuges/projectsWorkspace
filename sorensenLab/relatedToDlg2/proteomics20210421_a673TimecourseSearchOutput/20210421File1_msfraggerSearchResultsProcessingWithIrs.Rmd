@@ -313,7 +313,7 @@ Perform a differential expression analysis using DEqMS between specific timepoin
 
 ```{r}
 ##########################################################################################
-dataIrsRaw = as.data.frame(readRDS(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/dataset_proteinSetABCIrsNormalized.rds', sep = '')))
+dataIrsRaw = as.data.frame(readRDS(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/archive/dataset_proteinSetABCIrsNormalized.rds', sep = '')))
 row.names(dataIrsRaw) = dataIrsRaw$accession
 dataIrs = dataIrsRaw[,c(which(grepl('day0', colnames(dataIrsRaw)) | grepl('day7', colnames(dataIrsRaw))))] #I only keep the two time points I want to compare here
 dataIrsLog = log2(dataIrs)
@@ -367,24 +367,25 @@ write.table(deqmsResults,
 
 
 ##volcano plot in our usualy style
+deqmsResults$logFC = -deqmsResults$logFC
 deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
-deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(3,'Blues')[3],
-                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(3,'OrRd')[3],
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(4,'GnBu')[4],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(4,'OrRd')[4],
                                      brewer.pal(3,'Greys')[2]))
-goi = c('PRKCB','LOX','DLG2')
-#goi = c('DDX58','IFIH1','IRF3','IRF7','STAT1','STAT2')
+#goi = c('PRKCB','LOX','DLG2')
+goi = c('IL1RAP','STEAP1','STEAP2','PRKCB','LOX')
 deqmsResults$pText = ifelse(deqmsResults$gene %in% goi, deqmsResults$gene, '')
 ##
 ggplot(deqmsResults, aes(logFC, plotPValue)) +
-  geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
-  geom_text_repel(label = deqmsResults$pText, nudge_x = -2, nudge_y = 1, max.overlaps = 10000) +
+  geom_point(size = 1, color = deqmsResults$pColors) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = 2, nudge_y = 1, max.overlaps = 10000) +
   labs(x = 'log2(day7 - day0)', y = '-log10(P-value)', title = 'Differential protein abundance') +
   scale_y_continuous(limits = c(0,18), breaks = seq(0,20,4)) +
   scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
   geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
   geom_hline(yintercept = 3, linetype = 'dashed') +
   theme_classic()
-ggsave(paste(baseRepository, '/proteomics20210421_a673TimecourseSearchOutput/scatter_deqmsIrsDay7-Day0.pdf', sep = ''),
+ggsave(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/archive/scatter_deqmsIrsDay7-Day0.pdf', sep = ''),
        height = 2, width = 2, useDingbats = FALSE)
 ```
 
