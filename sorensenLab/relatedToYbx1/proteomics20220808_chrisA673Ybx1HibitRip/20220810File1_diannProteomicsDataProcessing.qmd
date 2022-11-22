@@ -19,6 +19,10 @@ library('diann')
 library('DEqMS')
 library('matrixStats')
 library('ggrepel')
+library('stringr')
+library('Biostrings')
+library('OrgMassSpecR')
+library('RColorBrewer')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
@@ -106,16 +110,16 @@ exp1Sl = sweep(exp1Raw, 2, normFacs, FUN = "*")
 
 
 ##filter the data and scale to the lowest negative intensity
-pepData[,3:6] = c(log2(pepData[,3]), log2(exp1Sl))
-pepDataMinIntensity = min(pepData[,3:6],na.rm = TRUE)
+pepData[,3:6] = c(pepData[,3], exp1Sl)
+#pepDataMinIntensity = min(pepData[,3:6],na.rm = TRUE)
 pepData = dplyr::filter(pepData, symbol != '') %>%
   dplyr::filter(samples123 == 0) %>%
-  dplyr::mutate(neg_rep1 = ifelse(is.na(neg_rep1), pepDataMinIntensity, neg_rep1)) %>%
-  dplyr::mutate(ybx1_rep1 = ybx1_rep1 - neg_rep1,
-                ybx1_rep2 = ybx1_rep2 - neg_rep1,
-                ybx1_rep3 = ybx1_rep3 - neg_rep1) %>%
+  #dplyr::mutate(neg_rep1 = ifelse(is.na(neg_rep1), pepDataMinIntensity, neg_rep1)) %>%
+  #dplyr::mutate(ybx1_rep1 = ybx1_rep1 - neg_rep1,
+  #              ybx1_rep2 = ybx1_rep2 - neg_rep1,
+  #              ybx1_rep3 = ybx1_rep3 - neg_rep1) %>%
   dplyr::group_by(symbol, accession) %>%
-  dplyr::summarise(across(ybx1_rep1:ybx1_rep3, median, na.rm = TRUE), numPeps = sum(numPeps, na.rm = TRUE))
+  dplyr::summarise(across(neg_rep1:ybx1_rep3, sum, na.rm = TRUE), numPeps = sum(numPeps, na.rm = TRUE))
 
 pepData$meanSamples123 = rowMeans(pepData[,3:5], na.rm = TRUE)
 
@@ -158,13 +162,226 @@ ggsave(paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/barplot_
          height = 2, width = 2, useDingbats = FALSE)
 ```
 
-Plot these results.
+Run a SAINT analysis. To do this, we need to prepare a few files.
 
 ```{r}
 ##########################################################################################
-##get the expression data and assign the row names with the accession code
+##get the raw data
+pepData = readRDS(paste(baseRepository,'/proteomics20220808_chrisA673Ybx1HibitRip/dataset_strippedPeptidesMaxLfqDiann.rds',sep=''))
+pepData$samples123 = rowSums(is.na(pepData[,4:6]))
 
+
+##normalize the IP replicates
+exp1Raw = pepData[,c(4:6)]
+target = min(colSums(exp1Raw, na.rm = TRUE))
+target
+normFacs = target / colSums(exp1Raw, na.rm = TRUE)
+exp1Sl = sweep(exp1Raw, 2, normFacs, FUN = "*")
+
+
+##filter the data and scale to the lowest negative intensity
+pepData[,3:6] = c(pepData[,3], exp1Sl)
+pepDataMinIntensity = min(pepData[,3:6],na.rm = TRUE)
+pepData = dplyr::filter(pepData, symbol != '') %>%
+  dplyr::filter(samples123 == 0) %>%
+  dplyr::group_by(symbol, accession) %>%
+  dplyr::summarise(across(neg_rep1:ybx1_rep3, sum, na.rm = TRUE), numPeps = sum(numPeps, na.rm = TRUE))
+pepData[pepData == 0] = NA
+
+##save these data
+saveRDS(pepData, paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/dataset_rawDataProteinLevel.rds',sep = ''))
+write.table(pepData, paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/dataset_rawDataProteinLevel.tsv',sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##prepare the BAIT file
+baitFile = tibble('ipName' = c('YB1-1','YB1-2','YB1-3','GFP-1','GFP-2'),
+                  'baitName' = c('YB1','YB1','YB1','GFP','GFP'),
+                  'testIndicator' = c('T','T','T','C','C'))
+write.table(baitFile, paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/dataset_saintBaitFile.dat',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##prepare the PREY file
+#for this we need a protein length file that we can get from the FASTA
+proteinFasta = readAAStringSet('C:/Users/chughes/Documents/bccrc/databases/projectEwsDlg2/proteomicsIndex/2021-11-05-decoys-reviewed-contam-UP000005640-spikein.fas')
+proteinDatabase = tibble('proteinNames' = names(proteinFasta),
+                         'proteinWidths' = Biostrings::width(proteinFasta)) %>%
+  dplyr::filter(!grepl('rev_', proteinNames)) %>%
+  dplyr::mutate(accession = sapply(str_split(proteinNames, '\\|'), '[', 2)) %>%
+  dplyr::filter(!is.na(accession)) %>%
+  dplyr::select(accession, proteinWidths) %>%
+  dplyr::rename(length = proteinWidths)
+pepDataWidth = pepData %>%
+  left_join(proteinDatabase)
+#  
+preyFile = tibble('preyName' = pepDataWidth$accession,
+                  'preyProteinLength' = pepDataWidth$length) %>%
+  dplyr::filter(!is.na(preyProteinLength))
+write.table(preyFile, paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/dataset_saintPreyFile.dat',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+##prepare the INTERACTION file
+interactionFile = pepDataWidth %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-length, -numPeps, -symbol) %>%
+  dplyr::mutate(neg_rep2 = neg_rep1 + 0.1) %>%
+  tidyr::pivot_longer(cols = neg_rep1:neg_rep2, names_to = 'baitName', values_to = 'proteinIntensity') %>%
+  dplyr::mutate(ipName = ifelse(grepl('neg', baitName), paste('GFP-', sub('.*rep(.*)', '\\1', baitName), sep = ''), 
+                                paste('YB1-', sub('.*rep(.*)', '\\1', baitName), sep = ''))) %>%
+  dplyr::mutate(baitName = ifelse(grepl('neg', baitName), 'GFP', 'YB1')) %>%
+  dplyr::filter(!is.na(proteinIntensity) & (accession %in% preyFile$preyName)) %>%
+  dplyr::mutate(proteinIntensity = round(log2(proteinIntensity),2)) %>%
+  dplyr::select(ipName, baitName, accession, proteinIntensity)
+#
+write.table(interactionFile, paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/dataset_saintInteractionFile.dat',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
+
+The SAINT analysis doesn't seem to work well. The control sample is too empty I think. What if we just use an iBAQ instead.
+
+```{r}
+##########################################################################################
+pepData = readRDS(paste(baseRepository,'/proteomics20220808_chrisA673Ybx1HibitRip/dataset_strippedPeptidesMaxLfqDiann.rds',sep=''))
+pepData$samples123 = rowSums(is.na(pepData[,4:6]))
+
+##normalize the IP replicates
+exp1Raw = pepData[,c(4:6)]
+target = min(colSums(exp1Raw, na.rm = TRUE))
+target
+normFacs = target / colSums(exp1Raw, na.rm = TRUE)
+exp1Sl = sweep(exp1Raw, 2, normFacs, FUN = "*")
+
+##filter the data and scale to the lowest negative intensity
+pepData[,3:6] = c(pepData[,3], exp1Sl)
+#pepDataMinIntensity = min(pepData[,3:6],na.rm = TRUE)
+pepData = dplyr::filter(pepData, symbol != '') %>%
+  dplyr::filter(samples123 == 0) %>%
+  dplyr::group_by(symbol, accession) %>%
+  dplyr::summarise(across(neg_rep1:ybx1_rep3, sum, na.rm = TRUE), numPeps = sum(numPeps, na.rm = TRUE))
+
+##for the iBAQ calculation, we need the number of theoretical tryptic peptides
+proteinFasta = readAAStringSet('D:/databases/projectEwsDlg2/proteomicsIndex/2022-09-27-reviewed-contam-UP000005640.fas')
+proteinDatabase = tibble('proteinNames' = names(proteinFasta)) %>%
+  dplyr::mutate(accession = sapply(str_split(proteinNames, '\\|'), '[', 2)) %>%
+  dplyr::mutate(length = width(proteinFasta)) %>%
+  dplyr::select(-proteinNames)
+trypticPeptides = vector()
+detectableLength = vector()
+for (i in 1:length(proteinFasta)){
+  aaSeq = as.character(proteinFasta[[i]])
+  seqDigest = OrgMassSpecR::Digest(aaSeq, enzyme = 'trypsin', missed = 0, custom = list(code = c('X','U','Z','B'), mass = c(50, 60, 70, 80)))
+  seqDigest$pepLength = (seqDigest$stop - seqDigest$start) + 1
+  seqDigestSub = subset(seqDigest, (seqDigest$pepLength > 5) & (seqDigest$pepLength < 31))
+  trypticPeptides = c(trypticPeptides, nrow(seqDigestSub))
+  detectableLength = c(detectableLength, sum(seqDigestSub$pepLength, na.rm = TRUE))
+}
+
+#now add to the database
+proteinDatabase$detectablePeptides = trypticPeptides
+proteinDatabase$detectableLength = detectableLength
+
+
+##annotate the data with some proteins of interest
+goi = c('YBX1','C1QBP','G3BP1','UBAP2L')
+#315 and 324 are mito ribosomes, 305 and 308 are cytoplasmic
+ribosomeProteins = read_tsv('C:/Users/chughes/Documents/bccrc/databases/CORUM/humanComplexes.txt', show_col_types = FALSE) %>%
+  dplyr::select(ComplexID, `subunits(UniProt IDs)`) %>%
+  dplyr::rename(accessions = `subunits(UniProt IDs)`)
+cytoRibosomeAccessions = c(unlist(str_split(ribosomeProteins[ribosomeProteins$ComplexID == 305,]$accessions,';')),
+                           unlist(str_split(ribosomeProteins[ribosomeProteins$ComplexID == 308,]$accessions,';')))
+mitoRibosomeAccessions = c(unlist(str_split(ribosomeProteins[ribosomeProteins$ComplexID == 315,]$accessions,';')),
+                           unlist(str_split(ribosomeProteins[ribosomeProteins$ComplexID == 324,]$accessions,';')))
+
+#
+pepDataIbaq = pepData %>%
+  dplyr::left_join(proteinDatabase) %>%
+  dplyr::mutate(ybx1_rep1_ibaq = (ybx1_rep1 - neg_rep1) / detectablePeptides,
+                ybx1_rep2_ibaq = (ybx1_rep2 - neg_rep1) / detectablePeptides,
+                ybx1_rep3_ibaq = (ybx1_rep3 - neg_rep1) / detectablePeptides) %>%
+  dplyr::filter((ybx1_rep1_ibaq > 0) & (ybx1_rep2_ibaq > 0) & (ybx1_rep3_ibaq > 0)) %>%
+  dplyr::mutate(ybx1_mean = rowMeans(across(ybx1_rep1_ibaq:ybx1_rep3_ibaq), na.rm = TRUE),
+                plotPsm = ifelse(numPeps > 30, 30, numPeps),
+                plotIntensity = log10(ybx1_mean)) %>%
+  dplyr::mutate(pText = ifelse(symbol %in% goi, symbol, '')) %>%
+  dplyr::mutate(pColor = ifelse(symbol %in% goi, brewer.pal(4,'OrRd')[4], 
+                                ifelse(accession %in% cytoRibosomeAccessions, brewer.pal(4,'GnBu')[4],
+                                       ifelse(accession %in% mitoRibosomeAccessions, brewer.pal(4,'Greens')[4], brewer.pal(3,'Greys')[2]))))
+
+##save these data
+saveRDS(pepDataIbaq, paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/dataset_rawDataProteinLevel_ibaq.rds',sep = ''))
+write.table(pepDataIbaq, paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/dataset_rawDataProteinLevel_ibaq.tsv',sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##make a plot
+greyPoints = dplyr::filter(pepDataIbaq, pColor == brewer.pal(3,'Greys')[2]) %>%
+  dplyr::mutate(sampleGroup = 'total')
+bluePoints = dplyr::filter(pepDataIbaq, pColor == brewer.pal(4,'GnBu')[4]) %>%
+  dplyr::mutate(sampleGroup = 'cyto')
+redPoints = dplyr::filter(pepDataIbaq, pColor == brewer.pal(4,'OrRd')[4]) %>%
+  dplyr::mutate(sampleGroup = 'total')
+greenPoints = dplyr::filter(pepDataIbaq, pColor == brewer.pal(4,'Greens')[4]) %>%
+  dplyr::mutate(sampleGroup = 'mito')
+
+#
+ggplot(greyPoints, aes(plotPsm, plotIntensity)) +
+  geom_point(size = 1, color = greyPoints$pColor) +
+  geom_point(data = bluePoints, aes(plotPsm, plotIntensity), color = bluePoints$pColor) +
+  geom_point(data = greenPoints, aes(plotPsm, plotIntensity), color = greenPoints$pColor) +
+  geom_point(data = redPoints, aes(plotPsm, plotIntensity), color = redPoints$pColor) +
+  labs(x = 'Number of peptides', y = 'log10(iBAQ)', title = 'Protein interactions') +
+  scale_x_continuous(limits = c(0,30)) +
+  scale_y_continuous(limits = c(0,9), breaks = seq(0,10,2)) +
+  geom_text_repel(data = redPoints, label = redPoints$pText, nudge_y = 1, nudge_x = 10, max.overlaps = 1000) +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/scatter_ybx1InteractionsIbaq.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+##try a different plot
+ggplot(greyPoints, aes(x = sampleGroup, y = plotIntensity)) +
+  geom_boxplot(size = 0.5, width = 0.4, outlier.shape = NA) +
+  geom_boxplot(data = bluePoints, aes(sampleGroup, plotIntensity), size = 0.5, width = 0.4, outlier.shape = NA) +
+  geom_boxplot(data = greenPoints, aes(sampleGroup, plotIntensity), size = 0.5, width = 0.4, outlier.shape = NA) +
+  geom_jitter(data = bluePoints, aes(sampleGroup, plotIntensity), color = bluePoints$pColor, width = 0.15, size = 0.25) +
+  geom_jitter(data = greenPoints, aes(sampleGroup, plotIntensity), color = greenPoints$pColor, width = 0.15, size = 0.25) +
+  geom_jitter(data = redPoints, aes(sampleGroup, plotIntensity), color = redPoints$pColor, width = 0.15, size = 0.25) +
+  labs(x = 'Number of peptides', y = 'log10(iBAQ)', title = 'Protein interactions') +
+  #scale_x_continuous(limits = c(0.5,3.5), breaks = seq(0,6,2)) +
+  scale_x_discrete(limits = c('total','cyto','mito')) +
+  scale_y_continuous(limits = c(0,9), breaks = seq(0,10,2)) +
+  geom_text_repel(data = redPoints, aes(sampleGroup, plotIntensity), label = redPoints$pText, nudge_y = 1, nudge_x = 0.2, max.overlaps = 1000) +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/boxplot_ybx1InteractionsIbaq.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+Make a plot of some gProfiler data.
+
+```{r}
+##########################################################################################
+##read in the data
+termsOfInterest = c('GO:BP','GO:CC','REAC')
+goData = read_csv(paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/top100Hits_gProfiler.csv', sep = ''), show_col_types = FALSE) %>%
+  dplyr::select(source:negative_log10_of_adjusted_p_value) %>%
+  dplyr::filter(source %in% termsOfInterest) 
+goDataSub = goData[c(1,2,(table(goData$source)[1]+3) - (table(goData$source)[1]),
+                     (table(goData$source)[1]+1):(table(goData$source)[1]+3),
+                     (table(goData$source)[1] + table(goData$source)[2]+1):(table(goData$source)[1] + table(goData$source)[2]+3)),] %>%
+  dplyr::mutate(termRank = rep(paste('term',seq(3,1,-1),sep=''),3)) %>%
+  dplyr::mutate(source = factor(source, levels = c('REAC','GO:CC','GO:BP')))
+
+##make the plot
+ggplot(goDataSub, aes(negative_log10_of_adjusted_p_value, source, fill = termRank)) +
+  geom_col(position = position_dodge()) +
+  scale_fill_manual(values = c(brewer.pal(4,'OrRd')[4], brewer.pal(4,'GnBu')[4], brewer.pal(4,'Greens')[4])) +
+  labs(x = '-log10(Adjusted p-value)', y = 'Category', title = 'Protein enrichment') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/proteomics20220808_chrisA673Ybx1HibitRip/barplot_ybx1InteractionsGeneOntology.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
 
 We are done here for now. Wrap up below.
 

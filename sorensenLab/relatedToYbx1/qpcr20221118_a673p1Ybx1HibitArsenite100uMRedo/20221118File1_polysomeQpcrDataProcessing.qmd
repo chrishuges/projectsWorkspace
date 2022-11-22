@@ -1,0 +1,261 @@
+---
+title: "Polysome qPCR data"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+## Data processing
+
+Read in the qPCR data.
+
+```{r}
+##########################################################################################
+##read in qPCR data
+qpcr = read_tsv(paste(baseRepository, '/qpcr20221118_a673p1Ybx1HibitArsenite100uMRedo/qpcr20221118_a673p1Ybx1HibitArsenite100uMRedo.txt', sep = ''),
+                      show_col_types = FALSE, col_names = c('sampleName','targetName','ct','ctMean','ctSD'), skip = 1) %>%
+  dplyr::select(-ctMean, -ctSD) %>%
+  #dplyr::group_by(sampleName, targetName) %>%
+  #dplyr::summarise(meanCt = mean(ct, na.rm = TRUE)) %>%
+  dplyr::mutate(fraction = sub('.*0(.*).*', '\\1', sampleName)) %>%
+  dplyr::mutate(timepoint = sub('(.*)[TP].*', '\\1', sampleName))
+
+##
+qpcrSummary = read_tsv(paste(baseRepository, '/qpcr20221118_a673p1Ybx1HibitArsenite100uMRedo/qpcr20221118_a673p1Ybx1HibitArsenite100uMRedo.txt', sep = ''),
+                      show_col_types = FALSE, col_names = c('sampleName','targetName','ct','ctMean','ctSD'), skip = 1) %>%
+  dplyr::select(-ctMean, -ctSD) %>%
+  dplyr::group_by(sampleName, targetName) %>%
+  dplyr::summarise(meanCt = mean(ct, na.rm = TRUE), sdCt = sd(ct, na.rm = TRUE)) %>%
+  dplyr::mutate(fraction = sub('.*0(.*).*', '\\1', sampleName)) %>%
+  dplyr::mutate(timepoint = sub('(.*)[TP].*', '\\1', sampleName))
+
+
+
+##plot the data for total 
+goi = c('NRF2','HIF1A','G3BP1','GAPDH')
+for (i in 1:length(goi)){
+  qpcrPlot = dplyr::filter(qpcr, fraction == 'Total' & targetName == goi[i]) %>%
+    dplyr::mutate(timepoint = factor(timepoint, levels = c('t0','t20','t40','t60','t90','t120')))
+  qpcrSummaryPlot = dplyr::filter(qpcrSummary, fraction == 'Total' & targetName == goi[i]) %>%
+    dplyr::mutate(timepoint = factor(timepoint, levels = c('t0','t20','t40','t60','t90','t120')))
+#
+ggplot(qpcrSummaryPlot, aes(timepoint, meanCt, fill = timepoint)) +
+  geom_col(width = 0.75, position = position_dodge()) +
+  geom_jitter(data = qpcrPlot, aes(timepoint, ct), position = position_jitterdodge(1.5), color = brewer.pal(3,'Greys')[3]) +
+  scale_fill_manual(values = c(brewer.pal(4,'GnBu')[4], rep(brewer.pal(4,'OrRd')[4],5))) +
+  #geom_errorbar(data = qpcrSummaryPlot, mapping = aes(x = timepoint, y = meanCt, ymin = meanCt - sdCt, ymax = meanCt + sdCt), size=1, color="red", width=.4) +
+  labs(x = 'Timepoint', y = 'CT value', title = paste(goi[i], 'Total RNA')) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/qpcr20221118_a673p1Ybx1HibitArsenite100uMRedo/barplot_totalRna', goi[i], '.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+}
+
+
+##plot the data for polysomes 
+goi = c('NRF2','HIF1A','G3BP1','GAPDH')
+for (i in 1:length(goi)){
+  qpcrPlot = dplyr::filter(qpcr, grepl('Poly', fraction) & targetName == goi[i]) %>%
+    dplyr::mutate(timepoint = factor(timepoint, levels = c('t0','t20','t40','t60','t90','t120')))
+  qpcrSummaryPlot = dplyr::filter(qpcrSummary, grepl('Poly', fraction) & targetName == goi[i]) %>%
+    dplyr::mutate(timepoint = factor(timepoint, levels = c('t0','t20','t40','t60','t90','t120'))) %>%
+    dplyr::mutate(fraction = factor(fraction, levels = c('Poly1','Poly2','Poly3','Poly4')))
+#
+ggplot(qpcrSummaryPlot, aes(timepoint, meanCt, fill = timepoint, group = fraction)) +
+  geom_col(width = 0.75, position = position_dodge(), color = 'black') +
+  #geom_jitter(data = qpcrPlot, aes(timepoint, ct), position = position_jitterdodge(0.5), color = brewer.pal(3,'Greys')[3], size = 1) +
+  scale_fill_manual(values = c(brewer.pal(4,'GnBu')[4], rep(brewer.pal(4,'OrRd')[4],5))) +
+  #geom_errorbar(data = qpcrSummaryPlot, mapping = aes(x = timepoint, y = meanCt, ymin = meanCt - sdCt, ymax = meanCt + sdCt), size=1, color="red", width=.4) +
+  labs(x = 'Timepoint', y = 'CT value', title = paste(goi[i], 'Polysome RNA')) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/qpcr20221118_a673p1Ybx1HibitArsenite100uMRedo/barplot_polysomeRna', goi[i], '.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+}
+
+
+##plot the data for polysomes, only fractions 3 and 4 
+goi = c('NRF2','HIF1A','G3BP1','GAPDH')
+for (i in 1:length(goi)){
+  qpcrPlot = dplyr::filter(qpcr, grepl('Poly[34]', fraction) & targetName == goi[i]) %>%
+    dplyr::mutate(timepoint = factor(timepoint, levels = c('t0','t20','t40','t60','t90','t120')))
+  qpcrSummaryPlot = dplyr::filter(qpcrSummary, grepl('Poly[34]', fraction) & targetName == goi[i]) %>%
+    dplyr::mutate(timepoint = factor(timepoint, levels = c('t0','t20','t40','t60','t90','t120'))) %>%
+    dplyr::mutate(fraction = factor(fraction, levels = c('Poly1','Poly2','Poly3','Poly4')))
+#
+ggplot(qpcrSummaryPlot, aes(timepoint, meanCt, fill = timepoint, group = fraction)) +
+  geom_col(width = 0.75, position = position_dodge(), color = 'black') +
+  #geom_jitter(data = qpcrPlot, aes(timepoint, ct), position = position_jitterdodge(0.5), color = brewer.pal(3,'Greys')[3], size = 1) +
+  scale_fill_manual(values = c(brewer.pal(4,'GnBu')[4], rep(brewer.pal(4,'OrRd')[4],5))) +
+  #geom_errorbar(data = qpcrSummaryPlot, mapping = aes(x = timepoint, y = meanCt, ymin = meanCt - sdCt, ymax = meanCt + sdCt), size=1, color="red", width=.4) +
+  labs(x = 'Timepoint', y = 'CT value', title = paste(goi[i], 'Polysome RNA')) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/qpcr20221118_a673p1Ybx1HibitArsenite100uMRedo/barplot_polysomeRnaFrac34', goi[i], '.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+}
+
+
+##plot the data for polysomes, but only fraction 4
+goi = c('NRF2','HIF1A','G3BP1','GAPDH')
+for (i in 1:length(goi)){
+  qpcrPlot = qpcrSummary %>%
+    ungroup() %>%
+    dplyr::filter(grepl('Poly4', fraction) & targetName == goi[i]) %>%
+    dplyr::select(timepoint, targetName, meanCt) %>%
+    tidyr::pivot_wider(names_from = timepoint, values_from = meanCt) %>%
+    dplyr::mutate(t120 = 2^-(t120 - t0),
+                  t90 = 2^-(t90 - t0),
+                  t60 = 2^-(t60 - t0),
+                  t40 = 2^-(t40 - t0),
+                  t20 = 2^-(t20 - t0),
+                  t0 = 2^-(t0 - t0)) %>%
+    tidyr::pivot_longer(cols = t0:t90, names_to = 'timepoint', values_to = 'fc') %>%
+    dplyr::mutate(timepoint = factor(timepoint, levels = c('t0','t20','t40','t60','t90','t120')))
+  #
+  ggplot(qpcrPlot, aes(timepoint, fc, fill = timepoint)) +
+    geom_col(width = 0.75, position = position_dodge()) +
+    labs(x = 'Timepoint', y = 'Fold change to t0', title = paste(goi[i], 'Polysome fraction 4')) +
+    scale_fill_manual(values = c(brewer.pal(4,'GnBu')[4], rep(brewer.pal(4,'OrRd')[4],5))) +
+    scale_y_continuous(breaks = seq(0,6,0.5)) +
+    theme_classic() +
+    theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/qpcr20221118_a673p1Ybx1HibitArsenite100uMRedo/barplot_polysomeRnaFrac4FoldChange', goi[i], '.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+}
+
+
+##plot the data for total again, but with the same plot as the last
+goi = c('NRF2','HIF1A','G3BP1','GAPDH')
+for (i in 1:length(goi)){
+  qpcrPlot = qpcrSummary %>%
+    ungroup() %>%
+    dplyr::filter(grepl('Total', fraction) & targetName == goi[i]) %>%
+    dplyr::select(timepoint, targetName, meanCt) %>%
+    tidyr::pivot_wider(names_from = timepoint, values_from = meanCt) %>%
+    dplyr::mutate(t120 = 2^-(t120 - t0),
+                  t90 = 2^-(t90 - t0),
+                  t60 = 2^-(t60 - t0),
+                  t40 = 2^-(t40 - t0),
+                  t20 = 2^-(t20 - t0),
+                  t0 = 2^-(t0 - t0)) %>%
+    tidyr::pivot_longer(cols = t0:t90, names_to = 'timepoint', values_to = 'fc') %>%
+    dplyr::mutate(timepoint = factor(timepoint, levels = c('t0','t20','t40','t60','t90','t120')))
+  #
+  ggplot(qpcrPlot, aes(timepoint, fc, fill = timepoint)) +
+    geom_col(width = 0.75, position = position_dodge()) +
+    labs(x = 'Timepoint', y = 'log2(Fold change to t=0)', title = paste(goi[i], 'Total RNA')) +
+    scale_fill_manual(values = c(brewer.pal(4,'GnBu')[4], rep(brewer.pal(4,'OrRd')[4],5))) +
+    scale_y_continuous(breaks = seq(0,20,1)) +
+    theme_classic() +
+    theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/qpcr20221118_a673p1Ybx1HibitArsenite100uMRedo/barplot_totalRnaFoldChange', goi[i], '.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+}
+
+
+##plot the data for polysomes, but only fraction 4
+goi = c('NRF2','HIF1A','G3BP1','GAPDH')
+for (i in 1:length(goi)){
+  qpcrPlot = qpcrSummary %>%
+    ungroup() %>%
+    dplyr::filter(grepl('Poly3', fraction) & targetName == goi[i]) %>%
+    dplyr::select(timepoint, targetName, meanCt) %>%
+    tidyr::pivot_wider(names_from = timepoint, values_from = meanCt) %>%
+    dplyr::mutate(t120 = 2^-(t120 - t0),
+                  t90 = 2^-(t90 - t0),
+                  t60 = 2^-(t60 - t0),
+                  t40 = 2^-(t40 - t0),
+                  t20 = 2^-(t20 - t0),
+                  t0 = 2^-(t0 - t0)) %>%
+    tidyr::pivot_longer(cols = t0:t90, names_to = 'timepoint', values_to = 'fc') %>%
+    dplyr::mutate(timepoint = factor(timepoint, levels = c('t0','t20','t40','t60','t90','t120')))
+  #
+  ggplot(qpcrPlot, aes(timepoint, fc, fill = timepoint)) +
+    geom_col(width = 0.75, position = position_dodge()) +
+    labs(x = 'Timepoint', y = 'Fold change to t0', title = paste(goi[i], 'Polysome fraction 3')) +
+    scale_fill_manual(values = c(brewer.pal(4,'GnBu')[4], rep(brewer.pal(4,'OrRd')[4],5))) +
+    scale_y_continuous(breaks = seq(0,20,1)) +
+    theme_classic() +
+    theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/qpcr20221118_a673p1Ybx1HibitArsenite100uMRedo/barplot_polysomeRnaFrac3FoldChange', goi[i], '.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+}
+
+
+##plot the data for polysomes, but only fraction 4
+goi = c('NRF2','HIF1A','G3BP1','GAPDH')
+for (i in 1:length(goi)){
+  qpcrPlot = qpcrSummary %>%
+    ungroup() %>%
+    dplyr::filter(grepl('Poly2', fraction) & targetName == goi[i]) %>%
+    dplyr::select(timepoint, targetName, meanCt) %>%
+    tidyr::pivot_wider(names_from = timepoint, values_from = meanCt) %>%
+    dplyr::mutate(t120 = 2^-(t120 - t0),
+                  t90 = 2^-(t90 - t0),
+                  t60 = 2^-(t60 - t0),
+                  t40 = 2^-(t40 - t0),
+                  t20 = 2^-(t20 - t0),
+                  t0 = 2^-(t0 - t0)) %>%
+    tidyr::pivot_longer(cols = t0:t90, names_to = 'timepoint', values_to = 'fc') %>%
+    dplyr::mutate(timepoint = factor(timepoint, levels = c('t0','t20','t40','t60','t90','t120')))
+  #
+  ggplot(qpcrPlot, aes(timepoint, fc, fill = timepoint)) +
+    geom_col(width = 0.75, position = position_dodge()) +
+    labs(x = 'Timepoint', y = 'Fold change to t0', title = paste(goi[i], 'Polysome fraction 2')) +
+    scale_fill_manual(values = c(brewer.pal(4,'GnBu')[4], rep(brewer.pal(4,'OrRd')[4],5))) +
+    scale_y_continuous(breaks = seq(0,20,1)) +
+    theme_classic() +
+    theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/qpcr20221118_a673p1Ybx1HibitArsenite100uMRedo/barplot_polysomeRnaFrac2FoldChange', goi[i], '.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+}
+
+##plot the data for polysomes, but only fraction 1
+goi = c('NRF2','HIF1A','G3BP1','GAPDH')
+for (i in 1:length(goi)){
+  qpcrPlot = qpcrSummary %>%
+    ungroup() %>%
+    dplyr::filter(grepl('Poly1', fraction) & targetName == goi[i]) %>%
+    dplyr::select(timepoint, targetName, meanCt) %>%
+    tidyr::pivot_wider(names_from = timepoint, values_from = meanCt) %>%
+    dplyr::mutate(t120 = 2^-(t120 - t0),
+                  t90 = 2^-(t90 - t0),
+                  t60 = 2^-(t60 - t0),
+                  t40 = 2^-(t40 - t0),
+                  t20 = 2^-(t20 - t0),
+                  t0 = 2^-(t0 - t0)) %>%
+    tidyr::pivot_longer(cols = t0:t90, names_to = 'timepoint', values_to = 'fc') %>%
+    dplyr::mutate(timepoint = factor(timepoint, levels = c('t0','t20','t40','t60','t90','t120')))
+  #
+  ggplot(qpcrPlot, aes(timepoint, fc, fill = timepoint)) +
+    geom_col(width = 0.75, position = position_dodge()) +
+    labs(x = 'Timepoint', y = 'Fold change to t0', title = paste(goi[i], 'Polysome fraction 1')) +
+    scale_fill_manual(values = c(brewer.pal(4,'GnBu')[4], rep(brewer.pal(4,'OrRd')[4],5))) +
+    scale_y_continuous(breaks = seq(0,20,1)) +
+    theme_classic() +
+    theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/qpcr20221118_a673p1Ybx1HibitArsenite100uMRedo/barplot_polysomeRnaFrac1FoldChange', goi[i], '.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+}
+```

@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-0.9.260">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Christopher Hughes">
+
+<title>Analysis of survival data for EwS</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<script src="20200604File5_survivalAnalysis_files/libs/clipboard/clipboard.min.js"></script>
+<script src="20200604File5_survivalAnalysis_files/libs/quarto-html/quarto.js"></script>
+<script src="20200604File5_survivalAnalysis_files/libs/quarto-html/popper.min.js"></script>
+<script src="20200604File5_survivalAnalysis_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="20200604File5_survivalAnalysis_files/libs/quarto-html/anchor.min.js"></script>
+<link href="20200604File5_survivalAnalysis_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link id="quarto-text-highlighting-styles" href="20200604File5_survivalAnalysis_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet">
+<script src="20200604File5_survivalAnalysis_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="20200604File5_survivalAnalysis_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="20200604File5_survivalAnalysis_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Analysis of survival data for EwS</h1>
+</div>
+
+
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Christopher Hughes </p>
+          </div>
+  </div>
+    
+    
+  </div>
+  
+
+</header>
+
+<section id="setting-up-the-environment" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up-the-environment">Setting up the environment</h2>
+<p>These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'tidyverse'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>-- Attaching packages --------------------------------------- tidyverse 1.3.2 --
+v ggplot2 3.4.0      v purrr   0.3.5 
+v tibble  3.1.8      v dplyr   1.0.10
+v tidyr   1.2.1      v stringr 1.4.1 
+v readr   2.1.3      v forcats 0.5.2 
+-- Conflicts ------------------------------------------ tidyverse_conflicts() --
+x dplyr::filter() masks stats::filter()
+x dplyr::lag()    masks stats::lag()</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'ggplot2'</span>)</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'RColorBrewer'</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'survival'</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'survminer'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: ggpubr
+
+Attaching package: 'survminer'
+
+The following object is masked from 'package:survival':
+
+    myeloma</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'ggrepel'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>generalDatasets <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>baseWorkspace <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>baseRepository <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Some functions we will use below.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################################################</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################################################</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="do">##This function performs survival analysis for input genes.</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="do">##For reference on the format of expression and phenotypeData,</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="do">##please see the example analysis in getGeoDataForSurvivalAnalysis.Rmd</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="do">##that can be found on this GitHub page.</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################################################</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>survivalAnalysis <span class="ot">=</span> <span class="cf">function</span>(geneOfInterest, expressionData, phenotypeData,</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>                            <span class="at">survivalPlot =</span> <span class="cn">FALSE</span>, <span class="at">survivalData =</span> <span class="cn">FALSE</span>, <span class="at">writeDirectory =</span> <span class="st">''</span>, <span class="at">printData =</span> <span class="cn">FALSE</span>, ...){</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">'Performing analysis for'</span>, geneOfInterest))</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="co">#first we select our gene of interest, and sort based on median expression across all patients</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>  geneOfInterestExprs <span class="ot">=</span> expressionData <span class="sc">%&gt;%</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(symbol <span class="sc">==</span> geneOfInterest)</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>  <span class="do">##check for data</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">nrow</span>(geneOfInterestExprs) <span class="sc">&lt;</span> <span class="dv">1</span>){</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">'Gene not found in first pass, searching secondary identifier annotation.'</span>)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    geneOfInterestExprs <span class="ot">=</span> expressionData <span class="sc">%&gt;%</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(arraySymbolOne <span class="sc">==</span> geneOfInterest)</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">nrow</span>(geneOfInterestExprs) <span class="sc">&lt;</span> <span class="dv">1</span>){</span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">'Gene not found in second pass, searching third identifier annotation.'</span>)</span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>    geneOfInterestExprs <span class="ot">=</span> expressionData <span class="sc">%&gt;%</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(arraySymbolTwo <span class="sc">==</span> geneOfInterest)</span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">nrow</span>(geneOfInterestExprs) <span class="sc">&lt;</span> <span class="dv">1</span>){</span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">'Gene not found. Moving on to next entry.'</span>)</span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NA</span>)</span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>  geneOfInterestExprs<span class="sc">$</span>medExprs <span class="ot">=</span> <span class="fu">apply</span>(geneOfInterestExprs[,<span class="fu">which</span>(<span class="fu">grepl</span>(<span class="st">'GS'</span>,<span class="fu">colnames</span>(geneOfInterestExprs)))[<span class="dv">1</span>]<span class="sc">:</span><span class="fu">ncol</span>(geneOfInterestExprs)], </span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>                                       <span class="dv">1</span>, <span class="cf">function</span>(x) <span class="fu">mean</span>(x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>  geneOfInterestSort <span class="ot">=</span> geneOfInterestExprs <span class="sc">%&gt;%</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(<span class="fu">desc</span>(medExprs))</span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>  <span class="co">#keep the top probe for the gene, based on the expression calculated above</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>  geneSurvivalInput <span class="ot">=</span> geneOfInterestSort[<span class="dv">1</span>,<span class="dv">1</span><span class="sc">:</span>(<span class="fu">ncol</span>(geneOfInterestSort) <span class="sc">-</span> <span class="dv">1</span>)] <span class="sc">%&gt;%</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">colnames</span>(geneOfInterestSort)[<span class="fu">which</span>(<span class="fu">grepl</span>(<span class="st">'GS'</span>,<span class="fu">colnames</span>(geneOfInterestSort)))[<span class="dv">1</span>]]<span class="sc">:</span><span class="fu">colnames</span>(geneOfInterestSort)[(<span class="fu">ncol</span>(geneOfInterestSort) <span class="sc">-</span> <span class="dv">1</span>)], </span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>                 <span class="at">names_to =</span> <span class="st">'geo_accession'</span>, <span class="at">values_to =</span> <span class="st">'rnaExprs'</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>    <span class="fu">right_join</span>(phenotypeData) <span class="sc">%&gt;%</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(<span class="fu">desc</span>(rnaExprs)) </span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a>  <span class="co">#sorting of the patients into low and high expression based on the top and bottom 25%</span></span>
+<span id="cb7-43"><a href="#cb7-43" aria-hidden="true" tabindex="-1"></a>  geneSurvivalInput<span class="sc">$</span>geneLevel <span class="ot">=</span> <span class="st">''</span></span>
+<span id="cb7-44"><a href="#cb7-44" aria-hidden="true" tabindex="-1"></a>  geneSurvivalInput[<span class="dv">1</span><span class="sc">:</span><span class="fu">round</span>(<span class="fu">nrow</span>(geneSurvivalInput) <span class="sc">*</span> <span class="fl">0.25</span>), <span class="st">'geneLevel'</span>] <span class="ot">=</span> <span class="st">'high'</span></span>
+<span id="cb7-45"><a href="#cb7-45" aria-hidden="true" tabindex="-1"></a>  geneSurvivalInput[<span class="fu">round</span>(<span class="fu">nrow</span>(geneSurvivalInput) <span class="sc">*</span> <span class="fl">0.75</span>)<span class="sc">:</span><span class="fu">nrow</span>(geneSurvivalInput), <span class="st">'geneLevel'</span>] <span class="ot">=</span> <span class="st">'low'</span></span>
+<span id="cb7-46"><a href="#cb7-46" aria-hidden="true" tabindex="-1"></a>  geneSurvivalInput<span class="sc">$</span>geneLevel <span class="ot">=</span> <span class="fu">factor</span>(geneSurvivalInput<span class="sc">$</span>geneLevel, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">'low'</span>,<span class="st">'high'</span>))</span>
+<span id="cb7-47"><a href="#cb7-47" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-48"><a href="#cb7-48" aria-hidden="true" tabindex="-1"></a>  <span class="co">#calculation of the different survival metrics based on our data</span></span>
+<span id="cb7-49"><a href="#cb7-49" aria-hidden="true" tabindex="-1"></a>  survivalFit <span class="ot">=</span> <span class="fu">survfit</span>(<span class="fu">Surv</span>(ovs, status) <span class="sc">~</span> geneLevel, <span class="at">data =</span> geneSurvivalInput)</span>
+<span id="cb7-50"><a href="#cb7-50" aria-hidden="true" tabindex="-1"></a>  survivalDiff <span class="ot">=</span> <span class="fu">survdiff</span>(<span class="fu">Surv</span>(ovs, status) <span class="sc">~</span> geneLevel, <span class="at">data =</span> geneSurvivalInput)</span>
+<span id="cb7-51"><a href="#cb7-51" aria-hidden="true" tabindex="-1"></a>  survivalPValue <span class="ot">=</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">pchisq</span>(survivalDiff<span class="sc">$</span>chisq, <span class="fu">length</span>(survivalDiff<span class="sc">$</span>n) <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb7-52"><a href="#cb7-52" aria-hidden="true" tabindex="-1"></a>  survivalSummary <span class="ot">=</span> <span class="fu">surv_summary</span>(survivalFit, <span class="at">data =</span> geneSurvivalInput)</span>
+<span id="cb7-53"><a href="#cb7-53" aria-hidden="true" tabindex="-1"></a>  coxStats <span class="ot">=</span> <span class="fu">coxph</span>(<span class="fu">Surv</span>(ovs, status) <span class="sc">~</span> geneLevel, <span class="at">data =</span> geneSurvivalInput)</span>
+<span id="cb7-54"><a href="#cb7-54" aria-hidden="true" tabindex="-1"></a>  coxZScore <span class="ot">=</span> <span class="fu">coef</span>(coxStats)<span class="sc">/</span><span class="fu">sqrt</span>(<span class="fu">diag</span>(<span class="fu">vcov</span>(coxStats)))</span>
+<span id="cb7-55"><a href="#cb7-55" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-56"><a href="#cb7-56" aria-hidden="true" tabindex="-1"></a>  <span class="co">#this will output a survival plot</span></span>
+<span id="cb7-57"><a href="#cb7-57" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (survivalPlot <span class="sc">==</span> <span class="cn">TRUE</span>){</span>
+<span id="cb7-58"><a href="#cb7-58" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggsurvplot</span>(survivalSummary, <span class="at">pval =</span> survivalPValue, <span class="at">conf.int =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb7-59"><a href="#cb7-59" aria-hidden="true" tabindex="-1"></a>               <span class="at">risk.table =</span> <span class="cn">FALSE</span>, <span class="at">linetype =</span> <span class="st">"strata"</span>, <span class="at">ggtheme =</span> <span class="fu">theme_classic</span>(), <span class="at">palette =</span> <span class="fu">brewer.pal</span>(<span class="dv">8</span>,<span class="st">'RdBu'</span>)[<span class="fu">c</span>(<span class="dv">8</span>,<span class="dv">1</span>)]</span>
+<span id="cb7-60"><a href="#cb7-60" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-61"><a href="#cb7-61" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggsave</span>(<span class="fu">paste</span>(baseRepository, writeDirectory, <span class="st">'/survival_'</span>, </span>
+<span id="cb7-62"><a href="#cb7-62" aria-hidden="true" tabindex="-1"></a>                 geneOfInterest, <span class="st">'.pdf'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">width =</span> <span class="dv">4</span>, <span class="at">height =</span> <span class="dv">4</span>, <span class="at">useDingbats =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-63"><a href="#cb7-63" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-64"><a href="#cb7-64" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-65"><a href="#cb7-65" aria-hidden="true" tabindex="-1"></a>  <span class="co">#this will output a text file with the survival results</span></span>
+<span id="cb7-66"><a href="#cb7-66" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (survivalData <span class="sc">==</span> <span class="cn">TRUE</span>){</span>
+<span id="cb7-67"><a href="#cb7-67" aria-hidden="true" tabindex="-1"></a>    survivalOutput <span class="ot">=</span> <span class="fu">summary</span>(survivalFit)<span class="sc">$</span>table</span>
+<span id="cb7-68"><a href="#cb7-68" aria-hidden="true" tabindex="-1"></a>    <span class="fu">write.table</span>(survivalOutput, <span class="fu">paste</span>(baseRepository, writeDirectory, <span class="st">'/survival_'</span>, geneOfInterest, <span class="st">'.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb7-69"><a href="#cb7-69" aria-hidden="true" tabindex="-1"></a>                <span class="at">col.names =</span> <span class="cn">TRUE</span>, <span class="at">row.names =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>, <span class="at">sep =</span> <span class="st">','</span>)</span>
+<span id="cb7-70"><a href="#cb7-70" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-71"><a href="#cb7-71" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-72"><a href="#cb7-72" aria-hidden="true" tabindex="-1"></a>  <span class="co">#print the data if desired</span></span>
+<span id="cb7-73"><a href="#cb7-73" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (printData <span class="sc">==</span> <span class="cn">TRUE</span>){</span>
+<span id="cb7-74"><a href="#cb7-74" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(survivalPValue)</span>
+<span id="cb7-75"><a href="#cb7-75" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="fu">table</span>(geneSurvivalInput<span class="sc">$</span>geneLevel))</span>
+<span id="cb7-76"><a href="#cb7-76" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-77"><a href="#cb7-77" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-78"><a href="#cb7-78" aria-hidden="true" tabindex="-1"></a>  <span class="co">#lastly we output the Z-score</span></span>
+<span id="cb7-79"><a href="#cb7-79" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(coxZScore)</span>
+<span id="cb7-80"><a href="#cb7-80" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-81"><a href="#cb7-81" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-82"><a href="#cb7-82" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################################################</span></span>
+<span id="cb7-83"><a href="#cb7-83" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################################################</span></span>
+<span id="cb7-84"><a href="#cb7-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-85"><a href="#cb7-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-86"><a href="#cb7-86" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-87"><a href="#cb7-87" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################################################</span></span>
+<span id="cb7-88"><a href="#cb7-88" aria-hidden="true" tabindex="-1"></a><span class="do">##This function is a variant of the original survivalAnalysis,</span></span>
+<span id="cb7-89"><a href="#cb7-89" aria-hidden="true" tabindex="-1"></a><span class="do">##but instead tries to determine the best expression cutoff between</span></span>
+<span id="cb7-90"><a href="#cb7-90" aria-hidden="true" tabindex="-1"></a><span class="do">##high and low cases</span></span>
+<span id="cb7-91"><a href="#cb7-91" aria-hidden="true" tabindex="-1"></a><span class="do">##more details here: http://r-addict.com/2016/11/21/Optimal-Cutpoint-maxstat.html</span></span>
+<span id="cb7-92"><a href="#cb7-92" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################################################</span></span>
+<span id="cb7-93"><a href="#cb7-93" aria-hidden="true" tabindex="-1"></a>postelExpression <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/microarray20200604_ewingSarcomaAllSets/dataset_postelVinayExpression.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb7-94"><a href="#cb7-94" aria-hidden="true" tabindex="-1"></a>postelPhenotype <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/microarray20200604_ewingSarcomaAllSets/dataset_postelVinayPhenotype.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb7-95"><a href="#cb7-95" aria-hidden="true" tabindex="-1"></a>expressionData <span class="ot">=</span> postelExpression</span>
+<span id="cb7-96"><a href="#cb7-96" aria-hidden="true" tabindex="-1"></a>phenotypeData <span class="ot">=</span> postelPhenotype</span>
+<span id="cb7-97"><a href="#cb7-97" aria-hidden="true" tabindex="-1"></a>geneOfInterest <span class="ot">=</span> <span class="st">'YBX1'</span></span>
+<span id="cb7-98"><a href="#cb7-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-99"><a href="#cb7-99" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-100"><a href="#cb7-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-101"><a href="#cb7-101" aria-hidden="true" tabindex="-1"></a>survivalAnalysisV2 <span class="ot">=</span> <span class="cf">function</span>(geneOfInterest, expressionData, phenotypeData,</span>
+<span id="cb7-102"><a href="#cb7-102" aria-hidden="true" tabindex="-1"></a>                              <span class="at">survivalPlot =</span> <span class="cn">FALSE</span>, <span class="at">survivalData =</span> <span class="cn">FALSE</span>, <span class="at">writeDirectory =</span> <span class="st">''</span>, <span class="at">printData =</span> <span class="cn">FALSE</span>, ...){</span>
+<span id="cb7-103"><a href="#cb7-103" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">'Performing analysis for'</span>, geneOfInterest))</span>
+<span id="cb7-104"><a href="#cb7-104" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-105"><a href="#cb7-105" aria-hidden="true" tabindex="-1"></a>  <span class="co">#first we select our gene of interest, and sort based on median expression across all patients</span></span>
+<span id="cb7-106"><a href="#cb7-106" aria-hidden="true" tabindex="-1"></a>  geneOfInterestExprs <span class="ot">=</span> expressionData <span class="sc">%&gt;%</span></span>
+<span id="cb7-107"><a href="#cb7-107" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(symbol <span class="sc">==</span> geneOfInterest)</span>
+<span id="cb7-108"><a href="#cb7-108" aria-hidden="true" tabindex="-1"></a>  <span class="do">##check for data</span></span>
+<span id="cb7-109"><a href="#cb7-109" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">nrow</span>(geneOfInterestExprs) <span class="sc">&lt;</span> <span class="dv">1</span>){</span>
+<span id="cb7-110"><a href="#cb7-110" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">'Gene not found in first pass, searching secondary identifier annotation.'</span>)</span>
+<span id="cb7-111"><a href="#cb7-111" aria-hidden="true" tabindex="-1"></a>    geneOfInterestExprs <span class="ot">=</span> expressionData <span class="sc">%&gt;%</span></span>
+<span id="cb7-112"><a href="#cb7-112" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(arraySymbolOne <span class="sc">==</span> geneOfInterest)</span>
+<span id="cb7-113"><a href="#cb7-113" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-114"><a href="#cb7-114" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">nrow</span>(geneOfInterestExprs) <span class="sc">&lt;</span> <span class="dv">1</span>){</span>
+<span id="cb7-115"><a href="#cb7-115" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">'Gene not found in second pass, searching third identifier annotation.'</span>)</span>
+<span id="cb7-116"><a href="#cb7-116" aria-hidden="true" tabindex="-1"></a>    geneOfInterestExprs <span class="ot">=</span> expressionData <span class="sc">%&gt;%</span></span>
+<span id="cb7-117"><a href="#cb7-117" aria-hidden="true" tabindex="-1"></a>      <span class="fu">filter</span>(arraySymbolTwo <span class="sc">==</span> geneOfInterest)</span>
+<span id="cb7-118"><a href="#cb7-118" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-119"><a href="#cb7-119" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">nrow</span>(geneOfInterestExprs) <span class="sc">&lt;</span> <span class="dv">1</span>){</span>
+<span id="cb7-120"><a href="#cb7-120" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="st">'Gene not found. Moving on to next entry.'</span>)</span>
+<span id="cb7-121"><a href="#cb7-121" aria-hidden="true" tabindex="-1"></a>    <span class="fu">return</span>(<span class="cn">NA</span>)</span>
+<span id="cb7-122"><a href="#cb7-122" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-123"><a href="#cb7-123" aria-hidden="true" tabindex="-1"></a>  geneOfInterestExprs<span class="sc">$</span>medExprs <span class="ot">=</span> <span class="fu">apply</span>(geneOfInterestExprs[,<span class="fu">which</span>(<span class="fu">grepl</span>(<span class="st">'GS'</span>,<span class="fu">colnames</span>(geneOfInterestExprs)))[<span class="dv">1</span>]<span class="sc">:</span><span class="fu">ncol</span>(geneOfInterestExprs)], </span>
+<span id="cb7-124"><a href="#cb7-124" aria-hidden="true" tabindex="-1"></a>                                       <span class="dv">1</span>, <span class="cf">function</span>(x) <span class="fu">mean</span>(x, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb7-125"><a href="#cb7-125" aria-hidden="true" tabindex="-1"></a>  geneOfInterestSort <span class="ot">=</span> geneOfInterestExprs <span class="sc">%&gt;%</span></span>
+<span id="cb7-126"><a href="#cb7-126" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(<span class="fu">desc</span>(medExprs))</span>
+<span id="cb7-127"><a href="#cb7-127" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-128"><a href="#cb7-128" aria-hidden="true" tabindex="-1"></a>  <span class="co">#keep the top probe for the gene, based on the expression calculated above</span></span>
+<span id="cb7-129"><a href="#cb7-129" aria-hidden="true" tabindex="-1"></a>  geneSurvivalInput <span class="ot">=</span> geneOfInterestSort[<span class="dv">1</span>,<span class="dv">1</span><span class="sc">:</span>(<span class="fu">ncol</span>(geneOfInterestSort) <span class="sc">-</span> <span class="dv">1</span>)] <span class="sc">%&gt;%</span></span>
+<span id="cb7-130"><a href="#cb7-130" aria-hidden="true" tabindex="-1"></a>    <span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="fu">colnames</span>(geneOfInterestSort)[<span class="fu">which</span>(<span class="fu">grepl</span>(<span class="st">'GS'</span>,<span class="fu">colnames</span>(geneOfInterestSort)))[<span class="dv">1</span>]]<span class="sc">:</span><span class="fu">colnames</span>(geneOfInterestSort)[(<span class="fu">ncol</span>(geneOfInterestSort) <span class="sc">-</span> <span class="dv">1</span>)], </span>
+<span id="cb7-131"><a href="#cb7-131" aria-hidden="true" tabindex="-1"></a>                 <span class="at">names_to =</span> <span class="st">'geo_accession'</span>, <span class="at">values_to =</span> <span class="st">'rnaExprs'</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb7-132"><a href="#cb7-132" aria-hidden="true" tabindex="-1"></a>    <span class="fu">right_join</span>(phenotypeData) <span class="sc">%&gt;%</span></span>
+<span id="cb7-133"><a href="#cb7-133" aria-hidden="true" tabindex="-1"></a>    <span class="fu">arrange</span>(rnaExprs)</span>
+<span id="cb7-134"><a href="#cb7-134" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-135"><a href="#cb7-135" aria-hidden="true" tabindex="-1"></a>  geneCutPoint <span class="ot">=</span> <span class="fu">surv_cutpoint</span>(geneSurvivalInput,</span>
+<span id="cb7-136"><a href="#cb7-136" aria-hidden="true" tabindex="-1"></a>                               <span class="at">time =</span> <span class="st">'ovs'</span>,</span>
+<span id="cb7-137"><a href="#cb7-137" aria-hidden="true" tabindex="-1"></a>                               <span class="at">event =</span> <span class="st">'status'</span>,</span>
+<span id="cb7-138"><a href="#cb7-138" aria-hidden="true" tabindex="-1"></a>                               <span class="at">variables =</span> <span class="st">'rnaExprs'</span>)</span>
+<span id="cb7-139"><a href="#cb7-139" aria-hidden="true" tabindex="-1"></a>  geneSurvivalCat <span class="ot">=</span> <span class="fu">surv_categorize</span>(geneCutPoint)</span>
+<span id="cb7-140"><a href="#cb7-140" aria-hidden="true" tabindex="-1"></a>  geneSurvivalInput<span class="sc">$</span>geneLevel <span class="ot">=</span> geneSurvivalCat<span class="sc">$</span>rnaExprs</span>
+<span id="cb7-141"><a href="#cb7-141" aria-hidden="true" tabindex="-1"></a>  geneSurvivalInput<span class="sc">$</span>geneLevel <span class="ot">=</span> <span class="fu">factor</span>(geneSurvivalInput<span class="sc">$</span>geneLevel, <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">'low'</span>,<span class="st">'high'</span>))</span>
+<span id="cb7-142"><a href="#cb7-142" aria-hidden="true" tabindex="-1"></a>  <span class="co">#print(table(geneSurvivalInput$geneLevel))</span></span>
+<span id="cb7-143"><a href="#cb7-143" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-144"><a href="#cb7-144" aria-hidden="true" tabindex="-1"></a>  <span class="co">#calculation of the different survival metrics based on our data</span></span>
+<span id="cb7-145"><a href="#cb7-145" aria-hidden="true" tabindex="-1"></a>  survivalFit <span class="ot">=</span> <span class="fu">survfit</span>(<span class="fu">Surv</span>(ovs, status) <span class="sc">~</span> geneLevel, <span class="at">data =</span> geneSurvivalInput)</span>
+<span id="cb7-146"><a href="#cb7-146" aria-hidden="true" tabindex="-1"></a>  survivalDiff <span class="ot">=</span> <span class="fu">survdiff</span>(<span class="fu">Surv</span>(ovs, status) <span class="sc">~</span> geneLevel, <span class="at">data =</span> geneSurvivalInput)</span>
+<span id="cb7-147"><a href="#cb7-147" aria-hidden="true" tabindex="-1"></a>  survivalPValue <span class="ot">=</span> <span class="dv">1</span> <span class="sc">-</span> <span class="fu">pchisq</span>(survivalDiff<span class="sc">$</span>chisq, <span class="fu">length</span>(survivalDiff<span class="sc">$</span>n) <span class="sc">-</span> <span class="dv">1</span>)</span>
+<span id="cb7-148"><a href="#cb7-148" aria-hidden="true" tabindex="-1"></a>  <span class="co">#print(survivalPValue)</span></span>
+<span id="cb7-149"><a href="#cb7-149" aria-hidden="true" tabindex="-1"></a>  survivalSummary <span class="ot">=</span> <span class="fu">surv_summary</span>(survivalFit, <span class="at">data =</span> geneSurvivalInput)</span>
+<span id="cb7-150"><a href="#cb7-150" aria-hidden="true" tabindex="-1"></a>  coxStats <span class="ot">=</span> <span class="fu">coxph</span>(<span class="fu">Surv</span>(ovs, status) <span class="sc">~</span> geneLevel, <span class="at">data =</span> geneSurvivalInput)</span>
+<span id="cb7-151"><a href="#cb7-151" aria-hidden="true" tabindex="-1"></a>  coxZScore <span class="ot">=</span> <span class="fu">coef</span>(coxStats)<span class="sc">/</span><span class="fu">sqrt</span>(<span class="fu">diag</span>(<span class="fu">vcov</span>(coxStats)))</span>
+<span id="cb7-152"><a href="#cb7-152" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-153"><a href="#cb7-153" aria-hidden="true" tabindex="-1"></a>  <span class="co">#this will output a survival plot</span></span>
+<span id="cb7-154"><a href="#cb7-154" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (survivalPlot <span class="sc">==</span> <span class="cn">TRUE</span>){</span>
+<span id="cb7-155"><a href="#cb7-155" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggsurvplot</span>(survivalSummary, <span class="at">pval =</span> survivalPValue, <span class="at">conf.int =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb7-156"><a href="#cb7-156" aria-hidden="true" tabindex="-1"></a>               <span class="at">risk.table =</span> <span class="cn">FALSE</span>, <span class="at">linetype =</span> <span class="st">"strata"</span>, <span class="at">ggtheme =</span> <span class="fu">theme_classic</span>(), <span class="at">palette =</span> <span class="fu">brewer.pal</span>(<span class="dv">8</span>,<span class="st">'RdBu'</span>)[<span class="fu">c</span>(<span class="dv">8</span>,<span class="dv">1</span>)]</span>
+<span id="cb7-157"><a href="#cb7-157" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb7-158"><a href="#cb7-158" aria-hidden="true" tabindex="-1"></a>    <span class="fu">ggsave</span>(<span class="fu">paste</span>(baseRepository, writeDirectory, <span class="st">'/survival_'</span>, </span>
+<span id="cb7-159"><a href="#cb7-159" aria-hidden="true" tabindex="-1"></a>                 geneOfInterest, <span class="st">'.pdf'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">width =</span> <span class="dv">4</span>, <span class="at">height =</span> <span class="dv">4</span>, <span class="at">useDingbats =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-160"><a href="#cb7-160" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-161"><a href="#cb7-161" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-162"><a href="#cb7-162" aria-hidden="true" tabindex="-1"></a>  <span class="co">#this will output a text file with the survival results</span></span>
+<span id="cb7-163"><a href="#cb7-163" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (survivalData <span class="sc">==</span> <span class="cn">TRUE</span>){</span>
+<span id="cb7-164"><a href="#cb7-164" aria-hidden="true" tabindex="-1"></a>    survivalOutput <span class="ot">=</span> <span class="fu">summary</span>(survivalFit)<span class="sc">$</span>table</span>
+<span id="cb7-165"><a href="#cb7-165" aria-hidden="true" tabindex="-1"></a>    <span class="fu">write.table</span>(survivalOutput, <span class="fu">paste</span>(baseRepository, writeDirectory, <span class="st">'/survival_'</span>, geneOfInterest, <span class="st">'.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb7-166"><a href="#cb7-166" aria-hidden="true" tabindex="-1"></a>                <span class="at">col.names =</span> <span class="cn">TRUE</span>, <span class="at">row.names =</span> <span class="cn">TRUE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>, <span class="at">sep =</span> <span class="st">','</span>)</span>
+<span id="cb7-167"><a href="#cb7-167" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-168"><a href="#cb7-168" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-169"><a href="#cb7-169" aria-hidden="true" tabindex="-1"></a>  <span class="co">#print the data if desired</span></span>
+<span id="cb7-170"><a href="#cb7-170" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (printData <span class="sc">==</span> <span class="cn">TRUE</span>){</span>
+<span id="cb7-171"><a href="#cb7-171" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(survivalPValue)</span>
+<span id="cb7-172"><a href="#cb7-172" aria-hidden="true" tabindex="-1"></a>    <span class="fu">print</span>(<span class="fu">print</span>(<span class="fu">table</span>(geneSurvivalInput<span class="sc">$</span>geneLevel)))</span>
+<span id="cb7-173"><a href="#cb7-173" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb7-174"><a href="#cb7-174" aria-hidden="true" tabindex="-1"></a>  <span class="do">########</span></span>
+<span id="cb7-175"><a href="#cb7-175" aria-hidden="true" tabindex="-1"></a>  <span class="co">#lastly we output the Z-score</span></span>
+<span id="cb7-176"><a href="#cb7-176" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(coxZScore)</span>
+<span id="cb7-177"><a href="#cb7-177" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb7-178"><a href="#cb7-178" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="data-processing" class="level2">
+<h2 class="anchored" data-anchor-id="data-processing">Data processing</h2>
+<p>First we will read in all the data sets.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>savolaExpression <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/microarray20200604_ewingSarcomaAllSets/dataset_savolaExpression.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>savolaPhenotype <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/microarray20200604_ewingSarcomaAllSets/dataset_savolaPhenotype.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>volchenExpressionA <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumExpressionSetA.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>volchenPhenotypeA <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumPhenotypeSetA.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>volchenExpressionB <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumExpressionSetB.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>volchenPhenotypeB <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumPhenotypeSetB.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>postelExpression <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/microarray20200604_ewingSarcomaAllSets/dataset_postelVinayExpression.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>postelPhenotype <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/microarray20200604_ewingSarcomaAllSets/dataset_postelVinayPhenotype.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Read in the crispr and rna expression data we created previously.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>esHits <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/database20200604_depmapEwing/dataset_ewingRnaExprsCrisprDep.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co">#esHitsGenes = esHits[esHits$medDep &lt;= -1 &amp; esHits$medExprs &gt;= 4, 'symbol']</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>esHitsGenes <span class="ot">=</span> esHits[<span class="dv">1</span><span class="sc">:</span><span class="dv">250</span>,]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Do a test survival analysis for genes against the savola data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>expressionData <span class="ot">=</span> savolaExpression</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>phenotypeData <span class="ot">=</span> savolaPhenotype</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>geneOfInterest <span class="ot">=</span> <span class="fu">as.list</span>(esHitsGenes<span class="sc">$</span>symbol)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>coxZScores <span class="ot">=</span> <span class="fu">lapply</span>(geneOfInterest, survivalAnalysis, </span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expressionData =</span> expressionData, </span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">phenotypeData =</span> phenotypeData, </span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">survivalPlot =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">survivalData =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">printData =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Performing analysis for RPS29"
+[1] "Performing analysis for RPS20"
+[1] "Performing analysis for RPL4"
+[1] "Performing analysis for RPS19"
+[1] "Performing analysis for RPL15"
+[1] "Performing analysis for RPL31"
+[1] "Performing analysis for RPS18"
+[1] "Performing analysis for RPL8"
+[1] "Performing analysis for RPS11"
+[1] "Performing analysis for RPS8"
+[1] "Performing analysis for RPS3"
+[1] "Performing analysis for RPL21"
+[1] "Performing analysis for RPS12"
+[1] "Performing analysis for RPS6"
+[1] "Performing analysis for RAN"
+[1] "Performing analysis for RPL23"
+[1] "Performing analysis for RPS2"
+[1] "Performing analysis for RPS13"
+[1] "Performing analysis for RPL5"
+[1] "Performing analysis for HSPE1"
+[1] "Performing analysis for RPS27A"
+[1] "Performing analysis for RPL37A"
+[1] "Performing analysis for RPL18A"
+[1] "Performing analysis for RPL11"
+[1] "Performing analysis for EEF1A1"
+[1] "Performing analysis for RPS9"
+[1] "Performing analysis for RPLP0"
+[1] "Performing analysis for UBL5"
+[1] "Performing analysis for RPS15A"
+[1] "Performing analysis for RPL32"
+[1] "Performing analysis for FAU"
+[1] "Performing analysis for RPL13"
+[1] "Performing analysis for RPL27"
+[1] "Performing analysis for EEF2"
+[1] "Performing analysis for RPS7"
+[1] "Performing analysis for RPL12"
+[1] "Performing analysis for RPL10A"
+[1] "Performing analysis for RPS15"
+[1] "Performing analysis for RPS24"
+[1] "Performing analysis for RPS5"
+[1] "Performing analysis for RPL27A"
+[1] "Performing analysis for RPS23"
+[1] "Performing analysis for RPS4X"
+[1] "Performing analysis for RPL13A"
+[1] "Performing analysis for RPSA"
+[1] "Gene not found in first pass, searching secondary identifier annotation."
+[1] "Performing analysis for SNRPD2"
+[1] "Performing analysis for RPL3"
+[1] "Performing analysis for RPL6"
+[1] "Performing analysis for RPL26"
+[1] "Gene not found in first pass, searching secondary identifier annotation."
+[1] "Gene not found in second pass, searching third identifier annotation."
+[1] "Gene not found. Moving on to next entry."
+[1] "Performing analysis for SNRPB"
+[1] "Performing analysis for HNRNPK"
+[1] "Performing analysis for RPL19"
+[1] "Performing analysis for PCNA"
+[1] "Performing analysis for RPS16"
+[1] "Performing analysis for RPL18"
+[1] "Performing analysis for RPL7"
+[1] "Performing analysis for SRSF3"
+[1] "Performing analysis for RPL24"
+[1] "Performing analysis for BANF1"
+[1] "Performing analysis for SRSF7"
+[1] "Performing analysis for RACK1"
+[1] "Performing analysis for RRM2"
+[1] "Performing analysis for RPLP1"
+[1] "Performing analysis for RPL14"
+[1] "Performing analysis for RPL35"
+[1] "Performing analysis for POLR2L"
+[1] "Performing analysis for PSMA6"
+[1] "Gene not found in first pass, searching secondary identifier annotation."
+[1] "Gene not found in second pass, searching third identifier annotation."
+[1] "Performing analysis for PSMB4"
+[1] "Performing analysis for RPL36"
+[1] "Performing analysis for PUF60"
+[1] "Performing analysis for SRSF2"
+[1] "Performing analysis for PSMB3"
+[1] "Performing analysis for ERH"
+[1] "Performing analysis for RPS21"
+[1] "Performing analysis for HNRNPC"
+[1] "Performing analysis for PSMA7"
+[1] "Performing analysis for EEF1G"
+[1] "Performing analysis for PHB"
+[1] "Performing analysis for TUBB"
+[1] "Performing analysis for PSMA3"
+[1] "Performing analysis for PHB2"
+[1] "Performing analysis for PSMA1"
+[1] "Performing analysis for RPL23A"
+[1] "Performing analysis for SARS1"
+[1] "Performing analysis for RPL30"
+[1] "Performing analysis for SNU13"
+[1] "Performing analysis for TXNL4A"
+[1] "Performing analysis for SNRNP200"
+[1] "Performing analysis for SNRPD1"
+[1] "Performing analysis for CCT2"
+[1] "Performing analysis for RPS10"
+[1] "Performing analysis for ATP5MF"
+[1] "Performing analysis for SNRPF"
+[1] "Performing analysis for DAD1"
+[1] "Performing analysis for PSMA4"
+[1] "Performing analysis for RRM1"
+[1] "Performing analysis for KPNB1"
+[1] "Performing analysis for SNRPA1"
+[1] "Performing analysis for VPS28"
+[1] "Performing analysis for SF3B5"
+[1] "Performing analysis for SFPQ"
+[1] "Performing analysis for PFDN2"
+[1] "Performing analysis for CCT3"
+[1] "Performing analysis for CDC123"
+[1] "Performing analysis for VCP"
+[1] "Performing analysis for PRPF19"
+[1] "Performing analysis for RPL37"
+[1] "Performing analysis for UBA1"
+[1] "Performing analysis for XRCC6"
+[1] "Performing analysis for GAPDH"
+[1] "Performing analysis for ANAPC11"
+[1] "Performing analysis for EIF2S1"
+[1] "Performing analysis for SF1"
+[1] "Performing analysis for RAD21"
+[1] "Performing analysis for PLK1"
+[1] "Performing analysis for LSM7"
+[1] "Performing analysis for EIF4A3"
+[1] "Performing analysis for FBL"
+[1] "Performing analysis for CCT4"
+[1] "Performing analysis for PSMB1"
+[1] "Performing analysis for BUD31"
+[1] "Performing analysis for TRMT112"
+[1] "Performing analysis for U2AF2"
+[1] "Performing analysis for TOP2A"
+[1] "Performing analysis for RPLP2"
+[1] "Performing analysis for PRPF8"
+[1] "Performing analysis for RBM39"
+[1] "Performing analysis for NACA"
+[1] "Performing analysis for UBA52"
+[1] "Performing analysis for RPS25"
+[1] "Performing analysis for NEDD8"
+[1] "Performing analysis for NOP56"
+[1] "Performing analysis for EIF3I"
+[1] "Performing analysis for SRP9"
+[1] "Performing analysis for CDC27"
+[1] "Performing analysis for HSPD1"
+[1] "Performing analysis for PSMA2"
+[1] "Performing analysis for RPL35A"
+[1] "Performing analysis for TCP1"
+[1] "Performing analysis for COPA"
+[1] "Performing analysis for CDC20"
+[1] "Performing analysis for TPT1"
+[1] "Performing analysis for MCM7"
+[1] "Performing analysis for POLR2B"
+[1] "Performing analysis for BUB3"
+[1] "Performing analysis for EIF3B"
+[1] "Performing analysis for DDB1"
+[1] "Performing analysis for POLR2F"
+[1] "Performing analysis for CSE1L"
+[1] "Performing analysis for LSM2"
+[1] "Performing analysis for LSM4"
+[1] "Performing analysis for RBM8A"
+[1] "Performing analysis for PRELID1"
+[1] "Performing analysis for POLR2I"
+[1] "Performing analysis for ZNF207"
+[1] "Performing analysis for CDK1"
+[1] "Performing analysis for LUC7L3"
+[1] "Performing analysis for CCT7"
+[1] "Performing analysis for EIF5"
+[1] "Performing analysis for DUT"
+[1] "Performing analysis for HSPA9"
+[1] "Performing analysis for GARS1"</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in coxph.fit(X, Y, istrat, offset, init, control, weights = weights, :
+Loglik converged before variable 1 ; coefficient may be infinite.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Performing analysis for AARS1"
+[1] "Performing analysis for PHF5A"
+[1] "Performing analysis for ATP6V0C"
+[1] "Performing analysis for SF3B3"
+[1] "Performing analysis for PSMC6"
+[1] "Performing analysis for RPA2"
+[1] "Performing analysis for PSMB5"
+[1] "Performing analysis for NCBP2"
+[1] "Performing analysis for CHMP2A"
+[1] "Performing analysis for EIF6"
+[1] "Performing analysis for NUTF2"
+[1] "Performing analysis for SF3A3"
+[1] "Performing analysis for DYNC1H1"
+[1] "Performing analysis for RBMX"
+[1] "Performing analysis for SRSF1"
+[1] "Performing analysis for ETF1"
+[1] "Performing analysis for RUVBL1"
+[1] "Performing analysis for TARS1"
+[1] "Performing analysis for DHX15"
+[1] "Performing analysis for CCT6A"
+[1] "Performing analysis for CCT5"
+[1] "Performing analysis for SSU72"
+[1] "Performing analysis for POLR2C"
+[1] "Performing analysis for EIF2S2"
+[1] "Performing analysis for KARS1"
+[1] "Performing analysis for RUVBL2"
+[1] "Performing analysis for PSMB6"
+[1] "Performing analysis for AURKB"
+[1] "Performing analysis for SEC61A1"
+[1] "Performing analysis for CDC45"
+[1] "Performing analysis for RPL38"
+[1] "Performing analysis for YARS1"
+[1] "Performing analysis for TUBA1B"
+[1] "Performing analysis for RPA1"
+[1] "Performing analysis for DDX56"
+[1] "Performing analysis for IARS1"
+[1] "Performing analysis for CCND1"
+[1] "Performing analysis for PRPF38A"
+[1] "Performing analysis for HSPA5"
+[1] "Performing analysis for SF3A1"
+[1] "Performing analysis for SF3B4"
+[1] "Performing analysis for SUPT16H"
+[1] "Performing analysis for MARS1"
+[1] "Performing analysis for COPB1"
+[1] "Performing analysis for MYC"
+[1] "Performing analysis for COPZ1"
+[1] "Performing analysis for NUP93"
+[1] "Performing analysis for UBE2I"
+[1] "Performing analysis for NUDT21"
+[1] "Performing analysis for PAFAH1B1"
+[1] "Performing analysis for PABPN1"
+[1] "Performing analysis for ANKLE2"
+[1] "Performing analysis for THOC2"
+[1] "Performing analysis for INTS11"
+[1] "Performing analysis for XPO1"
+[1] "Performing analysis for COPB2"
+[1] "Performing analysis for EIF4A1"
+[1] "Performing analysis for SMC4"
+[1] "Performing analysis for SF3B6"
+[1] "Performing analysis for PRC1"
+[1] "Performing analysis for PSMB2"
+[1] "Performing analysis for POLD2"
+[1] "Performing analysis for ILF2"
+[1] "Performing analysis for LSM6"
+[1] "Performing analysis for ATP2A2"
+[1] "Performing analysis for EWSR1"
+[1] "Performing analysis for KIF11"
+[1] "Performing analysis for ELOB"
+[1] "Performing analysis for RPL36A"
+[1] "Performing analysis for PRPF31"
+[1] "Performing analysis for VPS25"
+[1] "Performing analysis for ALDOA"
+[1] "Performing analysis for CCT8"
+[1] "Performing analysis for YBX1"
+[1] "Performing analysis for ISCU"
+[1] "Performing analysis for NARS1"
+[1] "Performing analysis for GPN3"
+[1] "Performing analysis for PCBP1"
+[1] "Performing analysis for FCF1"
+[1] "Performing analysis for BIRC5"
+[1] "Performing analysis for PRPF38B"
+[1] "Performing analysis for RPA3"
+[1] "Performing analysis for SF3A2"
+[1] "Performing analysis for ACTL6A"
+[1] "Performing analysis for QARS1"
+[1] "Performing analysis for SSRP1"
+[1] "Performing analysis for RBBP4"
+[1] "Performing analysis for CLNS1A"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>esHitsGenes<span class="sc">$</span>coxz <span class="ot">=</span> <span class="fu">unlist</span>(coxZScores)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now we can make a plot for these scores.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>esHitsPlot <span class="ot">=</span> esHitsGenes <span class="sc">%&gt;%</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(coxz) <span class="sc">%&gt;%</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">index =</span> <span class="fu">seq</span>(<span class="dv">1</span>,<span class="fu">nrow</span>(esHitsGenes),<span class="dv">1</span>))</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>esHitsPlot<span class="sc">$</span>pText <span class="ot">=</span> <span class="fu">ifelse</span>(esHitsPlot<span class="sc">$</span>symbol <span class="sc">==</span> <span class="st">'YBX1'</span>, esHitsPlot<span class="sc">$</span>symbol, <span class="st">''</span>)</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>esHitsPlot<span class="sc">$</span>pSize <span class="ot">=</span> <span class="fu">ifelse</span>(esHitsPlot<span class="sc">$</span>symbol <span class="sc">==</span> <span class="st">'YBX1'</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>esHitsPlot<span class="sc">$</span>pColors <span class="ot">=</span> <span class="fu">ifelse</span>(esHitsPlot<span class="sc">$</span>symbol <span class="sc">==</span> <span class="st">'YBX1'</span>, <span class="fu">brewer.pal</span>(<span class="dv">4</span>,<span class="st">'OrRd'</span>)[<span class="dv">4</span>], <span class="fu">brewer.pal</span>(<span class="dv">3</span>,<span class="st">'Greys'</span>)[<span class="dv">2</span>])</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="co">#esHitsPlot$pText = ifelse(esHitsPlot$coxz &gt;= 2.5, esHitsPlot$symbol, '')</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(esHitsPlot, <span class="fu">aes</span>(coxz, index)) <span class="sc">+</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">1</span>, <span class="at">color =</span> esHitsPlot<span class="sc">$</span>pColors) <span class="sc">+</span></span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text_repel</span>(<span class="at">label =</span> esHitsPlot<span class="sc">$</span>pText, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">nudge_y =</span> <span class="sc">-</span><span class="dv">50</span>, <span class="at">nudge_x =</span> <span class="fl">0.5</span>, <span class="at">max.overlaps =</span> <span class="dv">1000</span>) <span class="sc">+</span></span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">'Cox Univariate Z Score'</span>, <span class="at">y =</span> <span class="st">'Gene index'</span>, <span class="at">title =</span> <span class="st">'Overall survival'</span>) <span class="sc">+</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1 rows containing missing values (`geom_point()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1 rows containing missing values (`geom_text_repel()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="20200604File5_survivalAnalysis_files/figure-html/unnamed-chunk-7-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/microarray20200604_ewingSarcomaAllSets/scatter_savolaOverallSurvivalTop250.pdf'</span>, <span class="at">sep =</span> <span class="st">''</span>), </span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>       <span class="at">width =</span> <span class="dv">2</span>, <span class="at">height =</span> <span class="dv">2</span>, <span class="at">useDingbats =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1 rows containing missing values (`geom_point()`).
+Removed 1 rows containing missing values (`geom_text_repel()`).</code></pre>
+</div>
+</div>
+<p>Now we can make a nice plot for YB-1 survival.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>expressionData <span class="ot">=</span> savolaExpression</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>phenotypeData <span class="ot">=</span> savolaPhenotype</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>geneOfInterest <span class="ot">=</span> <span class="st">'YBX1'</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>coxZScores <span class="ot">=</span> <span class="fu">lapply</span>(geneOfInterest, survivalAnalysis, </span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expressionData =</span> expressionData, </span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">phenotypeData =</span> phenotypeData, </span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">survivalPlot =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">survivalData =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">writeDirectory =</span> <span class="st">'/microarray20200604_ewingSarcomaAllSets'</span>,</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a>                    <span class="at">printData =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Performing analysis for YBX1"</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining, by = "geo_accession"</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.00115377
+
+ low high 
+  17   16 </code></pre>
+</div>
+</div>
+<p>Ignore other data sets for now until we see if we can get that really large cohort from Delattre.</p>
+<p>Ok, now we have the data from Delattre, so we can try it out! This is version 2 of the script with a modeled cut off.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>expressionData <span class="ot">=</span> postelExpression</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>phenotypeData <span class="ot">=</span> postelPhenotype</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>geneOfInterest <span class="ot">=</span> <span class="fu">as.list</span>(esHitsGenes<span class="sc">$</span>symbol)</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>coxZScores <span class="ot">=</span> <span class="fu">lapply</span>(geneOfInterest, survivalAnalysisV2, </span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expressionData =</span> expressionData, </span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">phenotypeData =</span> phenotypeData, </span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">survivalPlot =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">survivalData =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">writeDirectory =</span> <span class="st">'/microarray20200604_ewingSarcomaAllSets'</span>,</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>                    <span class="at">printData =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Performing analysis for RPS29"
+[1] "Performing analysis for RPS20"
+[1] "Performing analysis for RPL4"
+[1] "Performing analysis for RPS19"
+[1] "Performing analysis for RPL15"
+[1] "Performing analysis for RPL31"
+[1] "Performing analysis for RPS18"
+[1] "Performing analysis for RPL8"
+[1] "Performing analysis for RPS11"
+[1] "Performing analysis for RPS8"
+[1] "Performing analysis for RPS3"
+[1] "Performing analysis for RPL21"
+[1] "Performing analysis for RPS12"
+[1] "Performing analysis for RPS6"
+[1] "Performing analysis for RAN"
+[1] "Performing analysis for RPL23"
+[1] "Performing analysis for RPS2"
+[1] "Performing analysis for RPS13"
+[1] "Performing analysis for RPL5"
+[1] "Performing analysis for HSPE1"
+[1] "Performing analysis for RPS27A"
+[1] "Performing analysis for RPL37A"
+[1] "Performing analysis for RPL18A"
+[1] "Performing analysis for RPL11"
+[1] "Performing analysis for EEF1A1"
+[1] "Performing analysis for RPS9"
+[1] "Performing analysis for RPLP0"
+[1] "Performing analysis for UBL5"
+[1] "Performing analysis for RPS15A"
+[1] "Performing analysis for RPL32"
+[1] "Performing analysis for FAU"
+[1] "Performing analysis for RPL13"
+[1] "Performing analysis for RPL27"
+[1] "Performing analysis for EEF2"
+[1] "Performing analysis for RPS7"
+[1] "Performing analysis for RPL12"
+[1] "Performing analysis for RPL10A"
+[1] "Performing analysis for RPS15"
+[1] "Performing analysis for RPS24"
+[1] "Performing analysis for RPS5"
+[1] "Performing analysis for RPL27A"
+[1] "Performing analysis for RPS23"
+[1] "Performing analysis for RPS4X"
+[1] "Performing analysis for RPL13A"
+[1] "Performing analysis for RPSA"
+[1] "Gene not found in first pass, searching secondary identifier annotation."
+[1] "Performing analysis for SNRPD2"
+[1] "Performing analysis for RPL3"
+[1] "Performing analysis for RPL6"
+[1] "Performing analysis for RPL26"
+[1] "Gene not found in first pass, searching secondary identifier annotation."
+[1] "Gene not found in second pass, searching third identifier annotation."
+[1] "Gene not found. Moving on to next entry."
+[1] "Performing analysis for SNRPB"
+[1] "Performing analysis for HNRNPK"
+[1] "Performing analysis for RPL19"
+[1] "Performing analysis for PCNA"
+[1] "Performing analysis for RPS16"
+[1] "Performing analysis for RPL18"
+[1] "Performing analysis for RPL7"
+[1] "Performing analysis for SRSF3"
+[1] "Performing analysis for RPL24"
+[1] "Performing analysis for BANF1"
+[1] "Performing analysis for SRSF7"
+[1] "Performing analysis for RACK1"
+[1] "Performing analysis for RRM2"
+[1] "Performing analysis for RPLP1"
+[1] "Performing analysis for RPL14"
+[1] "Performing analysis for RPL35"
+[1] "Performing analysis for POLR2L"
+[1] "Performing analysis for PSMA6"
+[1] "Gene not found in first pass, searching secondary identifier annotation."
+[1] "Gene not found in second pass, searching third identifier annotation."
+[1] "Performing analysis for PSMB4"
+[1] "Performing analysis for RPL36"
+[1] "Performing analysis for PUF60"
+[1] "Performing analysis for SRSF2"
+[1] "Performing analysis for PSMB3"
+[1] "Performing analysis for ERH"
+[1] "Performing analysis for RPS21"
+[1] "Performing analysis for HNRNPC"
+[1] "Performing analysis for PSMA7"
+[1] "Performing analysis for EEF1G"
+[1] "Performing analysis for PHB"
+[1] "Performing analysis for TUBB"
+[1] "Performing analysis for PSMA3"
+[1] "Performing analysis for PHB2"
+[1] "Performing analysis for PSMA1"
+[1] "Performing analysis for RPL23A"
+[1] "Performing analysis for SARS1"
+[1] "Performing analysis for RPL30"
+[1] "Performing analysis for SNU13"
+[1] "Performing analysis for TXNL4A"
+[1] "Performing analysis for SNRNP200"
+[1] "Performing analysis for SNRPD1"
+[1] "Performing analysis for CCT2"
+[1] "Performing analysis for RPS10"
+[1] "Performing analysis for ATP5MF"
+[1] "Performing analysis for SNRPF"
+[1] "Performing analysis for DAD1"
+[1] "Performing analysis for PSMA4"
+[1] "Performing analysis for RRM1"
+[1] "Performing analysis for KPNB1"
+[1] "Performing analysis for SNRPA1"
+[1] "Performing analysis for VPS28"
+[1] "Performing analysis for SF3B5"
+[1] "Performing analysis for SFPQ"
+[1] "Performing analysis for PFDN2"
+[1] "Performing analysis for CCT3"
+[1] "Performing analysis for CDC123"
+[1] "Performing analysis for VCP"
+[1] "Performing analysis for PRPF19"
+[1] "Performing analysis for RPL37"
+[1] "Performing analysis for UBA1"
+[1] "Performing analysis for XRCC6"
+[1] "Performing analysis for GAPDH"
+[1] "Performing analysis for ANAPC11"
+[1] "Performing analysis for EIF2S1"
+[1] "Performing analysis for SF1"
+[1] "Performing analysis for RAD21"
+[1] "Performing analysis for PLK1"
+[1] "Performing analysis for LSM7"
+[1] "Performing analysis for EIF4A3"
+[1] "Performing analysis for FBL"
+[1] "Performing analysis for CCT4"
+[1] "Performing analysis for PSMB1"
+[1] "Performing analysis for BUD31"
+[1] "Performing analysis for TRMT112"
+[1] "Performing analysis for U2AF2"
+[1] "Performing analysis for TOP2A"
+[1] "Performing analysis for RPLP2"
+[1] "Performing analysis for PRPF8"
+[1] "Performing analysis for RBM39"
+[1] "Performing analysis for NACA"
+[1] "Performing analysis for UBA52"
+[1] "Performing analysis for RPS25"
+[1] "Performing analysis for NEDD8"
+[1] "Performing analysis for NOP56"
+[1] "Performing analysis for EIF3I"
+[1] "Performing analysis for SRP9"
+[1] "Performing analysis for CDC27"
+[1] "Performing analysis for HSPD1"
+[1] "Performing analysis for PSMA2"
+[1] "Performing analysis for RPL35A"
+[1] "Performing analysis for TCP1"
+[1] "Performing analysis for COPA"
+[1] "Performing analysis for CDC20"
+[1] "Performing analysis for TPT1"
+[1] "Performing analysis for MCM7"
+[1] "Performing analysis for POLR2B"
+[1] "Performing analysis for BUB3"
+[1] "Performing analysis for EIF3B"
+[1] "Performing analysis for DDB1"
+[1] "Performing analysis for POLR2F"
+[1] "Performing analysis for CSE1L"
+[1] "Performing analysis for LSM2"
+[1] "Performing analysis for LSM4"
+[1] "Performing analysis for RBM8A"
+[1] "Performing analysis for PRELID1"
+[1] "Performing analysis for POLR2I"
+[1] "Performing analysis for ZNF207"
+[1] "Performing analysis for CDK1"
+[1] "Performing analysis for LUC7L3"
+[1] "Performing analysis for CCT7"
+[1] "Performing analysis for EIF5"
+[1] "Performing analysis for DUT"
+[1] "Performing analysis for HSPA9"
+[1] "Performing analysis for GARS1"
+[1] "Performing analysis for AARS1"
+[1] "Performing analysis for PHF5A"
+[1] "Performing analysis for ATP6V0C"
+[1] "Performing analysis for SF3B3"
+[1] "Performing analysis for PSMC6"
+[1] "Performing analysis for RPA2"
+[1] "Performing analysis for PSMB5"
+[1] "Performing analysis for NCBP2"
+[1] "Performing analysis for CHMP2A"
+[1] "Performing analysis for EIF6"
+[1] "Performing analysis for NUTF2"
+[1] "Performing analysis for SF3A3"
+[1] "Performing analysis for DYNC1H1"
+[1] "Performing analysis for RBMX"
+[1] "Performing analysis for SRSF1"
+[1] "Performing analysis for ETF1"
+[1] "Performing analysis for RUVBL1"
+[1] "Performing analysis for TARS1"</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in coxph.fit(X, Y, istrat, offset, init, control, weights = weights, :
+Loglik converged before variable 1 ; coefficient may be infinite.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Performing analysis for DHX15"
+[1] "Performing analysis for CCT6A"
+[1] "Performing analysis for CCT5"
+[1] "Performing analysis for SSU72"
+[1] "Performing analysis for POLR2C"
+[1] "Performing analysis for EIF2S2"
+[1] "Performing analysis for KARS1"
+[1] "Performing analysis for RUVBL2"
+[1] "Performing analysis for PSMB6"
+[1] "Performing analysis for AURKB"
+[1] "Performing analysis for SEC61A1"
+[1] "Performing analysis for CDC45"
+[1] "Performing analysis for RPL38"
+[1] "Performing analysis for YARS1"
+[1] "Performing analysis for TUBA1B"
+[1] "Performing analysis for RPA1"
+[1] "Performing analysis for DDX56"
+[1] "Performing analysis for IARS1"
+[1] "Performing analysis for CCND1"
+[1] "Performing analysis for PRPF38A"
+[1] "Performing analysis for HSPA5"
+[1] "Performing analysis for SF3A1"
+[1] "Performing analysis for SF3B4"
+[1] "Performing analysis for SUPT16H"
+[1] "Performing analysis for MARS1"
+[1] "Performing analysis for COPB1"
+[1] "Performing analysis for MYC"
+[1] "Performing analysis for COPZ1"
+[1] "Performing analysis for NUP93"
+[1] "Performing analysis for UBE2I"
+[1] "Performing analysis for NUDT21"
+[1] "Performing analysis for PAFAH1B1"
+[1] "Performing analysis for PABPN1"
+[1] "Performing analysis for ANKLE2"
+[1] "Performing analysis for THOC2"
+[1] "Performing analysis for INTS11"
+[1] "Performing analysis for XPO1"
+[1] "Performing analysis for COPB2"
+[1] "Performing analysis for EIF4A1"
+[1] "Performing analysis for SMC4"
+[1] "Performing analysis for SF3B6"
+[1] "Performing analysis for PRC1"
+[1] "Performing analysis for PSMB2"
+[1] "Performing analysis for POLD2"
+[1] "Performing analysis for ILF2"
+[1] "Performing analysis for LSM6"
+[1] "Performing analysis for ATP2A2"
+[1] "Performing analysis for EWSR1"
+[1] "Performing analysis for KIF11"
+[1] "Performing analysis for ELOB"
+[1] "Performing analysis for RPL36A"
+[1] "Performing analysis for PRPF31"
+[1] "Performing analysis for VPS25"
+[1] "Performing analysis for ALDOA"
+[1] "Performing analysis for CCT8"
+[1] "Performing analysis for YBX1"
+[1] "Performing analysis for ISCU"
+[1] "Performing analysis for NARS1"
+[1] "Performing analysis for GPN3"
+[1] "Performing analysis for PCBP1"
+[1] "Performing analysis for FCF1"
+[1] "Performing analysis for BIRC5"
+[1] "Performing analysis for PRPF38B"
+[1] "Performing analysis for RPA3"
+[1] "Performing analysis for SF3A2"
+[1] "Performing analysis for ACTL6A"
+[1] "Performing analysis for QARS1"
+[1] "Performing analysis for SSRP1"
+[1] "Performing analysis for RBBP4"
+[1] "Performing analysis for CLNS1A"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>esHitsGenes<span class="sc">$</span>coxz <span class="ot">=</span> <span class="fu">unlist</span>(coxZScores)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now we can make a plot for these scores.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>esHitsPlot <span class="ot">=</span> esHitsGenes <span class="sc">%&gt;%</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(coxz) <span class="sc">%&gt;%</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">index =</span> <span class="fu">seq</span>(<span class="dv">1</span>,<span class="fu">nrow</span>(esHitsGenes),<span class="dv">1</span>))</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>esHitsPlot<span class="sc">$</span>pText <span class="ot">=</span> <span class="fu">ifelse</span>(esHitsPlot<span class="sc">$</span>symbol <span class="sc">==</span> <span class="st">'YBX1'</span>, esHitsPlot<span class="sc">$</span>symbol, <span class="st">''</span>)</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>esHitsPlot<span class="sc">$</span>pSize <span class="ot">=</span> <span class="fu">ifelse</span>(esHitsPlot<span class="sc">$</span>symbol <span class="sc">==</span> <span class="st">'YBX1'</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>esHitsPlot<span class="sc">$</span>pColors <span class="ot">=</span> <span class="fu">ifelse</span>(esHitsPlot<span class="sc">$</span>symbol <span class="sc">==</span> <span class="st">'YBX1'</span>, <span class="fu">brewer.pal</span>(<span class="dv">4</span>,<span class="st">'OrRd'</span>)[<span class="dv">4</span>], <span class="fu">brewer.pal</span>(<span class="dv">3</span>,<span class="st">'Greys'</span>)[<span class="dv">2</span>])</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a><span class="co">#esHitsPlot$pText = ifelse(esHitsPlot$coxz &gt;= 2.5, esHitsPlot$symbol, '')</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(esHitsPlot, <span class="fu">aes</span>(coxz, index)) <span class="sc">+</span></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">1</span>, <span class="at">color =</span> esHitsPlot<span class="sc">$</span>pColors) <span class="sc">+</span></span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text_repel</span>(<span class="at">label =</span> esHitsPlot<span class="sc">$</span>pText, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">nudge_y =</span> <span class="sc">-</span><span class="dv">50</span>, <span class="at">nudge_x =</span> <span class="fl">0.5</span>, <span class="at">max.overlaps =</span> <span class="dv">1000</span>) <span class="sc">+</span></span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">'Cox Univariate Z Score'</span>, <span class="at">y =</span> <span class="st">'Gene index'</span>, <span class="at">title =</span> <span class="st">'Overall survival'</span>) <span class="sc">+</span></span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1 rows containing missing values (`geom_point()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1 rows containing missing values (`geom_text_repel()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="20200604File5_survivalAnalysis_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/microarray20200604_ewingSarcomaAllSets/scatter_postelVinayOverallSurvivalTop250.pdf'</span>, <span class="at">sep =</span> <span class="st">''</span>), </span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>       <span class="at">width =</span> <span class="dv">3</span>, <span class="at">height =</span> <span class="dv">4</span>, <span class="at">useDingbats =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1 rows containing missing values (`geom_point()`).
+Removed 1 rows containing missing values (`geom_text_repel()`).</code></pre>
+</div>
+</div>
+<p>Extract the YB-1 data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>expressionData <span class="ot">=</span> postelExpression</span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>phenotypeData <span class="ot">=</span> postelPhenotype</span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>geneOfInterest <span class="ot">=</span> <span class="st">'YBX1'</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>coxZScores <span class="ot">=</span> <span class="fu">lapply</span>(geneOfInterest, survivalAnalysisV2, </span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expressionData =</span> expressionData, </span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">phenotypeData =</span> phenotypeData, </span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">survivalPlot =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">survivalData =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">writeDirectory =</span> <span class="st">'/microarray20200604_ewingSarcomaAllSets'</span>,</span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a>                    <span class="at">printData =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Performing analysis for YBX1"</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining, by = "geo_accession"</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 2.69636e-08
+
+ low high 
+ 101   16 
+
+ low high 
+ 101   16 </code></pre>
+</div>
+</div>
+<p>This is the original version of the script where we just use quantiles for the cutoff.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>expressionData <span class="ot">=</span> postelExpression</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>phenotypeData <span class="ot">=</span> postelPhenotype</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>geneOfInterest <span class="ot">=</span> <span class="fu">as.list</span>(esHitsGenes<span class="sc">$</span>symbol)</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>coxZScores <span class="ot">=</span> <span class="fu">lapply</span>(geneOfInterest, survivalAnalysis, </span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expressionData =</span> expressionData, </span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">phenotypeData =</span> phenotypeData, </span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">survivalPlot =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb38-9"><a href="#cb38-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">survivalData =</span> <span class="cn">FALSE</span>,</span>
+<span id="cb38-10"><a href="#cb38-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">writeDirectory =</span> <span class="st">'/microarray20200604_ewingSarcomaAllSets'</span>,</span>
+<span id="cb38-11"><a href="#cb38-11" aria-hidden="true" tabindex="-1"></a>                    <span class="at">printData =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Performing analysis for RPS29"
+[1] "Performing analysis for RPS20"
+[1] "Performing analysis for RPL4"
+[1] "Performing analysis for RPS19"
+[1] "Performing analysis for RPL15"
+[1] "Performing analysis for RPL31"
+[1] "Performing analysis for RPS18"
+[1] "Performing analysis for RPL8"
+[1] "Performing analysis for RPS11"
+[1] "Performing analysis for RPS8"
+[1] "Performing analysis for RPS3"
+[1] "Performing analysis for RPL21"
+[1] "Performing analysis for RPS12"
+[1] "Performing analysis for RPS6"
+[1] "Performing analysis for RAN"
+[1] "Performing analysis for RPL23"
+[1] "Performing analysis for RPS2"
+[1] "Performing analysis for RPS13"
+[1] "Performing analysis for RPL5"
+[1] "Performing analysis for HSPE1"
+[1] "Performing analysis for RPS27A"
+[1] "Performing analysis for RPL37A"
+[1] "Performing analysis for RPL18A"
+[1] "Performing analysis for RPL11"
+[1] "Performing analysis for EEF1A1"
+[1] "Performing analysis for RPS9"
+[1] "Performing analysis for RPLP0"
+[1] "Performing analysis for UBL5"
+[1] "Performing analysis for RPS15A"
+[1] "Performing analysis for RPL32"
+[1] "Performing analysis for FAU"
+[1] "Performing analysis for RPL13"
+[1] "Performing analysis for RPL27"
+[1] "Performing analysis for EEF2"
+[1] "Performing analysis for RPS7"
+[1] "Performing analysis for RPL12"
+[1] "Performing analysis for RPL10A"
+[1] "Performing analysis for RPS15"
+[1] "Performing analysis for RPS24"
+[1] "Performing analysis for RPS5"
+[1] "Performing analysis for RPL27A"
+[1] "Performing analysis for RPS23"
+[1] "Performing analysis for RPS4X"
+[1] "Performing analysis for RPL13A"
+[1] "Performing analysis for RPSA"
+[1] "Gene not found in first pass, searching secondary identifier annotation."
+[1] "Performing analysis for SNRPD2"
+[1] "Performing analysis for RPL3"
+[1] "Performing analysis for RPL6"
+[1] "Performing analysis for RPL26"
+[1] "Gene not found in first pass, searching secondary identifier annotation."
+[1] "Gene not found in second pass, searching third identifier annotation."
+[1] "Gene not found. Moving on to next entry."
+[1] "Performing analysis for SNRPB"
+[1] "Performing analysis for HNRNPK"
+[1] "Performing analysis for RPL19"
+[1] "Performing analysis for PCNA"
+[1] "Performing analysis for RPS16"
+[1] "Performing analysis for RPL18"
+[1] "Performing analysis for RPL7"
+[1] "Performing analysis for SRSF3"
+[1] "Performing analysis for RPL24"
+[1] "Performing analysis for BANF1"
+[1] "Performing analysis for SRSF7"
+[1] "Performing analysis for RACK1"
+[1] "Performing analysis for RRM2"
+[1] "Performing analysis for RPLP1"
+[1] "Performing analysis for RPL14"
+[1] "Performing analysis for RPL35"
+[1] "Performing analysis for POLR2L"
+[1] "Performing analysis for PSMA6"
+[1] "Gene not found in first pass, searching secondary identifier annotation."
+[1] "Gene not found in second pass, searching third identifier annotation."
+[1] "Performing analysis for PSMB4"
+[1] "Performing analysis for RPL36"
+[1] "Performing analysis for PUF60"
+[1] "Performing analysis for SRSF2"
+[1] "Performing analysis for PSMB3"
+[1] "Performing analysis for ERH"
+[1] "Performing analysis for RPS21"
+[1] "Performing analysis for HNRNPC"
+[1] "Performing analysis for PSMA7"
+[1] "Performing analysis for EEF1G"
+[1] "Performing analysis for PHB"
+[1] "Performing analysis for TUBB"
+[1] "Performing analysis for PSMA3"
+[1] "Performing analysis for PHB2"
+[1] "Performing analysis for PSMA1"
+[1] "Performing analysis for RPL23A"
+[1] "Performing analysis for SARS1"
+[1] "Performing analysis for RPL30"
+[1] "Performing analysis for SNU13"
+[1] "Performing analysis for TXNL4A"
+[1] "Performing analysis for SNRNP200"
+[1] "Performing analysis for SNRPD1"
+[1] "Performing analysis for CCT2"
+[1] "Performing analysis for RPS10"
+[1] "Performing analysis for ATP5MF"
+[1] "Performing analysis for SNRPF"
+[1] "Performing analysis for DAD1"
+[1] "Performing analysis for PSMA4"
+[1] "Performing analysis for RRM1"
+[1] "Performing analysis for KPNB1"
+[1] "Performing analysis for SNRPA1"
+[1] "Performing analysis for VPS28"
+[1] "Performing analysis for SF3B5"
+[1] "Performing analysis for SFPQ"
+[1] "Performing analysis for PFDN2"
+[1] "Performing analysis for CCT3"
+[1] "Performing analysis for CDC123"
+[1] "Performing analysis for VCP"
+[1] "Performing analysis for PRPF19"
+[1] "Performing analysis for RPL37"
+[1] "Performing analysis for UBA1"
+[1] "Performing analysis for XRCC6"
+[1] "Performing analysis for GAPDH"
+[1] "Performing analysis for ANAPC11"
+[1] "Performing analysis for EIF2S1"
+[1] "Performing analysis for SF1"
+[1] "Performing analysis for RAD21"
+[1] "Performing analysis for PLK1"
+[1] "Performing analysis for LSM7"
+[1] "Performing analysis for EIF4A3"
+[1] "Performing analysis for FBL"
+[1] "Performing analysis for CCT4"
+[1] "Performing analysis for PSMB1"
+[1] "Performing analysis for BUD31"
+[1] "Performing analysis for TRMT112"
+[1] "Performing analysis for U2AF2"
+[1] "Performing analysis for TOP2A"
+[1] "Performing analysis for RPLP2"
+[1] "Performing analysis for PRPF8"
+[1] "Performing analysis for RBM39"
+[1] "Performing analysis for NACA"
+[1] "Performing analysis for UBA52"
+[1] "Performing analysis for RPS25"
+[1] "Performing analysis for NEDD8"
+[1] "Performing analysis for NOP56"
+[1] "Performing analysis for EIF3I"
+[1] "Performing analysis for SRP9"
+[1] "Performing analysis for CDC27"
+[1] "Performing analysis for HSPD1"
+[1] "Performing analysis for PSMA2"
+[1] "Performing analysis for RPL35A"
+[1] "Performing analysis for TCP1"
+[1] "Performing analysis for COPA"
+[1] "Performing analysis for CDC20"
+[1] "Performing analysis for TPT1"
+[1] "Performing analysis for MCM7"
+[1] "Performing analysis for POLR2B"
+[1] "Performing analysis for BUB3"
+[1] "Performing analysis for EIF3B"
+[1] "Performing analysis for DDB1"
+[1] "Performing analysis for POLR2F"
+[1] "Performing analysis for CSE1L"
+[1] "Performing analysis for LSM2"
+[1] "Performing analysis for LSM4"
+[1] "Performing analysis for RBM8A"
+[1] "Performing analysis for PRELID1"
+[1] "Performing analysis for POLR2I"
+[1] "Performing analysis for ZNF207"
+[1] "Performing analysis for CDK1"
+[1] "Performing analysis for LUC7L3"
+[1] "Performing analysis for CCT7"
+[1] "Performing analysis for EIF5"
+[1] "Performing analysis for DUT"
+[1] "Performing analysis for HSPA9"
+[1] "Performing analysis for GARS1"
+[1] "Performing analysis for AARS1"
+[1] "Performing analysis for PHF5A"
+[1] "Performing analysis for ATP6V0C"
+[1] "Performing analysis for SF3B3"
+[1] "Performing analysis for PSMC6"
+[1] "Performing analysis for RPA2"
+[1] "Performing analysis for PSMB5"
+[1] "Performing analysis for NCBP2"
+[1] "Performing analysis for CHMP2A"
+[1] "Performing analysis for EIF6"
+[1] "Performing analysis for NUTF2"
+[1] "Performing analysis for SF3A3"
+[1] "Performing analysis for DYNC1H1"
+[1] "Performing analysis for RBMX"
+[1] "Performing analysis for SRSF1"
+[1] "Performing analysis for ETF1"
+[1] "Performing analysis for RUVBL1"
+[1] "Performing analysis for TARS1"
+[1] "Performing analysis for DHX15"
+[1] "Performing analysis for CCT6A"
+[1] "Performing analysis for CCT5"
+[1] "Performing analysis for SSU72"
+[1] "Performing analysis for POLR2C"
+[1] "Performing analysis for EIF2S2"
+[1] "Performing analysis for KARS1"
+[1] "Performing analysis for RUVBL2"
+[1] "Performing analysis for PSMB6"
+[1] "Performing analysis for AURKB"
+[1] "Performing analysis for SEC61A1"
+[1] "Performing analysis for CDC45"
+[1] "Performing analysis for RPL38"
+[1] "Performing analysis for YARS1"
+[1] "Performing analysis for TUBA1B"
+[1] "Performing analysis for RPA1"
+[1] "Performing analysis for DDX56"
+[1] "Performing analysis for IARS1"
+[1] "Performing analysis for CCND1"
+[1] "Performing analysis for PRPF38A"
+[1] "Performing analysis for HSPA5"
+[1] "Performing analysis for SF3A1"
+[1] "Performing analysis for SF3B4"
+[1] "Performing analysis for SUPT16H"
+[1] "Performing analysis for MARS1"
+[1] "Performing analysis for COPB1"
+[1] "Performing analysis for MYC"
+[1] "Performing analysis for COPZ1"
+[1] "Performing analysis for NUP93"
+[1] "Performing analysis for UBE2I"
+[1] "Performing analysis for NUDT21"
+[1] "Performing analysis for PAFAH1B1"
+[1] "Performing analysis for PABPN1"
+[1] "Performing analysis for ANKLE2"
+[1] "Performing analysis for THOC2"
+[1] "Performing analysis for INTS11"
+[1] "Performing analysis for XPO1"
+[1] "Performing analysis for COPB2"
+[1] "Performing analysis for EIF4A1"
+[1] "Performing analysis for SMC4"
+[1] "Performing analysis for SF3B6"
+[1] "Performing analysis for PRC1"
+[1] "Performing analysis for PSMB2"
+[1] "Performing analysis for POLD2"
+[1] "Performing analysis for ILF2"
+[1] "Performing analysis for LSM6"
+[1] "Performing analysis for ATP2A2"
+[1] "Performing analysis for EWSR1"
+[1] "Performing analysis for KIF11"
+[1] "Performing analysis for ELOB"
+[1] "Performing analysis for RPL36A"
+[1] "Performing analysis for PRPF31"
+[1] "Performing analysis for VPS25"
+[1] "Performing analysis for ALDOA"
+[1] "Performing analysis for CCT8"
+[1] "Performing analysis for YBX1"
+[1] "Performing analysis for ISCU"
+[1] "Performing analysis for NARS1"
+[1] "Performing analysis for GPN3"
+[1] "Performing analysis for PCBP1"
+[1] "Performing analysis for FCF1"
+[1] "Performing analysis for BIRC5"
+[1] "Performing analysis for PRPF38B"
+[1] "Performing analysis for RPA3"
+[1] "Performing analysis for SF3A2"
+[1] "Performing analysis for ACTL6A"
+[1] "Performing analysis for QARS1"
+[1] "Performing analysis for SSRP1"
+[1] "Performing analysis for RBBP4"
+[1] "Performing analysis for CLNS1A"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>esHitsGenes<span class="sc">$</span>coxz <span class="ot">=</span> <span class="fu">unlist</span>(coxZScores)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now we can make a plot for these scores.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb41"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>esHitsPlot <span class="ot">=</span> esHitsGenes <span class="sc">%&gt;%</span></span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(coxz) <span class="sc">%&gt;%</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">index =</span> <span class="fu">seq</span>(<span class="dv">1</span>,<span class="fu">nrow</span>(esHitsGenes),<span class="dv">1</span>))</span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>esHitsPlot<span class="sc">$</span>pText <span class="ot">=</span> <span class="fu">ifelse</span>(esHitsPlot<span class="sc">$</span>symbol <span class="sc">==</span> <span class="st">'YBX1'</span>, esHitsPlot<span class="sc">$</span>symbol, <span class="st">''</span>)</span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>esHitsPlot<span class="sc">$</span>pSize <span class="ot">=</span> <span class="fu">ifelse</span>(esHitsPlot<span class="sc">$</span>symbol <span class="sc">==</span> <span class="st">'YBX1'</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>esHitsPlot<span class="sc">$</span>pColors <span class="ot">=</span> <span class="fu">ifelse</span>(esHitsPlot<span class="sc">$</span>symbol <span class="sc">==</span> <span class="st">'YBX1'</span>, <span class="fu">brewer.pal</span>(<span class="dv">4</span>,<span class="st">'OrRd'</span>)[<span class="dv">4</span>], <span class="fu">brewer.pal</span>(<span class="dv">3</span>,<span class="st">'Greys'</span>)[<span class="dv">2</span>])</span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a><span class="co">#esHitsPlot$pText = ifelse(esHitsPlot$coxz &gt;= 2.5, esHitsPlot$symbol, '')</span></span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(esHitsPlot, <span class="fu">aes</span>(coxz, index)) <span class="sc">+</span></span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">1</span>, <span class="at">color =</span> esHitsPlot<span class="sc">$</span>pColors) <span class="sc">+</span></span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text_repel</span>(<span class="at">label =</span> esHitsPlot<span class="sc">$</span>pText, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">nudge_y =</span> <span class="sc">-</span><span class="dv">50</span>, <span class="at">nudge_x =</span> <span class="fl">0.5</span>, <span class="at">max.overlaps =</span> <span class="dv">1000</span>) <span class="sc">+</span></span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">'Cox Univariate Z Score'</span>, <span class="at">y =</span> <span class="st">'Gene index'</span>, <span class="at">title =</span> <span class="st">'Overall survival'</span>) <span class="sc">+</span></span>
+<span id="cb41-14"><a href="#cb41-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1 rows containing missing values (`geom_point()`).</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1 rows containing missing values (`geom_text_repel()`).</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="20200604File5_survivalAnalysis_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/microarray20200604_ewingSarcomaAllSets/scatter_postelVinayOverallSurvivalTop250Version1.pdf'</span>, <span class="at">sep =</span> <span class="st">''</span>), </span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>       <span class="at">width =</span> <span class="dv">2</span>, <span class="at">height =</span> <span class="dv">2</span>, <span class="at">useDingbats =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Removed 1 rows containing missing values (`geom_point()`).
+Removed 1 rows containing missing values (`geom_text_repel()`).</code></pre>
+</div>
+</div>
+<p>Extract the YB-1 data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>expressionData <span class="ot">=</span> postelExpression</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>phenotypeData <span class="ot">=</span> postelPhenotype</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>geneOfInterest <span class="ot">=</span> <span class="st">'YBX1'</span></span>
+<span id="cb46-5"><a href="#cb46-5" aria-hidden="true" tabindex="-1"></a>coxZScores <span class="ot">=</span> <span class="fu">lapply</span>(geneOfInterest, survivalAnalysis, </span>
+<span id="cb46-6"><a href="#cb46-6" aria-hidden="true" tabindex="-1"></a>                    <span class="at">expressionData =</span> expressionData, </span>
+<span id="cb46-7"><a href="#cb46-7" aria-hidden="true" tabindex="-1"></a>                    <span class="at">phenotypeData =</span> phenotypeData, </span>
+<span id="cb46-8"><a href="#cb46-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">survivalPlot =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb46-9"><a href="#cb46-9" aria-hidden="true" tabindex="-1"></a>                    <span class="at">survivalData =</span> <span class="cn">TRUE</span>,</span>
+<span id="cb46-10"><a href="#cb46-10" aria-hidden="true" tabindex="-1"></a>                    <span class="at">writeDirectory =</span> <span class="st">'/microarray20200604_ewingSarcomaAllSets'</span>,</span>
+<span id="cb46-11"><a href="#cb46-11" aria-hidden="true" tabindex="-1"></a>                    <span class="at">printData =</span> <span class="cn">TRUE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Performing analysis for YBX1"</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining, by = "geo_accession"</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.004687487
+
+ low high 
+  30   29 </code></pre>
+</div>
+</div>
+</section>
+<section id="session-info" class="level2">
+<h2 class="anchored" data-anchor-id="session-info">Session info</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb50"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.1.3 (2022-03-10)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19042)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_Canada.1252  LC_CTYPE=English_Canada.1252   
+[3] LC_MONETARY=English_Canada.1252 LC_NUMERIC=C                   
+[5] LC_TIME=English_Canada.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] ggrepel_0.9.2      survminer_0.4.9    ggpubr_0.5.0       survival_3.4-0    
+ [5] RColorBrewer_1.1-3 forcats_0.5.2      stringr_1.4.1      dplyr_1.0.10      
+ [9] purrr_0.3.5        readr_2.1.3        tidyr_1.2.1        tibble_3.1.8      
+[13] ggplot2_3.4.0      tidyverse_1.3.2   
+
+loaded via a namespace (and not attached):
+ [1] httr_1.4.4            maxstat_0.7-25        jsonlite_1.8.3       
+ [4] splines_4.1.3         carData_3.0-5         modelr_0.1.10        
+ [7] assertthat_0.2.1      googlesheets4_1.0.1   cellranger_1.1.0     
+[10] yaml_2.3.6            pillar_1.8.1          backports_1.4.1      
+[13] lattice_0.20-45       glue_1.6.2            digest_0.6.30        
+[16] ggsignif_0.6.4        rvest_1.0.3           colorspace_2.0-3     
+[19] htmltools_0.5.3       Matrix_1.5-3          pkgconfig_2.0.3      
+[22] broom_1.0.1           haven_2.5.1           mvtnorm_1.1-3        
+[25] xtable_1.8-4          scales_1.2.1          km.ci_0.5-6          
+[28] KMsurv_0.1-5          tzdb_0.3.0            timechange_0.1.1     
+[31] googledrive_2.0.0     farver_2.1.1          generics_0.1.3       
+[34] car_3.1-1             ellipsis_0.3.2        withr_2.5.0          
+[37] cli_3.4.1             magrittr_2.0.3        crayon_1.5.2         
+[40] readxl_1.4.1          evaluate_0.18         fs_1.5.2             
+[43] fansi_1.0.3           rstatix_0.7.1         xml2_1.3.3           
+[46] tools_4.1.3           data.table_1.14.4     hms_1.1.2            
+[49] gargle_1.2.1          lifecycle_1.0.3       munsell_0.5.0        
+[52] reprex_2.0.2          compiler_4.1.3        rlang_1.0.6          
+[55] grid_4.1.3            rstudioapi_0.14       labeling_0.4.2       
+[58] rmarkdown_2.18        gtable_0.3.1          abind_1.4-5          
+[61] DBI_1.1.3             R6_2.5.1              zoo_1.8-11           
+[64] gridExtra_2.3         lubridate_1.9.0       knitr_1.40           
+[67] fastmap_1.1.0         survMisc_0.5.6        utf8_1.2.2           
+[70] exactRankTests_0.8-35 stringi_1.7.8         Rcpp_1.0.9           
+[73] vctrs_0.5.1           dbplyr_2.2.1          tidyselect_1.2.0     
+[76] xfun_0.34            </code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    setTimeout(function() {
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

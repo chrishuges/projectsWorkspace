@@ -1,0 +1,302 @@
+---
+title: "sorensenSurface"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('limma')
+library('RColorBrewer')
+library('DESeq2')
+library('DEqMS')
+library('ggrepel')
+library('stringr')
+library('Biostrings')
+library('OrgMassSpecR')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+Read in the peptide spectral match data. The TMT layout data are in the associated tmt_layout_surface.txt file.
+
+```{r}
+##########################################################################################
+##set the file locations
+sampleInfo = c('plex1','plex2','plex3','plex4','plex5')
+annotation = c('a','b','c','d','e')
+psmFiles = file.path(baseRepository, 'database20220929_ewsExpressionDatabase/sorensenSurface/fragpipeAnalysis', sampleInfo, 'psm.tsv')
+all(file.exists(psmFiles))
+
+##process the identification data
+psmData = tibble()
+for (i in 1:length(sampleInfo)){
+  psmTemp = read_tsv(psmFiles[i], show_col_types = FALSE) %>%
+    dplyr::select(Peptide, `Protein ID`, Gene, Spectrum) %>%
+    dplyr::rename(sequence = Peptide, 
+                  accession = `Protein ID`,
+                  symbol = Gene) %>%
+    dplyr::mutate(dataset = tolower(sampleInfo[i]),
+                  scan = as.numeric(sub('.*Surface_Plex[0-9]\\.(.*)\\.[0-9]+\\.[0-9]+', '\\1', Spectrum))) %>%
+    dplyr::select(-Spectrum)
+  ##
+  psmData = rbind(psmData, psmTemp)
+}
+psmData
+
+##this is the function we will use to process the quant data
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath, show_col_types = FALSE) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`131CIntensity`)
+  colnames(quantData) = c('scan','tmt126C','tmt127N','tmt127C','tmt128N','tmt128C','tmt129N',
+                          'tmt129C','tmt130N','tmt130C','tmt131N','tmt131C')
+  ##
+  dataset = sub('.*EwingSurface_(.*)\\.raw_Matrix\\.txt', '\\1', filePath)
+  quantData$dataset = tolower(dataset)
+  ##
+  return(quantData)
+}
+
+##process the quant data
+quantFiles = list.files(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/quants/', sep = ''),
+                        pattern = '_Matrix.txt', full.names = TRUE)
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+allQuantData = do.call('rbind', quantDataSet)
+
+##combine all of the data
+psmQuant = psmData %>%
+  left_join(allQuantData)
+
+##filter the psm data
+psmQuant = psmQuant %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(sampleSignal = sum(tmt126C:tmt131C, na.rm = TRUE)) %>%
+  dplyr::filter(sampleSignal >= 1000)
+
+##roll into proteins
+pro = psmQuant %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-sampleSignal) %>%
+  dplyr::mutate(psmCount = 1) %>%
+  dplyr::group_by(sequence, accession, symbol, dataset) %>%
+  dplyr::summarise(across(tmt126C:tmt131C, mean, na.rm = TRUE), psmCount = sum(psmCount, na.rm = TRUE)) %>%
+  dplyr::mutate(pepCount = 1) %>%
+  dplyr::group_by(dataset, accession, symbol) %>%
+  dplyr::summarise(across(tmt126C:tmt131C, median, na.rm = TRUE), psmCount = sum(psmCount, na.rm = TRUE), pepCount = sum(pepCount, na.rm = TRUE))
+
+##save the data
+saveRDS(pro[pro$dataset == 'plex1',], paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_rawProteinDatasetA.rds', sep = ''))
+saveRDS(pro[pro$dataset == 'plex2',], paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_rawProteinDatasetB.rds', sep = ''))
+saveRDS(pro[pro$dataset == 'plex3',], paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_rawProteinDatasetC.rds', sep = ''))
+saveRDS(pro[pro$dataset == 'plex4',], paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_rawProteinDatasetD.rds', sep = ''))
+saveRDS(pro[pro$dataset == 'plex5',], paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_rawProteinDatasetE.rds', sep = ''))
+```
+
+Perform the IRS normalization.
+
+```{r}
+##########################################################################################
+##read in the annotation data
+tmtAnno = read_tsv(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/tmt_layout_surface.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::select(id, plex, label) %>%
+  dplyr::rename(dataset = plex,
+                sampleName = id) %>%
+  dplyr::mutate(dataset = paste('plex', dataset, sep = '')) %>%
+  dplyr::mutate(sampleName = ifelse(grepl('EMPTY', sampleName), paste(sampleName,'_',dataset,'_',label, sep = ''),
+                                    ifelse(grepl('PIS', sampleName), sampleName, paste('ews_',sampleName, sep = ''))))
+
+##read in the data and combine with the annotation
+proteinSetA = readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_rawProteinDatasetA.rds', sep = '')) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-dataset) %>%
+  dplyr::rename(psma = psmCount,
+                pepa = pepCount)
+colnames(proteinSetA)[3:13] = tmtAnno[tmtAnno$dataset == 'plex1',]$sampleName
+#
+proteinSetB = readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_rawProteinDatasetB.rds', sep = '')) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-dataset) %>%
+  dplyr::rename(psmb = psmCount,
+                pepb = pepCount)
+colnames(proteinSetB)[3:13] = tmtAnno[tmtAnno$dataset == 'plex2',]$sampleName
+#
+proteinSetC = readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_rawProteinDatasetC.rds', sep = '')) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-dataset) %>%
+  dplyr::rename(psmc = psmCount,
+                pepc = pepCount)
+colnames(proteinSetC)[3:13] = tmtAnno[tmtAnno$dataset == 'plex3',]$sampleName
+#
+proteinSetD = readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_rawProteinDatasetD.rds', sep = '')) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-dataset) %>%
+  dplyr::rename(psmd = psmCount,
+                pepd = pepCount)
+colnames(proteinSetD)[3:13] = tmtAnno[tmtAnno$dataset == 'plex4',]$sampleName
+#
+proteinSetE = readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_rawProteinDatasetE.rds', sep = '')) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-dataset) %>%
+  dplyr::rename(psme = psmCount,
+                pepe = pepCount)
+colnames(proteinSetE)[3:13] = tmtAnno[tmtAnno$dataset == 'plex5',]$sampleName
+
+##join all of the data
+proteinSet = proteinSetA %>%
+  full_join(proteinSetB) %>%
+  full_join(proteinSetC) %>%
+  full_join(proteinSetD) %>%
+  full_join(proteinSetE)
+
+
+
+##raw data check
+targetSamples = proteinSet[,c(1:2, which(grepl('ews', colnames(proteinSet))))]
+pooledSamples = proteinSet[,c(which(grepl('PIS', colnames(proteinSet))))]
+psmSamples = proteinSet[,c(which(grepl('psm', colnames(proteinSet))))]
+rawData = cbind(targetSamples, pooledSamples, psmSamples)
+rawData[rawData == 0] = NA
+rawData = subset(rawData, rowSums(is.na(rawData[,3:45])) < 20)
+boxplot(log2(rawData[,3:50]), col = c(rep('red',9), rep('green',8), rep('blue',9), rep('purple',8), rep('pink',9),rep('grey',5)), 
+        notch = TRUE, main = 'Raw data',
+        xlab = 'TMT Samples', ylab = 'log2 of Intensity')
+plotDensities(log2(rawData[,3:50]), col = c(rep('red',9), rep('green',8), rep('blue',9), rep('purple',8), rep('pink',9),rep('grey',5)), 
+              main = 'Raw data')
+format(round(colSums(rawData[,3:50], na.rm = TRUE), digits = 0), big.mark = ",")
+
+##sample loading normalization
+exp1Raw = rawData[c(3:11)]
+exp2Raw = rawData[c(12:19)]
+exp3Raw = rawData[c(20:28)]
+exp4Raw = rawData[c(29:36)]
+exp5Raw = rawData[c(37:45)]
+target = mean(c(colSums(exp1Raw, na.rm = TRUE), 
+                colSums(exp2Raw, na.rm = TRUE), 
+                colSums(exp3Raw, na.rm = TRUE), 
+                colSums(exp4Raw, na.rm = TRUE), 
+                colSums(exp5Raw, na.rm = TRUE)))
+normFacs = target / colSums(exp1Raw, na.rm = TRUE)
+exp1Sl = sweep(exp1Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp2Raw, na.rm = TRUE)
+exp2Sl = sweep(exp2Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp3Raw, na.rm = TRUE)
+exp3Sl = sweep(exp3Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp4Raw, na.rm = TRUE)
+exp4Sl = sweep(exp4Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp5Raw, na.rm = TRUE)
+exp5Sl = sweep(exp5Raw, 2, normFacs, FUN = "*")
+dataSl = cbind(exp1Sl, exp2Sl, exp3Sl, exp4Sl, exp5Sl)
+boxplot(log2(dataSl), col = c(rep('red',9), rep('green',8), rep('blue',9), rep('purple',8), rep('pink',9),rep('grey',5)), 
+        notch = TRUE, main = "Sample Loading (SL) normalized data",
+        xlab = 'TMT Sample', ylab = 'log2 of Intensity')
+plotDensities(log2(dataSl), col = c(rep('red',9), rep('green',8), rep('blue',9), rep('purple',8), rep('pink',9),rep('grey',5)), main = "SL normalization")
+
+##IRS normalization
+irs = tibble(rawData[,46:50])
+colnames(irs) = c('sum1','sum2','sum3','sum4','sum5')
+irs$average = apply(irs, 1, function(x) exp(mean(log(x),na.rm = TRUE)))
+irs$fac1 = irs$average / irs$sum1
+irs$fac2 = irs$average / irs$sum2
+irs$fac3 = irs$average / irs$sum3
+irs$fac4 = irs$average / irs$sum4
+irs$fac5 = irs$average / irs$sum5
+dataIrs = exp1Sl * irs$fac1
+dataIrs = cbind(dataIrs, exp2Sl * irs$fac2)
+dataIrs = cbind(dataIrs, exp3Sl * irs$fac3)
+dataIrs = cbind(dataIrs, exp4Sl * irs$fac4)
+dataIrs = cbind(dataIrs, exp5Sl * irs$fac5)
+boxplot(log2(dataIrs), col = c(rep('red',9), rep('green',8), rep('blue',9), rep('purple',8), rep('pink',9),rep('grey',5)), 
+        main = "Internal Reference Scaling (IRS) normalized data",
+        xlab = 'TMT Sample', ylab = 'log2 of Intensity', notch = TRUE)
+plotDensities(log2(dataIrs), col = c(rep('red',9), rep('green',8), rep('blue',9), rep('purple',8), rep('pink',9),rep('grey',5)), main = "IRS data")
+format(round(colSums(dataIrs, na.rm = TRUE), digits = 0), big.mark = ",")
+
+
+##post-normalization clustering
+colVec = c(rep('red',9), rep('green',8), rep('blue',9), rep('purple',8), rep('pink',9))
+plotMDS(log2(dataIrs), col = colVec, main = "IRS clusters group by condition")
+```
+
+Recombine the data with the accessions and save the final file.
+
+```{r}
+##########################################################################################
+finalIrsData = as_tibble(cbind(rawData[,c(1:2,51:55)], dataIrs))
+
+##save data
+saveRDS(finalIrsData, paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_proteinSetABCDEIrsNormalized.rds', sep = ''))
+```
+
+Reshape the data and output the final dataset.
+
+```{r}
+##########################################################################################
+##calculate some final scores, using the iBAQ value as a score in this case
+finalData = as.data.frame(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_proteinSetABCDEIrsNormalized.rds', sep = '')))
+
+##for the iBAQ calculation, we need the number of theoretical tryptic peptides
+proteinFasta = readAAStringSet('D:/databases/projectEwsDlg2/proteomicsIndex/2022-09-27-reviewed-contam-UP000005640.fas')
+proteinDatabase = tibble('proteinNames' = names(proteinFasta)) %>%
+  dplyr::mutate(accession = sapply(str_split(proteinNames, '\\|'), '[', 2)) %>%
+  dplyr::mutate(length = width(proteinFasta)) %>%
+  dplyr::select(-proteinNames)
+trypticPeptides = vector()
+detectableLength = vector()
+for (i in 1:length(proteinFasta)){
+  aaSeq = as.character(proteinFasta[[i]])
+  seqDigest = OrgMassSpecR::Digest(aaSeq, enzyme = 'trypsin', missed = 0, custom = list(code = c('X','U','Z','B'), mass = c(50, 60, 70, 80)))
+  seqDigest$pepLength = (seqDigest$stop - seqDigest$start) + 1
+  seqDigestSub = subset(seqDigest, (seqDigest$pepLength > 5) & (seqDigest$pepLength < 31))
+  trypticPeptides = c(trypticPeptides, nrow(seqDigestSub))
+  detectableLength = c(detectableLength, sum(seqDigestSub$pepLength, na.rm = TRUE))
+}
+
+#now add to the database
+proteinDatabase$detectablePeptides = trypticPeptides
+proteinDatabase$detectableLength = detectableLength
+
+
+##incorporate with the proteomics data
+finalDataSub = tibble(subset(finalData, rowSums(is.na(finalData[,3:7])) < 2)) %>%
+  dplyr::select(names(finalData)[!grepl('Super', colnames(finalData))]) %>%
+  dplyr::select(accession, symbol, ews_CT1_T2:ews_EW13_T2) %>%
+  dplyr::left_join(proteinDatabase) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(meanIntensity = rowMeans(across(ews_CT1_T2:ews_EW13_T2), na.rm = TRUE)) %>%
+  dplyr::mutate(sorensenSurface = log10(meanIntensity / detectablePeptides)) %>%
+  dplyr::select(accession, symbol, sorensenSurface)
+
+
+##write the data
+saveRDS(finalDataSub, paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_sorensenSurface.rds', sep = ''))
+write.table(finalDataSub, 
+            paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_sorensenSurface.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+```
+
+Finish up.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+

@@ -55,7 +55,7 @@ Read in the peptide spectral match data. The TMT layout is as follows:
 ##set the file locations
 sampleInfo = c('setA','setB','setC')
 annotation = c('a','b','c')
-psmFiles = file.path(baseRepository, 'proteomics20201220_a673ShEwsFli1DoxTimecourse/fragpipeAnalysis', sampleInfo, 'psm.tsv')
+psmFiles = file.path(baseRepository, 'database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/fragpipeAnalysis', sampleInfo, 'psm.tsv')
 all(file.exists(psmFiles))
 
 ##process the identification data
@@ -91,7 +91,7 @@ combineQuantFiles = function(filePath, ...){
 }
 
 ##process the quant data
-quantFiles = list.files(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/quants/', sep = ''),
+quantFiles = list.files(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/quants/', sep = ''),
                         pattern = '_Matrix.txt', full.names = TRUE)
 quantDataSet = lapply(quantFiles, combineQuantFiles)
 allQuantData = do.call('rbind', quantDataSet)
@@ -120,16 +120,16 @@ pro = psmQuant %>%
   dplyr::summarise(across(tmt126C:tmt133N, median, na.rm = TRUE), psmCount = sum(psmCount, na.rm = TRUE), pepCount = sum(pepCount, na.rm = TRUE))
 
 ##save the data
-saveRDS(pro[pro$dataset == 'seta',], paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_rawProteinDatasetA.rds', sep = ''))
-saveRDS(pro[pro$dataset == 'setb',], paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_rawProteinDatasetB.rds', sep = ''))
-saveRDS(pro[pro$dataset == 'setc',], paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_rawProteinDatasetC.rds', sep = ''))
+saveRDS(pro[pro$dataset == 'seta',], paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/dataset_rawProteinDatasetA.rds', sep = ''))
+saveRDS(pro[pro$dataset == 'setb',], paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/dataset_rawProteinDatasetB.rds', sep = ''))
+saveRDS(pro[pro$dataset == 'setc',], paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/dataset_rawProteinDatasetC.rds', sep = ''))
 ```
 
 Perform the IRS normalization.
 
 ```{r}
 ##########################################################################################
-proteinSet1 = readRDS(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_rawProteinDatasetA.rds', sep = '')) %>%
+proteinSet1 = readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/dataset_rawProteinDatasetA.rds', sep = '')) %>%
   dplyr::ungroup() %>%
   dplyr::select(-dataset) %>%
   dplyr::rename(pool1a = tmt126C,
@@ -144,7 +144,7 @@ proteinSet1 = readRDS(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1Do
                 pool2a = tmt133N,
                 psma = psmCount,
                 pepa = pepCount)
-proteinSet2 = readRDS(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_rawProteinDatasetB.rds', sep = '')) %>%
+proteinSet2 = readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/dataset_rawProteinDatasetB.rds', sep = '')) %>%
   dplyr::ungroup() %>%
   dplyr::select(-dataset) %>%
   dplyr::rename(pool1b = tmt126C,
@@ -159,7 +159,7 @@ proteinSet2 = readRDS(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1Do
                 pool2b = tmt133N,
                 psmb = psmCount,
                 pepb = pepCount)
-proteinSet3 = readRDS(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_rawProteinDatasetC.rds', sep = '')) %>%
+proteinSet3 = readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/dataset_rawProteinDatasetC.rds', sep = '')) %>%
   dplyr::ungroup() %>%
   dplyr::select(-dataset) %>%
   dplyr::rename(pool1c = tmt126C,
@@ -175,8 +175,8 @@ proteinSet3 = readRDS(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1Do
                 psmc = psmCount,
                 pepc = pepCount)
 proteinSet = proteinSet1 %>%
-  left_join(proteinSet2) %>%
-  left_join(proteinSet3)
+  full_join(proteinSet2) %>%
+  full_join(proteinSet3)
 
 ##raw data check
 targetSamples = proteinSet[,c(1:2, which(grepl('day', colnames(proteinSet))))]
@@ -231,58 +231,21 @@ colVec = c(rep('red',8),rep('blue',8),rep('green',8))
 plotMDS(log2(dataIrs), col = colVec, main = "IRS clusters group by condition")
 ```
 
-So the data look great. There is doesn't appear to be any batch/replicate effect (y-axis), and the individual days themselves seem to be driving the biggest difference (x-axis). Remake this PCA plot to better correspond with the RNA data.
-
-```{r}
-##########################################################################################
-#need to build a DESeq object
-prepIrs = dataIrs
-prepIrs[prepIrs == 0] = NA
-row.names(prepIrs) = rawData$accession
-cts = log2(prepIrs[complete.cases(prepIrs),])
-cts = apply(cts, 2, function(x) as.integer(x))
-coldata = data.frame('sampleCol' = colnames(dataIrs),
-                     'sampleName' = rep(c('day0','day7','day9','day10','day11','day14','day17','day22'), 3),
-                     'batch' = rep(c('setA','setB','setC'),each = 8))
-dds = DESeqDataSetFromMatrix(countData = cts,
-                              colData = coldata,
-                              design = ~ sampleName)
-
-##
-mdsPlot = plotPCA(DESeqTransform(dds), intgroup = c('sampleName','batch'), returnData = TRUE)
-mdsPlot$sampleName = factor(mdsPlot$sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22'))
-percentVar = round(100 * attr(mdsPlot, 'percentVar'))
-#make the ggplot
-ggplot(mdsPlot, aes(PC1, PC2, color = sampleName, shape = batch)) +
-  geom_point(size = 3, alpha = 0.75) +
-  scale_color_manual(values = rep(c(brewer.pal(3,'Blues')[3], brewer.pal(3,'OrRd')[3], brewer.pal(7,'Blues')[1:6]),3)) +
-  scale_x_continuous(limits = c(-30,20), breaks = seq(-30,20,8)) +
-  scale_y_continuous(limits = c(-10,16), breaks = seq(-20,20,4)) +
-  labs(x = paste0('PC1: ', percentVar[1], '% variance'), 
-       y = paste0('PC2: ', percentVar[2], '% variance'), 
-       title = 'A673 protein groups') +
-  theme_classic() +
-  theme(legend.position = 'none')
-#save the plot
-ggsave(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/pcaplot_a673ShEwsFli1AbundanceLog.pdf', sep = ''), 
-       height = 2, width = 2, useDingbats = FALSE)
-```
-
-Recombine the data with the accessions and look at a few target proteins.
+Recombine the data with the accessions and save the final file.
 
 ```{r}
 ##########################################################################################
 finalIrsData = as_tibble(cbind(rawData[,c(1:2,33:35)], dataIrs))
-finalIrsData[grepl('DLG2', finalIrsData$symbol),]
+
 ##save data
-saveRDS(finalIrsData, paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_proteinSetABCIrsNormalized.rds', sep = ''))
+saveRDS(finalIrsData, paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/dataset_proteinSetABCIrsNormalized.rds', sep = ''))
 ```
 
 Perform a differential expression analysis using DEqMS between specific timepoints.
 
 ```{r}
 ##########################################################################################
-dataIrsRaw = as.data.frame(readRDS(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_proteinSetABCIrsNormalized.rds', sep = '')))
+dataIrsRaw = as.data.frame(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/dataset_proteinSetABCIrsNormalized.rds', sep = '')))
 row.names(dataIrsRaw) = dataIrsRaw$accession
 dataIrs = dataIrsRaw[,c(which(grepl('day0', colnames(dataIrsRaw)) | grepl('day7', colnames(dataIrsRaw))))] #I only keep the two time points I want to compare here
 dataIrsLog = log2(dataIrs)
@@ -292,7 +255,7 @@ dataIrsLog = na.omit(dataIrsLog)
 cond = as.factor(rep(c('day0','day7'),3))
 design = model.matrix(~0+cond) # 0 means no intercept for the linear model
 colnames(design) = gsub('cond','',colnames(design))
-contrast =  makeContrasts(contrasts = 'day7-day0', levels = design)
+contrast =  makeContrasts(contrasts = 'day0-day7', levels = design)
 fit1 = lmFit(dataIrsLog, design)
 fit2 = contrasts.fit(fit1,contrasts = contrast)
 fit3 = eBayes(fit2)
@@ -304,59 +267,41 @@ fit3$count = psm.count.table[rownames(fit3$coefficients),'count']
 fit4 = spectraCounteBayes(fit3)
 ```
 
-<div style="margin-bottom:50px;"></div>
-
 Outputs of spectraCounteBayes:
-object is augmented form of “fit” object from eBayes in Limma, with the additions being:
-sca.t - Spectra Count Adjusted posterior t-value
-sca.p - Spectra Count Adjusted posterior p-value
-sca.dfprior - DEqMS estimated prior degrees of freedom
-sca.priorvar- DEqMS estimated prior variance
-sca.postvar - DEqMS estimated posterior variance
-model - fitted model
 
-Visualize the fit curve.
+* object is augmented form of “fit” object from eBayes in Limma, with the additions being:
+* sca.t - Spectra Count Adjusted posterior t-value
+* sca.p - Spectra Count Adjusted posterior p-value
+* sca.dfprior - DEqMS estimated prior degrees of freedom
+* sca.priorvar- DEqMS estimated prior variance
+* sca.postvar - DEqMS estimated posterior variance
+* model - fitted model
+
+Output the results.
 
 ```{r}
 ##########################################################################################
-# n=30 limits the boxplot to show only proteins quantified by <= 30 PSMs.
-VarianceBoxplot(fit4, n = 30, main = 'A673 IRS data', xlab = 'PSM count')
-VarianceScatterplot(fit4,main = 'A673 IRS data')
-
-##
+##extract the results
 deqmsResults = tibble(outputResult(fit4, coef_col = 1)) %>%
-  dplyr::rename(accession  = gene) %>%
-  left_join(dataIrsRaw[,c('accession','symbol')])
-#if you are not sure which coef_col refers to the specific contrast,type
-head(fit4$coefficients)
-head(deqmsResults)
+  dplyr::rename(accession = gene) %>%
+  left_join(dataIrsRaw[,c('accession','symbol')]) %>%
+  dplyr::select(symbol, accession, logFC) %>%
+  dplyr::rename(sorensenTimecourseProtein = logFC)
+
+##write the data
+saveRDS(deqmsResults, paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/dataset_sorensenTimecourseProtein.rds', sep = ''))
 write.table(deqmsResults, 
-            paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/dataset_deqms_day0-day7.csv', sep = ''),
+            paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/dataset_sorensenTimecourseProtein.csv', sep = ''),
             sep = ',', row.names = FALSE, quote = FALSE)
-
-
-##volcano plot in our usualy style
-deqmsResults$logFC = -deqmsResults$logFC
-deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
-deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(4,'GnBu')[4],
-                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(4,'OrRd')[4],
-                                     brewer.pal(3,'Greys')[2]))
-#goi = c('PRKCB','LOX','DLG2')
-goi = c('IL1RAP','STEAP1','STEAP2','PRKCB','LOX','DLG2')
-deqmsResults$pText = ifelse(deqmsResults$symbol %in% goi, deqmsResults$symbol, '')
-##
-ggplot(deqmsResults, aes(logFC, plotPValue)) +
-  geom_point(size = 1, color = deqmsResults$pColors) +
-  geom_text_repel(label = deqmsResults$pText, nudge_x = 2, nudge_y = 1, max.overlaps = 10000) +
-  labs(x = 'log2(day0 - day7)', y = '-log10(P-value)', title = 'Differential protein abundance') +
-  scale_y_continuous(limits = c(0,12), breaks = seq(0,20,4)) +
-  scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
-  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
-  geom_hline(yintercept = 3, linetype = 'dashed') +
-  theme_classic()
-ggsave(paste(baseRepository, '/proteomics20201220_a673ShEwsFli1DoxTimecourse/scatter_deqmsIrsDay0-Day7.pdf', sep = ''),
-       height = 2, width = 2, useDingbats = FALSE)
 ```
 
+Finish up.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
 
 

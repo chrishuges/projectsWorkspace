@@ -102,6 +102,73 @@ write.table(yb1Rip, paste(baseRepository, '/sequencing20221011_ybx1HibitRip/data
 
 ```
 
+Make a plot of these data.
+
+```{r}
+##########################################################################################
+##input the mitochondrial genes
+mitoGenes = c('ATP8','ATP6','COX1','COX2','COX3','CYTB','ND1','ND2','ND3','ND4L','ND4','ND5','ND6')
+goi = c('YBX1','C1QBP','G3BP1','UBAP2L','HDGF','MYC','NFE2L2')
+
+##read in the processed data
+rip = tibble(readRDS(paste(baseRepository, '/sequencing20221011_ybx1HibitRip/dataset_yb1HibitRipAllRnas.rds', sep = ''))) %>%
+  dplyr::mutate(log2Tpm = log2(avgTpm)) %>%
+  dplyr::mutate(pColor = ifelse(symbol %in% mitoGenes, brewer.pal(4,'Greens')[4], 
+                                ifelse(symbol %in% goi, brewer.pal(4,'OrRd')[4], brewer.pal(3,'Greys')[2]))) %>%
+  dplyr::mutate(pText = ifelse(symbol %in% goi, symbol, ''))
+
+
+
+##make a plot
+greyPoints = dplyr::filter(rip, pColor == brewer.pal(3,'Greys')[2]) %>%
+  dplyr::mutate(sampleGroup = 'total')
+redPoints = dplyr::filter(rip, pColor == brewer.pal(4,'OrRd')[4]) %>%
+  dplyr::mutate(sampleGroup = 'total')
+greenPoints = dplyr::filter(rip, pColor == brewer.pal(4,'Greens')[4]) %>%
+  dplyr::mutate(sampleGroup = 'mito')
+
+##make a plot
+ggplot(greyPoints, aes(x = sampleGroup, y = log2Tpm)) +
+  geom_boxplot(size = 0.5, width = 0.4, outlier.shape = NA) +
+  geom_boxplot(data = greenPoints, aes(sampleGroup, log2Tpm), size = 0.5, width = 0.4, outlier.shape = NA) +
+  geom_jitter(data = greenPoints, aes(sampleGroup, log2Tpm), color = greenPoints$pColor, width = 0.15, size = 0.25) +
+  geom_jitter(data = redPoints, aes(sampleGroup, log2Tpm), color = redPoints$pColor, width = 0.15, size = 0.25) +
+  labs(x = 'Number of peptides', y = 'log10(iBAQ)', title = 'Protein interactions') +
+  scale_x_continuous(limits = c(0.5,2.5), breaks = seq(0,6,2)) +
+  scale_x_discrete(limits = c('total','mito')) +
+  scale_y_continuous(limits = c(0,16.5), breaks = seq(0,20,2)) +
+  geom_text_repel(data = redPoints, aes(sampleGroup, log2Tpm), label = redPoints$pText, nudge_y = 1, nudge_x = 0.2, max.overlaps = 1000) +
+  theme_classic()
+ggsave(paste(baseRepository, '/sequencing20221011_ybx1HibitRip/boxplot_ybx1InteractionsTpm.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+Make a plot of some gProfiler data.
+
+```{r}
+##########################################################################################
+##read in the data
+termsOfInterest = c('GO:BP','GO:CC','REAC')
+goData = read_csv(paste(baseRepository, '/sequencing20221011_ybx1HibitRip/top100Hits_gProfiler.csv', sep = ''), show_col_types = FALSE) %>%
+  dplyr::select(source:negative_log10_of_adjusted_p_value) %>%
+  dplyr::filter(source %in% termsOfInterest) 
+goDataSub = goData[c(1,2,(table(goData$source)[1]+3) - (table(goData$source)[1]),
+                     (table(goData$source)[1]+1):(table(goData$source)[1]+3),
+                     (table(goData$source)[1] + table(goData$source)[2]+1):(table(goData$source)[1] + table(goData$source)[2]+3)),] %>%
+  dplyr::mutate(termRank = rep(paste('term',seq(3,1,-1),sep=''),3)) %>%
+  dplyr::mutate(source = factor(source, levels = c('REAC','GO:CC','GO:BP')))
+
+##make the plot
+ggplot(goDataSub, aes(negative_log10_of_adjusted_p_value, source, fill = termRank)) +
+  geom_col(position = position_dodge()) +
+  scale_fill_manual(values = c(brewer.pal(4,'OrRd')[4], brewer.pal(4,'GnBu')[4], brewer.pal(4,'Greens')[4])) +
+  labs(x = '-log10(Adjusted p-value)', y = 'Category', title = 'RNA enrichment') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/sequencing20221011_ybx1HibitRip/barplot_ybx1RnaInteractionsGeneOntology.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
 We are done here for now. Wrap up below.
 
 ### Session info

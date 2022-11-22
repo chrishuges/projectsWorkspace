@@ -1,0 +1,45 @@
+---
+title: "Combining EwS data"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+Read in the files and combine them into a single dataset. Out first dataset should ideally be something comprehensive, so we don't lose any IDs. 
+
+```{r}
+##########################################################################################
+##read in the files and combine them
+rawData = readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/aynaudRna/dataset_aynaudRna.rds', sep = '')) %>%
+  dplyr::full_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/gollavilliRna/dataset_gollavilliRna.rds', sep = ''))) %>%
+  dplyr::full_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/dataset_sorensenTimeCourseProtein.rds', sep = ''))) %>%
+  dplyr::full_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTranslationProtein/dataset_sorensenTranslationProtein.rds', sep = ''))) %>%
+  dplyr::full_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_sorensenSurface.rds', sep = '')))
+
+
+```
+
+
+
+

@@ -16,8 +16,11 @@ eval wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_38/GRC
 eval gzip -d GRCh38.primary_assembly.genome.fa.gz
 eval mv GRCh38.primary_assembly.genome.fa genome.fa
 eval wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_38/gencode.v38.annotation.gtf.gz
-eval gzip -d gencode.v38.annotation.gtf
+eval gzip -d gencode.v38.annotation.gtf.gz
 eval mv gencode.v38.annotation.gtf genome.gtf
+eval wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_38/gencode.v38.annotation.gff3.gz
+eval gzip -d gencode.v38.annotation.gff3.gz
+eval mv gencode.v38.annotation.gff3 genome.gff3
 eval wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_38/GRCh38.primary_assembly.genome.fa.gz
 eval wget ftp://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_human/release_38/gencode.v38.transcripts.fa.gz
 ```

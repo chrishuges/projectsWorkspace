@@ -1,0 +1,406 @@
+---
+title: "Analysis of survival data for EwS"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('survival')
+library('survminer')
+library('ggrepel')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+Some functions we will use below.
+
+```{r}
+#######################################################################
+#######################################################################
+##This function performs survival analysis for input genes.
+##For reference on the format of expression and phenotypeData,
+##please see the example analysis in getGeoDataForSurvivalAnalysis.Rmd
+##that can be found on this GitHub page.
+#######################################################################
+survivalAnalysis = function(geneOfInterest, expressionData, phenotypeData,
+                            survivalPlot = FALSE, survivalData = FALSE, writeDirectory = '', printData = FALSE, ...){
+  print(paste('Performing analysis for', geneOfInterest))
+  ########
+  #first we select our gene of interest, and sort based on median expression across all patients
+  geneOfInterestExprs = expressionData %>%
+    filter(symbol == geneOfInterest)
+  ##check for data
+  if (nrow(geneOfInterestExprs) < 1){
+    print('Gene not found in first pass, searching secondary identifier annotation.')
+    geneOfInterestExprs = expressionData %>%
+      filter(arraySymbolOne == geneOfInterest)
+  }
+  if (nrow(geneOfInterestExprs) < 1){
+    print('Gene not found in second pass, searching third identifier annotation.')
+    geneOfInterestExprs = expressionData %>%
+      filter(arraySymbolTwo == geneOfInterest)
+  }
+  if (nrow(geneOfInterestExprs) < 1){
+    print('Gene not found. Moving on to next entry.')
+    return(NA)
+  }
+  geneOfInterestExprs$medExprs = apply(geneOfInterestExprs[,which(grepl('GS',colnames(geneOfInterestExprs)))[1]:ncol(geneOfInterestExprs)], 
+                                       1, function(x) mean(x, na.rm = TRUE))
+  geneOfInterestSort = geneOfInterestExprs %>%
+    arrange(desc(medExprs))
+  ########
+  #keep the top probe for the gene, based on the expression calculated above
+  geneSurvivalInput = geneOfInterestSort[1,1:(ncol(geneOfInterestSort) - 1)] %>%
+    pivot_longer(cols = colnames(geneOfInterestSort)[which(grepl('GS',colnames(geneOfInterestSort)))[1]]:colnames(geneOfInterestSort)[(ncol(geneOfInterestSort) - 1)], 
+                 names_to = 'geo_accession', values_to = 'rnaExprs') %>%
+    right_join(phenotypeData) %>%
+    arrange(desc(rnaExprs)) 
+  ########
+  #sorting of the patients into low and high expression based on the top and bottom 25%
+  geneSurvivalInput$geneLevel = ''
+  geneSurvivalInput[1:round(nrow(geneSurvivalInput) * 0.25), 'geneLevel'] = 'high'
+  geneSurvivalInput[round(nrow(geneSurvivalInput) * 0.75):nrow(geneSurvivalInput), 'geneLevel'] = 'low'
+  geneSurvivalInput$geneLevel = factor(geneSurvivalInput$geneLevel, levels = c('low','high'))
+  ########
+  #calculation of the different survival metrics based on our data
+  survivalFit = survfit(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+  survivalDiff = survdiff(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+  survivalPValue = 1 - pchisq(survivalDiff$chisq, length(survivalDiff$n) - 1)
+  survivalSummary = surv_summary(survivalFit, data = geneSurvivalInput)
+  coxStats = coxph(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+  coxZScore = coef(coxStats)/sqrt(diag(vcov(coxStats)))
+  ########
+  #this will output a survival plot
+  if (survivalPlot == TRUE){
+    ggsurvplot(survivalSummary, pval = survivalPValue, conf.int = FALSE,
+               risk.table = FALSE, linetype = "strata", ggtheme = theme_classic(), palette = brewer.pal(8,'RdBu')[c(8,1)]
+    )
+    ggsave(paste(baseRepository, writeDirectory, '/survival_', 
+                 geneOfInterest, '.pdf', sep = ''), width = 4, height = 4, useDingbats = FALSE)
+  }
+  ########
+  #this will output a text file with the survival results
+  if (survivalData == TRUE){
+    survivalOutput = summary(survivalFit)$table
+    write.table(survivalOutput, paste(baseRepository, writeDirectory, '/survival_', geneOfInterest, '.csv', sep = ''),
+                col.names = TRUE, row.names = TRUE, quote = FALSE, sep = ',')
+  }
+  ########
+  #print the data if desired
+  if (printData == TRUE){
+    print(survivalPValue)
+    print(table(geneSurvivalInput$geneLevel))
+  }
+  ########
+  #lastly we output the Z-score
+  return(coxZScore)
+  
+}
+#######################################################################
+#######################################################################
+
+
+
+#######################################################################
+##This function is a variant of the original survivalAnalysis,
+##but instead tries to determine the best expression cutoff between
+##high and low cases
+##more details here: http://r-addict.com/2016/11/21/Optimal-Cutpoint-maxstat.html
+#######################################################################
+postelExpression = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_postelVinayExpression.rds', sep = ''))
+postelPhenotype = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_postelVinayPhenotype.rds', sep = ''))
+expressionData = postelExpression
+phenotypeData = postelPhenotype
+geneOfInterest = 'YBX1'
+
+
+
+survivalAnalysisV2 = function(geneOfInterest, expressionData, phenotypeData,
+                              survivalPlot = FALSE, survivalData = FALSE, writeDirectory = '', printData = FALSE, ...){
+  print(paste('Performing analysis for', geneOfInterest))
+  ########
+  #first we select our gene of interest, and sort based on median expression across all patients
+  geneOfInterestExprs = expressionData %>%
+    filter(symbol == geneOfInterest)
+  ##check for data
+  if (nrow(geneOfInterestExprs) < 1){
+    print('Gene not found in first pass, searching secondary identifier annotation.')
+    geneOfInterestExprs = expressionData %>%
+      filter(arraySymbolOne == geneOfInterest)
+  }
+  if (nrow(geneOfInterestExprs) < 1){
+    print('Gene not found in second pass, searching third identifier annotation.')
+    geneOfInterestExprs = expressionData %>%
+      filter(arraySymbolTwo == geneOfInterest)
+  }
+  if (nrow(geneOfInterestExprs) < 1){
+    print('Gene not found. Moving on to next entry.')
+    return(NA)
+  }
+  geneOfInterestExprs$medExprs = apply(geneOfInterestExprs[,which(grepl('GS',colnames(geneOfInterestExprs)))[1]:ncol(geneOfInterestExprs)], 
+                                       1, function(x) mean(x, na.rm = TRUE))
+  geneOfInterestSort = geneOfInterestExprs %>%
+    arrange(desc(medExprs))
+  ########
+  #keep the top probe for the gene, based on the expression calculated above
+  geneSurvivalInput = geneOfInterestSort[1,1:(ncol(geneOfInterestSort) - 1)] %>%
+    pivot_longer(cols = colnames(geneOfInterestSort)[which(grepl('GS',colnames(geneOfInterestSort)))[1]]:colnames(geneOfInterestSort)[(ncol(geneOfInterestSort) - 1)], 
+                 names_to = 'geo_accession', values_to = 'rnaExprs') %>%
+    right_join(phenotypeData) %>%
+    arrange(rnaExprs)
+  ########
+  geneCutPoint = surv_cutpoint(geneSurvivalInput,
+                               time = 'ovs',
+                               event = 'status',
+                               variables = 'rnaExprs')
+  geneSurvivalCat = surv_categorize(geneCutPoint)
+  geneSurvivalInput$geneLevel = geneSurvivalCat$rnaExprs
+  geneSurvivalInput$geneLevel = factor(geneSurvivalInput$geneLevel, levels = c('low','high'))
+  #print(table(geneSurvivalInput$geneLevel))
+  ########
+  #calculation of the different survival metrics based on our data
+  survivalFit = survfit(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+  survivalDiff = survdiff(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+  survivalPValue = 1 - pchisq(survivalDiff$chisq, length(survivalDiff$n) - 1)
+  #print(survivalPValue)
+  survivalSummary = surv_summary(survivalFit, data = geneSurvivalInput)
+  coxStats = coxph(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+  coxZScore = coef(coxStats)/sqrt(diag(vcov(coxStats)))
+  ########
+  #this will output a survival plot
+  if (survivalPlot == TRUE){
+    ggsurvplot(survivalSummary, pval = survivalPValue, conf.int = FALSE,
+               risk.table = FALSE, linetype = "strata", ggtheme = theme_classic(), palette = brewer.pal(8,'RdBu')[c(8,1)]
+    )
+    ggsave(paste(baseRepository, writeDirectory, '/survival_', 
+                 geneOfInterest, '.pdf', sep = ''), width = 4, height = 4, useDingbats = FALSE)
+  }
+  ########
+  #this will output a text file with the survival results
+  if (survivalData == TRUE){
+    survivalOutput = summary(survivalFit)$table
+    write.table(survivalOutput, paste(baseRepository, writeDirectory, '/survival_', geneOfInterest, '.csv', sep = ''),
+                col.names = TRUE, row.names = TRUE, quote = FALSE, sep = ',')
+  }
+  ########
+  #print the data if desired
+  if (printData == TRUE){
+    print(survivalPValue)
+    print(print(table(geneSurvivalInput$geneLevel)))
+  }
+  ########
+  #lastly we output the Z-score
+  return(coxZScore)
+  
+}
+```
+
+## Data processing
+
+First we will read in all the data sets.
+
+```{r}
+##########################################################################################
+savolaExpression = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_savolaExpression.rds', sep = ''))
+savolaPhenotype = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_savolaPhenotype.rds', sep = ''))
+volchenExpressionA = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumExpressionSetA.rds', sep = ''))
+volchenPhenotypeA = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumPhenotypeSetA.rds', sep = ''))
+volchenExpressionB = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumExpressionSetB.rds', sep = ''))
+volchenPhenotypeB = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_volchenboumPhenotypeSetB.rds', sep = ''))
+postelExpression = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_postelVinayExpression.rds', sep = ''))
+postelPhenotype = readRDS(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/dataset_postelVinayPhenotype.rds', sep = ''))
+```
+
+Read in the crispr and rna expression data we created previously.
+
+```{r}
+##########################################################################################
+esHits = readRDS(paste(baseRepository, '/database20200604_depmapEwing/dataset_ewingRnaExprsCrisprDep.rds', sep = ''))
+#esHitsGenes = esHits[esHits$medDep <= -1 & esHits$medExprs >= 4, 'symbol']
+esHitsGenes = esHits[1:250,]
+```
+
+Do a test survival analysis for genes against the savola data.
+
+```{r, message = FALSE}
+##########################################################################################
+expressionData = savolaExpression
+phenotypeData = savolaPhenotype
+geneOfInterest = as.list(esHitsGenes$symbol)
+coxZScores = lapply(geneOfInterest, survivalAnalysis, 
+                    expressionData = expressionData, 
+                    phenotypeData = phenotypeData, 
+                    survivalPlot = FALSE,
+                    survivalData = FALSE,
+                    printData = FALSE)
+esHitsGenes$coxz = unlist(coxZScores)
+```
+
+Now we can make a plot for these scores.
+
+```{r}
+##########################################################################################
+esHitsPlot = esHitsGenes %>%
+  arrange(coxz) %>%
+  mutate(index = seq(1,nrow(esHitsGenes),1))
+esHitsPlot$pText = ifelse(esHitsPlot$symbol == 'YBX1', esHitsPlot$symbol, '')
+esHitsPlot$pSize = ifelse(esHitsPlot$symbol == 'YBX1', 3, 1)
+esHitsPlot$pColors = ifelse(esHitsPlot$symbol == 'YBX1', brewer.pal(4,'OrRd')[4], brewer.pal(3,'Greys')[2])
+#esHitsPlot$pText = ifelse(esHitsPlot$coxz >= 2.5, esHitsPlot$symbol, '')
+##
+ggplot(esHitsPlot, aes(coxz, index)) +
+  geom_point(size = 1, color = esHitsPlot$pColors) +
+  geom_text_repel(label = esHitsPlot$pText, size = 3, nudge_y = -50, nudge_x = 0.5, max.overlaps = 1000) +
+  labs(x = 'Cox Univariate Z Score', y = 'Gene index', title = 'Overall survival') +
+  theme_classic()
+ggsave(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/scatter_savolaOverallSurvivalTop250.pdf', sep = ''), 
+       width = 2, height = 2, useDingbats = FALSE)
+```
+
+Now we can make a nice plot for YB-1 survival.
+
+```{r}
+##########################################################################################
+expressionData = savolaExpression
+phenotypeData = savolaPhenotype
+geneOfInterest = 'YBX1'
+coxZScores = lapply(geneOfInterest, survivalAnalysis, 
+                    expressionData = expressionData, 
+                    phenotypeData = phenotypeData, 
+                    survivalPlot = TRUE,
+                    survivalData = TRUE,
+                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets',
+                    printData = TRUE)
+```
+
+Ignore other data sets for now until we see if we can get that really large cohort from Delattre. 
+
+Ok, now we have the data from Delattre, so we can try it out! This is version 2 of the script with a modeled cut off.
+
+```{r, message = FALSE}
+##########################################################################################
+expressionData = postelExpression
+phenotypeData = postelPhenotype
+geneOfInterest = as.list(esHitsGenes$symbol)
+coxZScores = lapply(geneOfInterest, survivalAnalysisV2, 
+                    expressionData = expressionData, 
+                    phenotypeData = phenotypeData, 
+                    survivalPlot = FALSE,
+                    survivalData = FALSE,
+                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets',
+                    printData = FALSE)
+esHitsGenes$coxz = unlist(coxZScores)
+```
+
+Now we can make a plot for these scores.
+
+```{r}
+##########################################################################################
+esHitsPlot = esHitsGenes %>%
+  arrange(coxz) %>%
+  mutate(index = seq(1,nrow(esHitsGenes),1))
+esHitsPlot$pText = ifelse(esHitsPlot$symbol == 'YBX1', esHitsPlot$symbol, '')
+esHitsPlot$pSize = ifelse(esHitsPlot$symbol == 'YBX1', 3, 1)
+esHitsPlot$pColors = ifelse(esHitsPlot$symbol == 'YBX1', brewer.pal(4,'OrRd')[4], brewer.pal(3,'Greys')[2])
+#esHitsPlot$pText = ifelse(esHitsPlot$coxz >= 2.5, esHitsPlot$symbol, '')
+##
+ggplot(esHitsPlot, aes(coxz, index)) +
+  geom_point(size = 1, color = esHitsPlot$pColors) +
+  geom_text_repel(label = esHitsPlot$pText, size = 3, nudge_y = -50, nudge_x = 0.5, max.overlaps = 1000) +
+  labs(x = 'Cox Univariate Z Score', y = 'Gene index', title = 'Overall survival') +
+  theme_classic()
+ggsave(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/scatter_postelVinayOverallSurvivalTop250.pdf', sep = ''), 
+       width = 3, height = 4, useDingbats = FALSE)
+```
+
+Extract the YB-1 data.
+
+```{r}
+##########################################################################################
+expressionData = postelExpression
+phenotypeData = postelPhenotype
+geneOfInterest = 'YBX1'
+coxZScores = lapply(geneOfInterest, survivalAnalysisV2, 
+                    expressionData = expressionData, 
+                    phenotypeData = phenotypeData, 
+                    survivalPlot = TRUE,
+                    survivalData = TRUE,
+                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets',
+                    printData = TRUE)
+```
+
+This is the original version of the script where we just use quantiles for the cutoff.
+
+```{r, message = FALSE}
+##########################################################################################
+expressionData = postelExpression
+phenotypeData = postelPhenotype
+geneOfInterest = as.list(esHitsGenes$symbol)
+coxZScores = lapply(geneOfInterest, survivalAnalysis, 
+                    expressionData = expressionData, 
+                    phenotypeData = phenotypeData, 
+                    survivalPlot = FALSE,
+                    survivalData = FALSE,
+                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets',
+                    printData = FALSE)
+esHitsGenes$coxz = unlist(coxZScores)
+```
+
+Now we can make a plot for these scores.
+
+```{r}
+##########################################################################################
+esHitsPlot = esHitsGenes %>%
+  arrange(coxz) %>%
+  mutate(index = seq(1,nrow(esHitsGenes),1))
+esHitsPlot$pText = ifelse(esHitsPlot$symbol == 'YBX1', esHitsPlot$symbol, '')
+esHitsPlot$pSize = ifelse(esHitsPlot$symbol == 'YBX1', 3, 1)
+esHitsPlot$pColors = ifelse(esHitsPlot$symbol == 'YBX1', brewer.pal(4,'OrRd')[4], brewer.pal(3,'Greys')[2])
+#esHitsPlot$pText = ifelse(esHitsPlot$coxz >= 2.5, esHitsPlot$symbol, '')
+##
+ggplot(esHitsPlot, aes(coxz, index)) +
+  geom_point(size = 1, color = esHitsPlot$pColors) +
+  geom_text_repel(label = esHitsPlot$pText, size = 3, nudge_y = -50, nudge_x = 0.5, max.overlaps = 1000) +
+  labs(x = 'Cox Univariate Z Score', y = 'Gene index', title = 'Overall survival') +
+  theme_classic()
+ggsave(paste(baseRepository, '/microarray20200604_ewingSarcomaAllSets/scatter_postelVinayOverallSurvivalTop250Version1.pdf', sep = ''), 
+       width = 2, height = 2, useDingbats = FALSE)
+```
+
+Extract the YB-1 data.
+
+```{r}
+##########################################################################################
+expressionData = postelExpression
+phenotypeData = postelPhenotype
+geneOfInterest = 'YBX1'
+coxZScores = lapply(geneOfInterest, survivalAnalysis, 
+                    expressionData = expressionData, 
+                    phenotypeData = phenotypeData, 
+                    survivalPlot = TRUE,
+                    survivalData = TRUE,
+                    writeDirectory = '/microarray20200604_ewingSarcomaAllSets',
+                    printData = TRUE)
+```
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

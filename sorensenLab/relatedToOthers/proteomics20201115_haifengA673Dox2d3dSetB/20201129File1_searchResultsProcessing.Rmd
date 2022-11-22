@@ -224,24 +224,50 @@ This looks as it should. Now let us make a volcano plot to show the data.
 
 ```{r}
 ##########################################################################################
-deqmsResults = outputResult(limmaFit3, coef_col = 1)
+deqmsResults = read_csv(paste(baseRepository, '/proteomics20201115_haifengA673Dox2d3dSetB/dataset_deqms_3d_yesDox-noDox.csv', sep = ''))
+#deqmsResults = outputResult(limmaFit3, coef_col = 1)
+deqmsResults$logFC = -deqmsResults$logFC
 deqmsResults$plotPValue = -log10(deqmsResults$sca.P.Value)
-deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[8],
-                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(8,'RdBu')[1],
-                                     brewer.pal(8,'Greys')[6]))
-deqmsResults$pText = ifelse(grepl('IL1RAP$',deqmsResults$gene), deqmsResults$gene, '')
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(4,'GnBu')[4],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(4,'OrRd')[4],
+                                     brewer.pal(3,'Greys')[2]))
+goi = c('IL1RAP','PRKCB','LOX')
+deqmsResults$pText = ifelse(deqmsResults$gene %in% goi, deqmsResults$gene, '')
 ##
 ggplot(deqmsResults, aes(logFC, plotPValue)) +
-  geom_point(size = 1, color = deqmsResults$pColors, alpha = 0.5) +
-  geom_text_repel(label = deqmsResults$pText, nudge_x = -2) +
-  labs(x = 'log2(yesDox - noDox)', y = '-log10(P-value)', title = '3D yesDox vs noDox protein abundance') +
-  scale_y_continuous(limits = c(0,12), breaks = seq(0,18,3)) +
+  geom_point(size = 1, color = deqmsResults$pColors) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = 2, nudge_y = 1, max.overlaps = 10000) +
+  labs(x = 'log2(EWS-FLI1 high vs. low)', y = '-log10(P-value)', title = '3D culture protein abundance') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,20,3)) +
   scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
   geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
   geom_hline(yintercept = 3, linetype = 'dashed') +
   theme_classic()
 ggsave(paste(baseRepository, '/proteomics20201115_haifengA673Dox2d3dSetB/scatter_deqms_3d_yesDox-noDox.pdf', sep = ''),
-       height = 4, width = 4, useDingbats = FALSE)
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+
+
+##volcano plot in our usualy style
+deqmsResults$pColors = ifelse(deqmsResults$logFC <= -0.5 & deqmsResults$plotPValue >= 3, brewer.pal(4,'GnBu')[4],
+                              ifelse(deqmsResults$logFC >= 0.5 & deqmsResults$plotPValue >= 3, brewer.pal(4,'OrRd')[4],
+                                     brewer.pal(3,'Greys')[2]))
+#goi = c('PRKCB','LOX','DLG2')
+goi = c('IL1RAP','STEAP1','STEAP2','PRKCB','LOX','DLG2')
+deqmsResults$pText = ifelse(deqmsResults$symbol %in% goi, deqmsResults$symbol, '')
+##
+ggplot(deqmsResults, aes(logFC, plotPValue)) +
+  geom_point(size = 1, color = deqmsResults$pColors) +
+  geom_text_repel(label = deqmsResults$pText, nudge_x = 2, nudge_y = 1, max.overlaps = 10000) +
+  labs(x = 'log2(day0 - day7)', y = '-log10(P-value)', title = 'Differential protein abundance') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,20,4)) +
+  scale_x_continuous(limits = c(-6,6), breaks = seq(-6,6,2)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = 3, linetype = 'dashed') +
+  theme_classic()
+
+
 
 
 ##########################################################################################

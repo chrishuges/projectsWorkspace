@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-0.9.260">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Christopher Hughes">
+
+<title>YB-1 Drug Dependency</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<script src="20200606File2_ewingEssentialGenesWithDrugs_files/libs/clipboard/clipboard.min.js"></script>
+<script src="20200606File2_ewingEssentialGenesWithDrugs_files/libs/quarto-html/quarto.js"></script>
+<script src="20200606File2_ewingEssentialGenesWithDrugs_files/libs/quarto-html/popper.min.js"></script>
+<script src="20200606File2_ewingEssentialGenesWithDrugs_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="20200606File2_ewingEssentialGenesWithDrugs_files/libs/quarto-html/anchor.min.js"></script>
+<link href="20200606File2_ewingEssentialGenesWithDrugs_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link id="quarto-text-highlighting-styles" href="20200606File2_ewingEssentialGenesWithDrugs_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet">
+<script src="20200606File2_ewingEssentialGenesWithDrugs_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="20200606File2_ewingEssentialGenesWithDrugs_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="20200606File2_ewingEssentialGenesWithDrugs_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">YB-1 Drug Dependency</h1>
+</div>
+
+
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Christopher Hughes </p>
+          </div>
+  </div>
+    
+    
+  </div>
+  
+
+</header>
+
+<section id="setting-up-the-environment" class="level3">
+<h3 class="anchored" data-anchor-id="setting-up-the-environment">Setting up the environment</h3>
+<p>These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'tidyverse'</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'vroom'</span>)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'ggrepel'</span>)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'RColorBrewer'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>generalDatasets <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>baseWorkspace <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>baseRepository <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="data-processing" class="level3">
+<h3 class="anchored" data-anchor-id="data-processing">Data processing</h3>
+<p>First I need to read in the drug sensitivity data and annotate it. It is a bit different in the annotation compared to the other depmap data sets. I am using the CTD2 data set because it looks like it has the widest range of concentrations and replication, although other screens are available. The compound ID for MS275 (entinostat) is 60218. First get the data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>depDrug <span class="ot">=</span> <span class="fu">read_tsv</span>(<span class="fu">paste</span>(generalDatasets, <span class="st">'/depmap20Q2/v20.data.curves_post_qc.txt'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(experiment_id, master_cpd_id, area_under_curve) <span class="sc">%&gt;%</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(master_cpd_id <span class="sc">==</span> <span class="dv">60218</span>)</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(depDrug)[<span class="dv">1</span>] <span class="ot">=</span> <span class="st">'master_ccl_id'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In this data frame, the experiment_id corresponds to the cell line. In order to select only Ewing lines, we need to get some more annotation details.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>depCell <span class="ot">=</span> <span class="fu">read_tsv</span>(<span class="fu">paste</span>(generalDatasets, <span class="st">'/depmap20Q2/v20.meta.per_cell_line.txt'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">right_join</span>(depDrug) <span class="sc">%&gt;%</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(ccl_name))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining, by = "master_ccl_id"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(depCell)[<span class="dv">2</span>] <span class="ot">=</span> <span class="st">'stripped_cell_line_name'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Get the dependency data for all the different subtypes.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>crispr <span class="ot">=</span> <span class="fu">vroom</span>(<span class="fu">paste</span>(generalDatasets, <span class="st">'/depmap22Q2/CRISPR_gene_effect.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(crispr)[<span class="dv">1</span>] <span class="ot">=</span> <span class="st">'DepMap_ID'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now get the annotation details.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>anno <span class="ot">=</span> <span class="fu">read_csv</span>(<span class="fu">paste</span>(generalDatasets, <span class="st">'/depmap22Q2/sample_info.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(depCell) <span class="sc">%&gt;%</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(area_under_curve))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining, by = "stripped_cell_line_name"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>anno<span class="sc">$</span>lineage2 <span class="ot">=</span> <span class="fu">ifelse</span>(<span class="fu">grepl</span>(<span class="st">'fibroblast'</span>, anno<span class="sc">$</span>lineage), <span class="fu">sub</span>(<span class="st">'fibroblast_(.*)$'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, anno<span class="sc">$</span>lineage_subtype), anno<span class="sc">$</span>lineage)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>The first thing I want to do is to see if sensitivity to YB1 tracks with sensitivity to MS275 across all lineages. We need to bring the CRISPR YB1 scores in if we want to do this.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>crisprEs <span class="ot">=</span> crispr <span class="sc">%&gt;%</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(anno) <span class="sc">%&gt;%</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(DepMap_ID, stripped_cell_line_name, lineage, lineage2, master_cpd_id, area_under_curve, <span class="st">`</span><span class="at">YBX1 (4904)</span><span class="st">`</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(area_under_curve)) <span class="sc">%&gt;%</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(lineage2) <span class="sc">%&gt;%</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(<span class="at">AUC =</span> <span class="fu">median</span>(area_under_curve, <span class="at">na.rm =</span> <span class="cn">TRUE</span>), <span class="at">CERES =</span> <span class="fu">median</span>(<span class="st">`</span><span class="at">YBX1 (4904)</span><span class="st">`</span>, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining, by = "DepMap_ID"</code></pre>
+</div>
+</div>
+<p>Now we can make a plot of these data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>crisprEsSubset <span class="ot">=</span> <span class="fu">subset</span>(crisprEs, (crisprEs<span class="sc">$</span>lineage2 <span class="sc">%in%</span> <span class="fu">c</span>(<span class="st">'bone'</span>,<span class="st">'breast'</span>,<span class="st">'ovary'</span>,<span class="st">'lung'</span>,<span class="st">'colorectal'</span>,<span class="st">'skin'</span>,<span class="st">'urinary_tract'</span>,<span class="st">'pancreas'</span>,</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                                                            <span class="st">'plasma_cell'</span>,<span class="st">'gastric'</span>)))</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cor</span>(crisprEsSubset<span class="sc">$</span>AUC, crisprEsSubset<span class="sc">$</span>CERES, <span class="at">use =</span> <span class="st">'pairwise.complete.obs'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.4339866</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(crisprEsSubset, <span class="fu">aes</span>(AUC, CERES)) <span class="sc">+</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>() <span class="sc">+</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text_repel</span>(<span class="at">label =</span> crisprEsSubset<span class="sc">$</span>lineage2, <span class="at">size =</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">'lm'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using formula = 'y ~ x'</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="20200606File2_ewingEssentialGenesWithDrugs_files/figure-html/unnamed-chunk-8-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>This seems to track relatively well, depending on the lineage. The problem is that many lineages respond differently to YB-1. Realistically, we are only interested in bone here as we know it is sensitive to changes in YB-1 based on our previous analyses.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>crisprBone <span class="ot">=</span> crispr <span class="sc">%&gt;%</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(anno) <span class="sc">%&gt;%</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(DepMap_ID, stripped_cell_line_name, lineage, lineage2, master_cpd_id, area_under_curve, <span class="st">`</span><span class="at">YBX1 (4904)</span><span class="st">`</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(area_under_curve) <span class="sc">&amp;</span> <span class="fu">grepl</span>(<span class="st">'bone'</span>, lineage2))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining, by = "DepMap_ID"</code></pre>
+</div>
+</div>
+<p>Now we can make a plot of just bone cancers.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cor</span>(crisprBone<span class="sc">$</span>area_under_curve, crisprBone<span class="sc">$</span><span class="st">`</span><span class="at">YBX1 (4904)</span><span class="st">`</span>, <span class="at">use =</span> <span class="st">'pairwise.complete.obs'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 0.4448693</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(crisprBone, <span class="fu">aes</span>(area_under_curve, <span class="st">`</span><span class="at">YBX1 (4904)</span><span class="st">`</span>)) <span class="sc">+</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">'AUC'</span>, <span class="at">y =</span> <span class="st">'CERES Dependency Score'</span>, <span class="at">title =</span> <span class="st">'Entinostat YBX1 relationship'</span>) <span class="sc">+</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">method =</span> <span class="st">'lm'</span>) <span class="sc">+</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text</span>(<span class="fu">aes</span>(<span class="at">x =</span> <span class="dv">13</span>, <span class="at">y =</span> <span class="sc">-</span><span class="fl">1.5</span>), <span class="at">label =</span> <span class="fu">paste</span>(<span class="st">'r2 = '</span>, <span class="fu">round</span>(<span class="fu">cor</span>(crisprBone<span class="sc">$</span>area_under_curve, crisprBone<span class="sc">$</span><span class="st">`</span><span class="at">YBX1 (4904)</span><span class="st">`</span>, <span class="at">use =</span> <span class="st">'pairwise.complete.obs'</span>),<span class="dv">3</span>))) <span class="sc">+</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using formula = 'y ~ x'</code></pre>
+</div>
+<div class="cell-output-display">
+<p><img src="20200606File2_ewingEssentialGenesWithDrugs_files/figure-html/unnamed-chunk-10-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/database20200604_depmapEwing/scatter_ms275Ybx1RelationshipBoneDepmap.pdf'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>       <span class="at">height =</span> <span class="dv">4</span>,</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>       <span class="at">width =</span> <span class="dv">4</span>,</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>       <span class="at">useDingbats =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using formula = 'y ~ x'</code></pre>
+</div>
+</div>
+<p>What about for all of the genes we previously looked at in the context of dependency? First get the genes of interest.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>esHits <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/database20200604_depmapEwing/dataset_ewingRnaExprsCrisprDep.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a><span class="co">#esHitsGenes = esHits[esHits$medDep &lt;= -1 &amp; esHits$medExprs &gt;= 4, 'symbol']</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>esHitsGenes <span class="ot">=</span> esHits[<span class="dv">1</span><span class="sc">:</span><span class="dv">250</span>,]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now run a function to calculate the correlation between the drug and dependency data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="do">##function for processing</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>getDrugSensitivity <span class="ot">=</span> <span class="cf">function</span>(geneOfInterest, crisprData, annotationData, lineage, ...){</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  crisprGene <span class="ot">=</span> crisprData[,<span class="fu">c</span>(<span class="dv">1</span>, <span class="fu">which</span>(<span class="fu">grepl</span>(geneOfInterest, </span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>                                            <span class="fu">sub</span>(<span class="st">'(.*) </span><span class="sc">\\</span><span class="st">([0-9]+</span><span class="sc">\\</span><span class="st">)$'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, <span class="fu">colnames</span>(crisprData)))))]</span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(crisprGene)[<span class="dv">2</span>] <span class="ot">=</span> geneOfInterest</span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>  crisprLineage <span class="ot">=</span> crisprGene <span class="sc">%&gt;%</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">left_join</span>(annotationData) <span class="sc">%&gt;%</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">select</span>(DepMap_ID, lineage2, area_under_curve, <span class="fu">paste</span>(geneOfInterest)) <span class="sc">%&gt;%</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(area_under_curve) <span class="sc">&amp;</span> <span class="fu">grepl</span>(lineage, lineage2))</span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(<span class="fu">cor</span>(crisprLineage[,<span class="fu">c</span>(<span class="st">'area_under_curve'</span>, <span class="fu">paste</span>(geneOfInterest))], <span class="at">use =</span> <span class="st">'pairwise.complete.obs'</span>)[<span class="dv">2</span>])</span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a><span class="do">##process the data</span></span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>geneOfInterest <span class="ot">=</span> <span class="fu">as.list</span>(esHitsGenes<span class="sc">$</span>symbol)</span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a>entinostatCorr <span class="ot">=</span> <span class="fu">lapply</span>(geneOfInterest, </span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>                        getDrugSensitivity, </span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>                        <span class="at">crisprData =</span> crispr,</span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>                        <span class="at">annotationData =</span> anno,</span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a>                        <span class="at">lineage =</span> <span class="st">'bone'</span>)</span>
+<span id="cb26-24"><a href="#cb26-24" aria-hidden="true" tabindex="-1"></a>esHitsGenes<span class="sc">$</span>drug <span class="ot">=</span> <span class="fu">unlist</span>(entinostatCorr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now we can make a plot for these scores.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>esHitsPlot <span class="ot">=</span> esHitsGenes <span class="sc">%&gt;%</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">arrange</span>(drug) <span class="sc">%&gt;%</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">index =</span> <span class="fu">seq</span>(<span class="dv">1</span>,<span class="fu">nrow</span>(esHitsGenes),<span class="dv">1</span>))</span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>esHitsPlot<span class="sc">$</span>pText <span class="ot">=</span> <span class="fu">ifelse</span>(esHitsPlot<span class="sc">$</span>symbol <span class="sc">==</span> <span class="st">'YBX1'</span>, esHitsPlot<span class="sc">$</span>symbol, <span class="st">''</span>)</span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>esHitsPlot<span class="sc">$</span>pSize <span class="ot">=</span> <span class="fu">ifelse</span>(esHitsPlot<span class="sc">$</span>symbol <span class="sc">==</span> <span class="st">'YBX1'</span>, <span class="dv">3</span>, <span class="dv">1</span>)</span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>esHitsPlot<span class="sc">$</span>pColors <span class="ot">=</span> <span class="fu">ifelse</span>(esHitsPlot<span class="sc">$</span>symbol <span class="sc">==</span> <span class="st">'YBX1'</span>, <span class="fu">brewer.pal</span>(<span class="dv">4</span>,<span class="st">'OrRd'</span>)[<span class="dv">4</span>], <span class="fu">brewer.pal</span>(<span class="dv">3</span>,<span class="st">'Greys'</span>)[<span class="dv">2</span>])</span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a><span class="co">#esHitsPlot$pText = ifelse(esHitsPlot$drug &gt;= 0.7, esHitsPlot$symbol, '')</span></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(esHitsPlot, <span class="fu">aes</span>(drug, index)) <span class="sc">+</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">size =</span> <span class="dv">1</span>, <span class="at">color =</span> esHitsPlot<span class="sc">$</span>pColors) <span class="sc">+</span></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_text_repel</span>(<span class="at">label =</span> esHitsPlot<span class="sc">$</span>pText, <span class="at">size =</span> <span class="dv">3</span>, <span class="at">max.overlaps =</span> <span class="dv">1000</span>, <span class="at">nudge_y =</span> <span class="sc">-</span><span class="dv">50</span>) <span class="sc">+</span></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_x_continuous</span>(<span class="at">limits =</span> <span class="fu">c</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="dv">1</span>), <span class="at">breaks =</span> <span class="fu">seq</span>(<span class="sc">-</span><span class="dv">1</span>,<span class="dv">1</span>,<span class="fl">0.5</span>)) <span class="sc">+</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">x =</span> <span class="st">'AUC and drug dependency correlation'</span>, <span class="at">y =</span> <span class="st">'Gene index'</span>, <span class="at">title =</span> <span class="st">'Entinostat sensitivity'</span>) <span class="sc">+</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_classic</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="20200606File2_ewingEssentialGenesWithDrugs_files/figure-html/unnamed-chunk-13-1.png" class="img-fluid" width="672"></p>
+</div>
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggsave</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/database20200604_depmapEwing/scatter_entinostatSensitivityTop250.pdf'</span>, <span class="at">sep =</span> <span class="st">''</span>), </span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>       <span class="at">width =</span> <span class="dv">2</span>, <span class="at">height =</span> <span class="dv">2</span>, <span class="at">useDingbats =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="session-info" class="level2">
+<h2 class="anchored" data-anchor-id="session-info">Session info</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.1.3 (2022-03-10)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19042)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_Canada.1252  LC_CTYPE=English_Canada.1252   
+[3] LC_MONETARY=English_Canada.1252 LC_NUMERIC=C                   
+[5] LC_TIME=English_Canada.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] RColorBrewer_1.1-3 ggrepel_0.9.2      vroom_1.6.0        forcats_0.5.2     
+ [5] stringr_1.4.1      dplyr_1.0.10       purrr_0.3.5        readr_2.1.3       
+ [9] tidyr_1.2.1        tibble_3.1.8       ggplot2_3.4.0      tidyverse_1.3.2   
+
+loaded via a namespace (and not attached):
+ [1] httr_1.4.4          bit64_4.0.5         jsonlite_1.8.3     
+ [4] splines_4.1.3       modelr_0.1.10       assertthat_0.2.1   
+ [7] googlesheets4_1.0.1 cellranger_1.1.0    yaml_2.3.6         
+[10] pillar_1.8.1        backports_1.4.1     lattice_0.20-45    
+[13] glue_1.6.2          digest_0.6.30       rvest_1.0.3        
+[16] colorspace_2.0-3    htmltools_0.5.3     Matrix_1.5-3       
+[19] pkgconfig_2.0.3     broom_1.0.1         haven_2.5.1        
+[22] scales_1.2.1        tzdb_0.3.0          timechange_0.1.1   
+[25] googledrive_2.0.0   mgcv_1.8-40         generics_0.1.3     
+[28] farver_2.1.1        ellipsis_0.3.2      withr_2.5.0        
+[31] cli_3.4.1           magrittr_2.0.3      crayon_1.5.2       
+[34] readxl_1.4.1        evaluate_0.18       fs_1.5.2           
+[37] fansi_1.0.3         nlme_3.1-159        xml2_1.3.3         
+[40] textshaping_0.3.6   tools_4.1.3         hms_1.1.2          
+[43] gargle_1.2.1        lifecycle_1.0.3     munsell_0.5.0      
+[46] reprex_2.0.2        compiler_4.1.3      systemfonts_1.0.4  
+[49] rlang_1.0.6         grid_4.1.3          rstudioapi_0.14    
+[52] htmlwidgets_1.5.4   labeling_0.4.2      rmarkdown_2.18     
+[55] gtable_0.3.1        DBI_1.1.3           R6_2.5.1           
+[58] lubridate_1.9.0     knitr_1.40          fastmap_1.1.0      
+[61] bit_4.0.5           utf8_1.2.2          ragg_1.2.4         
+[64] stringi_1.7.8       parallel_4.1.3      Rcpp_1.0.9         
+[67] vctrs_0.5.1         dbplyr_2.2.1        tidyselect_1.2.0   
+[70] xfun_0.34          </code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    setTimeout(function() {
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
