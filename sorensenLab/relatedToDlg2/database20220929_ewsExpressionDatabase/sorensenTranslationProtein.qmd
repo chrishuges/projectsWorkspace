@@ -96,7 +96,7 @@ pepData = dplyr::filter(pepData, symbol != '') %>%
 pepData$meanSamples123 = rowMeans(pepData[,3:5], na.rm = TRUE)
 pepData$meanSamples456 = rowMeans(pepData[,6:8], na.rm = TRUE)
 pepData$sorensenTranslationProtein = pepData$meanSamples123 - pepData$meanSamples456
-proFinal = dplyr::select(pepData, symbol, accession, sorensenTranslationProtein)
+proFinal = dplyr::select(pepData, symbol, sorensenTranslationProtein)
 
 ##save these data
 saveRDS(proFinal, paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTranslationProtein/dataset_sorensenTranslationProtein.rds',sep = ''))

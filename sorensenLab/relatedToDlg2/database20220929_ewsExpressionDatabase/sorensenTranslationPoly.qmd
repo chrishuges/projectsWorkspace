@@ -1,0 +1,148 @@
+---
+title: "sorensenTranslationPoly"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| label: load-packages and set directories
+
+##########################################################################################
+#packages
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('tximport')
+library('GenomicFeatures')
+library('DESeq2')
+library('org.Hs.eg.db')
+library('ggrepel')
+
+##########################################################################################
+#directories
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+Read in the sample annotation details and make the txdb that we can use later on for annotation gene identifiers.
+
+```{r}
+#| label: read input data
+#| warning: false
+
+##########################################################################################
+#read a table containing the sample information for our RNAseq runs
+##I created a sample table in excel previously, read it in here
+samples = read_tsv(paste(baseRepository, '/sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/sampleInfoMaster.txt', sep = ''))
+
+##assign the path to the quant files
+##there are two steps here because the file naming was different from the sequencing core facility
+samples$files = ifelse(grepl('IX.*', samples$mainFolder), 
+                       file.path(baseRepository, 'sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/quants', samples$index, 'quant.sf'),
+                       file.path(baseRepository, 'sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/quants', samples$library, 'quant.sf'))
+
+##check if all of the quant files exist
+samplesToProcess = samples[grepl('Poly', samples$sample), ]
+files = samplesToProcess$files
+all(file.exists(files))
+```
+
+For Salmon analysis, I am generally following the documentation found [here](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html) and [here](http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html). When we import our data, we want a table that allows us to link gene and transcript identifiers. For this we use the GTF associated with our database files that we used during the alignment process.
+
+```{r}
+#| label: build txdb
+#| warning: false
+
+##########################################################################################
+#build the txdb from the gtf file
+myTxdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(myTxdb, keytype = 'TXNAME')
+tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
+head(tx2gene)
+```
+
+Read in the Salmon data.
+
+```{r}
+#| label: read salmon data
+#| warning: false
+
+##########################################################################################
+#read the salmon data
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+names(txi)
+head(txi$counts)
+```
+
+Perform the DESeq analysis. 
+
+```{r}
+#| label: perform deseq analysis
+#| warning: false
+
+##########################################################################################
+#perform the deseq analysis
+ddsTxi = DESeqDataSetFromTximport(txi,
+                                  colData = samplesToProcess,
+                                  design = ~ treatment)
+##
+dds = DESeq(ddsTxi)
+keep = rowSums(counts(dds)) >= 10
+dds = dds[keep,]
+```
+
+Extract the DESeq data and plot for the different comparisons of interest.
+
+```{r}
+#| label: extract and plot comparisons
+#| warning: false
+
+##########################################################################################
+#parse the deseq data - change the first two values to get different comparisons
+datasetFirst = 'dmso'
+datasetSecond = 'dox'
+
+##
+for (i in 1:length(datasetFirst)){
+  res = results(dds, contrast = c('treatment', datasetFirst[i], datasetSecond))
+  ens.str = substr(rownames(res), 1, 15)
+  res$symbol = mapIds(org.Hs.eg.db,
+                      keys=ens.str,
+                      column="SYMBOL",
+                      keytype="ENSEMBL",
+                      multiVals="first")
+  resOrdered = res[order(res$pvalue),]
+  
+  ##
+  #save the data
+  outputData = as.data.frame(resOrdered) %>%
+    dplyr::filter(!is.na(symbol)) %>%
+    dplyr::select(symbol, log2FoldChange) %>%
+    dplyr::rename(sorensenTranslationPoly = log2FoldChange) %>%
+    dplyr::group_by(symbol) %>%
+    dplyr::summarise(sorensenTranslationPoly = mean(sorensenTranslationPoly, na.rm = TRUE))
+  #
+  saveRDS(outputData, 
+          paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTranslationPoly/dataset_sorensenTranslationPoly_', datasetFirst[i], '-', datasetSecond, '.rds', sep = ''))
+  write.csv(outputData, 
+          file = paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTranslationPoly/dataset_sorensenTranslationPoly_', datasetFirst[i], '-', datasetSecond, '.csv', sep = ''))
+}
+```
+
+We are done here for now. Wrap up below.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

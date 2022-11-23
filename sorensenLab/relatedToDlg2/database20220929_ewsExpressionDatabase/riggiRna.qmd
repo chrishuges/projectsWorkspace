@@ -1,0 +1,122 @@
+---
+title: "riggiRna"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| label: load-packages and set directories
+
+##########################################################################################
+#packages
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('tximport')
+library('GenomicFeatures')
+library('DESeq2')
+library('org.Hs.eg.db')
+library('ggrepel')
+
+##########################################################################################
+#directories
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+Read in the sample annotation details and make the txdb that we can use later on for annotation gene identifiers.
+
+```{r}
+#| label: read input data
+#| warning: false
+
+##########################################################################################
+#read a table containing the sample information for our RNAseq runs
+##I created a sample table in excel previously, read it in here
+samples = read_tsv(paste(baseRepository, '/sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/rnaseq/sampleInfo.txt', sep = ''), show_col_types = FALSE)
+
+##assign the path to the quant files
+##there are two steps here because the file naming was different from the sequencing core facility
+samples$files = file.path(baseRepository, 'sequencing20201208_ewsFil1RnaSeqRiggiPmid25453903/rnaseq/quants', samples$sampleName, 'quant.sf')
+
+##check if all of the quant files exist
+files = samples$files
+all(file.exists(files))
+```
+
+For Salmon analysis, I am generally following the documentation found [here](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html) and [here](http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html). When we import our data, we want a table that allows us to link gene and transcript identifiers. For this we use the GTF associated with our database files that we used during the alignment process.
+
+```{r}
+#| label: build txdb
+#| warning: false
+
+##########################################################################################
+#build the txdb from the gtf file
+myTxdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(myTxdb, keytype = 'TXNAME')
+tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
+head(tx2gene)
+```
+
+Read in the Salmon data.
+
+```{r}
+#| label: read salmon data
+#| warning: false
+
+##########################################################################################
+#read the salmon data
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+names(txi)
+head(txi$counts)
+```
+
+Extract the data and compare the different conditions. There is only a single replicate, so all we can do is calculate ratios.
+
+```{r}
+#| label: extract and plot comparisons
+#| warning: false
+
+##########################################################################################
+#parse the rna data and assign gene symbols
+rnaData = as.data.frame(txi$abundance)
+colnames(rnaData) = samples$sampleName
+ensStr = substr(rownames(rnaData), 1, 15)
+rnaData$symbol = mapIds(org.Hs.eg.db, keys = ensStr, column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first')
+  
+##calculate the ratios
+rnaDataExp = rnaData %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::mutate(ratio1 = log2(SRR1594024+1) - log2(SRR1594025+1),
+                ratio2 = log2(SRR1594020+1) - log2(SRR1594021+1),
+                ratio3 = log2(SRR1594022+1) - log2(SRR1594023+1)) %>%
+  dplyr::mutate(riggiRna = rowMeans(across(ratio1:ratio3))) %>%
+  dplyr::select(symbol, riggiRna) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(riggiRna = mean(riggiRna, na.rm = TRUE))
+
+##output the data
+saveRDS(rnaDataExp, 
+        paste(baseRepository, '/database20220929_ewsExpressionDatabase/riggiRna/dataset_riggiRna.rds', sep = ''))
+write.csv(rnaDataExp, 
+          file = paste(baseRepository, '/database20220929_ewsExpressionDatabase/riggiRna/dataset_riggiRna.csv', sep = ''))
+```
+
+We are done here for now. Wrap up below.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+

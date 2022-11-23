@@ -636,7 +636,7 @@ Joining, by = c("accession", "symbol")</code></pre>
 </div>
 <p>Outputs of spectraCounteBayes:</p>
 <ul>
-<li>object is augmented form of “fit” object from eBayes in Limma, with the additions being:</li>
+<li>object is augmented form of fit object from eBayes in Limma, with the additions being:</li>
 <li>sca.t - Spectra Count Adjusted posterior t-value</li>
 <li>sca.p - Spectra Count Adjusted posterior p-value</li>
 <li>sca.dfprior - DEqMS estimated prior degrees of freedom</li>
@@ -651,7 +651,7 @@ Joining, by = c("accession", "symbol")</code></pre>
 <span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>deqmsResults <span class="ot">=</span> <span class="fu">tibble</span>(<span class="fu">outputResult</span>(fit4, <span class="at">coef_col =</span> <span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
 <span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">accession =</span> gene) <span class="sc">%&gt;%</span></span>
 <span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(dataIrsRaw[,<span class="fu">c</span>(<span class="st">'accession'</span>,<span class="st">'symbol'</span>)]) <span class="sc">%&gt;%</span></span>
-<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(symbol, accession, logFC) <span class="sc">%&gt;%</span></span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(symbol, logFC) <span class="sc">%&gt;%</span></span>
 <span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">sorensenTimecourseProtein =</span> logFC)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Joining, by = "accession"</code></pre>
@@ -685,7 +685,7 @@ attached base packages:
 [8] base     
 
 other attached packages:
- [1] ggrepel_0.9.1               DEqMS_1.12.1               
+ [1] ggrepel_0.9.2               DEqMS_1.12.1               
  [3] DESeq2_1.34.0               SummarizedExperiment_1.24.0
  [5] Biobase_2.54.0              MatrixGenerics_1.6.0       
  [7] matrixStats_0.62.0          GenomicRanges_1.46.1       
@@ -693,41 +693,41 @@ other attached packages:
 [11] S4Vectors_0.32.4            BiocGenerics_0.40.0        
 [13] RColorBrewer_1.1-3          limma_3.50.3               
 [15] forcats_0.5.2               stringr_1.4.1              
-[17] dplyr_1.0.9                 purrr_0.3.4                
-[19] readr_2.1.2                 tidyr_1.2.0                
-[21] tibble_3.1.8                ggplot2_3.3.6              
+[17] dplyr_1.0.10                purrr_0.3.5                
+[19] readr_2.1.3                 tidyr_1.2.1                
+[21] tibble_3.1.8                ggplot2_3.4.0              
 [23] tidyverse_1.3.2            
 
 loaded via a namespace (and not attached):
  [1] bitops_1.0-7           fs_1.5.2               bit64_4.0.5           
- [4] lubridate_1.8.0        httr_1.4.4             tools_4.1.3           
+ [4] lubridate_1.9.0        httr_1.4.4             tools_4.1.3           
  [7] backports_1.4.1        utf8_1.2.2             R6_2.5.1              
 [10] DBI_1.1.3              colorspace_2.0-3       withr_2.5.0           
-[13] tidyselect_1.1.2       bit_4.0.4              compiler_4.1.3        
-[16] cli_3.3.0              rvest_1.0.3            xml2_1.3.3            
+[13] tidyselect_1.2.0       bit_4.0.5              compiler_4.1.3        
+[16] cli_3.4.1              rvest_1.0.3            xml2_1.3.3            
 [19] DelayedArray_0.20.0    scales_1.2.1           genefilter_1.76.0     
-[22] digest_0.6.29          rmarkdown_2.16         XVector_0.34.0        
+[22] digest_0.6.30          rmarkdown_2.18         XVector_0.34.0        
 [25] pkgconfig_2.0.3        htmltools_0.5.3        dbplyr_2.2.1          
-[28] fastmap_1.1.0          htmlwidgets_1.5.4      rlang_1.0.4           
-[31] readxl_1.4.1           RSQLite_2.2.16         rstudioapi_0.14       
-[34] generics_0.1.3         jsonlite_1.8.0         vroom_1.5.7           
-[37] BiocParallel_1.28.3    googlesheets4_1.0.1    RCurl_1.98-1.8        
-[40] magrittr_2.0.3         GenomeInfoDbData_1.2.7 Matrix_1.4-1          
+[28] fastmap_1.1.0          htmlwidgets_1.5.4      rlang_1.0.6           
+[31] readxl_1.4.1           RSQLite_2.2.18         rstudioapi_0.14       
+[34] generics_0.1.3         jsonlite_1.8.3         vroom_1.6.0           
+[37] BiocParallel_1.28.3    googlesheets4_1.0.1    RCurl_1.98-1.9        
+[40] magrittr_2.0.3         GenomeInfoDbData_1.2.7 Matrix_1.5-3          
 [43] Rcpp_1.0.9             munsell_0.5.0          fansi_1.0.3           
-[46] lifecycle_1.0.1        stringi_1.7.8          yaml_2.3.5            
+[46] lifecycle_1.0.3        stringi_1.7.8          yaml_2.3.6            
 [49] zlibbioc_1.40.0        blob_1.2.3             grid_4.1.3            
-[52] parallel_4.1.3         crayon_1.5.1           lattice_0.20-45       
+[52] parallel_4.1.3         crayon_1.5.2           lattice_0.20-45       
 [55] splines_4.1.3          Biostrings_2.62.0      haven_2.5.1           
 [58] annotate_1.72.0        KEGGREST_1.34.0        hms_1.1.2             
 [61] locfit_1.5-9.6         knitr_1.40             pillar_1.8.1          
-[64] geneplotter_1.72.0     reprex_2.0.2           XML_3.99-0.10         
-[67] glue_1.6.2             evaluate_0.16          modelr_0.1.9          
-[70] png_0.1-7              vctrs_0.4.1            tzdb_0.3.0            
-[73] cellranger_1.1.0       gtable_0.3.0           assertthat_0.2.1      
-[76] cachem_1.0.6           xfun_0.32              xtable_1.8-4          
+[64] geneplotter_1.72.0     reprex_2.0.2           XML_3.99-0.12         
+[67] glue_1.6.2             evaluate_0.18          modelr_0.1.10         
+[70] png_0.1-7              vctrs_0.5.1            tzdb_0.3.0            
+[73] cellranger_1.1.0       gtable_0.3.1           assertthat_0.2.1      
+[76] cachem_1.0.6           xfun_0.34              xtable_1.8-4          
 [79] broom_1.0.1            survival_3.4-0         googledrive_2.0.0     
-[82] gargle_1.2.0           memoise_2.0.1          AnnotationDbi_1.56.2  
-[85] ellipsis_0.3.2        </code></pre>
+[82] gargle_1.2.1           memoise_2.0.1          AnnotationDbi_1.56.2  
+[85] timechange_0.1.1       ellipsis_0.3.2        </code></pre>
 </div>
 </div>
 </section>

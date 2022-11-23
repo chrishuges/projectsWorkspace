@@ -1,0 +1,205 @@
+---
+title: "sorensen3dProtein"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| label: load-packages and set directories
+
+##########################################################################################
+#packages
+library('tidyverse')
+library('DEqMS')
+library('limma')
+library('RColorBrewer')
+library('DESeq2')
+
+##########################################################################################
+#directories
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+## Data processing
+
+Read in the peptide spectral match data. The TMT layout is as follows:
+
+126C - pool
+127N - empty
+127C - empty
+128N - noDox.1
+128C - noDox.2
+129N - noDox.3
+129C - yesDox.1
+130N - yesDox.2
+130C - yesDox.3
+131N - empty
+131C - empty
+132N - washOut.1
+132C - washOut.2
+133N - empty
+133C - washOut.3
+134N - pool
+
+Process the 3d data. 
+
+```{r}
+##########################################################################################
+psm = read_tsv(paste(baseRepository, '/proteomics20201115_haifengA673Dox2d3dTmt16/fragpipeAnalysis/setB/psm.tsv', sep = ''), show_col_types = FALSE) %>%
+  dplyr::select(Peptide, `Protein ID`, Gene, Spectrum) %>%
+  dplyr::rename(sequence = Peptide, 
+                accession = `Protein ID`,
+                symbol = Gene) %>%
+  dplyr::mutate(scan = as.numeric(sub('.*_HpH_[0-9]+\\.(.*)\\.[0-9]+\\.[0-9]+', '\\1', Spectrum)),
+                fraction = sub('.*_HpH_(.*)\\.[0-9]+\\.[0-9]+\\.[0-9]+', '\\1', Spectrum)) %>%
+  dplyr::select(-Spectrum)
+
+
+#######################################################################
+#######################################################################
+##this function goes through the provided quant files and returns
+##a parsed object for each. It returns signal to noise ratio for quant
+#######################################################################
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath, show_col_types = FALSE) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`134NIntensity`)
+  colnames(quantData) = c('scan','tmt16plex_126C','tmt16plex_127N','tmt16plex_127C','tmt16plex_128N',
+                  'tmt16plex_128C','tmt16plex_129N','tmt16plex_129C','tmt16plex_130N','tmt16plex_130C','tmt16plex_131N',
+                  'tmt16plex_131C','tmt16plex_132N','tmt16plex_132C','tmt16plex_133N','tmt16plex_133C','tmt16plex_134N')
+  ##
+  fraction = sub('.*HpH_(.*)\\.raw_Matrix\\.txt$', '\\1', filePath)
+  quantData$fraction = fraction
+  print(paste('Processing file for fraction ', fraction, '.', sep = ''))
+  ##
+  return(quantData)
+}
+
+##process the quant files
+quantFiles = as.list(list.files(paste(baseRepository, '/proteomics20201115_haifengA673Dox2d3dTmt16/fragpipeAnalysis/setB/', sep = ''),
+           pattern = '_Matrix.txt', full.names = TRUE))
+##
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+
+##now combine the data
+allQuantData = do.call('rbind', quantDataSet)
+psmQuant = psm %>%
+  left_join(allQuantData)
+```
+Now we will filter the expression data to discard any entries where the signal is just too low to be confident in the data.
+
+```{r}
+##########################################################################################
+psmQuant$sampleSignal = rowSums(psmQuant[,c(6,9:14,17:18,20:21)])
+psmQuantFiltered = subset(psmQuant, psmQuant$sampleSignal >= 110 & !is.na(psmQuant$symbol) & !grepl('-', psmQuant$symbol))
+```
+
+Now we want to roll the data up into proteins. There are a couple of ways of doing this with TMT data (e.g. a median or a sum). I will calculate both a median and a sum of the values because I am not certain which will work best in the downstream analysis. 
+
+```{r}
+##########################################################################################
+proteinSet = psmQuantFiltered[,c(3,6,9:14,17:18,20:21)] %>%
+  dplyr::rename(pool2d.1 = tmt16plex_126C,
+         noDox2d.1 = tmt16plex_128N, noDox2d.2 = tmt16plex_128C, noDox2d.3 = tmt16plex_129N, 
+         yesDox2d.1 = tmt16plex_129C, yesDox2d.2 = tmt16plex_130N, yesDox2d.3 = tmt16plex_130C, 
+         washOut2d.1 = tmt16plex_132N, washOut2d.2 = tmt16plex_132C, washOut2d.3 = tmt16plex_133C,
+         pool2d.2 = tmt16plex_134N) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(across(where(is.double), list(sum = sum, med = median)))
+##save data
+saveRDS(proteinSet, paste(baseRepository, '/proteomics20201115_haifengA673Dox2d3dTmt16/dataset_proteinSet3d.rds', sep = ''))
+```
+
+Perform a DEqMS analysis.
+
+```{r}
+##########################################################################################
+quantInput = psmQuantFiltered[,c(1:5,9:14,17:18,20)]
+saveRDS(quantInput, paste(baseRepository, '/proteomics20201115_haifengA673Dox2d3dTmt16/dataset_peptideQuantDataPreDEqMS_setB.rds', sep = ''))
+quantInputLog = quantInput[,c(1,3,6:14)]
+quantInputLog[,3:11][quantInputLog[,3:11] == 0] = NA
+quantInputLog[,3:11] = log2(quantInputLog[,3:11])
+quantInputNormalized = medianSweeping(quantInputLog, group_col = 2)
+boxplot(quantInputNormalized, las = 2, ylab = 'log2 ratio', main = 'normalized TMT data')
+```
+
+All of the data look tight. Good. Lets continue with the DEqMS analysis. We need to build our sample table.
+
+```{r}
+##########################################################################################
+cond = as.factor(c('noDox','noDox','noDox','yesDox','yesDox','yesDox','washOut','washOut','washOut'))
+design = model.matrix(~0+cond) 
+colnames(design) = gsub('cond', '', colnames(design))
+```
+
+Now we can build the Limma model.
+
+```{r}
+##########################################################################################
+geneMatrix = as.matrix(quantInputNormalized)
+limmaFit1 = lmFit(geneMatrix, design)
+limmaContrasts = c('noDox - yesDox', 'washOut - yesDox', 'noDox - washOut')
+limmaContrastDesign =  makeContrasts(contrasts = limmaContrasts, levels = design)
+limmaFit2 = eBayes(contrasts.fit(limmaFit1, contrasts = limmaContrastDesign))
+```
+
+<div style="margin-bottom:50px;"></div>
+
+Now for the actual DEqMS work. We will first
+
+```{r}
+##########################################################################################
+psmCountTable = as.data.frame(table(quantInput$symbol))
+rownames(psmCountTable) = psmCountTable$Var1
+limmaFit2$count = psmCountTable[rownames(limmaFit2$coefficients),2]
+limmaFit3 = spectraCounteBayes(limmaFit2)
+head(limmaFit3$coefficients)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 1)
+dim(deqmsResults)
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20201115_haifengA673Dox2d3dTmt16/dataset_deqms_3d_noDox-yesDox.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 2)
+dim(deqmsResults)
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20201115_haifengA673Dox2d3dTmt16/dataset_deqms_3d_washOut-yesDox.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+##
+deqmsResults = outputResult(limmaFit3, coef_col = 3)
+dim(deqmsResults)
+write.table(deqmsResults, 
+            paste(baseRepository, '/proteomics20201115_haifengA673Dox2d3dTmt16/dataset_deqms_3d_noDox-washOut.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+
+##write the final output
+outputData = as.data.frame(outputResult(limmaFit3, coef_col = 1)) %>%
+  dplyr::select(gene, logFC) %>%
+  dplyr::rename(symbol = gene, sorensen3dProtein = logFC) %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(sorensen3dProtein = mean(sorensen3dProtein, na.rm = TRUE))
+
+saveRDS(outputData, paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensen3dProtein/dataset_sorensen3dProtein.rds', sep = ''))
+write.table(outputData, 
+            paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensen3dProtein/dataset_sorensen3dProtein.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+```
+
+Finish up.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+

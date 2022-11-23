@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-0.9.260">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Christopher Hughes">
+
+<title>sorensen2dProtein</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<script src="sorensen2dProtein_files/libs/clipboard/clipboard.min.js"></script>
+<script src="sorensen2dProtein_files/libs/quarto-html/quarto.js"></script>
+<script src="sorensen2dProtein_files/libs/quarto-html/popper.min.js"></script>
+<script src="sorensen2dProtein_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="sorensen2dProtein_files/libs/quarto-html/anchor.min.js"></script>
+<link href="sorensen2dProtein_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link id="quarto-text-highlighting-styles" href="sorensen2dProtein_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet">
+<script src="sorensen2dProtein_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="sorensen2dProtein_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="sorensen2dProtein_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">sorensen2dProtein</h1>
+</div>
+
+
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Christopher Hughes </p>
+          </div>
+  </div>
+    
+    
+  </div>
+  
+
+</header>
+
+<section id="setting-up-the-environment" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up-the-environment">Setting up the environment</h2>
+<p>These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co">#packages</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'tidyverse'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>-- Attaching packages --------------------------------------- tidyverse 1.3.2 --
+v ggplot2 3.4.0      v purrr   0.3.5 
+v tibble  3.1.8      v dplyr   1.0.10
+v tidyr   1.2.1      v stringr 1.4.1 
+v readr   2.1.3      v forcats 0.5.2 
+-- Conflicts ------------------------------------------ tidyverse_conflicts() --
+x dplyr::filter() masks stats::filter()
+x dplyr::lag()    masks stats::lag()</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'DEqMS'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: matrixStats
+
+Attaching package: 'matrixStats'
+
+The following object is masked from 'package:dplyr':
+
+    count
+
+Loading required package: limma</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'limma'</span>)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'RColorBrewer'</span>)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'DESeq2'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Loading required package: S4Vectors
+Loading required package: stats4
+Loading required package: BiocGenerics
+
+Attaching package: 'BiocGenerics'
+
+The following object is masked from 'package:limma':
+
+    plotMA
+
+The following objects are masked from 'package:dplyr':
+
+    combine, intersect, setdiff, union
+
+The following objects are masked from 'package:stats':
+
+    IQR, mad, sd, var, xtabs
+
+The following objects are masked from 'package:base':
+
+    anyDuplicated, append, as.data.frame, basename, cbind, colnames,
+    dirname, do.call, duplicated, eval, evalq, Filter, Find, get, grep,
+    grepl, intersect, is.unsorted, lapply, Map, mapply, match, mget,
+    order, paste, pmax, pmax.int, pmin, pmin.int, Position, rank,
+    rbind, Reduce, rownames, sapply, setdiff, sort, table, tapply,
+    union, unique, unsplit, which.max, which.min
+
+
+Attaching package: 'S4Vectors'
+
+The following objects are masked from 'package:dplyr':
+
+    first, rename
+
+The following object is masked from 'package:tidyr':
+
+    expand
+
+The following objects are masked from 'package:base':
+
+    expand.grid, I, unname
+
+Loading required package: IRanges
+
+Attaching package: 'IRanges'
+
+The following objects are masked from 'package:dplyr':
+
+    collapse, desc, slice
+
+The following object is masked from 'package:purrr':
+
+    reduce
+
+The following object is masked from 'package:grDevices':
+
+    windows
+
+Loading required package: GenomicRanges
+Loading required package: GenomeInfoDb
+Loading required package: SummarizedExperiment
+Loading required package: MatrixGenerics
+
+Attaching package: 'MatrixGenerics'
+
+The following objects are masked from 'package:matrixStats':
+
+    colAlls, colAnyNAs, colAnys, colAvgsPerRowSet, colCollapse,
+    colCounts, colCummaxs, colCummins, colCumprods, colCumsums,
+    colDiffs, colIQRDiffs, colIQRs, colLogSumExps, colMadDiffs,
+    colMads, colMaxs, colMeans2, colMedians, colMins, colOrderStats,
+    colProds, colQuantiles, colRanges, colRanks, colSdDiffs, colSds,
+    colSums2, colTabulates, colVarDiffs, colVars, colWeightedMads,
+    colWeightedMeans, colWeightedMedians, colWeightedSds,
+    colWeightedVars, rowAlls, rowAnyNAs, rowAnys, rowAvgsPerColSet,
+    rowCollapse, rowCounts, rowCummaxs, rowCummins, rowCumprods,
+    rowCumsums, rowDiffs, rowIQRDiffs, rowIQRs, rowLogSumExps,
+    rowMadDiffs, rowMads, rowMaxs, rowMeans2, rowMedians, rowMins,
+    rowOrderStats, rowProds, rowQuantiles, rowRanges, rowRanks,
+    rowSdDiffs, rowSds, rowSums2, rowTabulates, rowVarDiffs, rowVars,
+    rowWeightedMads, rowWeightedMeans, rowWeightedMedians,
+    rowWeightedSds, rowWeightedVars
+
+Loading required package: Biobase
+Welcome to Bioconductor
+
+    Vignettes contain introductory material; view with
+    'browseVignettes()'. To cite Bioconductor, see
+    'citation("Biobase")', and for packages 'citation("pkgname")'.
+
+
+Attaching package: 'Biobase'
+
+The following object is masked from 'package:MatrixGenerics':
+
+    rowMedians
+
+The following objects are masked from 'package:matrixStats':
+
+    anyMissing, rowMedians</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="co">#directories</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>generalDatasets <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>baseWorkspace <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>baseRepository <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="data-processing" class="level2">
+<h2 class="anchored" data-anchor-id="data-processing">Data processing</h2>
+</section>
+<section id="data-processing-1" class="level2">
+<h2 class="anchored" data-anchor-id="data-processing-1">Data processing</h2>
+<p>Read in the peptide spectral match data. The TMT layout is as follows:</p>
+<p>126C - pool 127N - empty 127C - empty 128N - noDox.1 128C - noDox.2 129N - noDox.3 129C - yesDox.1 130N - yesDox.2 130C - yesDox.3 131N - empty 131C - empty 132N - washOut.1 132C - washOut.2 133N - empty 133C - washOut.3 134N - pool</p>
+<p>Process the 2d data first.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>psm <span class="ot">=</span> <span class="fu">read_tsv</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20201115_haifengA673Dox2d3dTmt16/fragpipeAnalysis/setA/psm.tsv'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(Peptide, <span class="st">`</span><span class="at">Protein ID</span><span class="st">`</span>, Gene, Spectrum) <span class="sc">%&gt;%</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">sequence =</span> Peptide, </span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>                <span class="at">accession =</span> <span class="st">`</span><span class="at">Protein ID</span><span class="st">`</span>,</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>                <span class="at">symbol =</span> Gene) <span class="sc">%&gt;%</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">scan =</span> <span class="fu">as.numeric</span>(<span class="fu">sub</span>(<span class="st">'.*_HpH_[0-9]+</span><span class="sc">\\</span><span class="st">.(.*)</span><span class="sc">\\</span><span class="st">.[0-9]+</span><span class="sc">\\</span><span class="st">.[0-9]+'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, Spectrum)),</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>                <span class="at">fraction =</span> <span class="fu">sub</span>(<span class="st">'.*_HpH_(.*)</span><span class="sc">\\</span><span class="st">.[0-9]+</span><span class="sc">\\</span><span class="st">.[0-9]+</span><span class="sc">\\</span><span class="st">.[0-9]+'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, Spectrum)) <span class="sc">%&gt;%</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>Spectrum)</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################################################</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################################################</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="do">##this function goes through the provided quant files and returns</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="do">##a parsed object for each. It returns signal to noise ratio for quant</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="do">#######################################################################</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>combineQuantFiles <span class="ot">=</span> <span class="cf">function</span>(filePath, ...){</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  quantData <span class="ot">=</span> <span class="fu">read_tsv</span>(filePath, <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">select</span>(MS2ScanNumber, <span class="st">`</span><span class="at">126Intensity</span><span class="st">`</span><span class="sc">:</span><span class="st">`</span><span class="at">134NIntensity</span><span class="st">`</span>)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">colnames</span>(quantData) <span class="ot">=</span> <span class="fu">c</span>(<span class="st">'scan'</span>,<span class="st">'tmt16plex_126C'</span>,<span class="st">'tmt16plex_127N'</span>,<span class="st">'tmt16plex_127C'</span>,<span class="st">'tmt16plex_128N'</span>,</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>                  <span class="st">'tmt16plex_128C'</span>,<span class="st">'tmt16plex_129N'</span>,<span class="st">'tmt16plex_129C'</span>,<span class="st">'tmt16plex_130N'</span>,<span class="st">'tmt16plex_130C'</span>,<span class="st">'tmt16plex_131N'</span>,</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>                  <span class="st">'tmt16plex_131C'</span>,<span class="st">'tmt16plex_132N'</span>,<span class="st">'tmt16plex_132C'</span>,<span class="st">'tmt16plex_133N'</span>,<span class="st">'tmt16plex_133C'</span>,<span class="st">'tmt16plex_134N'</span>)</span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>  fraction <span class="ot">=</span> <span class="fu">sub</span>(<span class="st">'.*HpH_(.*)</span><span class="sc">\\</span><span class="st">.raw_Matrix</span><span class="sc">\\</span><span class="st">.txt$'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, filePath)</span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>  quantData<span class="sc">$</span>fraction <span class="ot">=</span> fraction</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="fu">paste</span>(<span class="st">'Processing file for fraction '</span>, fraction, <span class="st">'.'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>  <span class="do">##</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(quantData)</span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a><span class="do">##process the quant files</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>quantFiles <span class="ot">=</span> <span class="fu">as.list</span>(<span class="fu">list.files</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20201115_haifengA673Dox2d3dTmt16/fragpipeAnalysis/setA/'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>           <span class="at">pattern =</span> <span class="st">'_Matrix.txt'</span>, <span class="at">full.names =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a>quantDataSet <span class="ot">=</span> <span class="fu">lapply</span>(quantFiles, combineQuantFiles)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 1."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 10."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 11."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 12."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 13."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 14."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 15."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 16."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 17."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 18."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 19."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 2."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 20."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 21."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 22."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 23."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 24."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 25."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 26."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 27."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 28."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 29."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 3."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 30."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 31."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 32."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 33."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 34."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 35."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 36."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 4."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 5."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 6."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 7."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 8."</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+* `` -&gt; `...140`</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "Processing file for fraction 9."</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb81"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb81-1"><a href="#cb81-1" aria-hidden="true" tabindex="-1"></a><span class="do">##now combine the data</span></span>
+<span id="cb81-2"><a href="#cb81-2" aria-hidden="true" tabindex="-1"></a>allQuantData <span class="ot">=</span> <span class="fu">do.call</span>(<span class="st">'rbind'</span>, quantDataSet)</span>
+<span id="cb81-3"><a href="#cb81-3" aria-hidden="true" tabindex="-1"></a>psmQuant <span class="ot">=</span> psm <span class="sc">%&gt;%</span></span>
+<span id="cb81-4"><a href="#cb81-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">left_join</span>(allQuantData)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining, by = c("scan", "fraction")</code></pre>
+</div>
+</div>
+<p>Now we will filter the expression data to discard any entries where the signal is just too low to be confident in the data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb83"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb83-1"><a href="#cb83-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb83-2"><a href="#cb83-2" aria-hidden="true" tabindex="-1"></a>psmQuant<span class="sc">$</span>sampleSignal <span class="ot">=</span> <span class="fu">rowSums</span>(psmQuant[,<span class="fu">c</span>(<span class="dv">6</span>,<span class="dv">9</span><span class="sc">:</span><span class="dv">14</span>,<span class="dv">17</span><span class="sc">:</span><span class="dv">18</span>,<span class="dv">20</span><span class="sc">:</span><span class="dv">21</span>)])</span>
+<span id="cb83-3"><a href="#cb83-3" aria-hidden="true" tabindex="-1"></a>psmQuantFiltered <span class="ot">=</span> <span class="fu">subset</span>(psmQuant, psmQuant<span class="sc">$</span>sampleSignal <span class="sc">&gt;=</span> <span class="dv">110</span> <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(psmQuant<span class="sc">$</span>symbol) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">grepl</span>(<span class="st">'-'</span>, psmQuant<span class="sc">$</span>symbol))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now we want to roll the data up into proteins. There are a couple of ways of doing this with TMT data (e.g.&nbsp;a median or a sum). I will calculate both a median and a sum of the values because I am not certain which will work best in the downstream analysis.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb84"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb84-1"><a href="#cb84-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb84-2"><a href="#cb84-2" aria-hidden="true" tabindex="-1"></a>proteinSet <span class="ot">=</span> psmQuantFiltered[,<span class="fu">c</span>(<span class="dv">3</span>,<span class="dv">6</span>,<span class="dv">9</span><span class="sc">:</span><span class="dv">14</span>,<span class="dv">17</span><span class="sc">:</span><span class="dv">18</span>,<span class="dv">20</span><span class="sc">:</span><span class="dv">21</span>)] <span class="sc">%&gt;%</span></span>
+<span id="cb84-3"><a href="#cb84-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">pool2d.1 =</span> tmt16plex_126C,</span>
+<span id="cb84-4"><a href="#cb84-4" aria-hidden="true" tabindex="-1"></a>         <span class="at">noDox2d.1 =</span> tmt16plex_128N, <span class="at">noDox2d.2 =</span> tmt16plex_128C, <span class="at">noDox2d.3 =</span> tmt16plex_129N, </span>
+<span id="cb84-5"><a href="#cb84-5" aria-hidden="true" tabindex="-1"></a>         <span class="at">yesDox2d.1 =</span> tmt16plex_129C, <span class="at">yesDox2d.2 =</span> tmt16plex_130N, <span class="at">yesDox2d.3 =</span> tmt16plex_130C, </span>
+<span id="cb84-6"><a href="#cb84-6" aria-hidden="true" tabindex="-1"></a>         <span class="at">washOut2d.1 =</span> tmt16plex_132N, <span class="at">washOut2d.2 =</span> tmt16plex_132C, <span class="at">washOut2d.3 =</span> tmt16plex_133C,</span>
+<span id="cb84-7"><a href="#cb84-7" aria-hidden="true" tabindex="-1"></a>         <span class="at">pool2d.2 =</span> tmt16plex_134N) <span class="sc">%&gt;%</span></span>
+<span id="cb84-8"><a href="#cb84-8" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(symbol) <span class="sc">%&gt;%</span></span>
+<span id="cb84-9"><a href="#cb84-9" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="fu">across</span>(<span class="fu">where</span>(is.double), <span class="fu">list</span>(<span class="at">sum =</span> sum, <span class="at">med =</span> median)))</span>
+<span id="cb84-10"><a href="#cb84-10" aria-hidden="true" tabindex="-1"></a><span class="do">##save data</span></span>
+<span id="cb84-11"><a href="#cb84-11" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(proteinSet, <span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20201115_haifengA673Dox2d3dTmt16/dataset_proteinSet2d.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Perform a DEqMS analysis.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb85"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb85-1"><a href="#cb85-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb85-2"><a href="#cb85-2" aria-hidden="true" tabindex="-1"></a>quantInput <span class="ot">=</span> psmQuantFiltered[,<span class="fu">c</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">5</span>,<span class="dv">9</span><span class="sc">:</span><span class="dv">14</span>,<span class="dv">17</span><span class="sc">:</span><span class="dv">18</span>,<span class="dv">20</span>)]</span>
+<span id="cb85-3"><a href="#cb85-3" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(quantInput, <span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20201115_haifengA673Dox2d3dTmt16/dataset_peptideQuantDataPreDEqMS.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb85-4"><a href="#cb85-4" aria-hidden="true" tabindex="-1"></a>quantInputLog <span class="ot">=</span> quantInput[,<span class="fu">c</span>(<span class="dv">1</span>,<span class="dv">3</span>,<span class="dv">6</span><span class="sc">:</span><span class="dv">14</span>)]</span>
+<span id="cb85-5"><a href="#cb85-5" aria-hidden="true" tabindex="-1"></a>quantInputLog[,<span class="dv">3</span><span class="sc">:</span><span class="dv">11</span>][quantInputLog[,<span class="dv">3</span><span class="sc">:</span><span class="dv">11</span>] <span class="sc">==</span> <span class="dv">0</span>] <span class="ot">=</span> <span class="cn">NA</span></span>
+<span id="cb85-6"><a href="#cb85-6" aria-hidden="true" tabindex="-1"></a>quantInputLog[,<span class="dv">3</span><span class="sc">:</span><span class="dv">11</span>] <span class="ot">=</span> <span class="fu">log2</span>(quantInputLog[,<span class="dv">3</span><span class="sc">:</span><span class="dv">11</span>])</span>
+<span id="cb85-7"><a href="#cb85-7" aria-hidden="true" tabindex="-1"></a>quantInputNormalized <span class="ot">=</span> <span class="fu">medianSweeping</span>(quantInputLog, <span class="at">group_col =</span> <span class="dv">2</span>)</span>
+<span id="cb85-8"><a href="#cb85-8" aria-hidden="true" tabindex="-1"></a><span class="fu">boxplot</span>(quantInputNormalized, <span class="at">las =</span> <span class="dv">2</span>, <span class="at">ylab =</span> <span class="st">'log2 ratio'</span>, <span class="at">main =</span> <span class="st">'normalized TMT data'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output-display">
+<p><img src="sorensen2dProtein_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid" width="672"></p>
+</div>
+</div>
+<p>All of the data look tight. Good. Lets continue with the DEqMS analysis. We need to build our sample table.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb86"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb86-1"><a href="#cb86-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb86-2"><a href="#cb86-2" aria-hidden="true" tabindex="-1"></a>cond <span class="ot">=</span> <span class="fu">as.factor</span>(<span class="fu">c</span>(<span class="st">'noDox'</span>,<span class="st">'noDox'</span>,<span class="st">'noDox'</span>,<span class="st">'yesDox'</span>,<span class="st">'yesDox'</span>,<span class="st">'yesDox'</span>,<span class="st">'washOut'</span>,<span class="st">'washOut'</span>,<span class="st">'washOut'</span>))</span>
+<span id="cb86-3"><a href="#cb86-3" aria-hidden="true" tabindex="-1"></a>design <span class="ot">=</span> <span class="fu">model.matrix</span>(<span class="sc">~</span><span class="dv">0</span><span class="sc">+</span>cond) </span>
+<span id="cb86-4"><a href="#cb86-4" aria-hidden="true" tabindex="-1"></a><span class="fu">colnames</span>(design) <span class="ot">=</span> <span class="fu">gsub</span>(<span class="st">'cond'</span>, <span class="st">''</span>, <span class="fu">colnames</span>(design))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now we can build the Limma model.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb87"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb87-1"><a href="#cb87-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb87-2"><a href="#cb87-2" aria-hidden="true" tabindex="-1"></a>geneMatrix <span class="ot">=</span> <span class="fu">as.matrix</span>(quantInputNormalized)</span>
+<span id="cb87-3"><a href="#cb87-3" aria-hidden="true" tabindex="-1"></a>limmaFit1 <span class="ot">=</span> <span class="fu">lmFit</span>(geneMatrix, design)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Partial NA coefficients for 4 probe(s)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb89"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb89-1"><a href="#cb89-1" aria-hidden="true" tabindex="-1"></a>limmaContrasts <span class="ot">=</span> <span class="fu">c</span>(<span class="st">'noDox - yesDox'</span>, <span class="st">'washOut - yesDox'</span>, <span class="st">'noDox - washOut'</span>)</span>
+<span id="cb89-2"><a href="#cb89-2" aria-hidden="true" tabindex="-1"></a>limmaContrastDesign <span class="ot">=</span>  <span class="fu">makeContrasts</span>(<span class="at">contrasts =</span> limmaContrasts, <span class="at">levels =</span> design)</span>
+<span id="cb89-3"><a href="#cb89-3" aria-hidden="true" tabindex="-1"></a>limmaFit2 <span class="ot">=</span> <span class="fu">eBayes</span>(<span class="fu">contrasts.fit</span>(limmaFit1, <span class="at">contrasts =</span> limmaContrastDesign))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div style="margin-bottom:50px;">
+
+</div>
+<p>Now for the actual DEqMS work. We will first</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a>psmCountTable <span class="ot">=</span> <span class="fu">as.data.frame</span>(<span class="fu">table</span>(quantInput<span class="sc">$</span>symbol))</span>
+<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(psmCountTable) <span class="ot">=</span> psmCountTable<span class="sc">$</span>Var1</span>
+<span id="cb90-4"><a href="#cb90-4" aria-hidden="true" tabindex="-1"></a>limmaFit2<span class="sc">$</span>count <span class="ot">=</span> psmCountTable[<span class="fu">rownames</span>(limmaFit2<span class="sc">$</span>coefficients),<span class="dv">2</span>]</span>
+<span id="cb90-5"><a href="#cb90-5" aria-hidden="true" tabindex="-1"></a>limmaFit3 <span class="ot">=</span> <span class="fu">spectraCounteBayes</span>(limmaFit2)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in y.pred - digamma(df/2): longer object length is not a multiple of
+shorter object length</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="fu">head</span>(limmaFit3<span class="sc">$</span>coefficients)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>       Contrasts
+        noDox - yesDox washOut - yesDox noDox - washOut
+  A2M       -1.3330525       -1.1104102     -0.22264231
+  AAAS       0.8112998        0.8585558     -0.04725603
+  AACS      -1.0864348       -0.9858615     -0.10057334
+  AAGAB      0.2830908        0.1221968      0.16089402
+  AAK1      -0.7838196       -0.8807083      0.09688870
+  AAMDC     -1.5280869       -1.4889835     -0.03910344</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb94-2"><a href="#cb94-2" aria-hidden="true" tabindex="-1"></a>deqmsResults <span class="ot">=</span> <span class="fu">outputResult</span>(limmaFit3, <span class="at">coef_col =</span> <span class="dv">1</span>)</span>
+<span id="cb94-3"><a href="#cb94-3" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(deqmsResults)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 8194   11</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb96"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(deqmsResults, </span>
+<span id="cb96-2"><a href="#cb96-2" aria-hidden="true" tabindex="-1"></a>            <span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20201115_haifengA673Dox2d3dTmt16/dataset_deqms_2d_noDox-yesDox.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb96-3"><a href="#cb96-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">sep =</span> <span class="st">','</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb96-4"><a href="#cb96-4" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb96-5"><a href="#cb96-5" aria-hidden="true" tabindex="-1"></a>deqmsResults <span class="ot">=</span> <span class="fu">outputResult</span>(limmaFit3, <span class="at">coef_col =</span> <span class="dv">2</span>)</span>
+<span id="cb96-6"><a href="#cb96-6" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(deqmsResults)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 8194   11</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(deqmsResults, </span>
+<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a>            <span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20201115_haifengA673Dox2d3dTmt16/dataset_deqms_2d_washOut-yesDox.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb98-3"><a href="#cb98-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">sep =</span> <span class="st">','</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb98-4"><a href="#cb98-4" aria-hidden="true" tabindex="-1"></a><span class="do">##</span></span>
+<span id="cb98-5"><a href="#cb98-5" aria-hidden="true" tabindex="-1"></a>deqmsResults <span class="ot">=</span> <span class="fu">outputResult</span>(limmaFit3, <span class="at">coef_col =</span> <span class="dv">3</span>)</span>
+<span id="cb98-6"><a href="#cb98-6" aria-hidden="true" tabindex="-1"></a><span class="fu">dim</span>(deqmsResults)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 8194   11</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(deqmsResults, </span>
+<span id="cb100-2"><a href="#cb100-2" aria-hidden="true" tabindex="-1"></a>            <span class="fu">paste</span>(baseRepository, <span class="st">'/proteomics20201115_haifengA673Dox2d3dTmt16/dataset_deqms_2d_noDox-washOut.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb100-3"><a href="#cb100-3" aria-hidden="true" tabindex="-1"></a>            <span class="at">sep =</span> <span class="st">','</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>)</span>
+<span id="cb100-4"><a href="#cb100-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb100-5"><a href="#cb100-5" aria-hidden="true" tabindex="-1"></a><span class="do">##write the final output</span></span>
+<span id="cb100-6"><a href="#cb100-6" aria-hidden="true" tabindex="-1"></a>outputData <span class="ot">=</span> <span class="fu">as.data.frame</span>(<span class="fu">outputResult</span>(limmaFit3, <span class="at">coef_col =</span> <span class="dv">1</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb100-7"><a href="#cb100-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(gene, logFC) <span class="sc">%&gt;%</span></span>
+<span id="cb100-8"><a href="#cb100-8" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">symbol =</span> gene, <span class="at">sorensen2dProtein =</span> logFC) <span class="sc">%&gt;%</span></span>
+<span id="cb100-9"><a href="#cb100-9" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(<span class="sc">!</span><span class="fu">is.na</span>(symbol)) <span class="sc">%&gt;%</span></span>
+<span id="cb100-10"><a href="#cb100-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">group_by</span>(symbol) <span class="sc">%&gt;%</span></span>
+<span id="cb100-11"><a href="#cb100-11" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">sorensen2dProtein =</span> <span class="fu">mean</span>(sorensen2dProtein, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb100-12"><a href="#cb100-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb100-13"><a href="#cb100-13" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(outputData, <span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/sorensen2dProtein/dataset_sorensen2dProtein.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb100-14"><a href="#cb100-14" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(outputData, </span>
+<span id="cb100-15"><a href="#cb100-15" aria-hidden="true" tabindex="-1"></a>            <span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/sorensen2dProtein/dataset_sorensen2dProtein.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb100-16"><a href="#cb100-16" aria-hidden="true" tabindex="-1"></a>            <span class="at">sep =</span> <span class="st">','</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Finish up.</p>
+<section id="session-info" class="level3">
+<h3 class="anchored" data-anchor-id="session-info">Session info</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.1.3 (2022-03-10)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19042)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_Canada.1252  LC_CTYPE=English_Canada.1252   
+[3] LC_MONETARY=English_Canada.1252 LC_NUMERIC=C                   
+[5] LC_TIME=English_Canada.1252    
+
+attached base packages:
+[1] stats4    stats     graphics  grDevices utils     datasets  methods  
+[8] base     
+
+other attached packages:
+ [1] DESeq2_1.34.0               SummarizedExperiment_1.24.0
+ [3] Biobase_2.54.0              MatrixGenerics_1.6.0       
+ [5] GenomicRanges_1.46.1        GenomeInfoDb_1.30.1        
+ [7] IRanges_2.28.0              S4Vectors_0.32.4           
+ [9] BiocGenerics_0.40.0         RColorBrewer_1.1-3         
+[11] DEqMS_1.12.1                limma_3.50.3               
+[13] matrixStats_0.62.0          forcats_0.5.2              
+[15] stringr_1.4.1               dplyr_1.0.10               
+[17] purrr_0.3.5                 readr_2.1.3                
+[19] tidyr_1.2.1                 tibble_3.1.8               
+[21] ggplot2_3.4.0               tidyverse_1.3.2            
+
+loaded via a namespace (and not attached):
+ [1] bitops_1.0-7           fs_1.5.2               bit64_4.0.5           
+ [4] lubridate_1.9.0        httr_1.4.4             tools_4.1.3           
+ [7] backports_1.4.1        utf8_1.2.2             R6_2.5.1              
+[10] DBI_1.1.3              colorspace_2.0-3       withr_2.5.0           
+[13] tidyselect_1.2.0       bit_4.0.5              compiler_4.1.3        
+[16] cli_3.4.1              rvest_1.0.3            xml2_1.3.3            
+[19] DelayedArray_0.20.0    scales_1.2.1           genefilter_1.76.0     
+[22] digest_0.6.30          rmarkdown_2.18         XVector_0.34.0        
+[25] pkgconfig_2.0.3        htmltools_0.5.3        dbplyr_2.2.1          
+[28] fastmap_1.1.0          htmlwidgets_1.5.4      rlang_1.0.6           
+[31] readxl_1.4.1           RSQLite_2.2.18         rstudioapi_0.14       
+[34] generics_0.1.3         jsonlite_1.8.3         vroom_1.6.0           
+[37] BiocParallel_1.28.3    googlesheets4_1.0.1    RCurl_1.98-1.9        
+[40] magrittr_2.0.3         GenomeInfoDbData_1.2.7 Matrix_1.5-3          
+[43] Rcpp_1.0.9             munsell_0.5.0          fansi_1.0.3           
+[46] lifecycle_1.0.3        stringi_1.7.8          yaml_2.3.6            
+[49] zlibbioc_1.40.0        plyr_1.8.8             blob_1.2.3            
+[52] grid_4.1.3             parallel_4.1.3         crayon_1.5.2          
+[55] lattice_0.20-45        splines_4.1.3          Biostrings_2.62.0     
+[58] haven_2.5.1            annotate_1.72.0        KEGGREST_1.34.0       
+[61] hms_1.1.2              locfit_1.5-9.6         knitr_1.40            
+[64] pillar_1.8.1           geneplotter_1.72.0     XML_3.99-0.12         
+[67] reprex_2.0.2           glue_1.6.2             evaluate_0.18         
+[70] modelr_0.1.10          png_0.1-7              vctrs_0.5.1           
+[73] tzdb_0.3.0             cellranger_1.1.0       gtable_0.3.1          
+[76] assertthat_0.2.1       cachem_1.0.6           xfun_0.34             
+[79] xtable_1.8-4           broom_1.0.1            survival_3.4-0        
+[82] googledrive_2.0.0      gargle_1.2.1           memoise_2.0.1         
+[85] AnnotationDbi_1.56.2   timechange_0.1.1       ellipsis_0.3.2        </code></pre>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    setTimeout(function() {
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

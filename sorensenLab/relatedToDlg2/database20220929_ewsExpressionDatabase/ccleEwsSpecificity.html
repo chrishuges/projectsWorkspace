@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-0.9.260">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Christopher Hughes">
+
+<title>ccleEwsSpecificity</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+<script src="ccleEwsSpecificity_files/libs/clipboard/clipboard.min.js"></script>
+<script src="ccleEwsSpecificity_files/libs/quarto-html/quarto.js"></script>
+<script src="ccleEwsSpecificity_files/libs/quarto-html/popper.min.js"></script>
+<script src="ccleEwsSpecificity_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="ccleEwsSpecificity_files/libs/quarto-html/anchor.min.js"></script>
+<link href="ccleEwsSpecificity_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link id="quarto-text-highlighting-styles" href="ccleEwsSpecificity_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet">
+<script src="ccleEwsSpecificity_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="ccleEwsSpecificity_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="ccleEwsSpecificity_files/libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+
+
+</head>
+
+<body class="fullcontent">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">ccleEwsSpecificity</h1>
+</div>
+
+
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Christopher Hughes </p>
+          </div>
+  </div>
+    
+    
+  </div>
+  
+
+</header>
+
+<section id="setting-up-the-environment" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up-the-environment">Setting up the environment</h2>
+<p>These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'tidyverse'</span>)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">'vroom'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>generalDatasets <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>baseWorkspace <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>baseRepository <span class="ot">=</span> <span class="st">'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="data-processing" class="level2">
+<h2 class="anchored" data-anchor-id="data-processing">Data processing</h2>
+<p>Read the sample annotation detail.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>cellAnnotation <span class="ot">=</span> <span class="fu">read_csv</span>(<span class="fu">paste</span>(generalDatasets, <span class="st">'/depmap22Q2/sample_info.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Read in the RNA data and do some basic processing on it.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>rna <span class="ot">=</span> <span class="fu">vroom</span>(<span class="fu">paste</span>(generalDatasets, <span class="st">'/depmap22Q2/CCLE_expression.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">DepMap_ID =</span> <span class="st">`</span><span class="at">...1</span><span class="st">`</span>) <span class="sc">%&gt;%</span> </span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  tidyr<span class="sc">::</span><span class="fu">pivot_longer</span>(<span class="at">cols =</span> <span class="st">`</span><span class="at">TSPAN6 (7105)</span><span class="st">`</span><span class="sc">:</span><span class="st">`</span><span class="at">CDR1 (1038)</span><span class="st">`</span>, <span class="at">names_to =</span> <span class="st">'symbol'</span>, <span class="at">values_to =</span> <span class="st">'log2Tpm'</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(log2Tpm <span class="sc">&gt;</span> <span class="dv">0</span> <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">is.na</span>(log2Tpm)) <span class="sc">%&gt;%</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">gene =</span> <span class="fu">sub</span>(<span class="st">'(.*) </span><span class="sc">\\</span><span class="st">(.*$'</span>, <span class="st">'</span><span class="sc">\\</span><span class="st">1'</span>, symbol)) <span class="sc">%&gt;%</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(DepMap_ID, gene, log2Tpm) <span class="sc">%&gt;%</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(cellAnnotation)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>New names:
+Joining, by = "DepMap_ID"
+* `` -&gt; `...1`</code></pre>
+</div>
+</div>
+<p>Save the data for use downstream.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(rna, <span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/ccleEwsSpecificity/CCLE_expression_parsed.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Read in the previously parsed RNAseq data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="do">##read the rna data</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>rna <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/ccleEwsSpecificity/CCLE_expression_parsed.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(gene, log2Tpm, lineage_subtype) <span class="sc">%&gt;%</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">isEwing =</span> <span class="fu">ifelse</span>(<span class="fu">grepl</span>(<span class="st">'Ewing'</span>, lineage_subtype), <span class="st">'yes'</span>, <span class="st">'no'</span>)) <span class="sc">%&gt;%</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>lineage_subtype)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Calculate a specificity score for EwS cell lines.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="do">##calculate a specificity score for each gene</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>targetGeneList <span class="ot">=</span> <span class="fu">unique</span>(rna<span class="sc">$</span>gene)</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>ewsRnaScores <span class="ot">=</span> <span class="fu">data.frame</span>()</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(targetGeneList)){</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">#for (i in 8225:8225){</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>  targetGeneData <span class="ot">=</span> rna <span class="sc">%&gt;%</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">filter</span>(gene <span class="sc">==</span> targetGeneList[i]) <span class="sc">%&gt;%</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">group_by</span>(isEwing) <span class="sc">%&gt;%</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">medRna =</span> <span class="fu">median</span>(log2Tpm, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">nrow</span>(targetGeneData) <span class="sc">&lt;</span> <span class="dv">2</span>){</span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">#message('no value for ', rnaProGenes[i])</span></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    targetGeneScore <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="st">'gene'</span> <span class="ot">=</span> targetGeneList[i],</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>                               <span class="st">'medRna'</span> <span class="ot">=</span> <span class="cn">NA</span>)</span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    ewsRnaScores <span class="ot">=</span> <span class="fu">rbind</span>(ewsRnaScores, targetGeneScore)</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    targetGeneScore <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="st">'gene'</span> <span class="ot">=</span> targetGeneList[i],</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>                             <span class="st">'medRna'</span> <span class="ot">=</span> targetGeneData[targetGeneData<span class="sc">$</span>isEwing <span class="sc">==</span> <span class="st">'yes'</span>, <span class="st">'medRna'</span>] <span class="sc">-</span> targetGeneData[targetGeneData<span class="sc">$</span>isEwing <span class="sc">==</span> <span class="st">'no'</span>, <span class="st">'medRna'</span>])</span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    ewsRnaScores <span class="ot">=</span> <span class="fu">rbind</span>(ewsRnaScores, targetGeneScore)</span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>ewsRnaScores <span class="ot">=</span> ewsRnaScores <span class="sc">%&gt;%</span></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">ewsRnaScore =</span> medRna)</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="do">##save the data</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(ewsRnaScores, <span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/ccleEwsSpecificity/dataset_depmapEwsRnaSpecificityScores.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(ewsRnaScores, <span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/ccleEwsSpecificity/dataset_depmapEwsRnaSpecificityScores.tsv'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>            <span class="at">col.names =</span> <span class="cn">TRUE</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>, <span class="at">sep =</span> <span class="st">'</span><span class="sc">\t</span><span class="st">'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now we can define a protein score using data from PMID: 35839778. Because of how the data is reported here, I added a cell counter to beef up the enrichment scores. For example, for DLG2, which we know is enriched in EwS, only 44 values are reported for the over 900 cell lines analyzed. The non-reported values I presume are NA values, and thus speak to the enrichment of DLG2 in this case. So we take a simple proportion of how many values that are reported are from EwS cells, and scale the enrichment score based on this.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="do">##read in the cell line annotation data</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>cellInfo <span class="ot">=</span> <span class="fu">read_csv</span>(<span class="fu">paste</span>(generalDatasets, <span class="st">'/proteomics20220728_cancerCellLineMapsPmid35839778/model_list_20220628.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(model_id<span class="sc">:</span>gender) <span class="sc">%&gt;%</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(<span class="fu">grepl</span>(<span class="st">'Ewing'</span>, cancer_type))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: One or more parsing issues, call `problems()` on your data frame for details,
+e.g.:
+  dat &lt;- vroom(...)
+  problems(dat)</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="do">##read in the protein data</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>proData <span class="ot">=</span> <span class="fu">read_csv</span>(<span class="fu">paste</span>(generalDatasets, <span class="st">'/proteomics20220728_cancerCellLineMapsPmid35839778/proteomics_all_20220713.csv'</span>, <span class="at">sep =</span> <span class="st">''</span>), <span class="at">show_col_types =</span> <span class="cn">FALSE</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">isEwing =</span> <span class="fu">ifelse</span>(model_name <span class="sc">%in%</span> cellInfo<span class="sc">$</span>model_name, <span class="st">'yes'</span>, <span class="st">'no'</span>))</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="do">##calculate the score for each protein</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>targetGeneList <span class="ot">=</span> <span class="fu">unique</span>(proData<span class="sc">$</span>symbol)</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>ewsProScores <span class="ot">=</span> <span class="fu">data.frame</span>()</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">length</span>(targetGeneList)){</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co">#for (i in 7:7){</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  targetGeneData <span class="ot">=</span> proData <span class="sc">%&gt;%</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">filter</span>(symbol <span class="sc">==</span> targetGeneList[i]) <span class="sc">%&gt;%</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">cellCount =</span> <span class="dv">1</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">group_by</span>(isEwing) <span class="sc">%&gt;%</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>    dplyr<span class="sc">::</span><span class="fu">summarise</span>(<span class="at">medPro =</span> <span class="fu">median</span>(protein_intensity, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>                     <span class="at">numCells =</span> <span class="fu">sum</span>(cellCount, <span class="at">na.rm =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> (<span class="fu">nrow</span>(targetGeneData) <span class="sc">&lt;</span> <span class="dv">2</span>){</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    <span class="co">#message('no value for ', rnaProGenes[i])</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>    targetGeneScore <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="st">'gene'</span> <span class="ot">=</span> targetGeneList[i],</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>                               <span class="st">'medPro'</span> <span class="ot">=</span> <span class="cn">NA</span>,</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>                               <span class="st">'numCells'</span> <span class="ot">=</span> <span class="cn">NA</span>)</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>    ewsProScores <span class="ot">=</span> <span class="fu">rbind</span>(ewsProScores, targetGeneScore)</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>  } <span class="cf">else</span> {</span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>      targetGeneScore <span class="ot">=</span> <span class="fu">data.frame</span>(<span class="st">'gene'</span> <span class="ot">=</span> targetGeneList[i],</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>                               <span class="st">'medPro'</span> <span class="ot">=</span> targetGeneData[targetGeneData<span class="sc">$</span>isEwing <span class="sc">==</span> <span class="st">'yes'</span>, <span class="st">'medPro'</span>] <span class="sc">-</span> targetGeneData[targetGeneData<span class="sc">$</span>isEwing <span class="sc">==</span> <span class="st">'no'</span>, <span class="st">'medPro'</span>],</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>                               <span class="st">'numCells'</span> <span class="ot">=</span> (targetGeneData[targetGeneData<span class="sc">$</span>isEwing <span class="sc">==</span> <span class="st">'yes'</span>, <span class="st">'numCells'</span>] <span class="sc">/</span> <span class="fu">sum</span>(targetGeneData<span class="sc">$</span>numCells, <span class="at">na.rm =</span> <span class="cn">TRUE</span>)) <span class="sc">*</span> <span class="dv">10</span>)</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a>      ewsProScores <span class="ot">=</span> <span class="fu">rbind</span>(ewsProScores, targetGeneScore)</span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb11-28"><a href="#cb11-28" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-29"><a href="#cb11-29" aria-hidden="true" tabindex="-1"></a>ewsProScores <span class="ot">=</span> ewsProScores <span class="sc">%&gt;%</span></span>
+<span id="cb11-30"><a href="#cb11-30" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">ewsProScore =</span> medPro) <span class="sc">%&gt;%</span></span>
+<span id="cb11-31"><a href="#cb11-31" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">mutate</span>(<span class="at">ewsProScore =</span> ewsProScore <span class="sc">*</span> numCells)</span>
+<span id="cb11-32"><a href="#cb11-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-33"><a href="#cb11-33" aria-hidden="true" tabindex="-1"></a><span class="do">##save the data</span></span>
+<span id="cb11-34"><a href="#cb11-34" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(ewsProScores, <span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/ccleEwsSpecificity/dataset_proteomicsEwsProSpecificityScores.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb11-35"><a href="#cb11-35" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(ewsProScores, <span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/ccleEwsSpecificity/dataset_proteomicsEwsProSpecificityScores.tsv'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb11-36"><a href="#cb11-36" aria-hidden="true" tabindex="-1"></a>            <span class="at">col.names =</span> <span class="cn">TRUE</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>, <span class="at">sep =</span> <span class="st">'</span><span class="sc">\t</span><span class="st">'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Now we can read in both of these sets and combine them.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="do">##read the data</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>rnaScores <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/ccleEwsSpecificity/dataset_depmapEwsRnaSpecificityScores.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>proScores <span class="ot">=</span> <span class="fu">readRDS</span>(<span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/ccleEwsSpecificity/dataset_proteomicsEwsProSpecificityScores.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="do">##join the data</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>ewsScores <span class="ot">=</span> rnaScores <span class="sc">%&gt;%</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">left_join</span>(proScores) <span class="sc">%&gt;%</span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">select</span>(<span class="sc">-</span>numCells) <span class="sc">%&gt;%</span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">rename</span>(<span class="at">ccleEwsSpecificity =</span> ewsRnaScore, <span class="at">symbol =</span> gene)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Joining, by = "gene"</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="do">##save the data</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="fu">saveRDS</span>(ewsScores, <span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/ccleEwsSpecificity/dataset_proteomicsEwsRnaProSpecificityScores.rds'</span>, <span class="at">sep =</span> <span class="st">''</span>))</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="fu">write.table</span>(ewsScores, <span class="fu">paste</span>(baseRepository, <span class="st">'/database20220929_ewsExpressionDatabase/ccleEwsSpecificity/dataset_proteomicsEwsRnaProSpecificityScores.tsv'</span>, <span class="at">sep =</span> <span class="st">''</span>),</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>            <span class="at">col.names =</span> <span class="cn">TRUE</span>, <span class="at">row.names =</span> <span class="cn">FALSE</span>, <span class="at">quote =</span> <span class="cn">FALSE</span>, <span class="at">sep =</span> <span class="st">'</span><span class="sc">\t</span><span class="st">'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Finish up.</p>
+<section id="session-info" class="level3">
+<h3 class="anchored" data-anchor-id="session-info">Session info</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="do">##########################################################################################</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sessionInfo</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>R version 4.1.3 (2022-03-10)
+Platform: x86_64-w64-mingw32/x64 (64-bit)
+Running under: Windows 10 x64 (build 19042)
+
+Matrix products: default
+
+locale:
+[1] LC_COLLATE=English_Canada.1252  LC_CTYPE=English_Canada.1252   
+[3] LC_MONETARY=English_Canada.1252 LC_NUMERIC=C                   
+[5] LC_TIME=English_Canada.1252    
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+other attached packages:
+ [1] vroom_1.6.0     forcats_0.5.2   stringr_1.4.1   dplyr_1.0.10   
+ [5] purrr_0.3.5     readr_2.1.3     tidyr_1.2.1     tibble_3.1.8   
+ [9] ggplot2_3.4.0   tidyverse_1.3.2
+
+loaded via a namespace (and not attached):
+ [1] lubridate_1.9.0     assertthat_0.2.1    digest_0.6.30      
+ [4] utf8_1.2.2          R6_2.5.1            cellranger_1.1.0   
+ [7] backports_1.4.1     reprex_2.0.2        evaluate_0.18      
+[10] httr_1.4.4          pillar_1.8.1        rlang_1.0.6        
+[13] googlesheets4_1.0.1 readxl_1.4.1        rstudioapi_0.14    
+[16] rmarkdown_2.18      googledrive_2.0.0   htmlwidgets_1.5.4  
+[19] bit_4.0.5           munsell_0.5.0       broom_1.0.1        
+[22] compiler_4.1.3      modelr_0.1.10       xfun_0.34          
+[25] pkgconfig_2.0.3     htmltools_0.5.3     tidyselect_1.2.0   
+[28] fansi_1.0.3         crayon_1.5.2        tzdb_0.3.0         
+[31] dbplyr_2.2.1        withr_2.5.0         grid_4.1.3         
+[34] jsonlite_1.8.3      gtable_0.3.1        lifecycle_1.0.3    
+[37] DBI_1.1.3           magrittr_2.0.3      scales_1.2.1       
+[40] cli_3.4.1           stringi_1.7.8       fs_1.5.2           
+[43] xml2_1.3.3          ellipsis_0.3.2      generics_0.1.3     
+[46] vctrs_0.5.1         tools_4.1.3         bit64_4.0.5        
+[49] glue_1.6.2          hms_1.1.2           parallel_4.1.3     
+[52] fastmap_1.1.0       yaml_2.3.6          timechange_0.1.1   
+[55] colorspace_2.0-3    gargle_1.2.1        rvest_1.0.3        
+[58] knitr_1.40          haven_2.5.1        </code></pre>
+</div>
+</div>
+</section>
+</section>
+
+</main>
+<!-- /main column -->
+<script type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    setTimeout(function() {
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

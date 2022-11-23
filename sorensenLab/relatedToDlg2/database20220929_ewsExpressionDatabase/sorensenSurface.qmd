@@ -280,7 +280,7 @@ finalDataSub = tibble(subset(finalData, rowSums(is.na(finalData[,3:7])) < 2)) %>
   dplyr::rowwise() %>%
   dplyr::mutate(meanIntensity = rowMeans(across(ews_CT1_T2:ews_EW13_T2), na.rm = TRUE)) %>%
   dplyr::mutate(sorensenSurface = log10(meanIntensity / detectablePeptides)) %>%
-  dplyr::select(accession, symbol, sorensenSurface)
+  dplyr::select(symbol, sorensenSurface)
 
 
 ##write the data

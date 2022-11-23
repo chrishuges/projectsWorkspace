@@ -1,0 +1,182 @@
+---
+title: "soleRna"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| label: load-packages and set directories
+
+##########################################################################################
+#packages
+library('tidyverse')
+library('RColorBrewer')
+library('ggplot2')
+library('tximport')
+library('GenomicFeatures')
+library('DESeq2')
+library('org.Hs.eg.db')
+library('ggrepel')
+
+##########################################################################################
+#directories
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+Read in the sample annotation details and make the txdb that we can use later on for annotation gene identifiers.
+
+```{r}
+#| label: read input data
+#| warning: false
+
+##########################################################################################
+#read a table containing the sample information for our RNAseq runs
+samples = read_tsv(paste(baseRepository, '/sequencing20211210_soleMscToEwsPmid34341072/rnaseq/sampleInfo.txt', sep = ''))
+samples
+
+#use the sample info to build a file list
+files = file.path(baseRepository, 'sequencing20211210_soleMscToEwsPmid34341072/rnaseq', 'quants', samples$sampleName, 'quant.sf')
+all(file.exists(files))
+```
+
+For Salmon analysis, I am generally following the documentation found [here](http://bioconductor.org/packages/devel/bioc/vignettes/DESeq2/inst/doc/DESeq2.html) and [here](http://bioconductor.org/packages/release/bioc/vignettes/tximport/inst/doc/tximport.html). When we import our data, we want a table that allows us to link gene and transcript identifiers. For this we use the GTF associated with our database files that we used during the alignment process.
+
+```{r}
+#| label: build txdb
+#| warning: false
+
+##########################################################################################
+#build the txdb from the gtf file
+myTxdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(myTxdb, keytype = 'TXNAME')
+tx2gene = AnnotationDbi::select(myTxdb, k, 'GENEID', 'TXNAME')
+head(tx2gene)
+```
+
+Read in the Salmon data.
+
+```{r}
+#| label: read salmon data
+#| warning: false
+
+##########################################################################################
+#read the salmon data
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+names(txi)
+head(txi$counts)
+```
+
+Extract the data and compare the different conditions. There are a bunch of different conditions here, but what we are most interested in is the shEF1 treatment. 
+
+```{r}
+#| label: extract and plot comparisons
+#| warning: false
+
+##########################################################################################
+#parse the rna data and assign gene symbols
+rnaData = as.data.frame(txi$abundance)
+colnames(rnaData) = samples$sampleName
+ensStr = substr(rownames(rnaData), 1, 15)
+rnaData$symbol = mapIds(org.Hs.eg.db, keys = ensStr, column = 'SYMBOL', keytype = 'ENSEMBL', multiVals = 'first')
+  
+##we are most interested in SRR11807653:SRR11807656
+##calculate the ratios
+rnaDataExp = dplyr::select(rnaData, symbol, SRR11807653:SRR11807656) %>%	
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::mutate(ratio1 = log2(SRR11807653+1) - log2(SRR11807655+1),
+                ratio2 = log2(SRR11807654+1) - log2(SRR11807656+1)) %>%
+  dplyr::mutate(soleRna = rowMeans(across(ratio1:ratio2))) %>%
+  dplyr::select(symbol, soleRna) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(soleRna = mean(soleRna, na.rm = TRUE))
+
+##output the data
+saveRDS(rnaDataExp, 
+        paste(baseRepository, '/database20220929_ewsExpressionDatabase/soleRna/dataset_soleRna.rds', sep = ''))
+write.csv(rnaDataExp, 
+          file = paste(baseRepository, '/database20220929_ewsExpressionDatabase/soleRna/dataset_soleRna.csv', sep = ''))
+```
+
+A differential expression analysis may be more interesting here. 
+
+```{r}
+#| label: perform deseq analysis
+#| warning: false
+
+##########################################################################################
+##check if all of the quant files exist
+accessions = c(paste('SRR118076', seq(42,49,1), sep = ''))
+samplesToProcess = samples[samples$sampleName %in% accessions,]
+files = file.path(baseRepository, 'sequencing20211210_soleMscToEwsPmid34341072/rnaseq', 'quants', samplesToProcess$sampleName, 'quant.sf') 
+all(file.exists(files))
+
+#read the salmon data
+txi = tximport(files, 
+               type = 'salmon', 
+               tx2gene = tx2gene)
+names(txi)
+head(txi$counts)
+
+#perform the deseq analysis
+ddsTxi = DESeqDataSetFromTximport(txi,
+                                  colData = samplesToProcess,
+                                  design = ~ treatment)
+##
+dds = DESeq(ddsTxi)
+keep = rowSums(counts(dds)) >= 10
+dds = dds[keep,]
+```
+
+Extract the DESeq data and plot for the different comparisons of interest.
+
+```{r}
+##########################################################################################
+#parse the deseq data - change the first two values to get different comparisons
+datasetFirst = 'dmso'
+datasetSecond = 'Wt'
+
+##
+for (i in 1:length(datasetFirst)){
+  res = results(dds, contrast = c('treatment', datasetFirst[i], datasetSecond))
+  ens.str = substr(rownames(res), 1, 15)
+  res$symbol = mapIds(org.Hs.eg.db,
+                      keys=ens.str,
+                      column="SYMBOL",
+                      keytype="ENSEMBL",
+                      multiVals="first")
+  resOrdered = res[order(res$pvalue),]
+  
+  ##
+  #save the data
+  outputData = as.data.frame(resOrdered) %>%
+    dplyr::filter(!is.na(symbol)) %>%
+    dplyr::select(symbol, log2FoldChange) %>%
+    dplyr::rename(soleRna = log2FoldChange) %>%
+    dplyr::group_by(symbol) %>%
+    dplyr::summarise(soleRna = mean(soleRna, na.rm = TRUE))
+  #
+  saveRDS(outputData, 
+          paste(baseRepository, '/database20220929_ewsExpressionDatabase/soleRna/dataset_soleRna_', datasetFirst[i], '-', datasetSecond, '.rds', sep = ''))
+  write.csv(outputData, 
+          file = paste(baseRepository, '/database20220929_ewsExpressionDatabase/soleRna/dataset_soleRna_', datasetFirst[i], '-', datasetSecond, '.csv', sep = ''))
+}
+```
+
+We are done here for now. Wrap up below.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

@@ -13,6 +13,8 @@ These are packages you will need for this notebook. For exact versions used, ple
 #| warning: false
 ##########################################################################################
 library('tidyverse')
+library('RColorBrewer')
+library('ggrepel')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
@@ -31,13 +33,58 @@ Read in the files and combine them into a single dataset. Out first dataset shou
 ```{r}
 ##########################################################################################
 ##read in the files and combine them
-rawData = readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/aynaudRna/dataset_aynaudRna.rds', sep = '')) %>%
-  dplyr::full_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/gollavilliRna/dataset_gollavilliRna.rds', sep = ''))) %>%
-  dplyr::full_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/dataset_sorensenTimeCourseProtein.rds', sep = ''))) %>%
-  dplyr::full_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTranslationProtein/dataset_sorensenTranslationProtein.rds', sep = ''))) %>%
-  dplyr::full_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_sorensenSurface.rds', sep = '')))
+rawData = readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/ccleEwsSpecificity/dataset_proteomicsEwsRnaProSpecificityScores.rds', sep = '')) %>% 
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/riggiRna/dataset_riggiRna.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/boulayRna/dataset_boulayRna.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/aynaudRna/dataset_aynaudRna.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/soleRna/dataset_soleRna_dmso-Wt.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/gollavilliRna/dataset_gollavilliRna.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/senRna/dataset_senRna.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/heRna/dataset_heRna.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseRna/dataset_sorensenTimecourseRna_day0-day7.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTranslationTotal/dataset_sorensenTranslationTotal_dmso-dox.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTranslationPoly/dataset_sorensenTranslationPoly_dmso-dox.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTimecourseProtein/dataset_sorensenTimeCourseProtein.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenTranslationProtein/dataset_sorensenTranslationProtein.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensen2dProtein/dataset_sorensen2dProtein.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensen3dProtein/dataset_sorensen3dProtein.rds', sep = ''))) %>%
+  dplyr::left_join(readRDS(paste(baseRepository, '/database20220929_ewsExpressionDatabase/sorensenSurface/dataset_sorensenSurface.rds', sep = ''))) %>%
+  dplyr::mutate(ewsScore = rowSums(across(ccleEwsSpecificity:sorensenSurface),na.rm = TRUE)) %>%
+  dplyr::arrange(-ewsScore) %>%
+  dplyr::mutate(ewsRank = seq(1,19288,1))
+
+##plot the hits
+goi = c('PRKCB','LOX','STEAP1','IL1RAP','DLG2','STEAP2','ATP11C','LINGO1')
+plotData = rawData %>%
+  dplyr::mutate(pColor = ifelse(symbol %in% goi, brewer.pal(4,'OrRd')[4], brewer.pal(3,'Greys')[2]),
+                pText = ifelse(symbol %in% goi, symbol, ''))
+greyPoints = dplyr::filter(plotData, pColor == brewer.pal(3,'Greys')[2])
+redPoints = dplyr::filter(plotData, pColor == brewer.pal(4,'OrRd')[4])
+#
+ggplot(greyPoints, aes(ewsRank, ewsScore)) +
+  geom_point(size = 1, color = greyPoints$pColor) +
+  geom_point(data = redPoints, aes(ewsRank, ewsScore), size = 1, color = redPoints$pColor) +
+  geom_text_repel(data = redPoints, aes(ewsRank, ewsScore), label = redPoints$pText, nudge_x = 100, max.overlaps = 1000) +
+  labs(x = 'Gene rank', y = 'EwS score', title = 'EWS-FLI1 regulated genes') +
+  theme_classic()
+ggsave(paste(baseRepository, '/database20220929_ewsExpressionDatabase/dataPlots/scatter_ewsScores.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
 
 
+##make a plot of the surface data for Brian
+plotData = rawData %>%
+  dplyr::mutate(pColor = ifelse(ewsScore > 40 & sorensenSurface > 4, brewer.pal(4,'OrRd')[4], brewer.pal(3,'Greys')[2]),
+                pText = ifelse(ewsScore > 40 & sorensenSurface > 4, symbol, ''))
+ggplot(plotData, aes(ewsScore, sorensenSurface)) +
+  geom_point(size = 1, color = plotData$pColor) +
+  geom_text_repel(label = plotData$pText, max.overlaps = 1000, nudge_x = -10, size = 2, nudge_y = -1) +
+  scale_x_continuous(limits = c(-10, 80), breaks = seq(-10,80,20)) +
+  geom_vline(xintercept = 1, linetype = 'dashed') +
+  geom_hline(yintercept = 4, linetype = 'dashed') +
+  labs(x = 'EwS score', y = 'log10(iBAQ abundance in surface)', title = 'Surface targets') +
+  theme_classic()
+ggsave(paste(baseRepository, '/database20220929_ewsExpressionDatabase/dataPlots/scatter_ewsSurfaceTargets.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
 ```
 
 
