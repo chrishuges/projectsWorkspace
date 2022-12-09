@@ -61,9 +61,33 @@ samtools sort /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/seq
 Process the files using [StringTie2](http://ccb.jhu.edu/software/stringtie/index.shtml?t=manual#mix). I am going to use the mix mode that combines short and long read data to improve assignments.
 
 ```shell
+##
+/home/chughes/softwareTools/stringtie-2.2.1/stringtie-2.2.1.Linux_x86_64/stringtie --mix -G /home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf -o /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20221025_a673EwsFli1DoxNanopore/results/noDox.transcripts.gtf /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/results/F115829.sorted.bam /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20221025_a673EwsFli1DoxNanopore/results/noDox.aligned.sorted.bam
+
+##
+/home/chughes/softwareTools/stringtie-2.2.1/stringtie-2.2.1.Linux_x86_64/stringtie --mix -G /home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf -o /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20221025_a673EwsFli1DoxNanopore/results/yesDox.transcripts.gtf /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20220725_chrisA673EwsFli1ShrnaPolysomes/results/TCGCATTG-ACAGCAAG.sorted.bam /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20221025_a673EwsFli1DoxNanopore/results/yesDox.aligned.sorted.bam
+```
+
+I took the output GTF for each of these and I used the rtracklayer package to filter the transcripts by a TPM value of 5. I just chose this value as a first threshold to see what happens. Now I am going to use bedtools to get the fasta sequences for my transcripts.
+
+```shell
+/home/chughes/softwareTools/bedtools-2.3.0/bedtools getfasta -name -s -split -fo /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20221025_a673EwsFli1DoxNanopore/results/noDox.transcripts.filtered.fa  -fi /home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.fa -bed /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20221025_a673EwsFli1DoxNanopore/results/noDox.transcripts.filtered.gtf
 
 ```
 
+In order for this tool to work properly, I need to get the data into a [bed12 format](https://bedtools.readthedocs.io/en/latest/content/general-usage.html). So, I am going to use [bedops](https://bedops.readthedocs.io/en/latest/content/installation.html#installation-via-bioconda) for this, specifically the conda version. I created an environment called 'ngs' to work in. I followed the conda instructions from [here](https://genomics.sschmeier.com/ngs-tools/index.html). 
+
+```shell
+ conda create -n ngs python=3
+ conda activate ngs
+ conda install bedops
+
+##run gff2bed
+gff2bed < /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20221025_a673EwsFli1DoxNanopore/results/noDox.transcripts.filtered.gff > /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20221025_a673EwsFli1DoxNanopore/results/noDox.transcripts.filtered.bed
+
+##run bedtools again
+/home/chughes/softwareTools/bedtools-2.3.0/bedtools getfasta -name -s -split -fo /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20221025_a673EwsFli1DoxNanopore/results/noDox.transcripts.filtered.fa  -fi /home/chughes/databases/projectEwsDlg2/baseGenomeFiles/genome.fa -bed /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20221025_a673EwsFli1DoxNanopore/results/noDox.transcripts.filtered.bed
+```
 
 
 
