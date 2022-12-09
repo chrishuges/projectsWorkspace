@@ -1,0 +1,152 @@
+---
+title: "Filtering GTF result"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('rtracklayer')
+library('stringr')
+library('ORFik')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+Read in the GTF result from StringTie. We want to get out the transcript IDs for transcripts that have a low TPM value and filter these out.
+
+```{r}
+##########################################################################################
+lowTpmTranscripts = tibble(as.data.frame(rtracklayer::import.gff(paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/noDox.transcripts.gtf', sep = '')))) %>%
+  dplyr::mutate(TPM = as.double(TPM)) %>%
+  dplyr::filter(type == 'transcript' & TPM <= 5) %>%
+  dplyr::select(transcript_id) %>%
+  unique()
+
+##
+filteredGtf = tibble(as.data.frame(rtracklayer::import.gff(paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/noDox.transcripts.gtf', sep = '')))) %>%
+  dplyr::filter(!(transcript_id %in% lowTpmTranscripts$transcript_id))
+
+##
+rtracklayer::export.gff3(filteredGtf, paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/noDox.transcripts.filtered.gff', sep = ''))
+```
+
+I want to use bedtools, but I am having issues getting the correct bed12 format. I may have to make this manually. We can try this here.
+
+```{r}
+##########################################################################################
+lowTpmTranscripts = tibble(as.data.frame(rtracklayer::import.gff(paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/noDox.transcripts.gtf', sep = '')))) %>%
+  dplyr::mutate(TPM = as.double(TPM)) %>%
+  dplyr::filter(type == 'transcript' & TPM <= 5) %>%
+  dplyr::select(transcript_id) %>%
+  unique()
+
+##
+filteredGtf = tibble(as.data.frame(rtracklayer::import.gff(paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/noDox.transcripts.gtf', sep = '')))) %>%
+  dplyr::filter(!(transcript_id %in% lowTpmTranscripts$transcript_id))
+
+
+##get the blockStarts
+##we subtract -1 from the start because of the bed files are 0 based and GTF are 1 based
+transcriptIds = filteredGtf %>%
+  dplyr::filter(type == 'transcript') %>%
+  dplyr::select(transcript_id) %>%
+  unique()
+#
+blockStartData = tibble()
+for (i in 1:nrow(transcriptIds)){
+  #
+  startCoords = filteredGtf %>%
+    dplyr::filter(!(type == 'transcript') & transcript_id == transcriptIds$transcript_id[i]) %>%
+    dplyr::select(start, transcript_id, exon_number) %>%
+    dplyr::mutate(start = start - 1) %>%
+    dplyr::mutate(blockStart = start - min(start)) %>%
+    dplyr::select(-start)
+  #
+  blockStartData = rbind(blockStartData, startCoords)
+}
+blockStartDataCollapse = blockStartData %>%
+  dplyr::select(-exon_number) %>%
+  dplyr::group_by(transcript_id) %>%
+  dplyr::summarise(blockStarts = str_c(blockStart, collapse = ','))
+
+
+##make the bed12 file
+bed12Pre = filteredGtf %>%
+  dplyr::select(seqnames, start, end, width, transcript_id, type, exon_number) %>%
+  dplyr::filter(!(type == 'transcript')) %>%
+  dplyr::mutate(start = start - 1) %>%
+  dplyr::select(-type) %>%
+  dplyr::left_join(blockStartData) %>%
+  dplyr::mutate(blockCount = 1) %>%
+  dplyr::rename(name = transcript_id) %>%
+  dplyr::group_by(name) %>%
+  dplyr::summarise(blockCount = sum(blockCount),
+                   blockSizes = str_c(width, collapse = ','),
+                   blockStarts = str_c(blockStart, collapse = ','))
+  
+#
+bed12Final = filteredGtf %>%
+  dplyr::select(seqnames, start, end, width, score, strand, transcript_id, type) %>%
+  dplyr::filter(type == 'transcript') %>%
+  dplyr::select(-type) %>%
+  dplyr::rename(name = transcript_id) %>%
+  dplyr::mutate(thickStart = start,
+                thickEnd = start,
+                itemRgb = NA) %>%
+  dplyr::left_join(bed12Pre) %>%
+  dplyr::select(seqnames, start, end, name, score, strand, thickStart, thickEnd, itemRgb, blockCount, blockSizes, blockStarts)
+rtracklayer::export.bed(bed12Final, paste(baseRepository, '/sequencing20221025_a673EwsFli1DoxNanopore/noDox.transcripts.filtered2.bed', sep = ''))
+write.table(bed12Final, paste(baseRepository, '/sequencing20221025_a673EwsFli1DoxNanopore/noDox.transcripts.filtered2.bed', sep = ''),
+            col.names = FALSE, row.names = FALSE, sep = '\t', quote = FALSE)
+
+
+
+
+findORFsFasta(
+  paste(baseRepository, '/sequencing20221025_a673EwsFli1DoxNanopore/dlg2Fasta.fasta', sep = ''),
+  startCodon = startDefinition(1),
+  stopCodon = stopDefinition(1),
+  longestORF = TRUE,
+  minimumLength = 0,
+  is.circular = FALSE
+)
+
+```
+
+
+
+
+Repeat this process for the second GTF.
+
+```{r}
+##########################################################################################
+lowTpmTranscripts = tibble(as.data.frame(rtracklayer::import.gff(paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/yesDox.transcripts.gtf', sep = '')))) %>%
+  dplyr::mutate(TPM = as.double(TPM)) %>%
+  dplyr::filter(type == 'transcript' & TPM <= 5) %>%
+  dplyr::select(transcript_id) %>%
+  unique()
+
+##
+filteredGtf = tibble(as.data.frame(rtracklayer::import.gff(paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/yesDox.transcripts.gtf', sep = '')))) %>%
+  dplyr::filter(!(transcript_id %in% lowTpmTranscripts$transcript_id))
+
+##
+rtracklayer::export.gff3(filteredGtf, paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/yesDox.transcripts.filtered.gff', sep = ''))
+```
