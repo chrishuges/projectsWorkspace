@@ -16,6 +16,8 @@ library('tidyverse')
 library('rtracklayer')
 library('stringr')
 library('ORFik')
+library('Biostrings')
+library('GenomicFeatures')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
@@ -35,7 +37,7 @@ Read in the GTF result from StringTie. We want to get out the transcript IDs for
 ##########################################################################################
 lowTpmTranscripts = tibble(as.data.frame(rtracklayer::import.gff(paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/noDox.transcripts.gtf', sep = '')))) %>%
   dplyr::mutate(TPM = as.double(TPM)) %>%
-  dplyr::filter(type == 'transcript' & TPM <= 5) %>%
+  dplyr::filter(type == 'transcript' & TPM <= 2) %>%
   dplyr::select(transcript_id) %>%
   unique()
 
@@ -45,6 +47,20 @@ filteredGtf = tibble(as.data.frame(rtracklayer::import.gff(paste(baseRepository,
 
 ##
 rtracklayer::export.gff3(filteredGtf, paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/noDox.transcripts.filtered.gff', sep = ''))
+
+##repeat for the yesDox condition
+lowTpmTranscripts = tibble(as.data.frame(rtracklayer::import.gff(paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/yesDox.transcripts.gtf', sep = '')))) %>%
+  dplyr::mutate(TPM = as.double(TPM)) %>%
+  dplyr::filter(type == 'transcript' & TPM <= 2) %>%
+  dplyr::select(transcript_id) %>%
+  unique()
+
+##
+filteredGtf = tibble(as.data.frame(rtracklayer::import.gff(paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/yesDox.transcripts.gtf', sep = '')))) %>%
+  dplyr::filter(!(transcript_id %in% lowTpmTranscripts$transcript_id))
+
+##
+rtracklayer::export.gff3(filteredGtf, paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/yesDox.transcripts.filtered.gff', sep = ''))
 ```
 
 I want to use bedtools, but I am having issues getting the correct bed12 format. I may have to make this manually. We can try this here.
@@ -116,19 +132,89 @@ rtracklayer::export.bed(bed12Final, paste(baseRepository, '/sequencing20221025_a
 write.table(bed12Final, paste(baseRepository, '/sequencing20221025_a673EwsFli1DoxNanopore/noDox.transcripts.filtered2.bed', sep = ''),
             col.names = FALSE, row.names = FALSE, sep = '\t', quote = FALSE)
 
-
-
-
-findORFsFasta(
-  paste(baseRepository, '/sequencing20221025_a673EwsFli1DoxNanopore/dlg2Fasta.fasta', sep = ''),
-  startCodon = startDefinition(1),
-  stopCodon = stopDefinition(1),
-  longestORF = TRUE,
-  minimumLength = 0,
-  is.circular = FALSE
-)
-
 ```
+
+We used bedtools to extract the DNA sequences for these transcripts. Now we can get our protein sequences from these transcripts.
+
+```{r}
+##########################################################################################
+##predict the transcripts, take the longest one on the positive strand, and translate it to a protein
+transIds = names(Biostrings::readDNAStringSet(paste(baseRepository, '/sequencing20221025_a673EwsFli1DoxNanopore/noDox.transcripts.filtered.fa', sep = '')))
+transSeqs = Biostrings::readDNAStringSet(paste(baseRepository, '/sequencing20221025_a673EwsFli1DoxNanopore/noDox.transcripts.filtered.fa', sep = ''))
+transOrfs = ORFik::findORFsFasta(transSeqs,
+                         startCodon = startDefinition(1),
+                         stopCodon = stopDefinition(1),
+                         longestORF = TRUE,
+                         minimumLength = 0,
+                         is.circular = FALSE)
+#
+outputFrames = AAStringSet()
+for (i in 1:length(transIds)){
+#for (i in 1:5){
+  #extract the ORFs for each reading frame
+  #message(i)
+  tempOrf = transOrfs[which(seqnames(transOrfs) == transIds[i])]
+  fr1Orfs = tempOrf[which((as.data.frame(tempOrf)$start %in% seq(1,width(transSeqs)[i],3)) & (BiocGenerics::strand(tempOrf) == '+'))]
+  fr2Orfs = tempOrf[which((as.data.frame(tempOrf)$start %in% seq(2,width(transSeqs)[i],3)) & (BiocGenerics::strand(tempOrf) == '+'))]
+  fr3Orfs = tempOrf[which((as.data.frame(tempOrf)$start %in% seq(3,width(transSeqs)[i],3)) & (BiocGenerics::strand(tempOrf) == '+'))]
+
+  #extract the AA sequence for each ORF
+  if (length(fr1Orfs) >= 1){
+    #print('ORF found in frame 1')
+    fr1Long = fr1Orfs[(BiocGenerics::width(fr1Orfs) == max(width(fr1Orfs)))][1]
+    fr1Aa = Biostrings::translate(Biostrings::subseq(transSeqs[i],
+                                                     start = as.data.frame(fr1Long)$start,
+                                                     end = as.data.frame(fr1Long)$end))
+    names(fr1Aa) = paste(names(fr1Aa),'_frame1',sep='')
+    outputFrames = c(outputFrames, fr1Aa)
+  }
+
+  if (length(fr2Orfs) >= 1){
+    #print('ORF found in frame 2')
+    fr2Long = fr2Orfs[(BiocGenerics::width(fr2Orfs) == max(width(fr2Orfs)))][1]
+    fr2Aa = Biostrings::translate(Biostrings::subseq(transSeqs[i],
+                                                     start = as.data.frame(fr2Long)$start,
+                                                     end = as.data.frame(fr2Long)$end))
+    names(fr2Aa) = paste(names(fr2Aa),'_frame2',sep='')
+    outputFrames = c(outputFrames, fr2Aa)
+  }
+  
+  if (length(fr3Orfs) >= 1){
+    #print('ORF found in frame 3')
+    fr3Long = fr3Orfs[(BiocGenerics::width(fr3Orfs) == max(width(fr3Orfs)))][1]
+    fr3Aa = Biostrings::translate(Biostrings::subseq(transSeqs[i],
+                                                     start = as.data.frame(fr3Long)$start,
+                                                     end = as.data.frame(fr3Long)$end))
+    names(fr3Aa) = paste(names(fr3Aa),'_frame3',sep='')
+    outputFrames = c(outputFrames, fr3Aa)
+  }
+}
+
+#output the data
+Biostrings::writeXStringSet(outputFrames, paste(baseRepository,'/sequencing20221025_a673EwsFli1DoxNanopore/noDox.transcripts.filtered.translated.fasta',sep=''))
+
+#get some statistics for the data
+transNames = tibble('transId' = names(outputFrames)) %>%
+  dplyr::mutate(frame = sub('.*frame(.*)','\\1',transId)) %>%
+  dplyr::mutate(transcript = sub('(.*)\\:\\:.*','\\1',transId))
+length(unique(transNames$transcript))
+table(transNames$frame)
+
+transWidths = tibble('transWidths' = width(outputFrames))
+summary(transWidths)
+
+##filter out short proteins
+outputFramesFiltered = outputFrames[which(width(outputFrames) > 6)]
+```
+
+
+
+
+
+
+
+
+
 
 
 
