@@ -1,0 +1,260 @@
+---
+title: "Sorensen RNA-seq data processing"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of RNA-seq data derived from a timecourse of doxycycline treatment for A673 cells expressing an inducible shRNA against EWS-FLI1. The data have been processed to quantification as described elsewhere in these documents.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('tximport')
+library('GenomicFeatures')
+library('DESeq2')
+library('ggrepel')
+library('org.Hs.eg.db')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+The first thing to do is to make a sample annotation table. We have an annotation table that we made in excel. The code below will get the file paths for the quant files, read in our transcriptome gtf, and using tximport to read in the entire dataset.
+
+```{r}
+##########################################################################################
+#read a table containing the sample information for our RNAseq runs
+samples = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/sampleInfo.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::mutate(accession = paste(sampleName,'_',batch, sep = '')) %>%
+  dplyr::select(accession, sampleName:batch)
+samples
+
+#use the sample info to build a file list
+files = file.path(baseRepository, 'defineCandidatesExpressionData/sorensenEwsA673RnaSeq', 'quants', paste(samples$barcode, '_', samples$batch, sep = ''), 'quant.sf')
+all(file.exists(files))
+
+##build the transcriptome index...this is based on the same gtf we used in the alignment process
+txdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(txdb, keytype = "TXNAME")
+tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
+
+##read the transcriptome data processed from salmon
+txi = tximport(files, type = 'salmon', tx2gene = tx2gene)
+txiAnnotated = tibble(as.data.frame(txi$abundance)) %>%
+  mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$abundance)))
+```
+
+Take a quick look at these data for a couple of positive control genes to make sure it is as we expect for each sample. 
+
+```{r}
+##########################################################################################
+##add in gene symbols
+geneSymbols = select(org.Hs.eg.db, txiAnnotated$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') 
+geneExpData = txiAnnotated %>%
+  left_join(geneSymbols) %>%
+  mutate(symbol = SYMBOL)
+colnames(geneExpData)[1:24] = samples$accession
+
+##extract the target gene from the data and set up the data frame for plotting
+targetGenes = c('PRKCB')
+targetData = geneExpData %>%
+  dplyr::filter(symbol %in% targetGenes) %>%
+  tidyr::pivot_longer(cols = day0_setA:day22_setC, names_to = 'accession', values_to = 'tpm') %>%
+  dplyr::select(symbol,accession,tpm) %>%
+  dplyr::mutate(tpm = log2(tpm + 1)) %>%
+  dplyr::left_join(samples) %>%
+  dplyr::mutate(sampleName = factor(sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22')))
+
+##set some colors for the plot
+sampleColors = c(rep(brewer.pal(4,'OrRd')[4],1),
+                 rep(brewer.pal(4,'GnBu')[4],1),
+                 rep(brewer.pal(4,'OrRd')[4],6))
+
+##create the plot
+ggplot(targetData, aes(sampleName, tpm, color = sampleName)) +
+  geom_point(aes(x=sampleName, y=tpm), data = targetData, size = 1, position = position_jitter(w = 0.1, h = 0)) +
+  scale_color_manual(values = sampleColors) +
+  labs(y = 'log2(TPM + 1)', title = 'PRKCB in A673 cells') +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0,16,2)) +
+  theme_classic() +
+  theme(legend.position = 'none',
+        axis.title.x=element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1)
+        )
+
+##save the plot in case we want it later
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/scatter_PRKCB_RnaExpressionLevels.pdf', sep = ''),
+      height = 2, width = 2, useDingbats = FALSE)
+```
+
+This looks as we expect with PRKCB expression to be low in day 7 cells that lack EWS-FLI1 expression. The next thing we can do is to perform a differential expression analysis between the the different time points and see what comes out. We will do this using DESeq2. For filtering after DESeq2, I ended up choosing the condition that something had to be identified in all 3 replicates of day 0, or day 7. The reason I did this was because I wanted to focus purely on EWS-FLI1 regulated transcripts. There is some 'noise' in the data in the intermediate time points that could potentially stem from things like split intervals and cell confluence, which granted, may be interesting, but is not my primary focus.
+
+```{r}
+##########################################################################################
+##re-extract the quantification data for a subset of the files
+samplesOfInterest = c('day0','day7','day9','day10','day11','day14','day17','day22')
+samplesForDe = samples %>%
+  dplyr::filter(sampleName %in% samplesOfInterest) %>%
+  dplyr::mutate(sampleName = factor(sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22')))
+#
+quantFilesForDe = file.path(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/quants', sep = ''), paste(samplesForDe$barcode, '_', samplesForDe$batch, sep = ''), 'quant.sf')
+names(quantFilesForDe) = samplesForDe$accession
+all(file.exists(quantFilesForDe))
+#
+txiForDe = tximport(quantFilesForDe, type = 'salmon', tx2gene = tx2gene)
+
+
+##perform the deseq analysis
+ddsTxi = DESeqDataSetFromTximport(txiForDe,
+                                  colData = samplesForDe,
+                                  design = ~ sampleName)
+dds = DESeq(ddsTxi)
+
+##filter...you can change the criteria here...I opted to keep transcripts that were identified in either our day 0 or day 7 condition
+##admittedly, this will miss bursts of transcripts that get turned on between
+keep = (rowSums(counts(dds)[,1:3] >= 10) == 3) | 
+  (rowSums(counts(dds)[,4:6] >= 10) == 3)
+  #(rowSums(counts(dds)[,7:9] >= 10) == 3) | 
+  #(rowSums(counts(dds)[,10:12] >= 10) == 3) | 
+  #(rowSums(counts(dds)[,13:15] >= 10) == 3) | 
+  #(rowSums(counts(dds)[,16:18] >= 10) == 3) |
+  #(rowSums(counts(dds)[,19:21] >= 10) == 3) |
+  #(rowSums(counts(dds)[,22:24] >= 10) == 3)
+dds = dds[keep,]
+```
+
+Extract the DESeq data and plot for the different comparisons of interest.
+
+```{r}
+##########################################################################################
+#parse the deseq data - change the first two values to get different comparisons
+toCompare = c('day0','day9','day10','day11','day14','day17','day22')
+for (i in 1:length(toCompare)){
+  datasetFirst = toCompare[i]
+  datasetSecond = 'day7'
+  res = results(dds, contrast = c('sampleName', datasetFirst, datasetSecond))
+  ens.str = substr(rownames(res), 1, 15)
+  res$symbol = mapIds(org.Hs.eg.db,
+                      keys=ens.str,
+                      column="SYMBOL",
+                      keytype="ENSEMBL",
+                      multiVals="first")
+  resOrdered = res[order(res$pvalue),]
+  
+  #save the data
+  saveRDS(as.data.frame(resOrdered), 
+          paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.rds', sep = ''))
+  write.csv(as.data.frame(resOrdered), 
+            file = paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.csv', sep = ''))
+  
+  
+  ##########################################################################################
+  #assign colors based on fold change and p-values
+  rnaExp = as.data.frame(resOrdered)
+  rnaExp$logPValue = -log10(rnaExp$padj)
+  rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 300, 300, rnaExp$logPValue)
+  rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(4,'OrRd')[4], 
+                          ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+  #assign text labels to specific genes of interest
+  targetGenes = c('IL1RAP','STEAP1','PRKCB','LOX')
+  rnaExp$pText = ifelse(rnaExp$symbol %in% targetGenes, rnaExp$symbol, '')
+
+  #create the plot and save it
+  ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
+    geom_point(size = 0.5, color = rnaExp$pColors) +
+    labs(x = paste('log2(',datasetFirst,' - ',datasetSecond,')', sep = ''), y = '-log10(Adjusted p-value)', title = paste(datasetFirst,' vs ',datasetSecond, sep='')) +
+    geom_text_repel(label = rnaExp$pText, nudge_x = 0, nudge_y = 0, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+    scale_x_continuous(limits = c(-14,14), breaks = seq(-20,20,2)) +
+    scale_y_continuous(limits = c(0,300), breaks = seq(0,500,50)) +
+    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+    theme_classic()
+  ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/scatter_deseq2_', datasetFirst, '-', datasetSecond, '.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+}
+```
+
+Compare the different samples using a PCA using the differential expression data. 
+
+```{r}
+##########################################################################################
+vsd = vst(dds, blind = FALSE) #variance stabilizing normalization of the data
+#extract the data for the MDS analysis itself
+mdsPlot = plotPCA(vsd, intgroup=c('sampleName','batch'), returnData = TRUE)
+mdsPlot$sampleName = factor(mdsPlot$sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22'))
+percentVar = round(100 * attr(mdsPlot, 'percentVar'))
+#make the ggplot
+ggplot(mdsPlot, aes(PC1, PC2, color = sampleName, shape = batch)) +
+  geom_point(size = 3, alpha = 0.75) +
+  #geom_text(label = mdsPlot$sampleName) +
+  scale_color_manual(values = rep(c(brewer.pal(3,'Blues')[3], brewer.pal(3,'OrRd')[3], brewer.pal(7,'Blues')[1:6]),3)) +
+  scale_x_continuous(limits = c(-25,20), breaks = seq(-30,30,5)) +
+  scale_y_continuous(limits = c(-10,20), breaks = seq(-20,20,5)) +
+  labs(x = paste0('PC1: ', percentVar[1], '% variance'), 
+       y = paste0('PC2: ', percentVar[2], '% variance'), 
+       title = 'A673 RNA-seq groups') +
+  theme_classic() +
+  theme(legend.position = 'none')
+#save the plot
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/pcaplot_a673ShEwsFli1AbundanceVsn.pdf', sep = ''), 
+       height = 2, width = 2, useDingbats = FALSE)
+
+##if you want to look at the trancripts with the most dispersion in the DESeq data
+x = counts(dds)[order(dispersions(dds), decreasing=TRUE)[1:1000],]
+```
+
+I am primarily interested in upregulated transcripts here as these will be the ones we target in the CRISPR screen. So, we can filter our data down and combine them with the Sole data that we prepared before. We will keep transcripts from both sets and we will use other data to filter them down later on.
+
+```{r}
+##########################################################################################
+##read in the Sole data
+sole = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_candidates.rds', sep = ''))
+
+##filter our own data focusing on the day 0 versus day 7 comparison
+ews = tibble(readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day0-day7.rds', sep = ''))) %>%
+  dplyr::filter(padj <= 0.001 & !is.na(symbol)) %>%
+  dplyr::select(symbol, log2FoldChange) %>%
+  dplyr::rename(a673_log2FoldChangeRna = log2FoldChange) %>%
+  dplyr::full_join(sole)
+
+##write this gene set to a file
+saveRDS(ews, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_candidatesPlusSole.rds', sep = ''))
+write.table(ews, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_candidatesPlusSole.tsv', sep = ''),
+            row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+```
+
+Done with these data for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+

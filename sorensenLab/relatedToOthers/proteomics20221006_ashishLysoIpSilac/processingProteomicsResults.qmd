@@ -1,0 +1,95 @@
+---
+title: "Sorensen RNA-seq data processing"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of proteomics data for Ashish related to lysosome proteomics. These are SILAC data. I processed them using DIA-NN with the following protocol:
+
+Specify a spectral library  - can be an empirical one or an in silico predicted one. Then add the following commands to the 'Additional options' textbox:
+--fixed-mod SILAC,0.0,KR,label
+--lib-fixed-mod SILAC
+--channels SILAC,L,KR,0:0; SILAC,H,KR,8.014199:10.008269
+--peak-translation
+--original-mods
+
+--fixed-mod here declares SILAC as a label
+--lib-fixed-mod in silico labels the library with it. As masses are 0, it just adds SILAC to precursor names
+--channels declares channels. Channel 'L' is declared with masses 0 on K and 0 on R. Channel 'H' with masses 8 on K and 10 on R.
+--relaxed-prot-inf - as usual, recommended for benchmarking if the library does not have protein groups assembled properly already.
+
+Report:
+Precursor.Translated - special quantity calculated when having multiple channels - most likely the best one. If you need protein quantities, need to calculate those based on Precursor.Translated with MaxLFQ, either using iq R package (recommended) or diann R package.
+Channel.Q.Value - probability that a given precursor is indeed present in the channel
+Translated.Quality - reflects how much evidence there was for the particular Precursor.Translated (the quantity I suggest to use), that is how many fragments could be use to calculate ratios between channels.
+
+--matrix-ch-qvalue  and --matrix-tr-qvalue set the channel and translated q-value filtering for the output matrices. These commands can be useful if you use the matrices as the output.
+
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('iq')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+## Data processing
+
+Read in data from DIA-NN and process with the IQ package.
+
+```{r}
+##########################################################################################
+raw = read_tsv('D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(File.Name = sub('.*8_(.*)_diaBoth\\.mzML', '\\1', File.Name)) %>%
+  dplyr::filter(Channel.Q.Value <= 0.01) %>%
+  dplyr::mutate(Protein.Group = ifelse(grepl('-L', Precursor.Id), paste(Protein.Group,'_light',sep=''),
+                                       ifelse(grepl('-M', Precursor.Id), paste(Protein.Group,'_medium',sep=''), paste(Protein.Group,'_heavy',sep='')))) %>%
+  dplyr::mutate(Genes = ifelse(grepl('-L', Precursor.Id), paste(Genes,'_light',sep=''),
+                                       ifelse(grepl('-M', Precursor.Id), paste(Genes,'_medium',sep=''), paste(Genes,'_heavy',sep=''))))
+
+write.table(raw, 'D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-parsed.tsv', col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+test = process_long_format('D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-parsed.tsv', 
+                           output_filename = 'D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-pgFromIq.tsv',
+                           annotation_col = 'Genes')
+
+raw.parsed = read_tsv('D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-pgFromIq.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(accession = sub('(.*)_.*', '\\1', Protein.Group),
+                symbol = sub('(.*)_.*', '\\1', Genes),
+                quantLabel = sub('.*_(.*)', '\\1', Protein.Group)) %>%
+  dplyr::select(accession, symbol, quantLabel, rep1, rep2, rep3, rep4, rep5)
+write.table(raw.parsed, 'D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-parsed-quants.tsv', col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Done with these data for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+

@@ -92,7 +92,6 @@ tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
 
 ##read the transcriptome data processed from salmon
 txi = tximport(quantFiles, type = 'salmon', tx2gene = tx2gene)
-names(txi)
 txiAnnotated = tibble(as.data.frame(txi$abundance)) %>%
   mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$abundance)))
 ```
@@ -280,7 +279,7 @@ From these data, we want to parse out upregulated genes that appear to be increa
 ##########################################################################################
 ##filter the data and write to a file
 ewsOutData = ewsDeData %>%
-  dplyr::filter(msc_padj <= 0.001 & mpc_padj <= 0.001 & msc_log2FoldChange >= 1 & mpc_log2FoldChange >= 1) %>%
+  dplyr::filter(msc_padj <= 0.001 & mpc_padj <= 0.001) %>%
   dplyr::select(symbol, msc_log2FoldChange, mpc_log2FoldChange)
 saveRDS(ewsOutData, paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_candidates.rds', sep = ''))
 write.table(ewsOutData, paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_candidates.tsv', sep = ''),

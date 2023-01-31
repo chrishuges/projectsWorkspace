@@ -62,8 +62,8 @@ BAMCOVERAGE="/home/chughes/virtualPython3810/bin/bamCoverage"
 
 ###############################
 #locations of our index files
-#DATABASE_DIR = "/home/chughes/databases/projectEwsDlg2"
-DATABASE_DIR = "/projects/ptx_analysis/chughes/databases/projectEwsDlg2"
+DATABASE_DIR = "/home/chughes/databases/projectEwsDlg2"
+#DATABASE_DIR = "/projects/ptx_analysis/chughes/databases/projectEwsDlg2"
 STARINDEX = DATABASE_DIR + "/starIndex"
 SALMONINDEX = DATABASE_DIR + "/salmonIndex/salmon_index"
 GTF = DATABASE_DIR + "/baseGenomeFiles/genome.gtf"

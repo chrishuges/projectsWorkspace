@@ -1,0 +1,519 @@
+---
+title: "Sorensen RNA-seq data processing"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of proteomics data derived from a timecourse of doxycycline treatment for A673 cells expressing an inducible shRNA against EWS-FLI1. The data have been processed to quantification as described elsewhere in these documents.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('DEqMS')
+library('DESeq2')
+library('ggrepel')
+library('org.Hs.eg.db')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+Read in the peptide spectral match data. The TMT layout is as follows:
+
+126 pool
+127N empty
+127C empty
+128N day0
+128C day7
+129N day9
+129C day10
+130N day11
+130C day14
+131N day17
+131C day22
+132N empty
+132C empty
+133N pool
+133C empty
+134N empty
+
+```{r}
+##########################################################################################
+##set the file locations
+sampleInfo = c('setA','setB','setC')
+annotation = c('a','b','c')
+psmFiles = file.path(baseRepository, 'defineCandidatesExpressionData/sorensenEwsA673Proteomics/fragpipeAnalysis', sampleInfo, 'psm.tsv')
+all(file.exists(psmFiles))
+
+##process the identification data
+psmData = tibble()
+for (i in 1:length(sampleInfo)){
+  psmTemp = read_tsv(psmFiles[i], show_col_types = FALSE) %>%
+    dplyr::select(Peptide, `Protein ID`, Gene, Spectrum) %>%
+    dplyr::rename(sequence = Peptide, 
+                  accession = `Protein ID`,
+                  symbol = Gene) %>%
+    dplyr::mutate(dataset = tolower(sampleInfo[i]),
+                  scan = as.numeric(sub('.*_HpH_[0-9]+\\.(.*)\\.[0-9]+\\.[0-9]+', '\\1', Spectrum)),
+                  fraction = sub('.*_HpH_(.*)\\.[0-9]+\\.[0-9]+\\.[0-9]+', '\\1', Spectrum)) %>%
+    dplyr::select(-Spectrum)
+  ##
+  psmData = rbind(psmData, psmTemp)
+}
+psmData
+
+##this is the function we will use to process the quant data
+combineQuantFiles = function(filePath, ...){
+  quantData = read_tsv(filePath, show_col_types = FALSE) %>%
+    dplyr::select(MS2ScanNumber, `126Intensity`:`134NIntensity`)
+  colnames(quantData) = c('scan','tmt126C','tmt127N','tmt127C','tmt128N','tmt128C','tmt129N',
+                          'tmt129C','tmt130N','tmt130C','tmt131N','tmt131C','tmt132N','tmt132C','tmt133N','tmt133C','tmt134N')
+  ##
+  fraction = sub('.*_HpH_(.*)\\.raw_Matrix\\.txt', '\\1', filePath)
+  dataset = sub('.*ch20201223_A673ShEwsFli1DoxTimecourse(.*)_TMT16_HpH_[0-9]+\\.raw_Matrix\\.txt', '\\1', filePath)
+  quantData$fraction = fraction
+  quantData$dataset = tolower(dataset)
+  ##
+  return(quantData)
+}
+
+##process the quant data
+quantFiles = list.files(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/quants/', sep = ''),
+                        pattern = '_Matrix.txt', full.names = TRUE)
+quantDataSet = lapply(quantFiles, combineQuantFiles)
+allQuantData = do.call('rbind', quantDataSet)
+
+##combine all of the data
+psmQuant = psmData %>%
+  left_join(allQuantData)
+
+##filter the psm data
+psmQuant = psmQuant %>%
+  dplyr::select(-tmt127N, -tmt127C, -tmt132N, -tmt132C, -tmt133C, -tmt134N) %>%
+  dplyr::filter(!is.na(tmt126C)) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(sampleSignal = sum(tmt128N:tmt131C, na.rm = TRUE)) %>%
+  dplyr::filter(sampleSignal >= 800)
+
+##roll into proteins
+pro = psmQuant %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-sampleSignal) %>%
+  dplyr::mutate(psmCount = 1) %>%
+  dplyr::group_by(sequence, accession, symbol, dataset) %>%
+  dplyr::summarise(across(tmt126C:tmt133N, mean, na.rm = TRUE), psmCount = sum(psmCount, na.rm = TRUE)) %>%
+  dplyr::mutate(pepCount = 1) %>%
+  dplyr::group_by(dataset, accession, symbol) %>%
+  dplyr::summarise(across(tmt126C:tmt133N, median, na.rm = TRUE), psmCount = sum(psmCount, na.rm = TRUE), pepCount = sum(pepCount, na.rm = TRUE))
+
+##save the data
+saveRDS(pro[pro$dataset == 'seta',], paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_rawProteinDatasetA.rds', sep = ''))
+saveRDS(pro[pro$dataset == 'setb',], paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_rawProteinDatasetB.rds', sep = ''))
+saveRDS(pro[pro$dataset == 'setc',], paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_rawProteinDatasetC.rds', sep = ''))
+```
+
+Perform the IRS normalization.
+
+```{r}
+##########################################################################################
+proteinSet1 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_rawProteinDatasetA.rds', sep = '')) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-dataset) %>%
+  dplyr::rename(pool1a = tmt126C,
+                day0a = tmt128N,
+                day7a = tmt128C,
+                day9a = tmt129N,
+                day10a = tmt129C,
+                day11a = tmt130N,
+                day14a = tmt130C,
+                day17a = tmt131N,
+                day22a = tmt131C,
+                pool2a = tmt133N,
+                psma = psmCount,
+                pepa = pepCount)
+proteinSet2 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_rawProteinDatasetB.rds', sep = '')) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-dataset) %>%
+  dplyr::rename(pool1b = tmt126C,
+                day0b = tmt128N,
+                day7b = tmt128C,
+                day9b = tmt129N,
+                day10b = tmt129C,
+                day11b = tmt130N,
+                day14b = tmt130C,
+                day17b = tmt131N,
+                day22b = tmt131C,
+                pool2b = tmt133N,
+                psmb = psmCount,
+                pepb = pepCount)
+proteinSet3 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_rawProteinDatasetC.rds', sep = '')) %>%
+  dplyr::ungroup() %>%
+  dplyr::select(-dataset) %>%
+  dplyr::rename(pool1c = tmt126C,
+                day0c = tmt128N,
+                day7c = tmt128C,
+                day9c = tmt129N,
+                day10c = tmt129C,
+                day11c = tmt130N,
+                day14c = tmt130C,
+                day17c = tmt131N,
+                day22c = tmt131C,
+                pool2c = tmt133N,
+                psmc = psmCount,
+                pepc = pepCount)
+proteinSet = proteinSet1 %>%
+  full_join(proteinSet2) %>%
+  full_join(proteinSet3)
+
+##raw data check
+targetSamples = proteinSet[,c(1:2, which(grepl('day', colnames(proteinSet))))]
+pooledSamples = proteinSet[,c(which(grepl('pool', colnames(proteinSet))))]
+psmSamples = proteinSet[,c(which(grepl('psm', colnames(proteinSet))))]
+rawData = cbind(targetSamples, pooledSamples, psmSamples)
+rawData[rawData == 0] = NA
+rawData = subset(rawData, rowSums(is.na(rawData[,3:10])) < 5 & rowSums(is.na(rawData[,11:18])) < 5 & rowSums(is.na(rawData[,19:26])) < 5)
+boxplot(log2(rawData[,3:26]), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+        notch = TRUE, main = 'Raw data: setA (red), setB (green), setC (blue)',
+        xlab = 'TMT Samples', ylab = 'log2 of Intensity')
+plotDensities(log2(rawData[,3:26]), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+              main = 'Raw data')
+format(round(colSums(rawData[,3:26], na.rm = TRUE), digits = 0), big.mark = ",")
+
+##sample loading normalization
+exp1Raw = rawData[c(3:10)]
+exp2Raw = rawData[c(11:18)]
+exp3Raw = rawData[c(19:26)]
+target = mean(c(colSums(exp1Raw, na.rm = TRUE), colSums(exp2Raw, na.rm = TRUE), colSums(exp3Raw, na.rm = TRUE)))
+normFacs = target / colSums(exp1Raw, na.rm = TRUE)
+exp1Sl = sweep(exp1Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp2Raw, na.rm = TRUE)
+exp2Sl = sweep(exp2Raw, 2, normFacs, FUN = "*")
+normFacs = target / colSums(exp3Raw, na.rm = TRUE)
+exp3Sl = sweep(exp3Raw, 2, normFacs, FUN = "*")
+dataSl = cbind(exp1Sl, exp2Sl, exp3Sl)
+boxplot(log2(dataSl), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+        notch = TRUE, main = "Sample Loading (SL) normalized data: \nsetA (red), setB (green), setC (blue)",
+        xlab = 'TMT Sample', ylab = 'log2 of Intensity')
+plotDensities(log2(dataSl), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), main = "SL normalization")
+
+##IRS normalization
+irs = tibble(rowSums(rawData[,27:28], na.rm = TRUE), rowSums(rawData[,29:30], na.rm = TRUE), rowSums(rawData[,31:32], na.rm = TRUE))
+colnames(irs) = c('sum1','sum2','sum3')
+irs$average = apply(irs, 1, function(x) exp(mean(log(x),na.rm = TRUE)))
+irs$fac1 = irs$average / irs$sum1
+irs$fac2 = irs$average / irs$sum2
+irs$fac3 = irs$average / irs$sum3
+dataIrs = exp1Sl * irs$fac1
+dataIrs = cbind(dataIrs, exp2Sl * irs$fac2)
+dataIrs = cbind(dataIrs, exp3Sl * irs$fac3)
+boxplot(log2(dataIrs), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), 
+        main = "Internal Reference Scaling (IRS) normalized data: \nsetA (red), setB (green), setC (blue)",
+        xlab = 'TMT Sample', ylab = 'log2 of Intensity', notch = TRUE)
+plotDensities(log2(dataIrs), col = rep(rep(c('red', 'green', 'blue'), each = 8), 3), main = "IRS data")
+format(round(colSums(dataIrs, na.rm = TRUE), digits = 0), big.mark = ",")
+
+
+##post-normalization clustering
+colVec = c(rep('red',8),rep('blue',8),rep('green',8))
+plotMDS(log2(dataIrs), col = colVec, main = "IRS clusters group by condition")
+```
+
+Recombine the data with the accessions and save the final file.
+
+```{r}
+##########################################################################################
+##combine the annotation and normalized abundance data
+finalIrsData = as_tibble(cbind(rawData[,c(1:2,33:35)], dataIrs))
+
+##save the data
+saveRDS(finalIrsData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_proteinSetABCIrsNormalized.rds', sep = ''))
+write.table(finalIrsData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_proteinSetABCIrsNormalized.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Take a quick look at these data for a couple of positive control genes to make sure it is as we expect for each sample. 
+
+```{r}
+##########################################################################################
+##add in gene symbols
+geneExpData = finalIrsData
+
+##extract the target gene from the data and set up the data frame for plotting
+targetGenes = c('PRKCB')
+targetData = geneExpData %>%
+  dplyr::filter(symbol %in% targetGenes) %>%
+  tidyr::pivot_longer(cols = day0a:day22c, names_to = 'timepoint', values_to = 'abundance') %>%
+  dplyr::select(symbol,accession,timepoint, abundance) %>% 
+  dplyr::mutate(sampleName = sub('(.*)[abc]', '\\1', timepoint)) %>%
+  dplyr::mutate(abundance = log2(abundance + 1)) %>%
+  dplyr::mutate(sampleName = factor(sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22')))
+
+##set some colors for the plot
+sampleColors = c(rep(brewer.pal(4,'OrRd')[4],1),
+                 rep(brewer.pal(4,'GnBu')[4],1),
+                 rep(brewer.pal(4,'OrRd')[4],6))
+
+##create the plot
+ggplot(targetData, aes(sampleName, abundance, color = sampleName)) +
+  geom_point(aes(x=sampleName, y=abundance), data = targetData, size = 1, position = position_jitter(w = 0.1, h = 0)) +
+  scale_color_manual(values = sampleColors) +
+  labs(y = 'log2(abundance + 1)', title = 'PRKCB in A673 cells') +
+  scale_y_continuous(limits = c(15,24), breaks = seq(0,30,2)) +
+  theme_classic() +
+  theme(legend.position = 'none',
+        axis.title.x=element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1)
+        )
+
+##save the plot in case we want it later
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/plots/scatter_PRKCB_ProteinExpressionLevels.pdf', sep = ''),
+      height = 2, width = 2, useDingbats = FALSE)
+```
+
+This looks as we expect with PRKCB expression to be low in day 7 cells that lack EWS-FLI1 expression. The next thing we can do is to perform a differential expression analysis between the the different time points and see what comes out. We will do this using DEqMS. For filtering, I chose the same criteria as for the RNA data where I specified that something must be present in 3 replicates from at least day 0 or day 7.
+
+```{r}
+##########################################################################################
+##perform the differential abundance analysis
+dataIrsRaw = as.data.frame(finalIrsData[!is.na(finalIrsData$symbol),])
+row.names(dataIrsRaw) = dataIrsRaw$accession
+dataIrs = dataIrsRaw[,c(which(grepl('day0', colnames(dataIrsRaw)) | grepl('day7', colnames(dataIrsRaw))))] #I only keep the two time points I want to compare here
+dataIrsLog = log2(dataIrs)
+#dataIrsLog = na.omit(dataIrsLog)
+
+##make the design table and fit the model
+cond = as.factor(rep(c('day0','day7'),3))
+design = model.matrix(~0+cond) # 0 means no intercept for the linear model
+colnames(design) = gsub('cond','',colnames(design))
+contrast =  makeContrasts(contrasts = 'day0-day7', levels = design)
+fit1 = lmFit(dataIrsLog, design)
+fit2 = contrasts.fit(fit1,contrasts = contrast)
+fit3 = eBayes(fit2)
+
+##DEqMS analysis
+count_columns = seq(3,5,1)
+psm.count.table = data.frame(count = rowMins(as.matrix(dataIrsRaw[,count_columns])), row.names =  dataIrsRaw$accession)
+fit3$count = psm.count.table[rownames(fit3$coefficients),'count']
+fit4 = spectraCounteBayes(fit3)
+```
+
+Outputs of spectraCounteBayes:
+
+* object is augmented form of fit object from eBayes in Limma, with the additions being:
+* sca.t - Spectra Count Adjusted posterior t-value
+* sca.p - Spectra Count Adjusted posterior p-value
+* sca.dfprior - DEqMS estimated prior degrees of freedom
+* sca.priorvar- DEqMS estimated prior variance
+* sca.postvar - DEqMS estimated posterior variance
+* model - fitted model
+
+Output the results.
+
+```{r}
+##########################################################################################
+##extract the results
+deqmsResults = tibble(outputResult(fit4, coef_col = 1)) %>%
+  dplyr::rename(accession = gene) %>%
+  left_join(dataIrsRaw[,c('accession','symbol')])
+
+##I have to redo the symbols in order to combine with these later data
+deqmsResults$rnaMapSymbol = mapIds(org.Hs.eg.db,
+                    keys=deqmsResults$accession,
+                    column="SYMBOL",
+                    keytype="UNIPROT",
+                    multiVals="first")
+
+##write the data
+saveRDS(deqmsResults, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_deqms_day0-day7.rds', sep = ''))
+write.table(deqmsResults, 
+            paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_deqms_day0-day7.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+
+##filter the data for upregulated candidates
+rnaData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_candidatesPlusSole.rds', sep = ''))
+ewsOutput = deqmsResults %>%
+  dplyr::filter(sca.P.Value <= 0.01 & !is.na(symbol)) %>%
+  dplyr::select(rnaMapSymbol, logFC) %>%
+  dplyr::rename(symbol = rnaMapSymbol, a673_log2FoldChangeProtein = logFC) %>%
+  dplyr::full_join(rnaData)
+#
+saveRDS(ewsOutput, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_candidatesWithProteins.rds', sep = ''))
+write.table(ewsOutput, 
+            paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_candidatesWithProteins.csv', sep = ''),
+            sep = ',', row.names = FALSE, quote = FALSE)
+```
+
+
+
+Want to do the PCA here and some volcano plots.
+
+
+
+
+
+```{r}
+
+raw = read_tsv('D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(File.Name = sub('.*8_(.*)_diaBoth\\.mzML', '\\1', File.Name)) %>%
+  dplyr::filter(Channel.Q.Value <= 0.01) %>%
+  dplyr::mutate(Protein.Group = ifelse(grepl('-L', Precursor.Id), paste(Protein.Group,'_light',sep=''),
+                                       ifelse(grepl('-M', Precursor.Id), paste(Protein.Group,'_medium',sep=''), paste(Protein.Group,'_heavy',sep='')))) %>%
+  dplyr::mutate(Genes = ifelse(grepl('-L', Precursor.Id), paste(Genes,'_light',sep=''),
+                                       ifelse(grepl('-M', Precursor.Id), paste(Genes,'_medium',sep=''), paste(Genes,'_heavy',sep=''))))
+
+write.table(raw, 'D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-parsed.tsv', col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+test = process_long_format('D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-parsed.tsv', 
+                           output_filename = 'D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-pgFromIq.tsv',
+                           annotation_col = 'Genes')
+
+raw.parsed = read_tsv('D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-pgFromIq.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(accession = sub('(.*)_.*', '\\1', Protein.Group),
+                symbol = sub('(.*)_.*', '\\1', Genes),
+                quantLabel = sub('.*_(.*)', '\\1', Protein.Group)) %>%
+  dplyr::select(accession, symbol, quantLabel, rep1, rep2, rep3, rep4, rep5)
+write.table(raw.parsed, 'D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-parsed-quants.tsv', col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+```
+
+
+
+
+
+
+
+Extract the DESeq data and plot for the different comparisons of interest.
+
+```{r}
+##########################################################################################
+#parse the deseq data - change the first two values to get different comparisons
+toCompare = c('day0','day9','day10','day11','day14','day17','day22')
+for (i in 1:length(toCompare)){
+  datasetFirst = toCompare[i]
+  datasetSecond = 'day7'
+  res = results(dds, contrast = c('sampleName', datasetFirst, datasetSecond))
+  ens.str = substr(rownames(res), 1, 15)
+  res$symbol = mapIds(org.Hs.eg.db,
+                      keys=ens.str,
+                      column="SYMBOL",
+                      keytype="ENSEMBL",
+                      multiVals="first")
+  resOrdered = res[order(res$pvalue),]
+  
+  #save the data
+  saveRDS(as.data.frame(resOrdered), 
+          paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.rds', sep = ''))
+  write.csv(as.data.frame(resOrdered), 
+            file = paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.csv', sep = ''))
+  
+  
+  ##########################################################################################
+  #assign colors based on fold change and p-values
+  rnaExp = as.data.frame(resOrdered)
+  rnaExp$logPValue = -log10(rnaExp$padj)
+  rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 300, 300, rnaExp$logPValue)
+  rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(4,'OrRd')[4], 
+                          ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+  #assign text labels to specific genes of interest
+  targetGenes = c('IL1RAP','STEAP1','PRKCB','LOX')
+  rnaExp$pText = ifelse(rnaExp$symbol %in% targetGenes, rnaExp$symbol, '')
+
+  #create the plot and save it
+  ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
+    geom_point(size = 0.5, color = rnaExp$pColors) +
+    labs(x = paste('log2(',datasetFirst,' - ',datasetSecond,')', sep = ''), y = '-log10(Adjusted p-value)', title = paste(datasetFirst,' vs ',datasetSecond, sep='')) +
+    geom_text_repel(label = rnaExp$pText, nudge_x = 0, nudge_y = 0, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+    scale_x_continuous(limits = c(-14,14), breaks = seq(-20,20,2)) +
+    scale_y_continuous(limits = c(0,300), breaks = seq(0,500,50)) +
+    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+    theme_classic()
+  ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/scatter_deseq2_', datasetFirst, '-', datasetSecond, '.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+}
+```
+
+Compare the different samples using a PCA using the differential expression data. 
+
+```{r}
+##########################################################################################
+vsd = vst(dds, blind = FALSE) #variance stabilizing normalization of the data
+#extract the data for the MDS analysis itself
+mdsPlot = plotPCA(vsd, intgroup=c('sampleName','batch'), returnData = TRUE)
+mdsPlot$sampleName = factor(mdsPlot$sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22'))
+percentVar = round(100 * attr(mdsPlot, 'percentVar'))
+#make the ggplot
+ggplot(mdsPlot, aes(PC1, PC2, color = sampleName, shape = batch)) +
+  geom_point(size = 3, alpha = 0.75) +
+  #geom_text(label = mdsPlot$sampleName) +
+  scale_color_manual(values = rep(c(brewer.pal(3,'Blues')[3], brewer.pal(3,'OrRd')[3], brewer.pal(7,'Blues')[1:6]),3)) +
+  scale_x_continuous(limits = c(-25,20), breaks = seq(-30,30,5)) +
+  scale_y_continuous(limits = c(-10,20), breaks = seq(-20,20,5)) +
+  labs(x = paste0('PC1: ', percentVar[1], '% variance'), 
+       y = paste0('PC2: ', percentVar[2], '% variance'), 
+       title = 'A673 RNA-seq groups') +
+  theme_classic() +
+  theme(legend.position = 'none')
+#save the plot
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/pcaplot_a673ShEwsFli1AbundanceVsn.pdf', sep = ''), 
+       height = 2, width = 2, useDingbats = FALSE)
+
+##if you want to look at the trancripts with the most dispersion in the DESeq data
+x = counts(dds)[order(dispersions(dds), decreasing=TRUE)[1:1000],]
+```
+
+I am primarily interested in upregulated transcripts here as these will be the ones we target in the CRISPR screen. So, we can filter our data down and combine them with the Sole data that we prepared before. We will keep transcripts from both sets and we will use other data to filter them down later on.
+
+```{r}
+##########################################################################################
+##read in the Sole data
+sole = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_candidates.rds', sep = ''))
+
+##filter our own data focusing on the day 0 versus day 7 comparison
+ews = tibble(readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day0-day7.rds', sep = ''))) %>%
+  dplyr::filter(log2FoldChange >= 1 & padj <= 0.001 & !is.na(symbol)) %>%
+  dplyr::select(symbol, log2FoldChange) %>%
+  dplyr::rename(a673_log2FoldChange = log2FoldChange) %>%
+  dplyr::full_join(sole)
+
+##write this gene set to a file
+saveRDS(ews, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_candidatesPlusSole.rds', sep = ''))
+write.table(ews, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_candidatesPlusSole.tsv', sep = ''),
+            row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+```
+
+Done with these data for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
