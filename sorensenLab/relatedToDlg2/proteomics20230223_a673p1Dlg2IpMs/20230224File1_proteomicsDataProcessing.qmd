@@ -1,0 +1,107 @@
+---
+title: "DLG2 IP MS Hibit"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of proteomics data from an IP-MS experiment pulling on DLG2-Hibit in A673p1 cells.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('iq')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+Read in data from DIA-NN and process with the IQ package.
+
+```{r}
+##########################################################################################
+##first we can filter and parse the report data into a better format for IQ
+raw = read_tsv('D:/msDataTemp/proteomics20230223_a673p1Dlg2IpMs/ipProteome/report.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(File.Name = sub('.*ch20230223_a673p1Dlg2IpMs_(.*)_ip_dia_[123]\\.mzML', '\\1', File.Name)) %>%
+  dplyr::filter(Q.Value <= 0.01)
+
+##save the data
+write.table(raw, 'D:/msDataTemp/proteomics20230223_a673p1Dlg2IpMs/ipProteome/report-parsed.tsv', 
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##run the IQ analysis
+iqResult = process_long_format('D:/msDataTemp/proteomics20230223_a673p1Dlg2IpMs/ipProteome/report-parsed.tsv', 
+                           output_filename = 'D:/msDataTemp/proteomics20230223_a673p1Dlg2IpMs/ipProteome/report-pgFromIq.tsv',
+                           annotation_col = 'Genes',
+                           normalization = 'none',
+                           peptide_extractor = function(x) gsub("[0-9].*$", "", x))
+
+##parse the IQ result
+##currently these data ignore anything without a value in the IgG sample (noHibit), which is not ideal, but it is where we will start for now
+raw.parsed = read_tsv('D:/msDataTemp/proteomics20230223_a673p1Dlg2IpMs/ipProteome/report-pgFromIq.tsv', show_col_types = FALSE) %>%
+  dplyr::rename(accession = 'Protein.Group',
+                symbol = 'Genes') %>%
+  #dplyr::mutate(noHibit = ifelse(is.na(noHibit), min(noHibit, na.rm = TRUE), noHibit)) %>% #maybe use median here instead?
+  dplyr::filter(!is.na(dlg2Hibit10) & !is.na(dlg2Hibit12) & n_peptides > 1) %>%
+  dplyr::mutate(dlg2Hibit10Relative = dlg2Hibit10 - noHibit,
+                dlg2Hibit12Relative = dlg2Hibit12 - noHibit) %>%
+  dplyr::filter(dlg2Hibit10Relative >= 0 & dlg2Hibit12Relative >= 0 & !grepl('KRT', symbol))
+
+
+##save the data
+write.table(raw.parsed, paste(baseRepository, '/proteomics20230223_a673p1Dlg2IpMs/dataset_processedIpData.tsv', sep = ''), 
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Make a plot of the interaction data.
+
+```{r}
+##########################################################################################
+##plot the data
+ipPlot = raw.parsed %>%
+  dplyr::mutate(pColors = ifelse(dlg2Hibit10Relative >= 1 & dlg2Hibit12Relative >= 1, brewer.pal(4,'OrRd')[4], brewer.pal(3,'Greys')[2])) %>%
+  dplyr::mutate(pText = ifelse(dlg2Hibit10Relative >= 1 & dlg2Hibit12Relative >= 1, symbol, ''))
+ggplot(ipPlot, aes(dlg2Hibit10Relative, dlg2Hibit12Relative)) +
+  geom_point(size = 1, color = ipPlot$pColors) +
+  geom_text_repel(label = ipPlot$pText, size = 2, max.overlaps = 1000) +
+  labs(x = 'DLG2-HiBit Clone 10 vs no-HiBit control', y = 'DLG2-HiBit Clone 12 vs no-HiBit control', title = 'DLG2-HiBit IP-MS') +
+  geom_hline(yintercept = 1, linetype = 'dashed') +
+  geom_vline(xintercept = 1, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20230223_a673p1Dlg2IpMs/scatter_ipDataBothClones.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+Interface these data with RNA values from shEF1 cells.
+
+```{r}
+##########################################################################################
+##read in the RNA data
+rna = readRDS('C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_candidatesWithProteins.rds')
+
+##combine with the IP data
+ipRna = raw.parsed %>%
+  left_join(rna)
+
+
+
+
+```

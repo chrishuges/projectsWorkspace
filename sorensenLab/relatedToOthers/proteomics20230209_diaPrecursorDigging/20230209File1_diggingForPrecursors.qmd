@@ -1,0 +1,59 @@
+---
+title: "DIA precursor digging"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of some DIA proteomics data to find an optimal precursor window.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('Peptides')
+library('ggplot2')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+## Data processing
+
+Read in the precursor data from the standard human sample.
+
+```{r}
+##########################################################################################
+##set the sample names
+precursors = read_tsv('D:/msDataTemp/proteomics20230111_humanStandardGpfDiaTesting/fusionRound2/roundOne_report.tsv', show_col_types = FALSE) %>%
+  dplyr::select(Genes, `Stripped.Sequence`,Precursor.Charge) %>%
+  unique() %>%
+  dplyr::mutate(charge = as.integer(`Precursor.Charge`)) %>%
+  dplyr::select(-`Precursor.Charge`)
+
+##
+massValues = tibble()
+for(i in 1:nrow(precursors)){
+  massTemp = tibble('symbol' = precursors$Genes[i],
+                    'sequence' = precursors$Stripped.Sequence[i],
+                    'mz' = mz(precursors$Stripped.Sequence[i], charge = precursors$charge[i], label = "none", aaShift = NULL, cysteins = 57.021464))
+  #
+  massValues = rbind(massValues,massTemp)
+}
+saveRDS(massValues, 'D:/msDataTemp/proteomics20230111_humanStandardGpfDiaTesting/fusionRound2/precursorMasses.rds')
+
+#
+quantile(massValues$mz, probs = seq(0,1,0.05))
+```

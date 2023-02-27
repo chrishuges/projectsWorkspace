@@ -368,38 +368,6 @@ Want to do the PCA here and some volcano plots.
 
 
 
-
-```{r}
-
-raw = read_tsv('D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report.tsv', show_col_types = FALSE) %>%
-  dplyr::mutate(File.Name = sub('.*8_(.*)_diaBoth\\.mzML', '\\1', File.Name)) %>%
-  dplyr::filter(Channel.Q.Value <= 0.01) %>%
-  dplyr::mutate(Protein.Group = ifelse(grepl('-L', Precursor.Id), paste(Protein.Group,'_light',sep=''),
-                                       ifelse(grepl('-M', Precursor.Id), paste(Protein.Group,'_medium',sep=''), paste(Protein.Group,'_heavy',sep='')))) %>%
-  dplyr::mutate(Genes = ifelse(grepl('-L', Precursor.Id), paste(Genes,'_light',sep=''),
-                                       ifelse(grepl('-M', Precursor.Id), paste(Genes,'_medium',sep=''), paste(Genes,'_heavy',sep=''))))
-
-write.table(raw, 'D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-parsed.tsv', col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
-
-test = process_long_format('D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-parsed.tsv', 
-                           output_filename = 'D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-pgFromIq.tsv',
-                           annotation_col = 'Genes')
-
-raw.parsed = read_tsv('D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-pgFromIq.tsv', show_col_types = FALSE) %>%
-  dplyr::mutate(accession = sub('(.*)_.*', '\\1', Protein.Group),
-                symbol = sub('(.*)_.*', '\\1', Genes),
-                quantLabel = sub('.*_(.*)', '\\1', Protein.Group)) %>%
-  dplyr::select(accession, symbol, quantLabel, rep1, rep2, rep3, rep4, rep5)
-write.table(raw.parsed, 'D:/msDataTemp/proteomics20221006_ashishLysoIpSilac/report-parsed-quants.tsv', col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
-
-```
-
-
-
-
-
-
-
 Extract the DESeq data and plot for the different comparisons of interest.
 
 ```{r}
