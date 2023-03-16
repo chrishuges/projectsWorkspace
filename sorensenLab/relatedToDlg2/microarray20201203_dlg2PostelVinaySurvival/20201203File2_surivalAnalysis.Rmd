@@ -30,9 +30,6 @@ I want to set a base directory that we can use as a link to the directory where 
 generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
 baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
 baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
-#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
-#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
-#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -58,7 +55,7 @@ Do a test survival analysis for our gene of interest. I wrote a function for thi
 ##########################################################################################
 expressionData = esExpression
 phenotypeData = esPhenotype
-geneOfInterest = 'DLG2'
+geneOfInterest = 'PRKCB'
 ##
 geneOfInterestExprs = expressionData %>%
   filter(symbol == geneOfInterest)
@@ -98,6 +95,17 @@ geneSurvivalInput$geneLevel = factor(geneSurvivalInput$geneLevel, levels = c('lo
 #calculation of the different survival metrics based on our data
 survivalFit = survfit(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
 
+
+
+##do this a different way
+#expQuantileLow = quantile(geneSurvivalInput$rnaExprs, probs = seq(0,1,0.1))[3]
+#expQuantileHigh = quantile(geneSurvivalInput$rnaExprs, probs = seq(0,1,0.1))[9]
+#geneSurvivalCat = geneSurvivalInput %>%
+#  dplyr::filter(rnaExprs >= expQuantileHigh | rnaExprs <= expQuantileLow) %>%
+#  dplyr::mutate(rnaExprs = ifelse(rnaExprs >= expQuantileHigh, 'high', 'low'))
+#  dplyr::select(ovs, status, rnaExprs)
+
+
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -131,7 +139,7 @@ ggsurvplot(survivalFit,
           palette = c(brewer.pal(3,'Blues')[3], brewer.pal(3,'OrRd')[3]),
           title = 'DLG2 survival analysis',
           legend = 'none')
-ggsave(paste(baseRepository, '/microarray20201203_dlg2PostelVinaySurvival/survival_dlg2SurvivalPostelVinay.pdf', sep = ''), 
+ggsave(paste(baseRepository, '/microarray20201203_dlg2PostelVinaySurvival/survival_fli1SurvivalPostelVinay.pdf', sep = ''), 
        width = 2, height = 2, useDingbats = FALSE)
 ```
 

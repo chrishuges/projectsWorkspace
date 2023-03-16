@@ -1,0 +1,137 @@
+---
+title: "Polysome qPCR data"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('stringr')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+## Data processing
+
+Read in the qPCR data.
+
+```{r}
+##########################################################################################
+##read in qPCR data
+qpcr = read_tsv(paste(baseRepository, '/qpcr20230223_a673p1Ybx1HibitTotalPolysomes/qpcr20230223_a673Ybx1HibitTotalPolysomes.txt', sep = ''),
+                      show_col_types = FALSE, col_names = c('sampleName','targetName','ct','ctMean','ctSD'), skip = 1) %>%
+  dplyr::select(-ctMean, -ctSD) %>%
+  #dplyr::group_by(sampleName, targetName) %>%
+  #dplyr::summarise(meanCt = mean(ct, na.rm = TRUE)) %>%
+  dplyr::mutate(fraction = ifelse(grepl('Total',sampleName), 'Total', 
+                                  ifelse(grepl('Light',sampleName), 'Light','Heavy'))) %>%
+  dplyr::mutate(treatment = sub('(.*)[THL].*', '\\1', sampleName))
+
+##
+qpcrSummary = read_tsv(paste(baseRepository, '/qpcr20230223_a673p1Ybx1HibitTotalPolysomes/qpcr20230223_a673Ybx1HibitTotalPolysomes.txt', sep = ''),
+                      show_col_types = FALSE, col_names = c('sampleName','targetName','ct','ctMean','ctSD'), skip = 1) %>%
+  dplyr::select(-ctMean, -ctSD) %>%
+  dplyr::mutate(fraction = ifelse(grepl('Total',sampleName), 'Total', 
+                                ifelse(grepl('Light',sampleName), 'Light','Heavy'))) %>%
+  dplyr::mutate(treatment = sub('(.*)[THL].*', '\\1', sampleName)) %>%
+  dplyr::mutate(replicate = str_sub(sampleName, start= -1)) %>%
+  dplyr::group_by(targetName, treatment, fraction) %>% 
+  dplyr::summarise(meanCt = mean(ct, na.rm = TRUE), sdCt = sd(ct, na.rm = TRUE))
+
+
+
+##plot the data for polysomes, but only fraction 4
+goi = c('NFE2L2','GAPDH')
+for (i in 1:length(goi)){
+  qpcrPlot = qpcrSummary %>%
+    ungroup() %>%
+    dplyr::filter(grepl('Total', fraction) & targetName == goi[i]) %>%
+    dplyr::select(treatment, targetName, meanCt) %>%
+    tidyr::pivot_wider(names_from = treatment, values_from = meanCt) %>%
+    dplyr::mutate(ms275 = 2^-(ms275 - dmso),
+                  arsenite = 2^-(arsenite - dmso),
+                  combo = 2^-(combo - dmso),
+                  dmso = 2^-(dmso - dmso)) %>%
+    tidyr::pivot_longer(cols = arsenite:ms275, names_to = 'treatment', values_to = 'fc') %>%
+    dplyr::mutate(treatment = factor(treatment, levels = c('dmso','ms275','arsenite','combo')))
+  #
+  ggplot(qpcrPlot, aes(treatment, fc, fill = treatment)) +
+    geom_col(width = 0.75, position = position_dodge()) +
+    labs(x = 'treatment', y = 'Fold change to dmso', title = paste(goi[i], 'Total RNA')) +
+    scale_fill_manual(values = c(brewer.pal(4,'GnBu')[4], rep(brewer.pal(4,'OrRd')[4],3))) +
+    scale_y_continuous(breaks = seq(0,4,0.5)) +
+    theme_classic() +
+    theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/qpcr20230223_a673p1Ybx1HibitTotalPolysomes/barplot_totalRnaFoldChange', goi[i], '.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+}
+
+
+##light polysomes
+goi = c('NFE2L2','GAPDH')
+for (i in 1:length(goi)){
+  qpcrPlot = qpcrSummary %>%
+    ungroup() %>%
+    dplyr::filter(grepl('Light', fraction) & targetName == goi[i]) %>%
+    dplyr::select(treatment, targetName, meanCt) %>%
+    tidyr::pivot_wider(names_from = treatment, values_from = meanCt) %>%
+    dplyr::mutate(ms275 = 2^-(ms275 - dmso),
+                  arsenite = 2^-(arsenite - dmso),
+                  combo = 2^-(combo - dmso),
+                  dmso = 2^-(dmso - dmso)) %>%
+    tidyr::pivot_longer(cols = arsenite:ms275, names_to = 'treatment', values_to = 'fc') %>%
+    dplyr::mutate(treatment = factor(treatment, levels = c('dmso','ms275','arsenite','combo')))
+  #
+  ggplot(qpcrPlot, aes(treatment, fc, fill = treatment)) +
+    geom_col(width = 0.75, position = position_dodge()) +
+    labs(x = 'treatment', y = 'Fold change to dmso', title = paste(goi[i], 'Light polysomes')) +
+    scale_fill_manual(values = c(brewer.pal(4,'GnBu')[4], rep(brewer.pal(4,'OrRd')[4],3))) +
+    scale_y_continuous(breaks = seq(0,4,0.5)) +
+    theme_classic() +
+    theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/qpcr20230223_a673p1Ybx1HibitTotalPolysomes/barplot_polysomeLightFoldChange', goi[i], '.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+}
+
+
+##heavy polysomes
+goi = c('NFE2L2','GAPDH')
+for (i in 1:length(goi)){
+  qpcrPlot = qpcrSummary %>%
+    ungroup() %>%
+    dplyr::filter(grepl('Heavy', fraction) & targetName == goi[i]) %>%
+    dplyr::select(treatment, targetName, meanCt) %>%
+    tidyr::pivot_wider(names_from = treatment, values_from = meanCt) %>%
+    dplyr::mutate(ms275 = 2^-(ms275 - dmso),
+                  arsenite = 2^-(arsenite - dmso),
+                  combo = 2^-(combo - dmso),
+                  dmso = 2^-(dmso - dmso)) %>%
+    tidyr::pivot_longer(cols = arsenite:ms275, names_to = 'treatment', values_to = 'fc') %>%
+    dplyr::mutate(treatment = factor(treatment, levels = c('dmso','ms275','arsenite','combo')))
+  #
+  ggplot(qpcrPlot, aes(treatment, fc, fill = treatment)) +
+    geom_col(width = 0.75, position = position_dodge()) +
+    labs(x = 'treatment', y = 'Fold change to dmso', title = paste(goi[i], 'Heavy polysomes')) +
+    scale_fill_manual(values = c(brewer.pal(4,'GnBu')[4], rep(brewer.pal(4,'OrRd')[4],3))) +
+    scale_y_continuous(breaks = seq(0,4,0.5)) +
+    theme_classic() +
+    theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/qpcr20230223_a673p1Ybx1HibitTotalPolysomes/barplot_polysomeheavyFoldChange', goi[i], '.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+}
+```

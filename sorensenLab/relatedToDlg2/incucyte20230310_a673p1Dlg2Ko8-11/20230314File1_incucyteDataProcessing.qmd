@@ -1,0 +1,113 @@
+---
+title: "incucyte data processing"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing incucyte data for DLG2 KO cells.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+Read in the soft agar data and shape into a usable format for plotting. One of the wells for A673p1 was not usable, so we only have 2 replicates there.
+
+```{r}
+##########################################################################################
+##get the incucyte data
+incuData = read_tsv(paste(baseRepository,'/incucyte20230310_a673p1Dlg2Ko8-11/incucyte20230310_a673p1Dlg2Ko8-11.txt', sep = ''), show_col_types = FALSE, skip = 7) %>%
+  dplyr::rename(time = Elapsed, 
+                a673p1 = `a673p1 (1) 5K / well`,
+                ko8 = `a673p1Dlg2Ko8 (1) 5K / well`,
+                ko11 = `a673p1Dlg2Ko11 (1) 5K / well`) %>%
+  dplyr::select(-`Date Time`) %>%
+  dplyr::filter(time == 0 | time == 48) %>%
+  dplyr::mutate(dlg2Oe = c(8.2,91.6)) ##pull in the o/e data from the other plate
+
+##will just do this manually
+incuDataProcessed = tibble(cellLine = c('a673p1','ko8','ko11','dlg2Oe'),
+                           relConfluence = c(((73.7-17.3)),
+                                             ((37.3-10.1)),
+                                             ((17.9-6.11)),
+                                             ((89.3-8.4)))) %>%
+  dplyr::mutate(cellLine = factor(cellLine, levels = c('a673p1','ko8','ko11','dlg2Oe')))
+
+##create the plot
+ggplot(incuDataProcessed, aes(cellLine, relConfluence, fill = cellLine)) +
+  geom_bar(stat = 'identity', width = 0.5) +
+    scale_fill_manual(values = c(brewer.pal(3,'Greys')[2], rep(brewer.pal(4,'GnBu')[4],2), brewer.pal(4,'OrRd')[4])) +
+  labs(x = 'Cell line', y = 'Mean percent confluence increase (48h)', title = 'Cell growth') +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,100,25)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/incucyte20230310_a673p1Dlg2Ko8-11/barplot_cellConfluence.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+```
+
+Update using a bigger dataset. I don't have as many replicates for the O/E because it was on a different plate. I need to repeat this assay, but it is OK for now.
+
+```{r}
+##########################################################################################
+##get the names of all of the colony counting files
+incuData = read_tsv(paste(baseRepository,'/incucyte20230310_a673p1Dlg2Ko8-11/incucyte20230310_a673p1Dlg2Ko8-11_allData.txt', sep = ''), show_col_types = FALSE, skip = 7) %>%
+  dplyr::select(-`Date Time`) %>%
+  dplyr::filter(Elapsed == 0 | Elapsed == 48)
+colnames(incuData)[2:25] = c(paste('a673p1_rep',seq(1,8,1),sep=''),
+                             paste('ko8_rep',seq(1,8,1),sep=''),
+                             paste('ko11_rep',seq(1,8,1),sep=''))
+
+##put into long format and combine with the o/e data
+incuLong = tidyr::pivot_longer(incuData, cols = a673p1_rep1:ko11_rep8, names_to = 'sample', values_to = 'confluence') %>%
+  tidyr::pivot_wider(names_from = 'Elapsed', values_from = 'confluence') %>%
+  dplyr::rename(t0 = `0`, t48 = `48`)
+
+dlg2Oe = tibble(sample = paste('dlg2oe_rep',seq(1,6,1),sep=''),
+                t0 = c(8.0,9.6,9.2,7.8,7.6,8.3),
+                t48 = c(88.5,84.9,92.3,90.2,90.6,89.4))
+
+incuOe = rbind(incuLong, dlg2Oe) %>%
+  dplyr::mutate(conChange = t48 - t0) %>%
+  dplyr::select(-t0,-t48) %>%
+  dplyr::mutate(sampleName = factor(sub('(.*)_.*','\\1',sample), levels = c('a673p1','ko8','ko11','dlg2oe')),
+                replicate = sub('.*_(.*)','\\1',sample)) %>%
+  dplyr::select(-sample) %>%
+  dplyr::group_by(sampleName) %>%
+  dplyr::summarise(conMean = median(conChange), conSd = sd(conChange))
+
+##make the plot
+ggplot(incuOe, aes(x = sampleName, y = conMean, fill = sampleName)) +
+  geom_bar(stat = 'identity', width = 0.5) +
+  geom_errorbar(aes(ymin=conMean-conSd, ymax=conMean+conSd), width = 0.2) +
+  scale_fill_manual(values = c(brewer.pal(3,'Greys')[2], rep(brewer.pal(4,'GnBu')[4],2), brewer.pal(4,'OrRd')[4])) +
+  labs(x = 'Cell line', y = 'Median percent confluence change in 48h', title = 'Cell growth') +
+  scale_y_continuous(limits = c(0,100), breaks = seq(0,100,25)) +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/incucyte20230310_a673p1Dlg2Ko8-11/barplot_cellConfluence.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+```
+
+
+

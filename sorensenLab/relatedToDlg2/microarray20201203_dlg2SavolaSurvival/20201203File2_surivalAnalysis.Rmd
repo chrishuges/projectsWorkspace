@@ -30,9 +30,6 @@ I want to set a base directory that we can use as a link to the directory where 
 generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
 baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
 baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
-#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
-#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
-#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -58,7 +55,7 @@ Do a test survival analysis for our gene of interest. I wrote a function for thi
 ##########################################################################################
 expressionData = esExpression
 phenotypeData = esPhenotype
-geneOfInterest = 'DLG2'
+geneOfInterest = 'FLI1'
 ##
 geneOfInterestExprs = expressionData %>%
   filter(symbol == geneOfInterest)
@@ -77,7 +74,7 @@ if (nrow(geneOfInterestExprs) < 1){
   print('Gene not found. Moving on to next entry.')
 }
 geneOfInterestExprs$medExprs = apply(geneOfInterestExprs[,which(grepl('GS',colnames(geneOfInterestExprs)))[1]:ncol(geneOfInterestExprs)], 
-                                       1, function(x) mean(x, na.rm = TRUE))
+                                       1, function(x) median(x, na.rm = TRUE))
 geneOfInterestSort = geneOfInterestExprs %>%
   arrange(desc(medExprs))
 ########
@@ -89,15 +86,25 @@ geneSurvivalInput = geneOfInterestSort[1,1:(ncol(geneOfInterestSort) - 1)] %>%
   arrange(rnaExprs)
   ########
 geneCutPoint = surv_cutpoint(geneSurvivalInput,
-                               time = 'ovs',
+                               time = 'efs',
                                event = 'status',
                                variables = 'rnaExprs')
 geneSurvivalCat = surv_categorize(geneCutPoint)
 geneSurvivalInput$geneLevel = geneSurvivalCat$rnaExprs
 geneSurvivalInput$geneLevel = factor(geneSurvivalInput$geneLevel, levels = c('low','high'))
 #calculation of the different survival metrics based on our data
-survivalFit = survfit(Surv(ovs, status) ~ geneLevel, data = geneSurvivalInput)
+survivalFit = survfit(Surv(efs, status) ~ geneLevel, data = geneSurvivalInput)
 
+
+##do this a different way
+#expQuantileLow = quantile(geneSurvivalInput$rnaExprs, probs = seq(0,1,0.1))[3]
+#expQuantileHigh = quantile(geneSurvivalInput$rnaExprs, probs = seq(0,1,0.1))[9]
+#geneSurvivalCat = geneSurvivalInput %>%
+#  dplyr::filter(rnaExprs >= expQuantileHigh | rnaExprs <= expQuantileLow) %>%
+#  dplyr::mutate(geneLevel = ifelse(rnaExprs >= expQuantileHigh, 'high', 'low')) %>%
+#  dplyr::select(ovs, status, geneLevel)
+#geneSurvivalInput$geneLevel = factor(geneSurvivalInput$geneLevel, levels = c('low','high'))
+#survivalFit = survfit(Surv(ovs, status) ~ geneLevel, data = geneSurvivalCat)
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -128,10 +135,10 @@ ggsurvplot(survivalFit,
           linetype = "strata", # Change line type by groups
           surv.median.line = "hv", # Specify median survival
           ggtheme = theme_classic(), # Change ggplot2 theme
-          palette = c(brewer.pal(8,'RdBu')[c(8,1)]),
-          title = 'DLG2 survival analysis',
+          palette = c(brewer.pal(4,'GnBu')[4], brewer.pal(4,'OrRd')[4]),
+          title = 'FLI1 survival analysis',
           legend = 'none')
-ggsave(paste(baseRepository, '/microarray20201203_dlg2SavolaSurvival/survival_dlg2SurvivalSavola.pdf', sep = ''), 
+ggsave(paste(baseRepository, '/microarray20201203_dlg2SavolaSurvival/survival_fli1SurvivalSavola.pdf', sep = ''), 
        width = 2, height = 2, useDingbats = FALSE)
 ```
 

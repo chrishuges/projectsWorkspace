@@ -1,0 +1,60 @@
+---
+title: "YBX1 DTag clone screening"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of some plate reader data to screen YBX1 DTag HiBit clones.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+## Data processing
+
+Input the plate reader data and plot.
+
+```{r}
+##########################################################################################
+##data input
+hibit = tibble(sample = factor(c('neg','12','3','4','8','9'), levels = c('neg','3','4','8','9','12')),
+               lum = c(5,511889,19,27,33,17))
+
+##make the plot
+ggplot(hibit, aes(sample, log10(lum))) +
+  geom_bar(stat = 'identity', width = 0.75) +
+  labs(x = 'Clone', y = 'Luminescence signal', title = 'YB-1 HiBit DTag') +
+  scale_y_continuous(limits = c(0,6), breaks = seq(0,20,2)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/plateReader20230227_a673p1Ybx1Nrf2HibitClones/barplot_ybx1HiBitSignal.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+Done with these data for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+

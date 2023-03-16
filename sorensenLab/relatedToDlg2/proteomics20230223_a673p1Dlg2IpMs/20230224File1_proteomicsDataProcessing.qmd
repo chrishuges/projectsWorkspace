@@ -60,9 +60,13 @@ raw.parsed = read_tsv('D:/msDataTemp/proteomics20230223_a673p1Dlg2IpMs/ipProteom
   dplyr::rename(accession = 'Protein.Group',
                 symbol = 'Genes') %>%
   #dplyr::mutate(noHibit = ifelse(is.na(noHibit), min(noHibit, na.rm = TRUE), noHibit)) %>% #maybe use median here instead?
+  dplyr::filter(!grepl(';', accession)) %>%
+  dplyr::mutate(negSignal = ifelse(is.na(noAb), noHibit,
+                                   ifelse(noAb >= noHibit, noAb, 
+                                          ifelse(is.na(noAb) & is.na(noHibit), min(noHibit, na.rm = TRUE), noHibit)))) %>%
   dplyr::filter(!is.na(dlg2Hibit10) & !is.na(dlg2Hibit12) & n_peptides > 1) %>%
-  dplyr::mutate(dlg2Hibit10Relative = dlg2Hibit10 - noHibit,
-                dlg2Hibit12Relative = dlg2Hibit12 - noHibit) %>%
+  dplyr::mutate(dlg2Hibit10Relative = dlg2Hibit10 - negSignal,
+                dlg2Hibit12Relative = dlg2Hibit12 - negSignal) %>%
   dplyr::filter(dlg2Hibit10Relative >= 0 & dlg2Hibit12Relative >= 0 & !grepl('KRT', symbol))
 
 
@@ -78,7 +82,7 @@ Make a plot of the interaction data.
 ##plot the data
 ipPlot = raw.parsed %>%
   dplyr::mutate(pColors = ifelse(dlg2Hibit10Relative >= 1 & dlg2Hibit12Relative >= 1, brewer.pal(4,'OrRd')[4], brewer.pal(3,'Greys')[2])) %>%
-  dplyr::mutate(pText = ifelse(dlg2Hibit10Relative >= 1 & dlg2Hibit12Relative >= 1, symbol, ''))
+  dplyr::mutate(pText = ifelse(dlg2Hibit10Relative >= 1.5 & dlg2Hibit12Relative >= 1.5, symbol, ''))
 ggplot(ipPlot, aes(dlg2Hibit10Relative, dlg2Hibit12Relative)) +
   geom_point(size = 1, color = ipPlot$pColors) +
   geom_text_repel(label = ipPlot$pText, size = 2, max.overlaps = 1000) +
@@ -95,13 +99,25 @@ Interface these data with RNA values from shEF1 cells.
 ```{r}
 ##########################################################################################
 ##read in the RNA data
-rna = readRDS('C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_candidatesWithProteins.rds')
+pro = readRDS('C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/manuscriptPreparationDlg2/proteomicsData/sorensenEwsA673Proteomics/datasetOutputs/dataset_deqms_day0-day7.rds')
 
 ##combine with the IP data
-ipRna = raw.parsed %>%
-  left_join(rna)
+ipPro = raw.parsed %>%
+  left_join(pro) %>%
+  dplyr::filter(dlg2Hibit10Relative >= 1 & dlg2Hibit12Relative >= 1) %>%
+  dplyr::mutate(pColors = ifelse(sca.P.Value <= 0.001 & logFC >= 1, brewer.pal(4,'OrRd')[4], 
+                                 ifelse(sca.P.Value <= 0.001 & logFC <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))) %>%
+  dplyr::mutate(pText = ifelse(sca.P.Value <= 0.001 & abs(logFC) >= 1, symbol, ''))
 
 
-
-
+##plot these highlighted hits
+ggplot(ipPro, aes(logFC, -log10(sca.P.Value))) +
+  geom_point(size = 1, color = ipPro$pColors) +
+  geom_text_repel(label = ipPro$pText, size = 2, max.overlaps = 1000) +
+  labs(x = 'log2(day0 - day7)', y = '-log10(Adjusted p-value)', title = 'Ewing sarcoma proteome') +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20230223_a673p1Dlg2IpMs/scatter_ipDataBothClonesWithEwingProteomics.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
 ```

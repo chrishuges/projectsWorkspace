@@ -1,0 +1,291 @@
+---
+title: "Sole RNA-seq data processing"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of RNA-seq data derived from a work where they induced formation of EwS in MSCs using CRISPR (PMID: 34341072, GEO: GSE150777, SRA: SRP262164). The data have been reprocessed to quantification as described elsewhere in these documents 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('tximport')
+library('GenomicFeatures')
+library('DESeq2')
+library('ggrepel')
+library('org.Hs.eg.db')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/manuscriptPreparationDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/manuscriptPreparationDlg2'
+```
+
+## Data processing
+
+The first thing to do is to make a sample annotation table. This is kind of a mixed bag of samples, so I opted to do this manually.
+
+```{r}
+##########################################################################################
+##set the sample names
+sampleNamesFromGeo = c('hMPC-cl1_STAG2KO','hMPC-cl1_STAG2KO','hMPC-cl1_STAG2KO',
+                       'hMPC-cl2_STAG2KO','hMPC-cl2_STAG2KO','hMPC-cl2_STAG2KO',
+                       'hMPC-cl1_STAG2wt','hMPC-cl1_STAG2wt','hMPC-cl1_STAG2wt',
+                       'hMPC-cl2_STAG2wt','hMPC-cl2_STAG2wt','hMPC-cl2_STAG2wt',
+                       'hMPC','hMPC','hMPC',
+                       'EWIma1','EWIma1','EWIma1','EWIma1','EWIma1',
+                       'EWIma1_Tumor','EWIma1_Tumor','EWIma1_Tumor',
+                       'EWIma1_siCT','EWIma1_siCT','EWIma1_siEF1','EWIma1_siEF1',
+                       'EWIma1_Tumor','MSC_Pat_SPC_cl7','MSC_Pat_SPC_cl9','MSC_Pat_SPC_cl8',
+                       'MSC_Pat_SPC_cl7','MSC_Pat_SPC_cl9','MSC_Pat_SPC_cl8',
+                       'MSC_Pat','MSC_Pat','MSC_Pat',
+                       'EWIma','EWIma','EWIma','EWIma','EWIma','EWIma','EWIma','EWIma',
+                       'EWIma','EWIma','EWIma','EWIma','EWIma','EWIma','EWIma','EWIma',
+                       'EWIma','EWIma','EWIma5_Tum_leg','EWIma5_Tum1_meta_liver','EWIma5_Tum2_meta_liver',
+                       'EWIma7_Tum_meta_liver','EWIma7_Tum_leg')
+
+##set the replicate details
+replicatesFromGeo = c('R1','R2','R3','R1','R2','R3',
+                      'R1','R2','R3','R1','R2','R3',
+                      'R1','R2','R3','R5','R4','R1','R2','R3',
+                      'R2','R3','R4','R1','R2','R1','R2',
+                      'R1','R1','R1','R1','R2','R2','R2','R1','R2','R3',
+                      'R6','R25','R10','R12','R4','R9','R8','R11',
+                      'R31','R15','R14','R26','R13','R2','R30','R7',
+                      'R5','R12','R1','R1','R2','R1','R1')
+
+##read in the sample annotation information from GEO and combine with the above details
+samples = read_csv(paste(baseRepository, '/rnaSeqData/soleInducedEwsRnaSeq/SraRunTable.txt',sep=''), show_col_types = FALSE) %>%
+  dplyr::select(Run, `GEO_Accession (exp)`, cdkn2a, stag2, tp53, `ewsr1-fli1`) %>%
+  dplyr::rename(accession = 'Run', geo = `GEO_Accession (exp)`, ef1 = `ewsr1-fli1`) %>%
+  dplyr::arrange(accession) %>%
+  dplyr::mutate(sampleNames = sampleNamesFromGeo, replicate = replicatesFromGeo)
+```
+
+Now that we have our annotation details, we can start to sort out the quantification data that we obtained from the data reprocessing. The code below will get the file paths for the quant files, read in our transcriptome gtf, and using tximport to read in the entire dataset.
+
+```{r}
+##########################################################################################
+##get the locations of all of the quant files and check they are correct
+quantFiles = file.path(paste(baseRepository, '/rnaSeqData/soleInducedEwsRnaSeq/quants', sep = ''), samples$accession, 'quant.sf')
+names(quantFiles) = samples$accession
+all(file.exists(quantFiles))
+
+##build the transcriptome index...this is based on the same gtf we used in the alignment process
+txdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(txdb, keytype = "TXNAME")
+tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
+
+##read the transcriptome data processed from salmon
+txi = tximport(quantFiles, type = 'salmon', tx2gene = tx2gene)
+txiAnnotated = tibble(as.data.frame(txi$abundance)) %>%
+  mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$abundance)))
+```
+
+Take a quick look at these data for a couple of positive control genes to make sure it is as we expect for each sample. 
+
+```{r}
+##########################################################################################
+##add in gene symbols
+geneSymbols = select(org.Hs.eg.db, txiAnnotated$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') 
+geneExpData = txiAnnotated %>%
+  left_join(geneSymbols) %>%
+  mutate(symbol = SYMBOL)
+
+##extract the target gene from the data and set up the data frame for plotting
+targetGenes = c('PRKCB')
+targetData = geneExpData %>%
+  dplyr::filter(symbol %in% targetGenes) %>%
+  tidyr::pivot_longer(cols = SRR11807630:SRR14743630, names_to = 'accession', values_to = 'tpm') %>%
+  dplyr::select(symbol,accession,tpm) %>%
+  dplyr::mutate(tpm = log2(tpm + 1)) %>%
+  dplyr::left_join(samples) %>%
+  dplyr::filter(!grepl('_si', sampleNames) & !grepl('EWIma[57]', sampleNames)) %>%
+  dplyr::mutate(sampleNames = factor(sampleNames, levels = c('MSC_Pat','EWIma','EWIma1','EWIma1_Tumor',
+                                                             'MSC_Pat_SPC_cl7','MSC_Pat_SPC_cl8','MSC_Pat_SPC_cl9',
+                                                             'hMPC','hMPC-cl1_STAG2KO','hMPC-cl2_STAG2KO',
+                                                             'hMPC-cl1_STAG2wt','hMPC-cl2_STAG2wt')))
+
+##set some colors for the plot
+sampleColors = c(brewer.pal(4,'OrRd')[4],
+                 rep(brewer.pal(4,'Blues')[4],3),
+                 rep(brewer.pal(4,'OrRd')[4],4),
+                 rep(brewer.pal(4,'Blues')[4],4))
+
+##create the plot
+ggplot(targetData, aes(sampleNames, tpm, color = sampleNames)) +
+  geom_point(aes(x=sampleNames, y=tpm), data = targetData, size = 1, position = position_jitter(w = 0.1, h = 0)) +
+  scale_color_manual(values = sampleColors) +
+  labs(y = 'log2(TPM + 1)', title = 'PRKCB in EWIma cells') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,16,2)) +
+  theme_classic() +
+  theme(legend.position = 'none',
+        axis.title.x=element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1)
+        )
+
+##save the plot in case we want it later
+ggsave(paste(baseRepository, '/rnaSeqData/soleInducedEwsRnaSeq/plots/scatter_PRKCB_RnaExpressionLevels.pdf', sep = ''),
+      height = 2, width = 2, useDingbats = FALSE)
+```
+
+This looks as we expect with PRKCB expression induced in the EWIma cells and in no others. The next thing we can do is to perform a differential expression analysis between the EWIma cells and the hMPC and MSC_Pat progenitors and see what comes out. We will do this using DESeq2.
+
+```{r}
+##########################################################################################
+##re-extract the quantification data for a subset of the files
+samplesOfInterest = c('MSC_Pat','hMPC','EWIma1')
+samplesForDe = samples %>%
+  dplyr::filter(sampleNames %in% samplesOfInterest) %>%
+  dplyr::mutate(sampleNames = factor(sampleNames, levels = c('MSC_Pat','hMPC','EWIma1')))
+#
+quantFilesForDe = file.path(paste(baseRepository, '/rnaSeqData/soleInducedEwsRnaSeq/quants', sep = ''), samplesForDe$accession, 'quant.sf')
+names(quantFilesForDe) = samplesForDe$accession
+all(file.exists(quantFilesForDe))
+#
+txiForDe = tximport(quantFilesForDe, type = 'salmon', tx2gene = tx2gene)
+
+
+##perform the deseq analysis
+ddsTxi = DESeqDataSetFromTximport(txiForDe,
+                                  colData = samplesForDe,
+                                  design = ~ sampleNames)
+dds = DESeq(ddsTxi)
+keep = rowSums(counts(dds)) >= 10
+dds = dds[keep,]
+```
+
+Extract the DESeq data and plot for the different comparisons of interest.
+
+```{r}
+##########################################################################################
+#parse the deseq data - change the first two values to get different comparisons
+toCompare = c('MSC_Pat','hMPC')
+for (i in 1:length(toCompare)){
+  datasetFirst = 'EWIma1'
+  datasetSecond = toCompare[i]
+  res = results(dds, contrast = c('sampleNames', datasetFirst, datasetSecond))
+  ens.str = substr(rownames(res), 1, 15)
+  res$symbol = mapIds(org.Hs.eg.db,
+                      keys=ens.str,
+                      column="SYMBOL",
+                      keytype="ENSEMBL",
+                      multiVals="first")
+  resOrdered = res[order(res$pvalue),]
+  
+  #save the data
+  saveRDS(as.data.frame(resOrdered), 
+          paste(baseRepository, '/rnaSeqData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.rds', sep = ''))
+  write.csv(as.data.frame(resOrdered), 
+            file = paste(baseRepository, '/rnaSeqData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.csv', sep = ''))
+  
+  
+  ##########################################################################################
+  #assign colors based on fold change and p-values
+  rnaExp = as.data.frame(resOrdered)
+  rnaExp$logPValue = -log10(rnaExp$padj)
+  rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 300, 300, rnaExp$logPValue)
+  rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(4,'OrRd')[4], 
+                          ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+  #assign text labels to specific genes of interest
+  targetGenes = c('DLG2','PRKCB','LOX')
+  rnaExp$pText = ifelse(rnaExp$symbol %in% targetGenes, rnaExp$symbol, '')
+
+  #create the plot and save it
+  ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
+    geom_point(size = 1, color = rnaExp$pColors) +
+    labs(x = paste('log2(',datasetFirst,' - ',datasetSecond,')', sep = ''), y = '-log10(Adjusted p-value)', title = paste(datasetFirst,' vs ',datasetSecond, sep='')) +
+    geom_text_repel(label = rnaExp$pText, nudge_x = 0, nudge_y = 200, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+    scale_x_continuous(limits = c(-16,16), breaks = seq(-20,20,3)) +
+    scale_y_continuous(limits = c(0,300), breaks = seq(0,500,50)) +
+    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+    theme_classic()
+  ggsave(paste(baseRepository, '/rnaSeqData/soleInducedEwsRnaSeq/plots/scatter_deseq2_', datasetFirst, '-', datasetSecond, '.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+}
+```
+
+There are a ton of differentially expressed transcripts here. We can cross reference the two sets to get a combined list that we can use in our downstream analysis.
+
+```{r}
+##########################################################################################
+##read in the differential expression data
+msc = tibble(readRDS(paste(baseRepository, '/rnaSeqData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_EWIma1-MSC_Pat.rds',sep=''))) %>%
+  dplyr::rename(msc_baseMean = baseMean,
+                msc_log2FoldChange = log2FoldChange,
+                msc_lfcSE = lfcSE,
+                msc_stat = stat,
+                msc_pvalue = pvalue,
+                msc_padj = padj) %>%
+  dplyr::filter(!is.na(symbol))
+mpc = tibble(readRDS(paste(baseRepository, '/rnaSeqData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_EWIma1-hMPC.rds',sep=''))) %>%
+  dplyr::rename(mpc_baseMean = baseMean,
+                mpc_log2FoldChange = log2FoldChange,
+                mpc_lfcSE = lfcSE,
+                mpc_stat = stat,
+                mpc_pvalue = pvalue,
+                mpc_padj = padj) %>%
+  dplyr::filter(!is.na(symbol))
+
+##combine the data
+ewsDeData = msc %>%
+  full_join(mpc)
+
+##assign some colors and text labels for the plot
+ewsDeData$pColors = ifelse(ewsDeData$msc_log2FoldChange >= 1 & ewsDeData$mpc_log2FoldChange >= 1, brewer.pal(4,'OrRd')[4], 
+                           ifelse(ewsDeData$msc_log2FoldChange <= -1 & ewsDeData$mpc_log2FoldChange <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+targetGenes = c('DLG2','PRKCB','LOX')
+ewsDeData$pText = ifelse(ewsDeData$symbol %in% targetGenes, ewsDeData$symbol, '')
+  
+  
+##plot these data
+ggplot(ewsDeData, aes(msc_log2FoldChange, mpc_log2FoldChange)) +
+  geom_point(size = 1, color = ewsDeData$pColors) +
+    labs(x = paste('log2(EWIma1 vs MSC_Pat)', sep = ''), y = 'log2(EWIma1 vs hMPC)', title = 'EWIma1 rna abundance') +
+    geom_text_repel(label = ewsDeData$pText, nudge_x = 4, nudge_y = -4, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+    #scale_x_continuous(limits = c(-16,16), breaks = seq(-20,20,3)) +
+    #scale_y_continuous(limits = c(0,300), breaks = seq(0,500,50)) +
+    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+    theme_classic()
+ggsave(paste(baseRepository, '/rnaSeqData/soleInducedEwsRnaSeq/plots/scatter_deseq2_mscAndMpcDeData.pdf', sep = ''), 
+       height = 2, width = 2, useDingbats = FALSE)
+
+##save the data to a file
+saveRDS(ewsDeData, paste(baseRepository, '/rnaSeqData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_mscAndMpcDeData.rds', sep = ''))
+write.table(ewsDeData, paste(baseRepository, '/rnaSeqData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_mscAndMpcDeData.tsv', sep = ''),
+            row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+```
+
+Done with these data for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
