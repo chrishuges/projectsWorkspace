@@ -24,9 +24,6 @@ I want to set a base directory that we can use as a link to the directory where 
 generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
 baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
 baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
-#generalDatasets = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/generalDatasets'
-#baseWorkspace = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
-#baseRepository = 'C:/Users/chris/OneDrive/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
 ```
 
 <div style="margin-bottom:50px;"></div>
@@ -54,13 +51,13 @@ Read in the results data.
 ```{r}
 ##########################################################################################
 ##read the files
-a673 = read_tsv(paste(baseRepository, '/sequencing20220603_haifengCrisprScreen/hzMetaboA673_rra.gene_summary.txt',sep='')) %>%
+a673 = read_tsv(paste(baseRepository, '/sequencing20220603_haifengCrisprScreen/hzMetaboA673_rra.gene_summary.txt',sep=''), show_col_types = FALSE) %>%
   dplyr::select(id,num,`neg|score`,`neg|p-value`,`neg|fdr`,`neg|rank`,`neg|lfc`) %>%
   dplyr::rename(a673_num = num, a673_score = `neg|score`, a673_pval = `neg|p-value`,
                 a673_fdr = `neg|fdr`, a673_rank = `neg|rank`, a673_lfc = `neg|lfc`)
 
 #
-b20r = read_tsv(paste(baseRepository, '/sequencing20220603_haifengCrisprScreen/hzMetaboB20r_rra.gene_summary.txt',sep='')) %>%
+b20r = read_tsv(paste(baseRepository, '/sequencing20220603_haifengCrisprScreen/hzMetaboB20r_rra.gene_summary.txt',sep=''), show_col_types = FALSE) %>%
   dplyr::select(id,num,`neg|score`,`neg|p-value`,`neg|fdr`,`neg|rank`,`neg|lfc`) %>%
   dplyr::rename(b20r_num = num, b20r_score = `neg|score`, b20r_pval = `neg|p-value`,
                 b20r_fdr = `neg|fdr`, b20r_rank = `neg|rank`, b20r_lfc = `neg|lfc`)
@@ -68,10 +65,32 @@ b20r = read_tsv(paste(baseRepository, '/sequencing20220603_haifengCrisprScreen/h
 
 ##combine the files
 allData = a673 %>%
-  dplyr::full_join(b20r)\
+  dplyr::full_join(b20r)
 
 ##write the data
-write.table(allData, paste(baseRepository, '/sequencing20220603_haifengCrisprScreen/dataset_mageckCrisprHits.tsv', sep=''),
+write.table(allData, paste(baseRepository, '/sequencing20220603_haifengCrisprScreen/dataset_mageckCrisprHits_B20RVersusA673.tsv', sep=''),
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 
+
+##########################################################################################
+##do again for the other set of data
+a673 = read_tsv(paste(baseRepository, '/sequencing20220603_haifengCrisprScreen/hzMetaboA673_rra.gene_summary.txt',sep=''), show_col_types = FALSE) %>%
+  dplyr::select(id,num,`neg|score`,`neg|p-value`,`neg|fdr`,`neg|rank`,`neg|lfc`) %>%
+  dplyr::rename(a673_num = num, a673_score = `neg|score`, a673_pval = `neg|p-value`,
+                a673_fdr = `neg|fdr`, a673_rank = `neg|rank`, a673_lfc = `neg|lfc`)
+
+#
+cb8 = read_tsv(paste(baseRepository, '/sequencing20220603_haifengCrisprScreen/hzMetaboCb8_rra.gene_summary.txt',sep=''), show_col_types = FALSE) %>%
+  dplyr::select(id,num,`neg|score`,`neg|p-value`,`neg|fdr`,`neg|rank`,`neg|lfc`) %>%
+  dplyr::rename(cb8_num = num, cb8_score = `neg|score`, cb8_pval = `neg|p-value`,
+                cb8_fdr = `neg|fdr`, cb8_rank = `neg|rank`, cb8_lfc = `neg|lfc`)
+
+
+##combine the files
+allData = a673 %>%
+  dplyr::full_join(cb8)
+
+##write the data
+write.table(allData, paste(baseRepository, '/sequencing20220603_haifengCrisprScreen/dataset_mageckCrisprHits_cb8VersusA673.tsv', sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
