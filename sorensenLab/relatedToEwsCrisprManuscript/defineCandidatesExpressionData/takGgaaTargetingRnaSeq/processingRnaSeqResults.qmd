@@ -1,0 +1,229 @@
+---
+title: "Tak RNA-seq data processing"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of RNA-seq data derived from a work where they targeted GGAA sites in Ewing sarcoma cells using zinc-finger nucleases (PMID: 35967079, GEO: GSE163886, SRA: SRP299618). The data have been reprocessed to quantification as described elsewhere in these documents.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('tximport')
+library('GenomicFeatures')
+library('DESeq2')
+library('ggrepel')
+library('org.Hs.eg.db')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+The first thing to do is to make a sample annotation table. This is kind of a mixed bag of samples, so I opted to do this manually.
+
+```{r}
+##########################################################################################
+##set the sample names
+sampleNamesFromGeo = c('a673_gfp','a673_gfp',
+                       'a673_krab','a673_krab',
+                       'hek293_gfp','hek293_gfp',
+                       'hek293_krab','hek293_krab',
+                       'msc_ewsFli1','msc_ewsFli1',
+                       'msc_zfa7','msc_zfa7',
+                       'msc_gfp','msc_gfp',
+                       'sknmc_gfp','sknmc_gfp',
+                       'sknmc_krab','sknmc_krab')
+
+##set the replicate details
+replicatesFromGeo = c(rep(paste('rep',seq(1,2,1),sep=''),9))
+
+##read in the sample annotation information from GEO and combine with the above details
+samples = read_csv(paste(baseRepository, '/defineCandidatesExpressionData/takGgaaTargetingRnaSeq/SraRunTable.txt',sep=''), show_col_types = FALSE) %>%
+  dplyr::filter(`Assay Type` == 'RNA-Seq') %>%
+  dplyr::select(Run, `GEO_Accession (exp)`) %>%
+  dplyr::rename(accession = 'Run', geo = `GEO_Accession (exp)`) %>%
+  dplyr::arrange(accession) %>%
+  dplyr::mutate(sampleNames = sampleNamesFromGeo, replicate = replicatesFromGeo)
+samples = samples[1:4,]
+```
+
+Now that we have our annotation details, we can start to sort out the quantification data that we obtained from the data reprocessing. The code below will get the file paths for the quant files, read in our transcriptome gtf, and using tximport to read in the entire dataset.
+
+```{r}
+##########################################################################################
+##get the locations of all of the quant files and check they are correct
+quantFiles = file.path(paste(baseRepository, '/defineCandidatesExpressionData/takGgaaTargetingRnaSeq/quants', sep = ''), samples$accession, 'quant.sf')
+names(quantFiles) = samples$accession
+all(file.exists(quantFiles))
+
+##build the transcriptome index...this is based on the same gtf we used in the alignment process
+txdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(txdb, keytype = "TXNAME")
+tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
+
+##read the transcriptome data processed from salmon
+txi = tximport(quantFiles, type = 'salmon', tx2gene = tx2gene)
+txiAnnotated = tibble(as.data.frame(txi$abundance)) %>%
+  mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$abundance)))
+```
+
+Take a quick look at these data for a couple of positive control genes to make sure it is as we expect for each sample. 
+
+```{r}
+##########################################################################################
+##add in gene symbols
+geneSymbols = select(org.Hs.eg.db, txiAnnotated$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') %>%
+  dplyr::filter(!is.na(SYMBOL))
+geneExpData = txiAnnotated %>%
+  left_join(geneSymbols) %>%
+  mutate(symbol = SYMBOL) %>%
+  dplyr::filter(!is.na(symbol))
+
+##write this gene set to a file
+saveRDS(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/takGgaaTargetingRnaSeq/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
+write.table(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/takGgaaTargetingRnaSeq/datasetOutputs/dataset_tpmExpression.tsv', sep = ''), row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+
+
+##extract the target gene from the data and set up the data frame for plotting
+targetGenes = c('PRKCB')
+targetData = geneExpData %>%
+  dplyr::filter(symbol %in% targetGenes) %>%
+  tidyr::pivot_longer(cols = SRR13310697:SRR13310700, names_to = 'accession', values_to = 'tpm') %>%
+  dplyr::select(symbol,accession,tpm) %>%
+  dplyr::mutate(tpm = log2(tpm + 1)) %>%
+  dplyr::left_join(samples) %>%
+  dplyr::mutate(sampleNames = factor(sampleNames, levels = c('a673_gfp','a673_krab')))
+
+##set some colors for the plot
+sampleColors = c(rep(brewer.pal(4,'Blues')[4],2),
+                 rep(brewer.pal(4,'OrRd')[4],2))
+
+##create the plot
+ggplot(targetData, aes(sampleNames, tpm, color = sampleNames)) +
+  geom_point(aes(x=sampleNames, y=tpm), data = targetData, size = 1, position = position_jitter(w = 0.1, h = 0)) +
+  scale_color_manual(values = sampleColors) +
+  labs(y = 'log2(TPM + 1)', title = 'PRKCB in KRAB cells') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,16,2)) +
+  theme_classic() +
+  theme(legend.position = 'none',
+        axis.title.x=element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1)
+        )
+
+##save the plot in case we want it later
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/takGgaaTargetingRnaSeq/plots/scatter_PRKCB_RnaExpressionLevels.pdf', sep = ''),
+      height = 2, width = 2, useDingbats = FALSE)
+```
+
+This looks as we expect with PRKCB expression reduced in the KRAB cells. The next thing we can do is to perform a differential expression analysis between the two conditions and see what comes out. We will do this using DESeq2.
+
+```{r}
+##########################################################################################
+##re-extract the quantification data for a subset of the files
+samplesOfInterest = c('a673_gfp','a673_krab')
+samplesForDe = samples %>%
+  dplyr::filter(sampleNames %in% samplesOfInterest) %>%
+  dplyr::mutate(sampleNames = factor(sampleNames, levels = c('a673_gfp','a673_krab')))
+#
+quantFilesForDe = file.path(paste(baseRepository, '/defineCandidatesExpressionData/takGgaaTargetingRnaSeq/quants', sep = ''), samplesForDe$accession, 'quant.sf')
+names(quantFilesForDe) = samplesForDe$accession
+all(file.exists(quantFilesForDe))
+#
+txiForDe = tximport(quantFilesForDe, type = 'salmon', tx2gene = tx2gene)
+
+
+##perform the deseq analysis
+ddsTxi = DESeqDataSetFromTximport(txiForDe,
+                                  colData = samplesForDe,
+                                  design = ~ sampleNames)
+dds = DESeq(ddsTxi)
+keep = rowSums(counts(dds)) >= 10
+dds = dds[keep,]
+```
+
+Extract the DESeq data and plot for the different comparisons of interest.
+
+```{r}
+##########################################################################################
+#parse the deseq data - change the first two values to get different comparisons
+toCompare = c('a673_krab')
+for (i in 1:length(toCompare)){
+  datasetFirst = 'a673_gfp'
+  datasetSecond = toCompare[i]
+  res = results(dds, contrast = c('sampleNames', datasetFirst, datasetSecond))
+  ens.str = substr(rownames(res), 1, 15)
+  res$symbol = mapIds(org.Hs.eg.db,
+                      keys=ens.str,
+                      column="SYMBOL",
+                      keytype="ENSEMBL",
+                      multiVals="first")
+  resOrdered = res[order(res$pvalue),]
+  
+  #save the data
+  saveRDS(as.data.frame(resOrdered), 
+          paste(baseRepository, '/defineCandidatesExpressionData/takGgaaTargetingRnaSeq/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.rds', sep = ''))
+  write.csv(as.data.frame(resOrdered), 
+            file = paste(baseRepository, '/defineCandidatesExpressionData/takGgaaTargetingRnaSeq/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.csv', sep = ''))
+  
+  
+  ##########################################################################################
+  #assign colors based on fold change and p-values
+  rnaExp = as.data.frame(resOrdered)
+  rnaExp$logPValue = -log10(rnaExp$padj)
+  rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 300, 300, rnaExp$logPValue)
+  rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(4,'OrRd')[4], 
+                          ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+  #assign text labels to specific genes of interest
+  targetGenes = c('IL1RAP','STEAP1','PRKCB','LOX')
+  rnaExp$pText = ifelse(rnaExp$symbol %in% targetGenes, rnaExp$symbol, '')
+
+  #create the plot and save it
+  ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
+    geom_point(size = 1, color = rnaExp$pColors) +
+    labs(x = paste('log2(',datasetFirst,' - ',datasetSecond,')', sep = ''), y = '-log10(Adjusted p-value)', title = paste(datasetFirst,' vs ',datasetSecond, sep='')) +
+    geom_text_repel(label = rnaExp$pText, nudge_x = 0, nudge_y = 200, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+    scale_x_continuous(limits = c(-16,16), breaks = seq(-20,20,3)) +
+    scale_y_continuous(limits = c(0,300), breaks = seq(0,500,50)) +
+    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+    theme_classic()
+  ggsave(paste(baseRepository, '/defineCandidatesExpressionData/takGgaaTargetingRnaSeq/plots/scatter_deseq2_', datasetFirst, '-', datasetSecond, '.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+}
+```
+
+Done with these data for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+

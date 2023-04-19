@@ -1,0 +1,175 @@
+---
+title: "ccleEwsSpecificity"
+author: "Christopher Hughes"
+format: html
+---
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('vroom')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+Read the sample annotation detail.
+
+```{r}
+##########################################################################################
+cellAnnotation = read_csv(paste(generalDatasets, '/depmap22Q4/Model.csv', sep = ''), show_col_types = FALSE)
+```
+
+Read in the RNA data and do some basic processing on it.
+
+```{r}
+##########################################################################################
+rna = vroom(paste(generalDatasets, '/depmap22Q4/OmicsExpressionProteinCodingGenesTPMLogp1.csv', sep = ''), show_col_types = FALSE) %>%
+  dplyr::rename(ModelID = `...1`) %>% 
+  tidyr::pivot_longer(cols = `TSPAN6 (7105)`:`CDR1 (1038)`, names_to = 'gene', values_to = 'log2Tpm') %>%
+  dplyr::filter(log2Tpm > 0 & !is.na(log2Tpm)) %>%
+  dplyr::mutate(symbol = sub('(.*) \\(.*$', '\\1', gene)) %>%
+  dplyr::select(ModelID, symbol, log2Tpm) %>%
+  dplyr::left_join(cellAnnotation)
+```
+
+Save the data for use downstream.
+
+```{r}
+##########################################################################################
+saveRDS(rna, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_ccle22Q4Parsed.rds', sep = ''))
+```
+
+Read in the previously parsed RNAseq data.
+
+```{r}
+##########################################################################################
+##read the rna data
+rna = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_ccle22Q4Parsed.rds', sep = '')) %>%
+  dplyr::select(symbol, log2Tpm, OncotreeSubtype) %>%
+  dplyr::mutate(isEwing = ifelse(grepl('Ewing', OncotreeSubtype), 'yes', 'no')) %>%
+  dplyr::select(-OncotreeSubtype)
+```
+
+Calculate a specificity score for EwS cell lines.
+
+```{r}
+##########################################################################################
+##calculate a specificity score for each gene
+targetGeneList = unique(rna$symbol)
+ewsRnaScores = data.frame()
+for (i in 1:length(targetGeneList)){
+#for (i in 8225:8225){
+  targetGeneData = rna %>%
+    dplyr::filter(symbol == targetGeneList[i]) %>%
+    dplyr::group_by(isEwing) %>%
+    dplyr::summarise(medRna = median(log2Tpm, na.rm = TRUE))
+  if (nrow(targetGeneData) < 2){
+    #message('no value for ', rnaProGenes[i])
+    targetGeneScore = data.frame('symbol' = targetGeneList[i],
+                               'medRna' = NA)
+    ewsRnaScores = rbind(ewsRnaScores, targetGeneScore)
+  } else {
+    targetGeneScore = data.frame('symbol' = targetGeneList[i],
+                             'medRna' = targetGeneData[targetGeneData$isEwing == 'yes', 'medRna'] - targetGeneData[targetGeneData$isEwing == 'no', 'medRna'])
+    ewsRnaScores = rbind(ewsRnaScores, targetGeneScore)
+  }
+}
+ewsRnaScores = ewsRnaScores %>%
+  dplyr::rename(ewsRnaScore = medRna)
+
+##save the data
+saveRDS(ewsRnaScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_ccle22Q4ParsedScored.rds', sep = ''))
+write.table(ewsRnaScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_ccle22Q4ParsedScored.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Now we can define a protein score using data from PMID: 35839778. Because of how the data is reported here, I added a cell counter to beef up the enrichment scores. For example, for DLG2, which we know is enriched in EwS, only 44 values are reported for the over 900 cell lines analyzed. The non-reported values I presume are NA values, and thus speak to the enrichment of DLG2 in this case. So we take a simple proportion of how many values that are reported are from EwS cells, and scale the enrichment score based on this. 
+
+```{r}
+##########################################################################################
+##read in the cell line annotation data
+cellInfo = read_csv(paste(generalDatasets, '/proteomics20220728_cancerCellLineMapsPmid35839778/model_list_20220628.csv', sep = ''), show_col_types = FALSE) %>%
+  dplyr::select(model_id:gender) %>%
+  dplyr::filter(grepl('Ewing', cancer_type))
+
+##read in the protein data
+proData = read_csv(paste(generalDatasets, '/proteomics20220728_cancerCellLineMapsPmid35839778/proteomics_all_20220713.csv', sep = ''), show_col_types = FALSE) %>%
+  dplyr::mutate(isEwing = ifelse(model_name %in% cellInfo$model_name, 'yes', 'no'))
+
+##calculate the score for each protein
+targetGeneList = unique(proData$symbol)
+ewsProScores = data.frame()
+for (i in 1:length(targetGeneList)){
+#for (i in 7:7){
+  targetGeneData = proData %>%
+    dplyr::filter(symbol == targetGeneList[i]) %>%
+    dplyr::mutate(cellCount = 1) %>%
+    dplyr::group_by(isEwing) %>%
+    dplyr::summarise(medPro = median(protein_intensity, na.rm = TRUE),
+                     numCells = sum(cellCount, na.rm = TRUE))
+  if (nrow(targetGeneData) < 2){
+    #message('no value for ', rnaProGenes[i])
+    targetGeneScore = data.frame('gene' = targetGeneList[i],
+                               'medPro' = NA,
+                               'numCells' = NA)
+    ewsProScores = rbind(ewsProScores, targetGeneScore)
+  } else {
+      targetGeneScore = data.frame('gene' = targetGeneList[i],
+                               'medPro' = targetGeneData[targetGeneData$isEwing == 'yes', 'medPro'] - targetGeneData[targetGeneData$isEwing == 'no', 'medPro'],
+                               'numCells' = (targetGeneData[targetGeneData$isEwing == 'yes', 'numCells'] / sum(targetGeneData$numCells, na.rm = TRUE)) * 10)
+      ewsProScores = rbind(ewsProScores, targetGeneScore)
+  }
+}
+ewsProScores = ewsProScores %>%
+  dplyr::rename(ewsProScore = medPro) %>%
+  dplyr::mutate(ewsProScore = ewsProScore * numCells)
+
+##save the data
+saveRDS(ewsProScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_proteomicsEwsSpecificity.rds', sep = ''))
+write.table(ewsProScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_proteomicsEwsSpecificity.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Now we can read in both of these sets and combine them.
+
+```{r}
+##########################################################################################
+##read the data
+rnaScores = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_ccle22Q4ParsedScored.rds', sep = ''))
+proScores = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_proteomicsEwsSpecificity.rds', sep = '')) %>%
+  dplyr::rename(symbol = 'gene')
+
+##join the data
+ewsScores = rnaScores %>%
+  dplyr::left_join(proScores) %>%
+  dplyr::select(-numCells)
+
+##save the data
+saveRDS(ewsScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_rnaAndProteinSpecificityScores.rds', sep = ''))
+write.table(ewsScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_rnaAndProteinSpecificityScores.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Finish up.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

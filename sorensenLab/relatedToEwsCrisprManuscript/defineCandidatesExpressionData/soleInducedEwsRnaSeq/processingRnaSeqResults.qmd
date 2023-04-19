@@ -106,6 +106,10 @@ geneExpData = txiAnnotated %>%
   left_join(geneSymbols) %>%
   mutate(symbol = SYMBOL)
 
+##write this gene set to a file
+saveRDS(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
+write.table(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_tpmExpression.tsv', sep = ''), row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+
 ##extract the target gene from the data and set up the data frame for plotting
 targetGenes = c('PRKCB')
 targetData = geneExpData %>%

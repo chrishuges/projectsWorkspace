@@ -73,6 +73,10 @@ geneExpData = txiAnnotated %>%
   mutate(symbol = SYMBOL)
 colnames(geneExpData)[1:24] = samples$accession
 
+##write this gene set to a file
+saveRDS(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
+write.table(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_tpmExpression.tsv', sep = ''), row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+
 ##extract the target gene from the data and set up the data frame for plotting
 targetGenes = c('PRKCB')
 targetData = geneExpData %>%
@@ -220,26 +224,6 @@ ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Rna
 
 ##if you want to look at the trancripts with the most dispersion in the DESeq data
 x = counts(dds)[order(dispersions(dds), decreasing=TRUE)[1:1000],]
-```
-
-I am primarily interested in upregulated transcripts here as these will be the ones we target in the CRISPR screen. So, we can filter our data down and combine them with the Sole data that we prepared before. We will keep transcripts from both sets and we will use other data to filter them down later on.
-
-```{r}
-##########################################################################################
-##read in the Sole data
-sole = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_candidates.rds', sep = ''))
-
-##filter our own data focusing on the day 0 versus day 7 comparison
-ews = tibble(readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day0-day7.rds', sep = ''))) %>%
-  dplyr::filter(padj <= 0.001 & !is.na(symbol)) %>%
-  dplyr::select(symbol, log2FoldChange) %>%
-  dplyr::rename(a673_log2FoldChangeRna = log2FoldChange) %>%
-  dplyr::full_join(sole)
-
-##write this gene set to a file
-saveRDS(ews, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_candidatesPlusSole.rds', sep = ''))
-write.table(ews, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_candidatesPlusSole.tsv', sep = ''),
-            row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
 ```
 
 Done with these data for now.

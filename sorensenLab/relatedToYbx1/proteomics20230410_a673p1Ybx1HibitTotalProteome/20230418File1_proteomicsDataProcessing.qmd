@@ -1,0 +1,164 @@
+---
+title: "YBX1 HiBit Total Proteome"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of proteomics data from an experiment to look at A673p1 cells with a HiBit version of YB-1.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('iq')
+library('DEqMS')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+## Data processing
+
+Read in data from DIA-NN and process with the IQ package.
+
+```{r}
+##########################################################################################
+##first we can filter and parse the report data into a better format for IQ
+raw = read_tsv('D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/report.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(File.Name = sub('.*ch20230410_a673p1Ybx1Hibit_totalProteome_(.*)_dia_[123]\\.mzML', '\\1', File.Name)) %>%
+  dplyr::filter(Q.Value <= 0.01)
+
+##save the data
+write.table(raw, 'D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/reportParsed.tsv', 
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##run the IQ analysis
+iqResult = process_long_format('D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/reportParsed.tsv', 
+                           output_filename = 'D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/reportParsedIqQuant.tsv',
+                           annotation_col = 'Genes',
+                           normalization = 'median',
+                           filter_double_less = c("Q.Value" = "0.01", "PG.Q.Value" = "0.01"),
+                           peptide_extractor = function(x) gsub("[0-9].*$", "", x))
+
+##parse the IQ result
+proData = read_tsv('D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/reportParsedIqQuant.tsv', show_col_types = FALSE) %>%
+  dplyr::rename(accession = 'Protein.Group',
+                symbol = 'Genes')
+
+
+##save the data
+saveRDS(proData, paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_processedA673p1Ybx1HibitTotalProteome.rds', sep = ''))
+write.table(proData, paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_processedA673p1Ybx1HibitTotalProteome.tsv', sep = ''), 
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Perform differential expression analysis on these data. 
+
+```{r}
+##########################################################################################
+##I am going to do one-by-one comparisons
+processedData = readRDS(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_processedA673p1Ybx1HibitTotalProteome.rds', sep = ''))
+conditionsToCompare = c('ms275','ars','combo')
+controlCondition = 'dmso'
+for (i in 1:length(conditionsToCompare)){
+  dat = processedData[,c(1:2, 
+                         which(names(processedData) == paste(controlCondition, '_rep1', sep = '')),
+                         which(names(processedData) == paste(controlCondition, '_rep2', sep = '')),
+                         which(names(processedData) == paste(controlCondition, '_rep3', sep = '')),
+                         which(names(processedData) == paste(conditionsToCompare[i], '_rep1', sep = '')),
+                         which(names(processedData) == paste(conditionsToCompare[i], '_rep2', sep = '')),
+                         which(names(processedData) == paste(conditionsToCompare[i], '_rep3', sep = '')))]
+  dat$samples123 = rowSums(is.na(dat[,3:5]))
+  dat$samples456 = rowSums(is.na(dat[,6:8]))
+  colnames(dat)[3:5] = c('cont_rep1','cont_rep2','cont_rep3')
+  colnames(dat)[6:8] = c('treat_rep1','treat_rep2','treat_rep3')
+  #
+  datFiltered = as.data.frame(dat) %>%
+    dplyr::filter(samples123 < 1 | samples456 < 1) %>%
+    dplyr::mutate(cont_rep1 = ifelse(samples123 == 3, min(cont_rep1, na.rm = TRUE), cont_rep1),
+                  cont_rep2 = ifelse(samples123 == 3, min(cont_rep2, na.rm = TRUE), cont_rep2),
+                  cont_rep3 = ifelse(samples123 == 3, min(cont_rep3, na.rm = TRUE), cont_rep3)) %>%
+    dplyr::mutate(treat_rep1 = ifelse(samples456 == 3, min(treat_rep1, na.rm = TRUE), treat_rep1),
+                  treat_rep2 = ifelse(samples456 == 3, min(treat_rep2, na.rm = TRUE), treat_rep2),
+                  treat_rep3 = ifelse(samples456 == 3, min(treat_rep3, na.rm = TRUE), treat_rep3)) %>%
+    dplyr::select(-samples123, -samples456)
+  #
+  rownames(datFiltered) = datFiltered$accession
+  dat.log = datFiltered %>%
+    dplyr::select(-accession, -symbol)
+  #dat.log = na.omit(datFiltered)
+  #boxplot(dat.log, las = 2, main = 'total protein abundance')
+  
+  ##make a design table
+  cond = as.factor(c(rep('cont',3),
+                    rep('treat',3)))
+  design = model.matrix(~0+cond)
+  colnames(design) = gsub('cond', '', colnames(design))
+  
+  ##make the contrasts
+  x = c('treat-cont')
+  contrast = makeContrasts(contrasts = x, levels = design)
+  fit1 = lmFit(dat.log, design)
+  fit2 = contrasts.fit(fit1, contrasts = contrast)
+  fit3 = eBayes(fit2)
+
+  ##add information about PSM counts
+  forPsm = readRDS(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_processedA673p1Ybx1HibitTotalProteome.rds', sep = ''))
+  psm.count.table = data.frame(count = forPsm$n_peptides,
+                               row.names = forPsm$accession)
+  fit3$count = psm.count.table[rownames(fit3$coefficients),'count']
+  fit4 = spectraCounteBayes(fit3)
+  #VarianceBoxplot(fit4, n = 30, main = 'total proteome dataset', xlab = 'psm count')
+  #VarianceScatterplot(fit4, main = 'total proteome dataset')
+  
+  ##extract the data
+  #head(fit4$coefficients)
+  toAnnotate = forPsm[,1:4]
+  deqmsResults = tibble(outputResult(fit4, coef_col = 1)) %>%
+    dplyr::rename(accession = 'gene') %>%
+    dplyr::left_join(toAnnotate)
+  #
+  saveRDS(deqmsResults, paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqms_', conditionsToCompare[i], '-', controlCondition, '.rds', sep = ''))
+  write.table(deqmsResults, paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqms_', conditionsToCompare[i], '-', controlCondition, '.tsv', sep = ''),
+              col.names = TRUE, row.names = FALSE, sep = '\t', quote = FALSE)
+  
+  ##create a plot of the data
+  #create the plot and save it
+  plotData = deqmsResults %>%
+    dplyr::filter(logFC > 0.5 | logFC < -0.5) %>%
+    dplyr::mutate(pColors = ifelse(logFC > 0.5, brewer.pal(4,'OrRd')[4],
+                                   ifelse(logFC < -0.5, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2])))
+  ggplot(plotData, aes(logFC, -log10(sca.P.Value))) +
+    geom_point(size = 0.5, color = plotData$pColors) +
+    labs(x = paste('log2(',conditionsToCompare[i],'-',controlCondition,')',sep=''), y = '-log10(p-value)', title = 'Differential abundance') +
+    #scale_x_continuous(limits = c(-8,8), breaks = seq(-20,20,2)) +
+    #scale_y_continuous(limits = c(0,500), breaks = seq(-20,20,2)) +
+    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_hline(yintercept = -log10(0.01), linetype = 'dashed') +
+    theme_classic()
+  ggsave(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqms_', conditionsToCompare[i], '-', controlCondition, '.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+}
+```
+
+
+
+
+
+
+
