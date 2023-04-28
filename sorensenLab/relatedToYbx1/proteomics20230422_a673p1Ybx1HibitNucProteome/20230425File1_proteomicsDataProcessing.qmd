@@ -1,5 +1,5 @@
 ---
-title: "YBX1 HiBit Total Proteome"
+title: "YBX1 HiBit Nuc Proteome"
 author: "Christopher Hughes"
 format: html
 ---
@@ -38,32 +38,32 @@ Read in data from DIA-NN and process with the IQ package.
 ```{r}
 ##########################################################################################
 ##first we can filter and parse the report data into a better format for IQ
-raw = read_tsv('D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/withMbr/report.tsv', show_col_types = FALSE) %>%
-  dplyr::mutate(File.Name = sub('.*ch20230410_a673p1Ybx1Hibit_totalProteome_(.*)_dia_[123]\\.mzML', '\\1', File.Name)) %>%
+raw = read_tsv('D:/msDataTemp/proteomics20230422_a673p1Ybx1HibitNucProteome/report.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(File.Name = sub('.*ch20230422_a673p1Ybx1Hibit_nucProteome_(.*)_dia_[123]\\.mzML', '\\1', File.Name)) %>%
   dplyr::filter(Q.Value <= 0.01)
 
 ##save the data
-write.table(raw, 'D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/withMbr/reportParsed.tsv', 
+write.table(raw, 'D:/msDataTemp/proteomics20230422_a673p1Ybx1HibitNucProteome/reportParsed.tsv', 
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 
 
 ##run the IQ analysis
-iqResult = process_long_format('D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/withMbr/reportParsed.tsv', 
-                           output_filename = 'D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/withMbr/reportParsedIqQuant.tsv',
+iqResult = process_long_format('D:/msDataTemp/proteomics20230422_a673p1Ybx1HibitNucProteome/reportParsed.tsv', 
+                           output_filename = 'D:/msDataTemp/proteomics20230422_a673p1Ybx1HibitNucProteome/reportParsedIqQuant.tsv',
                            annotation_col = 'Genes',
                            normalization = 'median',
                            filter_double_less = c("Q.Value" = "0.01", "PG.Q.Value" = "0.01"),
                            peptide_extractor = function(x) gsub("[0-9].*$", "", x))
 
 ##parse the IQ result
-proData = read_tsv('D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/withMbr/reportParsedIqQuant.tsv', show_col_types = FALSE) %>%
+proData = read_tsv('D:/msDataTemp/proteomics20230422_a673p1Ybx1HibitNucProteome/reportParsedIqQuant.tsv', show_col_types = FALSE) %>%
   dplyr::rename(accession = 'Protein.Group',
                 symbol = 'Genes')
 
 
 ##save the data
-saveRDS(proData, paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_processedMbrA673p1Ybx1HibitTotalProteome.rds', sep = ''))
-write.table(proData, paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_processedMbrA673p1Ybx1HibitTotalProteome.tsv', sep = ''), 
+saveRDS(proData, paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_processedMbrA673p1Ybx1HibitNuclProteome.rds', sep = ''))
+write.table(proData, paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_processedMbrA673p1Ybx1HibitNucProteome.tsv', sep = ''), 
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
 
@@ -72,7 +72,7 @@ Perform differential expression analysis on these data.
 ```{r}
 ##########################################################################################
 ##I am going to do one-by-one comparisons
-processedData = readRDS(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_processedMbrA673p1Ybx1HibitTotalProteome.rds', sep = ''))
+processedData = readRDS(paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_processedMbrA673p1Ybx1HibitNuclProteome.rds', sep = ''))
 conditionsToCompare = c('ms275','ars','combo')
 controlCondition = 'dmso'
 for (i in 1:length(conditionsToCompare)){
@@ -118,7 +118,7 @@ for (i in 1:length(conditionsToCompare)){
   fit3 = eBayes(fit2)
 
   ##add information about PSM counts
-  forPsm = readRDS(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_processedMbrA673p1Ybx1HibitTotalProteome.rds', sep = ''))
+  forPsm = readRDS(paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_processedMbrA673p1Ybx1HibitNuclProteome.rds', sep = ''))
   psm.count.table = data.frame(count = forPsm$n_peptides,
                                row.names = forPsm$accession)
   fit3$count = psm.count.table[rownames(fit3$coefficients),'count']
@@ -133,8 +133,8 @@ for (i in 1:length(conditionsToCompare)){
     dplyr::rename(accession = 'gene') %>%
     dplyr::left_join(toAnnotate)
   #
-  saveRDS(deqmsResults, paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.rds', sep = ''))
-  write.table(deqmsResults, paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.tsv', sep = ''),
+  saveRDS(deqmsResults, paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.rds', sep = ''))
+  write.table(deqmsResults, paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.tsv', sep = ''),
               col.names = TRUE, row.names = FALSE, sep = '\t', quote = FALSE)
   
   ##create a plot of the data
@@ -151,7 +151,7 @@ for (i in 1:length(conditionsToCompare)){
     geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
     geom_hline(yintercept = -log10(0.01), linetype = 'dashed') +
     theme_classic()
-  ggsave(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.pdf', sep = ''),
+  ggsave(paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.pdf', sep = ''),
          height = 2, width = 2, useDingbats = FALSE)
 }
 ```

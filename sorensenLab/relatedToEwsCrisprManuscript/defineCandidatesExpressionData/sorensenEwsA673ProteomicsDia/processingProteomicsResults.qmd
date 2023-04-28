@@ -1,12 +1,12 @@
 ---
-title: "YBX1 HiBit Total Proteome"
+title: "A673 shEF1 proteome, DIA"
 author: "Christopher Hughes"
 format: html
 ---
 
 ## Details
 
-This document describes processing of proteomics data from an experiment to look at A673p1 cells with a HiBit version of YB-1.
+This document describes processing of proteomics data from an experiment to look at A673 shEF1 cells treated for 7-days with doxycycline and analyzed using a DIA-MS protocol.
 
 ## Setting up the environment
 
@@ -27,8 +27,8 @@ I want to set a base directory that we can use as a link to the directory where 
 ```{r}
 ##########################################################################################
 generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
-baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
-baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
 ```
 
 ## Data processing
@@ -38,32 +38,32 @@ Read in data from DIA-NN and process with the IQ package.
 ```{r}
 ##########################################################################################
 ##first we can filter and parse the report data into a better format for IQ
-raw = read_tsv('D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/withMbr/report.tsv', show_col_types = FALSE) %>%
-  dplyr::mutate(File.Name = sub('.*ch20230410_a673p1Ybx1Hibit_totalProteome_(.*)_dia_[123]\\.mzML', '\\1', File.Name)) %>%
+raw = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/diannResults/report.tsv', sep = ''), show_col_types = FALSE) %>%
+  dplyr::mutate(File.Name = sub('.*ch20230419_haifengA673ShEf1_(.*)_dia_[123]\\.mzML', '\\1', File.Name)) %>%
   dplyr::filter(Q.Value <= 0.01)
 
 ##save the data
-write.table(raw, 'D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/withMbr/reportParsed.tsv', 
+write.table(raw, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/diannResults/reportParsed.tsv', sep = ''), 
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 
 
 ##run the IQ analysis
-iqResult = process_long_format('D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/withMbr/reportParsed.tsv', 
-                           output_filename = 'D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/withMbr/reportParsedIqQuant.tsv',
+iqResult = process_long_format(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/diannResults/reportParsed.tsv', sep = ''), 
+                           output_filename = paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/diannResults/reportParsedIqQuant.tsv', sep = ''),
                            annotation_col = 'Genes',
                            normalization = 'median',
                            filter_double_less = c("Q.Value" = "0.01", "PG.Q.Value" = "0.01"),
                            peptide_extractor = function(x) gsub("[0-9].*$", "", x))
 
 ##parse the IQ result
-proData = read_tsv('D:/msDataTemp/proteomics20230410_a673p1Ybx1HibitTotalProteome/withMbr/reportParsedIqQuant.tsv', show_col_types = FALSE) %>%
+proData = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/diannResults/reportParsedIqQuant.tsv', sep = ''), show_col_types = FALSE) %>%
   dplyr::rename(accession = 'Protein.Group',
                 symbol = 'Genes')
 
 
 ##save the data
-saveRDS(proData, paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_processedMbrA673p1Ybx1HibitTotalProteome.rds', sep = ''))
-write.table(proData, paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_processedMbrA673p1Ybx1HibitTotalProteome.tsv', sep = ''), 
+saveRDS(proData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/datasetOutputs/dataset_a673ShEf1TotalProteome.rds', sep = ''))
+write.table(proData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/datasetOutputs/dataset_a673ShEf1TotalProteome.tsv', sep = ''), 
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
 
@@ -72,9 +72,9 @@ Perform differential expression analysis on these data.
 ```{r}
 ##########################################################################################
 ##I am going to do one-by-one comparisons
-processedData = readRDS(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_processedMbrA673p1Ybx1HibitTotalProteome.rds', sep = ''))
-conditionsToCompare = c('ms275','ars','combo')
-controlCondition = 'dmso'
+processedData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/datasetOutputs/dataset_a673ShEf1TotalProteome.rds', sep = ''))
+conditionsToCompare = c('day7')
+controlCondition = 'day0'
 for (i in 1:length(conditionsToCompare)){
   dat = processedData[,c(1:2, 
                          which(names(processedData) == paste(controlCondition, '_rep1', sep = '')),
@@ -118,7 +118,7 @@ for (i in 1:length(conditionsToCompare)){
   fit3 = eBayes(fit2)
 
   ##add information about PSM counts
-  forPsm = readRDS(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_processedMbrA673p1Ybx1HibitTotalProteome.rds', sep = ''))
+  forPsm = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/datasetOutputs/dataset_a673ShEf1TotalProteome.rds', sep = ''))
   psm.count.table = data.frame(count = forPsm$n_peptides,
                                row.names = forPsm$accession)
   fit3$count = psm.count.table[rownames(fit3$coefficients),'count']
@@ -133,8 +133,8 @@ for (i in 1:length(conditionsToCompare)){
     dplyr::rename(accession = 'gene') %>%
     dplyr::left_join(toAnnotate)
   #
-  saveRDS(deqmsResults, paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.rds', sep = ''))
-  write.table(deqmsResults, paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.tsv', sep = ''),
+  saveRDS(deqmsResults, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/datasetOutputs/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.rds', sep = ''))
+  write.table(deqmsResults, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/datasetOutputs/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.tsv', sep = ''),
               col.names = TRUE, row.names = FALSE, sep = '\t', quote = FALSE)
   
   ##create a plot of the data
@@ -151,7 +151,7 @@ for (i in 1:length(conditionsToCompare)){
     geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
     geom_hline(yintercept = -log10(0.01), linetype = 'dashed') +
     theme_classic()
-  ggsave(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.pdf', sep = ''),
+  ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/plots/scatterplot_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.pdf', sep = ''),
          height = 2, width = 2, useDingbats = FALSE)
 }
 ```

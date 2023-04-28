@@ -1,12 +1,12 @@
 ---
-title: "ip ms"
+title: "IP-MS data analysis"
 author: "Christopher Hughes"
 format: html
 ---
 
 ## Details
 
-This document describes processing of the ip ms data from A673p1 cells after treatment with MS275 and arsenite.
+This document describes processing of the IP-MS data from A673p1 cells after treatment with MS275 and arsenite.
 
 ## Setting up the environment
 
@@ -41,26 +41,26 @@ Read in data from DIA-NN and process with the IQ package.
 ```{r}
 ##########################################################################################
 ##first we can filter and parse the report data into a better format for IQ
-raw = read_tsv('D:/msDataTemp/proteomics20230301_a673p1Ybx1HibitIpms/report.tsv', show_col_types = FALSE) %>%
-  dplyr::mutate(File.Name = sub('.*ipms_(.*)_dia_[123]\\.mzML', '\\1', File.Name)) %>%
+raw = read_tsv('D:/msDataTemp/proteomics20230420_a673p1Ybx1HibitProteinIp/report.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(File.Name = sub('.*ch20230420_a673p1Ybx1Hibit_proteinIP_(.*)_dia_[123]\\.mzML', '\\1', File.Name)) %>%
   dplyr::filter(Q.Value <= 0.01)
 
 ##save the data
-write.table(raw, 'D:/msDataTemp/proteomics20230301_a673p1Ybx1HibitIpms/reportParsed.tsv', 
+write.table(raw, 'D:/msDataTemp/proteomics20230420_a673p1Ybx1HibitProteinIp/reportParsed.tsv', 
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 
 
 ##run the IQ analysis
-iqResult = process_long_format('D:/msDataTemp/proteomics20230301_a673p1Ybx1HibitIpms/reportParsed.tsv', 
-                           output_filename = 'D:/msDataTemp/proteomics20230301_a673p1Ybx1HibitIpms/reportParsedIqQuant.tsv',
+iqResult = process_long_format('D:/msDataTemp/proteomics20230420_a673p1Ybx1HibitProteinIp/reportParsed.tsv', 
+                           output_filename = 'D:/msDataTemp/proteomics20230420_a673p1Ybx1HibitProteinIp/reportParsedIqQuant.tsv',
                            annotation_col = 'Genes',
                            normalization = 'none',
                            peptide_extractor = function(x) gsub("[0-9].*$", "", x))
 
 ##parse the IQ result
-iqQuantParsed = read_tsv('D:/msDataTemp/proteomics20230301_a673p1Ybx1HibitIpms/reportParsedIqQuant.tsv', show_col_types = FALSE) %>%
+iqQuantParsed = read_tsv('D:/msDataTemp/proteomics20230420_a673p1Ybx1HibitProteinIp/reportParsedIqQuant.tsv', show_col_types = FALSE) %>%
   dplyr::rename(accession = 'Protein.Group',
-                symbol = 'Genes') %>% 
+                symbol = 'Genes') %>%
   dplyr::select(accession:n_peptides,
                 neg_rep1,
                 dmso_rep1, dmso_rep2, dmso_rep3,
@@ -74,8 +74,8 @@ iqQuantParsed = read_tsv('D:/msDataTemp/proteomics20230301_a673p1Ybx1HibitIpms/r
 #                  rowSums(is.na(combo_rep1:combo_rep3)) == 0)
 
 ##save the data
-saveRDS(iqQuantParsed, paste(baseRepository, '/proteomics20230301_a673p1Ybx1HibitIpms/dataset_processedIpMsData.rds', sep = ''))
-write.table(iqQuantParsed, paste(baseRepository, '/proteomics20230301_a673p1Ybx1HibitIpms/dataset_processedIpMsData.tsv', sep = ''), 
+saveRDS(iqQuantParsed, paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_processedIpMsData.rds', sep = ''))
+write.table(iqQuantParsed, paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_processedIpMsData.tsv', sep = ''), 
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
 
@@ -85,21 +85,27 @@ Perform DEqMS analysis.
 ##########################################################################################
 ##extract the data we need into a suitable data frame
 ##as part of this we will subtract the negative IP
+processedData = as.data.frame(readRDS(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_processedIpMsData.rds', sep = '')))
 conditionsToCompare = c('ms275','ars','combo')
-for (i in 1:3){
-  dat = as.data.frame(readRDS(paste(baseRepository, '/proteomics20230301_a673p1Ybx1HibitIpms/dataset_processedIpMsData.rds', sep = ''))) %>%
-    #dplyr::select(-accession, -symbol, -n_fragments, -n_peptides) %>%
-    dplyr::select(accession, symbol,
-                  neg_rep1, 
-                  dmso_rep1:dmso_rep3, 
-                  paste(conditionsToCompare[i], '_rep1', sep=''),
-                  paste(conditionsToCompare[i], '_rep2', sep=''),
-                  paste(conditionsToCompare[i], '_rep3', sep=''))
+controlCondition = 'dmso'
+for (i in 1:length(conditionsToCompare)){
+  dat = processedData[,c(1:2, 
+                         which(names(processedData) == 'neg_rep1'),
+                         which(names(processedData) == paste(controlCondition, '_rep1', sep = '')),
+                         which(names(processedData) == paste(controlCondition, '_rep2', sep = '')),
+                         which(names(processedData) == paste(controlCondition, '_rep3', sep = '')),
+                         which(names(processedData) == paste(conditionsToCompare[i], '_rep1', sep = '')),
+                         which(names(processedData) == paste(conditionsToCompare[i], '_rep2', sep = '')),
+                         which(names(processedData) == paste(conditionsToCompare[i], '_rep3', sep = '')))]
+  dat$samples123 = rowSums(is.na(dat[,4:6]))
+  dat$samples456 = rowSums(is.na(dat[,7:9]))
+  colnames(dat)[4:6] = c('cont_rep1','cont_rep2','cont_rep3')
   colnames(dat)[7:9] = c('treat_rep1','treat_rep2','treat_rep3')
   #
   datNegAdjust = dat %>%
+    dplyr::mutate(neg_rep1 = ifelse(is.na(neg_rep1), min(neg_rep1, na.rm = TRUE), neg_rep1)) %>%
     dplyr::filter(!grepl('KRT', symbol)) %>%
-    dplyr::mutate(across(dmso_rep1:treat_rep3, ~ . - neg_rep1)) %>%
+    dplyr::mutate(across(cont_rep1:treat_rep3, ~ . - neg_rep1)) %>%
     dplyr::select(-neg_rep1)
   datNegAdjust[datNegAdjust <= 0.5] = NA #can change this filter if you want
   datNegAdjust$samples123 = rowSums(is.na(datNegAdjust[,4:6]))
@@ -107,9 +113,9 @@ for (i in 1:3){
   #
   datFiltered = datNegAdjust %>%
     dplyr::filter(samples123 < 1 | samples456 < 1) %>%
-    dplyr::mutate(dmso_rep1 = ifelse(samples123 == 3, min(dmso_rep1, na.rm = TRUE), dmso_rep1),
-                  dmso_rep2 = ifelse(samples123 == 3, min(dmso_rep2, na.rm = TRUE), dmso_rep2),
-                  dmso_rep3 = ifelse(samples123 == 3, min(dmso_rep3, na.rm = TRUE), dmso_rep3)) %>%
+    dplyr::mutate(cont_rep1 = ifelse(samples123 == 3, min(cont_rep1, na.rm = TRUE), cont_rep1),
+                  cont_rep2 = ifelse(samples123 == 3, min(cont_rep2, na.rm = TRUE), cont_rep2),
+                  cont_rep3 = ifelse(samples123 == 3, min(cont_rep3, na.rm = TRUE), cont_rep3)) %>%
     dplyr::mutate(treat_rep1 = ifelse(samples456 == 3, min(treat_rep1, na.rm = TRUE), treat_rep1),
                   treat_rep2 = ifelse(samples456 == 3, min(treat_rep2, na.rm = TRUE), treat_rep2),
                   treat_rep3 = ifelse(samples456 == 3, min(treat_rep3, na.rm = TRUE), treat_rep3)) %>%
@@ -122,20 +128,20 @@ for (i in 1:3){
   #boxplot(dat.log, las = 2, main = 'total protein abundance')
   
   ##make a design table
-  cond = as.factor(c(rep('dmso',3),
+  cond = as.factor(c(rep('cont',3),
                     rep('treat',3)))
   design = model.matrix(~0+cond)
   colnames(design) = gsub('cond', '', colnames(design))
   
   ##make the contrasts
-  x = c('treat-dmso')
+  x = c('treat-cont')
   contrast = makeContrasts(contrasts = x, levels = design)
   fit1 = lmFit(dat.log, design)
   fit2 = contrasts.fit(fit1, contrasts = contrast)
   fit3 = eBayes(fit2)
 
   ##add information about PSM counts
-  forPsm = readRDS(paste(baseRepository, '/proteomics20230301_a673p1Ybx1HibitIpms/dataset_processedIpMsData.rds', sep = ''))
+  forPsm = readRDS(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_processedIpMsData.rds', sep = ''))
   psm.count.table = data.frame(count = forPsm$n_peptides,
                                row.names = forPsm$accession)
   fit3$count = psm.count.table[rownames(fit3$coefficients),'count']
@@ -150,8 +156,8 @@ for (i in 1:3){
     dplyr::rename(accession = 'gene') %>%
     dplyr::left_join(toAnnotate)
   #
-  saveRDS(deqmsResults, paste(baseRepository, '/proteomics20230301_a673p1Ybx1HibitIpms/dataset_deqms_ipms_', conditionsToCompare[i], '-dmso.rds', sep = ''))
-  write.table(deqmsResults, paste(baseRepository, '/proteomics20230301_a673p1Ybx1HibitIpms/dataset_deqms_ipms_', conditionsToCompare[i], '-dmso.tsv', sep = ''),
+  saveRDS(deqmsResults, paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_deqms_ipms_', conditionsToCompare[i], '-dmso.rds', sep = ''))
+  write.table(deqmsResults, paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_deqms_ipms_', conditionsToCompare[i], '-dmso.tsv', sep = ''),
               col.names = TRUE, row.names = FALSE, sep = '\t', quote = FALSE)
 }
 ```

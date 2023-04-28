@@ -24,6 +24,7 @@ library('GenomicFeatures')
 library('DESeq2')
 library('ggrepel')
 library('org.Hs.eg.db')
+library('TMixClust')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
@@ -78,35 +79,38 @@ saveRDS(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sore
 write.table(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_tpmExpression.tsv', sep = ''), row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
 
 ##extract the target gene from the data and set up the data frame for plotting
-targetGenes = c('PRKCB')
-targetData = geneExpData %>%
-  dplyr::filter(symbol %in% targetGenes) %>%
-  tidyr::pivot_longer(cols = day0_setA:day22_setC, names_to = 'accession', values_to = 'tpm') %>%
-  dplyr::select(symbol,accession,tpm) %>%
-  dplyr::mutate(tpm = log2(tpm + 1)) %>%
-  dplyr::left_join(samples) %>%
-  dplyr::mutate(sampleName = factor(sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22')))
+targetGenes = c('PRKCB','NR0B1','LOX','UGT3A2','STEAP1','STEAP2','IL1RAP')
+for (i in 1:length(targetGenes)){
+  targetData = geneExpData %>%
+    dplyr::filter(symbol == targetGenes[i]) %>%
+    tidyr::pivot_longer(cols = day0_setA:day22_setC, names_to = 'accession', values_to = 'tpm') %>%
+    dplyr::select(symbol,accession,tpm) %>%
+    dplyr::mutate(tpm = log2(tpm + 1)) %>%
+    dplyr::left_join(samples) %>%
+    dplyr::mutate(sampleName = factor(sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22')))
 
-##set some colors for the plot
-sampleColors = c(rep(brewer.pal(4,'OrRd')[4],1),
+  ##set some colors for the plot
+  sampleColors = c(rep(brewer.pal(4,'OrRd')[4],1),
                  rep(brewer.pal(4,'GnBu')[4],1),
                  rep(brewer.pal(4,'OrRd')[4],6))
 
-##create the plot
-ggplot(targetData, aes(sampleName, tpm, color = sampleName)) +
-  geom_point(aes(x=sampleName, y=tpm), data = targetData, size = 1, position = position_jitter(w = 0.1, h = 0)) +
-  scale_color_manual(values = sampleColors) +
-  labs(y = 'log2(TPM + 1)', title = 'PRKCB in A673 cells') +
-  scale_y_continuous(limits = c(0,8), breaks = seq(0,16,2)) +
-  theme_classic() +
-  theme(legend.position = 'none',
-        axis.title.x=element_blank(),
-        axis.text.x = element_text(angle = 45, hjust = 1)
-        )
+  ##create the plot
+  ggplot(targetData, aes(sampleName, tpm, color = sampleName)) +
+    geom_point(aes(x=sampleName, y=tpm), data = targetData, size = 1, position = position_jitter(w = 0.1, h = 0)) +
+    scale_color_manual(values = sampleColors) +
+    labs(y = 'log2(TPM + 1)', title = paste(targetGenes[i],' in A673 cells',sep='')) +
+    scale_y_continuous(limits = c(0,max(targetData$tpm, na.rm = TRUE)+1), breaks = seq(0,16,2)) +
+    theme_classic() +
+    theme(legend.position = 'none'
+          #axis.title.x = element_blank(),
+          #axis.text.x = element_text(angle = 45, hjust = 1)
+          )
 
-##save the plot in case we want it later
-ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/scatter_PRKCB_RnaExpressionLevels.pdf', sep = ''),
-      height = 2, width = 2, useDingbats = FALSE)
+  ##save the plot in case we want it later
+  ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/scatter_',targetGenes[i],'_RnaExpressionLevels.pdf', sep = ''),
+        height = 2, width = 2, useDingbats = FALSE)
+  
+}
 ```
 
 This looks as we expect with PRKCB expression to be low in day 7 cells that lack EWS-FLI1 expression. The next thing we can do is to perform a differential expression analysis between the the different time points and see what comes out. We will do this using DESeq2. For filtering after DESeq2, I ended up choosing the condition that something had to be identified in all 3 replicates of day 0, or day 7. The reason I did this was because I wanted to focus purely on EWS-FLI1 regulated transcripts. There is some 'noise' in the data in the intermediate time points that could potentially stem from things like split intervals and cell confluence, which granted, may be interesting, but is not my primary focus.
@@ -135,13 +139,13 @@ dds = DESeq(ddsTxi)
 ##filter...you can change the criteria here...I opted to keep transcripts that were identified in either our day 0 or day 7 condition
 ##admittedly, this will miss bursts of transcripts that get turned on between
 keep = (rowSums(counts(dds)[,1:3] >= 10) == 3) | 
-  (rowSums(counts(dds)[,4:6] >= 10) == 3)
-  #(rowSums(counts(dds)[,7:9] >= 10) == 3) | 
-  #(rowSums(counts(dds)[,10:12] >= 10) == 3) | 
-  #(rowSums(counts(dds)[,13:15] >= 10) == 3) | 
-  #(rowSums(counts(dds)[,16:18] >= 10) == 3) |
-  #(rowSums(counts(dds)[,19:21] >= 10) == 3) |
-  #(rowSums(counts(dds)[,22:24] >= 10) == 3)
+  (rowSums(counts(dds)[,4:6] >= 10) == 3) |
+  (rowSums(counts(dds)[,7:9] >= 10) == 3) | 
+  (rowSums(counts(dds)[,10:12] >= 10) == 3) | 
+  (rowSums(counts(dds)[,13:15] >= 10) == 3) | 
+  (rowSums(counts(dds)[,16:18] >= 10) == 3) |
+  (rowSums(counts(dds)[,19:21] >= 10) == 3) |
+  (rowSums(counts(dds)[,22:24] >= 10) == 3)
 dds = dds[keep,]
 ```
 
@@ -179,14 +183,15 @@ for (i in 1:length(toCompare)){
                           ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
   
   #assign text labels to specific genes of interest
-  targetGenes = c('IL1RAP','STEAP1','PRKCB','LOX')
+  targetGenes = c('IL1RAP','STEAP1','PRKCB','LOX','UGT3A2','STEAP2','NR0B1')
   rnaExp$pText = ifelse(rnaExp$symbol %in% targetGenes, rnaExp$symbol, '')
 
   #create the plot and save it
-  ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
-    geom_point(size = 0.5, color = rnaExp$pColors) +
+  rnaPlot = dplyr::filter(rnaExp, pColors != brewer.pal(3,'Greys')[2])
+  ggplot(rnaPlot, aes(log2FoldChange, logPValueScaled)) +
+    geom_point(size = 0.5, color = rnaPlot$pColors) +
     labs(x = paste('log2(',datasetFirst,' - ',datasetSecond,')', sep = ''), y = '-log10(Adjusted p-value)', title = paste(datasetFirst,' vs ',datasetSecond, sep='')) +
-    geom_text_repel(label = rnaExp$pText, nudge_x = 0, nudge_y = 0, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+    geom_text_repel(label = rnaPlot$pText, nudge_x = 0, nudge_y = 0, max.overlaps = 55000, size = 2, segment.size = 0.25) +
     scale_x_continuous(limits = c(-14,14), breaks = seq(-20,20,2)) +
     scale_y_continuous(limits = c(0,300), breaks = seq(0,500,50)) +
     geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
@@ -225,6 +230,161 @@ ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Rna
 ##if you want to look at the trancripts with the most dispersion in the DESeq data
 x = counts(dds)[order(dispersions(dds), decreasing=TRUE)[1:1000],]
 ```
+
+Annotate EWS high and low genes and send them to a file. The assignment criteria here is subjective which is why I will provide the dataset in raw and filtered format.  
+
+```{r}
+##########################################################################################
+##read in the day 7 and day 0 comparison
+d0 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day0-day7.rds', sep = '')) %>%
+  dplyr::mutate(ensg = rownames(.)) %>%
+  dplyr::mutate(ewsRnaRegulate = ifelse(log2FoldChange >= 0.5 & padj <= 0.001, 'induced',
+                                        ifelse(log2FoldChange <= -0.5 & padj <= 0.001, 'repressed', 'not regulated'))) %>%
+  tibble()
+
+##save these data
+saveRDS(d0, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_day0vs7EwsRegulationAssignments.rds', sep = ''))
+write.table(d0, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_day0vs7EwsRegulationAssignments.tsv', sep = ''), 
+            row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Want to cluster differentially expressed genes to see if there are any bursts of transcription that occur during the washout recovery stage. 
+
+```{r}
+##########################################################################################
+##read in the different RNA comparison sets
+d0 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day0-day7.rds', sep = '')) %>%
+  dplyr::mutate(ensg = rownames(.)) %>%
+  dplyr::select(ensg,symbol, log2FoldChange, pvalue) %>%
+  dplyr::rename(d0Fc = 'log2FoldChange', d0Pval = 'pvalue') %>%
+  dplyr::filter(!is.na(symbol))
+d9 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day9-day7.rds', sep = '')) %>%
+  dplyr::mutate(ensg = rownames(.)) %>%
+  dplyr::select(ensg, symbol, log2FoldChange, pvalue) %>%
+  dplyr::rename(d9Fc = 'log2FoldChange', d9Pval = 'pvalue') %>%
+  dplyr::filter(!is.na(symbol))
+d10 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day10-day7.rds', sep = '')) %>%
+  dplyr::mutate(ensg = rownames(.)) %>%
+  dplyr::select(ensg, symbol, log2FoldChange, pvalue) %>%
+  dplyr::rename(d10Fc = 'log2FoldChange', d10Pval = 'pvalue') %>%
+  dplyr::filter(!is.na(symbol))
+d11 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day11-day7.rds', sep = '')) %>%
+  dplyr::mutate(ensg = rownames(.)) %>%
+  dplyr::select(ensg, symbol, log2FoldChange, pvalue) %>%
+  dplyr::rename(d11Fc = 'log2FoldChange', d11Pval = 'pvalue') %>%
+  dplyr::filter(!is.na(symbol))
+d14 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day14-day7.rds', sep = '')) %>%
+  dplyr::mutate(ensg = rownames(.)) %>%
+  dplyr::select(ensg, symbol, log2FoldChange, pvalue) %>%
+  dplyr::rename(d14Fc = 'log2FoldChange', d14Pval = 'pvalue') %>%
+  dplyr::filter(!is.na(symbol))
+d17 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day17-day7.rds', sep = '')) %>%
+  dplyr::mutate(ensg = rownames(.)) %>%
+  dplyr::select(ensg, symbol, log2FoldChange, pvalue) %>%
+  dplyr::rename(d17Fc = 'log2FoldChange', d17Pval = 'pvalue') %>%
+  dplyr::filter(!is.na(symbol))
+d22 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day22-day7.rds', sep = '')) %>%
+  dplyr::mutate(ensg = rownames(.)) %>%
+  dplyr::select(ensg, symbol, log2FoldChange, pvalue) %>%
+  dplyr::rename(d22Fc = 'log2FoldChange', d22Pval = 'pvalue') %>%
+  dplyr::filter(!is.na(symbol))
+
+##combine the data
+allDays = tibble(d0) %>%
+  dplyr::full_join(d9) %>%
+  dplyr::full_join(d10) %>%
+  dplyr::full_join(d11) %>%
+  dplyr::full_join(d14) %>%
+  dplyr::full_join(d17) %>%
+  dplyr::full_join(d22) %>%
+  dplyr::filter(d0Pval < 0.0001 & abs(d0Fc) >= 2)
+
+##prepare for clustering
+dayClustInput = data.frame(allDays) %>%
+  dplyr::select(d0Fc,d9Fc,d10Fc,d11Fc,d14Fc,d17Fc,d22Fc)
+rownames(dayClustInput) = allDays$ensg
+plot_time_series_df(dayClustInput)
+dayClust = TMixClust(dayClustInput, nb_clusters = 2)
+
+##
+for (i in 1:2){
+  c_df = dayClustInput[which(dayClust$em_cluster_assignment==i),]
+  plot_time_series_df(c_df)
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 Done with these data for now.
 

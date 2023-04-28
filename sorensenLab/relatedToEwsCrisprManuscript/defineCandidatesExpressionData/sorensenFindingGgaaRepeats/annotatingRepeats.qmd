@@ -1,0 +1,239 @@
+---
+title: "Finding GGAA repeats"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document details processing of tandem repeat data output from [Tandem Repeats Finder](https://github.com/Benson-Genomics-Lab/TRF). 
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('rtracklayer')
+library('GenomicRanges')
+library('wiggleplotr')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+The first thing to do is to make a sample annotation table. We have an annotation table that we made in excel. The code below will get the file paths for the quant files, read in our transcriptome gtf, and using tximport to read in the entire dataset.
+
+```{r}
+##########################################################################################
+#read in the repeat files from TRF
+repFiles = list.files(paste(baseRepository,'/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/tandemRepeats', sep = ''), pattern = '*.dat', full.names = TRUE)
+
+##assign column names to be used later
+repColNames = c('start','end','period',
+                'copyNumber','consensusSize','percentMatches',
+                'percentIndels','score','A','C','G','T','entropy',
+                'repeatedSeq','fullSeq')
+
+##loop through the files and combine into a single set
+##we are only interested in GGAA repeats (CCTT on reverse strand)
+allReps = tibble()
+for (i in 1:length(repFiles)){
+  inData = read_table(repFiles[i], skip = 15, col_names = repColNames, show_col_types = FALSE) %>%
+    dplyr::mutate(chromosome = sub('.*tandemRepeats\\/(.*)\\.fa\\.2\\.7\\.7\\.80\\.10\\.50\\.500\\.dat','\\1',repFiles[i])) %>%
+    dplyr::mutate(strand = ifelse(grepl('^[AG][AG][AG][AG]$', repeatedSeq), '+', 
+                                ifelse(grepl('^[TC][TC][TC][TC]$', repeatedSeq), '-', 'false'))) %>%
+    dplyr::filter(strand != 'false') %>%
+    dplyr::mutate(isMsat = ifelse(strand == '+' & G >= 40 & G <=60, 'yes',
+                                  ifelse(strand == '-' & T >= 40 & T <= 60, 'yes', 'no'))) %>%
+    dplyr::filter(isMsat == 'yes')
+  #
+  allReps = rbind(allReps, inData)
+}
+
+##reshape the output data
+allReps2 = allReps %>%
+  dplyr::mutate(chromosome = factor(chromosome, levels = c('chr1','chr2','chr3','chr4','chr5','chr6','chr7',
+                                                       'chr8','chr9','chr10','chr11','chr12','chr13','chr14',
+                                                       'chr15','chr16','chr17','chr18','chr19','chr20','chr21',
+                                                       'chr22','chrX','chrY'))) %>%
+  dplyr::arrange(chromosome, start) %>%
+  dplyr::mutate(score = seq(1,10370,1)) %>%
+  dplyr::mutate(msat_name = paste('msat',score, sep = ''))
+
+##save these data for later
+saveRDS(allReps2, paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38NotAnnotated.rds',sep=''))
+write.table(allReps2, paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38NotAnnotated.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Next we want to annotate the GGAA repeats with respect to their proximity to genes. For this we will use [bedtools closest](https://bedtools.readthedocs.io/en/latest/content/tools/closest.html). In order to do that, we need to make bed format files for our two sets we want to compare.
+
+```{r}
+###########################################################
+##read in our gene data and a list of genes from our GTF
+gtfGenes = as_tibble(as.data.frame(rtracklayer::import('C:/Users/chughes/Documents/bccrc/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf'))) %>%
+  dplyr::filter(type == 'gene' & gene_type == 'protein_coding')
+msatRepeats = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38NotAnnotated.rds',sep=''))
+
+##make a bed file from our gtf of genes
+gtfBed = gtfGenes %>%
+  dplyr::select(seqnames, start, end, gene_name, strand) %>%
+  dplyr::mutate(seqnames = factor(seqnames, levels = c('chr1','chr2','chr3','chr4','chr5','chr6','chr7',
+                                                       'chr8','chr9','chr10','chr11','chr12','chr13','chr14',
+                                                       'chr15','chr16','chr17','chr18','chr19','chr20','chr21',
+                                                       'chr22','chrX','chrY'))) %>%
+  dplyr::arrange(seqnames, start) %>%
+  dplyr::mutate(score = seq(1,19955,1)) %>%
+  dplyr::select(seqnames, start, end, gene_name, score, strand) %>%
+  dplyr::filter(!is.na(seqnames))
+write.table(gtfBed, paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_gtfGenesOnly.bed',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##make a bed file from our msat data
+msatBed = msatRepeats %>%
+  dplyr::select(chromosome, start, end, msat_name, score, strand)
+write.table(msatBed, paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeats.bed',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Use the bed files from above in the bedtools closest analysis. For details of this, see the `findingRepeats.md` file in the same directory as this script. Once we have the bedtools analysis, we can read it in as below. The file lists this as 'a' and 'b'. In this case, a = msat and b = gene of interest. Be sure to pay attention to the strand, as the distance numbers are related to that.
+
+```{r}
+###########################################################
+##read the results
+closestGene = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_hg38MsatClosestGenesUnstranded.tsv',sep=''), show_col_types = FALSE,
+                       col_names = c('seqname_a','start_a','end_a','msat_name','index_a','strand_a',
+                                     'seqname_b','start_b','end_b','gene','index_b','strand_b','distanceAtoB')) %>%
+  left_join(msatRepeats) %>%
+  dplyr::rename(symbol = 'gene')
+
+##save these data
+saveRDS(closestGene, paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38Annotated.rds',sep=''))
+write.table(closestGene, paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38Annotated.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+In the above file, there end up being some repeats of msat's because of overlapping gene regions. The next thing we want to do is to overlap the GGAA data with our RNA expression hits. 
+
+```{r}
+###########################################################
+##read in the RNA data
+closestGene = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38Annotated.rds',sep=''))
+rna = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_day0vs7EwsRegulationAssignments.rds', sep = '')) %>%
+  dplyr::select(symbol, ewsRnaRegulate, log2FoldChange) %>%
+  dplyr::left_join(closestGene)
+
+##how many induced genes were assigned an msat?
+regulatedGenes = rna %>%
+  dplyr::filter(ewsRnaRegulate == 'induced')
+length(unique(regulatedGenes$symbol))
+msatGenes = regulatedGenes %>%
+  dplyr::filter(!is.na(msat_name))
+length(unique(msatGenes$symbol))
+length(unique(msatGenes$msat_name))
+
+##how many repressed genes were assigned an msat?
+regulatedGenes = rna %>%
+  dplyr::filter(ewsRnaRegulate == 'repressed')
+length(unique(regulatedGenes$symbol))
+msatGenes = regulatedGenes %>%
+  dplyr::filter(!is.na(msat_name))
+length(unique(msatGenes$symbol))
+length(unique(msatGenes$msat_name))
+
+##how many not regulated genes were assigned an msat?
+regulatedGenes = rna %>%
+  dplyr::filter(ewsRnaRegulate == 'not regulated')
+length(unique(regulatedGenes$symbol))
+msatGenes = regulatedGenes %>%
+  dplyr::filter(!is.na(msat_name))
+length(unique(msatGenes$symbol))
+length(unique(msatGenes$msat_name))
+```
+
+Is there any relationship between the number of msats and the level of induction/repression?
+
+```{r}
+###########################################################
+##read in the RNA data
+closestGene = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38Annotated.rds',sep=''))
+rna = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_day0vs7EwsRegulationAssignments.rds', sep = '')) %>%
+  dplyr::select(symbol, ewsRnaRegulate, log2FoldChange) %>%
+  dplyr::left_join(closestGene)
+
+##first look at if the number of msats has any relationship to expression
+msatNum = rna %>%
+  dplyr::filter(!is.na(msat_name)) %>%
+  dplyr::select(symbol, log2FoldChange) %>%
+  dplyr::mutate(msatCount = 1) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(fcMean = abs(mean(log2FoldChange, na.rm = TRUE)),
+                   msatCount = sum(msatCount))
+
+##plot the data
+ggplot(msatNum, aes(msatCount, fcMean, group = msatCount)) +
+  geom_boxplot(outlier.size = 0.5, size = 0.25, color = brewer.pal(3,'Greys')[3]) +
+  labs(x = 'n[mSats]', y = 'Absolute fold change', title = 'mSat count') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,16,2)) +
+  scale_x_continuous(limits = c(0.5,10.5), breaks = seq(0,10,1)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/plots/boxplot_msatCountsFoldChange.pdf', sep = ''), 
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+
+##what about with the number of repeats in an msat
+msatRepeats = rna %>%
+  dplyr::filter(!is.na(msat_name)) %>%
+  dplyr::select(symbol, log2FoldChange, copyNumber) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(fcMean = abs(mean(log2FoldChange, na.rm = TRUE)),
+                   msatRepeats = max(copyNumber))
+
+#plot the data
+ggplot(msatRepeats, aes(msatRepeats, fcMean)) +
+  geom_point(size = 0.5, color = brewer.pal(3,'Greys')[3], alpha = 0.25) +
+  labs(x = 'n[GGAA]', y = 'Absolute fold change', title = 'GGAA repeats') +
+  scale_y_continuous(limits = c(0,12), breaks = seq(0,16,2)) +
+  scale_x_continuous(limits = c(0.5,100.5), breaks = seq(0,100,20)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/plots/scatter_msatRepeatsFoldChange.pdf', sep = ''), 
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+I want to add a column to the RNA data indicating whether there is a GGAA site in proximity to the gene.
+
+```{r}
+###########################################################
+##read in the msat data and calculate some metrics
+closestGene = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38Annotated.rds',sep='')) %>%
+  dplyr::select(symbol, msat_name, copyNumber) %>%
+  dplyr::mutate(msatCount = 1) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(msatCount = sum(msatCount, na.rm = TRUE), 
+                   msatCopyNumber = max(copyNumber, na.rm = TRUE)) %>%
+  dplyr::ungroup()
+
+##combine with the RNA data
+rna = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_day0vs7EwsRegulationAssignments.rds', sep = '')) %>%
+  dplyr::left_join(closestGene)
+
+```
+
+
+
+
+

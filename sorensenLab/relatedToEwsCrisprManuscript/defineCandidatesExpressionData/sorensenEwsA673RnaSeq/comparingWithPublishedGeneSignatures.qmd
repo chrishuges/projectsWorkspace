@@ -1,0 +1,233 @@
+---
+title: "Comparing to published data"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes comparing the acquired RNAseq data against published data describing EwS regulated genes.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+I want to compare the genes that we see as differentially expressed to established gene signatures from EwS patients.
+
+```{r}
+##########################################################################################
+##first do the hancock signature
+##read in our own expression data
+day0 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day0-day7.rds', sep = ''))
+
+##need to update the symbols for some of the hancock genes
+hancock = read_tsv(paste(generalDatasets, '/hancockEwsGeneSignaturePmid18256529/hancockEwsGeneSignatureSet.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::left_join(day0)
+updatedSymbols = GeneSymbolThesarus(symbols = hancock[is.na(hancock$baseMean), ]$symbol,
+                                    timeout = 40)
+updatedSymbolSet = tibble('symbol' = names(updatedSymbols),
+                          'updatedSymbol' = updatedSymbols)
+
+##add in the updated symbols and join with our data
+##here we filter out NA genes, while most of them are found in our data, they are mostly very low abundance and are filtered out due to not meeting the criteria for expression analysis
+hancockUpdated = read_tsv(paste(generalDatasets, '/hancockEwsGeneSignaturePmid18256529/hancockEwsGeneSignatureSet.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::left_join(updatedSymbolSet) %>%
+  dplyr::mutate(symbol = ifelse(is.na(updatedSymbol), symbol, updatedSymbol)) %>%
+  dplyr::left_join(day0) %>%
+  dplyr::filter(!is.na(baseMean))
+
+##save these data in case we need them later
+saveRDS(hancockUpdated, 
+        paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_hancockWithUpdatedGeneSymbols.rds', sep = ''))
+write.table(hancockUpdated, 
+            paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_hancockWithUpdatedGeneSymbols.tsv', sep = ''),
+            quote = FALSE, row.names = FALSE, col.names = TRUE, sep = '\t')
+
+
+##make a plot of these data
+#assign colors based on fold change and p-values
+rnaExp = as.data.frame(hancockUpdated)
+rnaExp$logPValue = -log10(rnaExp$padj)
+rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 300, 300, rnaExp$logPValue)
+rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(4,'OrRd')[4], 
+                        ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+#assign text labels to specific genes of interest
+targetGenes = c('IL1RAP','STEAP1','PRKCB','LOX','UGT3A2','STEAP2','NR0B1')
+rnaExp$pText = ifelse(rnaExp$symbol %in% targetGenes, rnaExp$symbol, '')
+
+#create the plot and save it
+ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
+  geom_point(size = 0.5, color = rnaExp$pColors) +
+  labs(x = 'log2(day0 - day7)', y = '-log10(Adjusted p-value)', title = 'Hancock signature') +
+  geom_text_repel(label = rnaExp$pText, nudge_x = 0, nudge_y = -100, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  scale_x_continuous(limits = c(-14,14), breaks = seq(-20,20,2)) +
+  scale_y_continuous(limits = c(0,300), breaks = seq(0,500,50)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/scatter_deseq2_hancockSignature.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+
+##get some statistics for these data
+up = rnaExp[rnaExp$pColors == brewer.pal(4,'OrRd')[4],]
+table(up$category)
+dn = rnaExp[rnaExp$pColors == brewer.pal(4,'GnBu')[4],]
+table(dn$category)
+```
+
+Continue with another published gene set.
+
+```{r}
+##########################################################################################
+##this gene set is from Gordon
+##read in our own expression data
+day0 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day0-day7.rds', sep = ''))
+
+##need to update the symbols for some of the gordon genes
+gordon = read_tsv(paste(generalDatasets, '/gordonEwsGeneSignaturePmid26455317/gordonEwsGeneSignatureSet.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::left_join(day0)
+updatedSymbols = GeneSymbolThesarus(symbols = gordon[is.na(gordon$baseMean), ]$symbol,
+                                    timeout = 40)
+updatedSymbolSet = tibble('symbol' = names(updatedSymbols),
+                          'updatedSymbol' = updatedSymbols)
+
+##add in the updated symbols and join with our data
+gordonUpdated = read_tsv(paste(generalDatasets, '/gordonEwsGeneSignaturePmid26455317/gordonEwsGeneSignatureSet.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::left_join(updatedSymbolSet) %>%
+  dplyr::mutate(symbol = ifelse(is.na(updatedSymbol), symbol, updatedSymbol)) %>%
+  dplyr::left_join(day0) %>%
+  dplyr::filter(!is.na(baseMean))
+
+##save these data in case we need them later
+saveRDS(gordonUpdated, 
+        paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_gordonWithUpdatedGeneSymbols.rds', sep = ''))
+write.table(gordonUpdated, 
+            paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_gordonWithUpdatedGeneSymbols.tsv', sep = ''),
+            quote = FALSE, row.names = FALSE, col.names = TRUE, sep = '\t')
+
+
+##make a plot of these data
+#assign colors based on fold change and p-values
+rnaExp = as.data.frame(gordonUpdated)
+rnaExp$logPValue = -log10(rnaExp$padj)
+rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 300, 300, rnaExp$logPValue)
+rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(4,'OrRd')[4], 
+                        ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+#assign text labels to specific genes of interest
+targetGenes = c('IL1RAP','STEAP1','PRKCB','LOX','UGT3A2','STEAP2','NR0B1')
+rnaExp$pText = ifelse(rnaExp$symbol %in% targetGenes, rnaExp$symbol, '')
+
+#create the plot and save it
+ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
+  geom_point(size = 0.5, color = rnaExp$pColors) +
+  labs(x = 'log2(day0 - day7)', y = '-log10(Adjusted p-value)', title = 'Gordon signature') +
+  geom_text_repel(label = rnaExp$pText, nudge_x = 0, nudge_y = -100, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  scale_x_continuous(limits = c(-14,14), breaks = seq(-20,20,2)) +
+  scale_y_continuous(limits = c(0,300), breaks = seq(0,500,50)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/scatter_deseq2_gordonSignature.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+
+##get some statistics for these data
+up = rnaExp[rnaExp$pColors == brewer.pal(4,'OrRd')[4],]
+table(up$category)
+dn = rnaExp[rnaExp$pColors == brewer.pal(4,'GnBu')[4],]
+table(dn$category)
+```
+
+Continue with another published gene set.
+
+```{r}
+##########################################################################################
+##this gene set is from Aynaud
+##read in our own expression data
+day0 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day0-day7.rds', sep = ''))
+
+##need to update the symbols for some of the aynaud genes
+aynaud = read_tsv(paste(generalDatasets, '/aynaudEwsGeneSignaturePmid32049009/aynaudEwsGeneSignatureSet.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::left_join(day0)
+updatedSymbols = GeneSymbolThesarus(symbols = aynaud[is.na(aynaud$baseMean), ]$symbol,
+                                    timeout = 40)
+updatedSymbolSet = tibble('symbol' = names(updatedSymbols),
+                          'updatedSymbol' = updatedSymbols)
+
+##add in the updated symbols and join with our data
+aynaudUpdated = read_tsv(paste(generalDatasets, '/aynaudEwsGeneSignaturePmid32049009/aynaudEwsGeneSignatureSet.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::left_join(updatedSymbolSet) %>%
+  dplyr::mutate(symbol = ifelse(is.na(updatedSymbol), symbol, updatedSymbol)) %>%
+  dplyr::left_join(day0) %>%
+  dplyr::filter(!is.na(baseMean))
+
+##save these data in case we need them later
+saveRDS(aynaudUpdated, 
+        paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_aynaudWithUpdatedGeneSymbols.rds', sep = ''))
+write.table(aynaudUpdated, 
+            paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_aynaudWithUpdatedGeneSymbols.tsv', sep = ''),
+            quote = FALSE, row.names = FALSE, col.names = TRUE, sep = '\t')
+
+
+##make a plot of these data
+#assign colors based on fold change and p-values
+rnaExp = as.data.frame(aynaudUpdated)
+rnaExp$logPValue = -log10(rnaExp$padj)
+rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 300, 300, rnaExp$logPValue)
+rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(4,'OrRd')[4], 
+                        ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+#assign text labels to specific genes of interest
+targetGenes = c('IL1RAP','STEAP1','PRKCB','LOX','UGT3A2','STEAP2','NR0B1')
+rnaExp$pText = ifelse(rnaExp$symbol %in% targetGenes, rnaExp$symbol, '')
+
+#create the plot and save it
+ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
+  geom_point(size = 0.5, color = rnaExp$pColors) +
+  labs(x = 'log2(day0 - day7)', y = '-log10(Adjusted p-value)', title = 'Aynaud signature') +
+  geom_text_repel(label = rnaExp$pText, nudge_x = 0, nudge_y = -100, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  scale_x_continuous(limits = c(-14,14), breaks = seq(-20,20,2)) +
+  scale_y_continuous(limits = c(0,300), breaks = seq(0,500,50)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/scatter_deseq2_aynaudSignature.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+Done with these data for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
