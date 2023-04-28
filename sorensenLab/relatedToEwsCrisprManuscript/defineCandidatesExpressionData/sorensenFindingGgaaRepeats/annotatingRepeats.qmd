@@ -214,26 +214,14 @@ ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGga
        height = 2, width = 2, useDingbats = FALSE)
 ```
 
-I want to add a column to the RNA data indicating whether there is a GGAA site in proximity to the gene.
+Done with these data for now.
+
+### Session info
 
 ```{r}
-###########################################################
-##read in the msat data and calculate some metrics
-closestGene = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38Annotated.rds',sep='')) %>%
-  dplyr::select(symbol, msat_name, copyNumber) %>%
-  dplyr::mutate(msatCount = 1) %>%
-  dplyr::group_by(symbol) %>%
-  dplyr::summarise(msatCount = sum(msatCount, na.rm = TRUE), 
-                   msatCopyNumber = max(copyNumber, na.rm = TRUE)) %>%
-  dplyr::ungroup()
-
-##combine with the RNA data
-rna = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_day0vs7EwsRegulationAssignments.rds', sep = '')) %>%
-  dplyr::left_join(closestGene)
-
+##########################################################################################
+sessionInfo()
 ```
-
-
 
 
 

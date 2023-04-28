@@ -1,0 +1,114 @@
+---
+title: "Adding in more data"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes adding more information to our RNAseq results.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+Add in information about RNA expression regulation, including CCLE specificity.
+
+```{r}
+###########################################################
+##sole data
+sole = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_mscAndMpcDeData.rds', sep = '')) %>%
+  dplyr::select(symbol, msc_log2FoldChange, mpc_log2FoldChange) %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::rename(mscFc = 'msc_log2FoldChange',
+                mpcFc = 'mpc_log2FoldChange')
+
+##ccle specificity
+ccle = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_rnaAndProteinSpecificityScores.rds', sep = '')) %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::rename(ewsRnaSpecificity = 'ewsRnaScore',
+                ewsProSpecificity = 'ewsProScore')
+```
+
+Add in information about GGAA sites in proximity and their regulation.
+
+```{r}
+###########################################################
+##read in the msat data and calculate some metrics
+closestGene = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38Annotated.rds',sep='')) %>%
+  dplyr::select(symbol, msat_name, copyNumber) %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::mutate(msatCount = 1) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(msatCount = sum(msatCount, na.rm = TRUE), 
+                   msatCopyNumber = max(copyNumber, na.rm = TRUE)) %>%
+  dplyr::ungroup()
+
+##read in the GGAA regulation data
+ggaaReg = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/takGgaaTargetingRnaSeq/datasetOutputs/dataset_deseq2_a673_gfp-a673_krab.rds',sep='')) %>%
+  dplyr::mutate(ensg = rownames(.)) %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::select(symbol, ensg, log2FoldChange, padj) %>%
+  dplyr::rename(ggaaFc = 'log2FoldChange',
+                ggaaPadj = 'padj')
+```
+
+Get the proteomics data.
+
+```{r}
+###########################################################
+##read in the DIA data
+dia = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/datasetOutputs/dataset_deqmsMbr_day0-day7.rds',sep='')) %>%
+  dplyr::select(symbol, AveExpr, logFC, adj.P.Val) %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::rename(diaExpr = 'AveExpr',
+                diaFc = 'logFC',
+                diaPadj = 'adj.P.Val')
+
+##read in the DDA data
+dda = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_deqms_day0-day7.rds',sep='')) %>%
+  dplyr::select(rnaMapSymbol, AveExpr, logFC, adj.P.Val) %>%
+  dplyr::filter(!is.na(rnaMapSymbol)) %>%
+  dplyr::rename(ddaExpr = 'AveExpr',
+                ddaFc = 'logFC',
+                ddaPadj = 'adj.P.Val',
+                symbol = 'rnaMapSymbol')
+```
+
+Combine these with the RNA data.
+
+```{r}
+###########################################################
+##combine with the RNA data
+rna = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_day0vs7EwsRegulationAssignments.rds', sep = '')) %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::left_join(sole) %>%
+  dplyr::left_join(dda) %>%
+  dplyr::left_join(dia) %>%
+  dplyr::left_join(ccle) %>%
+  dplyr::left_join(closestGene) %>%
+  dplyr::left_join(ggaaReg)
+```
+
+
+

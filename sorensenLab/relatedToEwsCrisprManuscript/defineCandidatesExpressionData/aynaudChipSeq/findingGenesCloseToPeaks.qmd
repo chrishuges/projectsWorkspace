@@ -1,0 +1,47 @@
+---
+title: "FLI1 peak calling"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of the Aynaud ChIP data to see if there are FLI1 peaks around our genes of interest.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+Read in the run table so we have annotation details if we need them. 
+
+```{r}
+##########################################################################################
+##get the annotation data
+anno = read_csv(paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/SraRunTable.csv',sep=''), show_col_types = FALSE) %>%
+  dplyr::select(sampleName, sampleType, day)
+
+##read in the day 17 peak file (will use this as day 0)
+d0 = read.table(paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/peaks/SRR8832674_peaks.narrowPeak',sep=''))
+
+
+```

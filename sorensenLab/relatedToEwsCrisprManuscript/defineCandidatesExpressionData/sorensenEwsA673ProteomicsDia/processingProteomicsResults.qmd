@@ -73,8 +73,8 @@ Perform differential expression analysis on these data.
 ##########################################################################################
 ##I am going to do one-by-one comparisons
 processedData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/datasetOutputs/dataset_a673ShEf1TotalProteome.rds', sep = ''))
-conditionsToCompare = c('day7')
-controlCondition = 'day0'
+conditionsToCompare = c('day0')
+controlCondition = 'day7'
 for (i in 1:length(conditionsToCompare)){
   dat = processedData[,c(1:2, 
                          which(names(processedData) == paste(controlCondition, '_rep1', sep = '')),
