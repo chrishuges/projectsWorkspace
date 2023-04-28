@@ -1,0 +1,168 @@
+---
+title: "Riggi EwS RNAseq"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of RNA-seq data derived from A673 cells treated with shRNA against EWS-FLI1 from a study published by Riggi.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('tximport')
+library('GenomicFeatures')
+library('DESeq2')
+library('ggrepel')
+library('org.Hs.eg.db')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+The first thing to do is to make a sample annotation table. We have an annotation table that we made in excel. The code below will get the file paths for the quant files, read in our transcriptome gtf, and using tximport to read in the entire dataset.
+
+```{r}
+##########################################################################################
+#read a table containing the sample information for our RNAseq runs
+samples = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/riggiEwsRnaSeq/sampleInfo.txt', sep = ''), show_col_types = FALSE)
+samples
+
+#use the sample info to build a file list
+files = file.path(baseRepository, 'defineCandidatesExpressionData/riggiEwsRnaSeq', 'quants', samples$sampleName, 'quant.sf')
+all(file.exists(files))
+
+##build the transcriptome index...this is based on the same gtf we used in the alignment process
+txdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(txdb, keytype = "TXNAME")
+tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
+
+##read the transcriptome data processed from salmon
+txi = tximport(files, type = 'salmon', tx2gene = tx2gene)
+txiAnnotated = tibble(as.data.frame(txi$abundance)) %>%
+  mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$abundance)))
+
+##add in gene symbols
+geneSymbols = select(org.Hs.eg.db, txiAnnotated$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') 
+geneExpData = txiAnnotated %>%
+  left_join(geneSymbols) %>%
+  mutate(symbol = SYMBOL)
+colnames(geneExpData)[1:6] = samples$sampleName
+
+##write this gene set to a file
+saveRDS(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/riggiEwsRnaSeq/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
+write.table(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/riggiEwsRnaSeq/datasetOutputs/dataset_tpmExpression.tsv', sep = ''), row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+```
+
+Test the expression for some target genes to make sure the data looks OK.
+
+```{r}
+##########################################################################################
+##extract the target gene from the data and set up the data frame for plotting
+targetGenes = c('PRKCB','NR0B1','LOX','UGT3A2','STEAP1','STEAP2','IL1RAP')
+for (i in 1:length(targetGenes)){
+  targetData = geneExpData %>%
+    dplyr::filter(symbol == targetGenes[i]) %>%
+    tidyr::pivot_longer(cols = SRR1594020:SRR1594025 , names_to = 'sampleName', values_to = 'tpm') %>%
+    dplyr::select(symbol,sampleName,tpm) %>%
+    dplyr::mutate(tpm = log2(tpm + 1)) %>%
+    dplyr::left_join(samples) %>%
+    dplyr::mutate(sampleName = factor(sampleName, levels = samples$sampleName))
+
+  ##set some colors for the plot
+  sampleColors = c(brewer.pal(4,'GnBu')[4],
+                   brewer.pal(4,'OrRd')[4],
+                   brewer.pal(4,'GnBu')[4],
+                   brewer.pal(4,'OrRd')[4],
+                   brewer.pal(4,'GnBu')[4],
+                   brewer.pal(4,'OrRd')[4])
+
+  ##create the plot
+  ggplot(targetData, aes(sampleName, tpm, color = sampleName)) +
+    geom_point(aes(x=sampleName, y=tpm), data = targetData, size = 1, position = position_jitter(w = 0.1, h = 0)) +
+    scale_color_manual(values = sampleColors) +
+    labs(y = 'log2(TPM + 1)', title = paste(targetGenes[i],' in EwS cells',sep='')) +
+    scale_y_continuous(limits = c(0,max(targetData$tpm, na.rm = TRUE)+1), breaks = seq(0,16,2)) +
+    theme_classic() +
+    theme(legend.position = 'none'
+          #axis.title.x = element_blank(),
+          #axis.text.x = element_text(angle = 45, hjust = 1)
+          )
+
+  ##save the plot in case we want it later
+  ggsave(paste(baseRepository, '/defineCandidatesExpressionData/riggiEwsRnaSeq/plots/scatter_',targetGenes[i],'_RnaExpressionLevels.pdf', sep = ''),
+        height = 2, width = 2, useDingbats = FALSE)
+}
+```
+
+OK these data look good. We will use them for clustering later on. Next I just want to plot these data against our own. First we need to get fold changes for these data since they don't have replicates for differential expression analysis.
+
+```{r}
+##########################################################################################
+##read in the count data
+rna = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/riggiEwsRnaSeq/datasetOutputs/dataset_tpmExpression.rds', sep = '')) %>%
+  dplyr::mutate(a673LogFc = log2((SRR1594024 + 1)/(SRR1594025 + 1))) %>%
+  dplyr::select(symbol, a673LogFc) %>%
+  dplyr::filter(!is.na(symbol))
+
+##read in our own data
+sorensen = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day0-day7.rds', sep = '')) %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::left_join(rna)
+
+#assign colors based on fold change
+rnaExp = as.data.frame(sorensen)
+rnaExp$pColors = ifelse(rnaExp$log2FoldChange >= 1 & rnaExp$a673LogFc >= 1, brewer.pal(4,'OrRd')[4], 
+                          ifelse(rnaExp$log2FoldChange <= -1 & rnaExp$a673LogFc <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+#assign text labels to specific genes of interest
+targetGenes = c('IL1RAP','STEAP1','PRKCB','LOX','UGT3A2','STEAP2','NR0B1')
+rnaExp$pText = ifelse(rnaExp$symbol %in% targetGenes, rnaExp$symbol, '')
+
+#create the plot and save it
+#rnaPlot = dplyr::filter(rnaExp, pColors != brewer.pal(3,'Greys')[2])
+ggplot(rnaExp, aes(log2FoldChange, a673LogFc)) +
+  geom_point(size = 0.5, color = rnaExp$pColors) +
+  labs(x = 'log2(day 0 vs 7)', y = 'log2(dmso vs dox)', title = 'vs Riggi') +
+  geom_text_repel(label = rnaExp$pText, nudge_x = -1, nudge_y = -3, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  scale_x_continuous(limits = c(-12.5,12.5), breaks = seq(-20,20,2)) +
+  scale_y_continuous(limits = c(-8,8), breaks = seq(-20,20,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme_classic()
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/riggiEwsRnaSeq/plots/scatter_deseq2_riggiVersusSorensen.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+##some information about these data
+dataLm <- lm(a673LogFc ~ log2FoldChange, rnaExp)
+dataLm
+cor(rnaExp$log2FoldChange, rnaExp$a673LogFc, method = 'pearson')
+
+```
+
+Done with these data for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```

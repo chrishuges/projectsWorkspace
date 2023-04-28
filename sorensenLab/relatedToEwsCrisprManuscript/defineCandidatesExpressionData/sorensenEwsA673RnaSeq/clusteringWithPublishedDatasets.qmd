@@ -1,0 +1,133 @@
+---
+title: "Clustering RNA data"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes clustering of our own RNAseq data with that from a bunch of other studies in order to see how things group.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('tximport')
+library('GenomicFeatures')
+library('DESeq2')
+library('ggrepel')
+library('org.Hs.eg.db')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+The first thing to do is bring all of the data together before doing the DE analysis
+
+```{r}
+##########################################################################################
+##first we will bring in our own data
+sorensenRna = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/sampleInfo.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::mutate(accession = paste(sampleName,'_',batch, sep = '')) %>%
+  dplyr::select(accession, sampleName:batch) %>%
+  dplyr::mutate(quantFilePath = file.path(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/quants', sep = ''), paste(barcode, '_', batch, sep = ''), 'quant.sf')) %>%
+  dplyr::mutate(study = 'sorensenRna') %>%
+  dplyr::select(sampleName, study, quantFilePath)
+
+##now the Riggi data
+riggiRna = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/riggiEwsRnaSeq/sampleInfo.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::mutate(quantFilePath = file.path(baseRepository, 'defineCandidatesExpressionData/riggiEwsRnaSeq', 'quants', sampleName, 'quant.sf')) %>%
+  dplyr::mutate(sampleName = paste(cellLine,'_',treatment,'_',timepoint,sep = '')) %>%
+  dplyr::mutate(study = 'riggiRna') %>%
+  dplyr::select(sampleName, study, quantFilePath)
+
+##now the Boulay data
+boulayRna = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/boulayEwsRnaSeq/sampleInfo.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::mutate(quantFilePath = file.path(baseRepository, 'defineCandidatesExpressionData/boulayEwsRnaSeq', 'quants', sampleName, 'quant.sf')) %>%
+  dplyr::mutate(sampleName = paste(cellLine,'_',treatment,'_',timepoint,sep = '')) %>%
+  dplyr::mutate(study = 'boulayRna') %>%
+  dplyr::select(sampleName, study, quantFilePath)
+
+##now the Sole data
+samplesOfInterest = c('MSC_Pat','hMPC','EWIma1')
+soleRna = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/SraRunTableAnnotated.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::rename(sampleName = 'sampleNames') %>%
+  dplyr::filter(sampleName %in% samplesOfInterest) %>%
+  dplyr::mutate(sampleName = factor(sampleName, levels = c('MSC_Pat','hMPC','EWIma1'))) %>%
+  dplyr::mutate(quantFilePath = file.path(baseRepository, 'defineCandidatesExpressionData/soleInducedEwsRnaSeq', 'quants', accession, 'quant.sf')) %>%
+  dplyr::mutate(study = 'soleRna') %>%
+  dplyr::select(sampleName, study, quantFilePath)
+
+
+##bring all of the data together
+allFiles = rbind(sorensenRna, riggiRna[5:6,], boulayRna[1:2,], soleRna)
+quantFilesForDe = allFiles$quantFilePath
+names(quantFilesForDe) = allFiles$sampleName
+all(file.exists(quantFilesForDe))
+
+##read in the quant data
+txiForDe = tximport(quantFilesForDe, type = 'salmon', tx2gene = tx2gene)
+
+
+##perform the deseq analysis
+ddsTxi = DESeqDataSetFromTximport(txiForDe,
+                                  colData = allFiles,
+                                  design = ~ sampleName)
+dds = DESeq(ddsTxi)
+
+##filter...want observations in both replicates of at least one condition
+keep = (rowSums(counts(dds)[,1:3] >= 100) == 3) | 
+  (rowSums(counts(dds)[,4:6] >= 100) == 3) |
+  (rowSums(counts(dds)[,7:9] >= 100) == 3) | 
+  (rowSums(counts(dds)[,10:12] >= 100) == 3) | 
+  (rowSums(counts(dds)[,13:15] >= 100) == 3) | 
+  (rowSums(counts(dds)[,16:18] >= 100) == 3) |
+  (rowSums(counts(dds)[,19:21] >= 100) == 3) |
+  (rowSums(counts(dds)[,22:24] >= 100) == 3) |
+  (rowSums(counts(dds)[,29:31] >= 100) == 3) |
+  (rowSums(counts(dds)[,32:36] >= 100) == 5) |
+  (rowSums(counts(dds)[,37:39] >= 100) == 3)
+dds = dds[keep,]
+```
+
+Compare the different samples using a PCA using the differential expression data. 
+
+```{r}
+##########################################################################################
+vsd = vst(dds, blind = FALSE) #variance stabilizing normalization of the data
+#extract the data for the MDS analysis itself
+mdsPlot = plotPCA(vsd, intgroup=c('sampleName','study'), returnData = TRUE)
+#mdsPlot$sampleName = factor(mdsPlot$sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22'))
+percentVar = round(100 * attr(mdsPlot, 'percentVar'))
+#make the ggplot
+ggplot(mdsPlot, aes(PC1, PC2, color = sampleName, shape = study)) +
+  geom_point(size = 3, alpha = 0.75) +
+  #geom_text(label = mdsPlot$sampleName) +
+  #scale_color_manual(values = rep(c(brewer.pal(4,'OrRd')[4], brewer.pal(4,'GnBu')[4], brewer.pal(7,'Blues')[1:6]),3)) +
+  scale_x_continuous(limits = c(-40,85), breaks = seq(-100,100,20)) +
+  scale_y_continuous(limits = c(-30,60), breaks = seq(-100,100,20)) +
+  labs(x = paste0('PC1: ', percentVar[1], '% variance'), 
+       y = paste0('PC2: ', percentVar[2], '% variance'), 
+       title = 'A673 RNA-seq groups') +
+  theme_classic() +
+  theme(legend.position = 'none')
+#save the plot
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/pcaplot_withPublishedStudies.pdf', sep = ''), 
+       height = 2, width = 2, useDingbats = FALSE)
+```
+

@@ -74,6 +74,10 @@ samples = read_csv(paste(baseRepository, '/defineCandidatesExpressionData/soleIn
   dplyr::rename(accession = 'Run', geo = `GEO_Accession (exp)`, ef1 = `ewsr1-fli1`) %>%
   dplyr::arrange(accession) %>%
   dplyr::mutate(sampleNames = sampleNamesFromGeo, replicate = replicatesFromGeo)
+
+##save this file
+write.table(samples, paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/SraRunTableAnnotated.txt',sep=''),
+            sep = '\t', col.names = TRUE, row.names = FALSE, quote = FALSE)
 ```
 
 Now that we have our annotation details, we can start to sort out the quantification data that we obtained from the data reprocessing. The code below will get the file paths for the quant files, read in our transcriptome gtf, and using tximport to read in the entire dataset.
@@ -277,17 +281,85 @@ write.table(ewsDeData, paste(baseRepository, '/defineCandidatesExpressionData/so
             row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
 ```
 
-From these data, we want to parse out upregulated genes that appear to be increased in both conditions.
+Want to compare these data with our own RNAseq results.
 
 ```{r}
 ##########################################################################################
-##filter the data and write to a file
-ewsOutData = ewsDeData %>%
-  dplyr::filter(msc_padj <= 0.001 & mpc_padj <= 0.001) %>%
-  dplyr::select(symbol, msc_log2FoldChange, mpc_log2FoldChange)
-saveRDS(ewsOutData, paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_candidates.rds', sep = ''))
-write.table(ewsOutData, paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_candidates.tsv', sep = ''),
-            row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+##read in the count data
+rna = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_mscAndMpcDeData.rds', sep = '')) %>%
+  dplyr::select(symbol, msc_log2FoldChange, mpc_log2FoldChange) %>%
+  dplyr::filter(!is.na(symbol))
+
+##read in our own data
+sorensen = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day0-day7.rds', sep = '')) %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::left_join(rna)
+
+
+
+##plot the MPC data first
+#assign colors based on fold change
+rnaExp = as.data.frame(sorensen)
+rnaExp$pColors = ifelse(rnaExp$log2FoldChange >= 1 & rnaExp$mpc_log2FoldChange >= 1, brewer.pal(4,'OrRd')[4], 
+                          ifelse(rnaExp$log2FoldChange <= -1 & rnaExp$mpc_log2FoldChange <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+#assign text labels to specific genes of interest
+targetGenes = c('IL1RAP','STEAP1','PRKCB','LOX','UGT3A2','STEAP2','NR0B1')
+rnaExp$pText = ifelse(rnaExp$symbol %in% targetGenes, rnaExp$symbol, '')
+
+#create the plot and save it
+#rnaPlot = dplyr::filter(rnaExp, pColors != brewer.pal(3,'Greys')[2])
+ggplot(rnaExp, aes(log2FoldChange, mpc_log2FoldChange)) +
+  geom_point(size = 0.5, color = rnaExp$pColors) +
+  labs(x = 'log2(day 0 vs 7)', y = 'log2(EWIma vs MPC)', title = 'Sole, MPC') +
+  geom_text_repel(label = rnaExp$pText, nudge_x = -5, nudge_y = -10, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  scale_x_continuous(limits = c(-12.5,12.5), breaks = seq(-20,20,2)) +
+  scale_y_continuous(limits = c(-20,20), breaks = seq(-20,20,4)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme_classic()
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/plots/scatter_deseq2_mpcVersusSorensen.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+##some information about these data
+dataLm <- lm(mpc_log2FoldChange ~ log2FoldChange, rnaExp)
+dataLm
+cor(rnaExp$log2FoldChange, rnaExp$mpc_log2FoldChange, method = 'pearson', use = 'pairwise.complete.obs')
+
+
+
+
+
+##now the MSC data
+#assign colors based on fold change
+rnaExp = as.data.frame(sorensen)
+rnaExp$pColors = ifelse(rnaExp$log2FoldChange >= 1 & rnaExp$msc_log2FoldChange >= 1, brewer.pal(4,'OrRd')[4], 
+                          ifelse(rnaExp$log2FoldChange <= -1 & rnaExp$msc_log2FoldChange <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+#assign text labels to specific genes of interest
+targetGenes = c('IL1RAP','STEAP1','PRKCB','LOX','UGT3A2','STEAP2','NR0B1')
+rnaExp$pText = ifelse(rnaExp$symbol %in% targetGenes, rnaExp$symbol, '')
+
+#create the plot and save it
+#rnaPlot = dplyr::filter(rnaExp, pColors != brewer.pal(3,'Greys')[2])
+ggplot(rnaExp, aes(log2FoldChange, msc_log2FoldChange)) +
+  geom_point(size = 0.5, color = rnaExp$pColors) +
+  labs(x = 'log2(day 0 vs 7)', y = 'log2(EWIma vs MSC)', title = 'Sole, MSC') +
+  geom_text_repel(label = rnaExp$pText, nudge_x = -5, nudge_y = -10, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  scale_x_continuous(limits = c(-12.5,12.5), breaks = seq(-20,20,2)) +
+  scale_y_continuous(limits = c(-20,20), breaks = seq(-20,20,4)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme_classic()
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/plots/scatter_deseq2_mscVersusSorensen.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+##some information about these data
+dataLm <- lm(msc_log2FoldChange ~ log2FoldChange, rnaExp)
+dataLm
+cor(rnaExp$log2FoldChange, rnaExp$msc_log2FoldChange, method = 'pearson', use = 'pairwise.complete.obs')
 ```
 
 Done with these data for now.
