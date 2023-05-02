@@ -114,6 +114,7 @@ Use the bed files from above in the bedtools closest analysis. For details of th
 ```{r}
 ###########################################################
 ##read the results
+msatRepeats = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38NotAnnotated.rds',sep=''))
 closestGene = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_hg38MsatClosestGenesUnstranded.tsv',sep=''), show_col_types = FALSE,
                        col_names = c('seqname_a','start_a','end_a','msat_name','index_a','strand_a',
                                      'seqname_b','start_b','end_b','gene','index_b','strand_b','distanceAtoB')) %>%
@@ -126,12 +127,102 @@ write.table(closestGene, paste(baseRepository, '/defineCandidatesExpressionData/
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
 
-In the above file, there end up being some repeats of msat's because of overlapping gene regions. The next thing we want to do is to overlap the GGAA data with our RNA expression hits. 
+I am coming back at a later date to add a section here. After processing the ChIP data, I realized that we probably need to do this individually by strand. So, I will repeat this analysis the same way I did the ChIP analysis for closest peaks. The difference here is that we already have strand details for the GGAA sites, so we can just use one file for that part and try to sort out membership later on.
+
+```{r}
+###########################################################
+##read in the GTF 
+gtfGenes = as_tibble(as.data.frame(rtracklayer::import('C:/Users/chughes/Documents/bccrc/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf'))) %>%
+  dplyr::filter(type == 'gene' & gene_type == 'protein_coding')
+
+##read the msat data
+msatRepeats = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38NotAnnotated.rds',sep=''))
+msatBed = msatRepeats %>%
+  dplyr::select(chromosome, start, end, msat_name, score, strand) %>%
+  dplyr::rename(seqnames = 'chromosome')
+write.table(msatBed, paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeats.bed',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##make a positive gene file
+chromWithPeaks = msatBed$seqnames
+gtfBed = gtfGenes %>%
+  dplyr::select(seqnames, start, end, gene_name, strand) %>%
+  dplyr::mutate(seqnames = factor(seqnames, levels = c('chr1','chr2','chr3','chr4','chr5','chr6','chr7',
+                                                       'chr8','chr9','chr10','chr11','chr12','chr13','chr14',
+                                                       'chr15','chr16','chr17','chr18','chr19','chr20','chr21',
+                                                       'chr22','chrX','chrY'))) %>%
+  dplyr::arrange(seqnames, start) %>%
+  dplyr::mutate(score = seq(1,19955,1)) %>%
+  dplyr::select(seqnames, start, end, gene_name, score, strand) %>%
+  dplyr::filter(!is.na(seqnames) & seqnames %in% chromWithPeaks & strand == '+')
+write.table(gtfBed, paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_gtfGenesOnlyPositive.bed',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+##make a negative gene file
+gtfBed = gtfGenes %>%
+  dplyr::select(seqnames, start, end, gene_name, strand) %>%
+  dplyr::mutate(seqnames = factor(seqnames, levels = c('chr1','chr2','chr3','chr4','chr5','chr6','chr7',
+                                                       'chr8','chr9','chr10','chr11','chr12','chr13','chr14',
+                                                       'chr15','chr16','chr17','chr18','chr19','chr20','chr21',
+                                                       'chr22','chrX','chrY'))) %>%
+  dplyr::arrange(seqnames, start) %>%
+  dplyr::mutate(score = seq(1,19955,1)) %>%
+  dplyr::select(seqnames, start, end, gene_name, score, strand) %>%
+  dplyr::filter(!is.na(seqnames) & seqnames %in% chromWithPeaks & strand == '-')
+write.table(gtfBed, paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_gtfGenesOnlyNegative.bed',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Read in these results and check them for validity.
+
+```{r}
+##########################################################################################
+##test out the positive hits first
+posGgaa = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatClosestGenesPositive.tsv',sep=''), show_col_types = FALSE,
+                       col_names = c('seqname_a','start_a','end_a','msat_name','index_a','strand_a',
+                                     'seqname_b','start_b','end_b','symbol','index_b','strand_b','distanceAtoB')) 
+
+
+##check the negative hits
+negGgaa = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatClosestGenesNegative.tsv',sep=''), show_col_types = FALSE,
+                       col_names = c('seqname_a','start_a','end_a','msat_name','index_a','strand_a',
+                                     'seqname_b','start_b','end_b','symbol','index_b','strand_b','distanceAtoB'))
+
+
+##check whether any peaks are assigned to more than one gene
+posTest = dplyr::select(posGgaa, msat_name, symbol, distanceAtoB) %>%
+  dplyr::rename(posDist = 'distanceAtoB', posSymbol = 'symbol')
+negTest = dplyr::select(negGgaa, msat_name, symbol, distanceAtoB) %>%
+  dplyr::rename(negDist = 'distanceAtoB', negSymbol = 'symbol')
+posNeg = posTest %>%
+  dplyr::full_join(negTest) %>%
+  dplyr::mutate(posDist = ifelse(posDist == -1, NA, posDist),
+                negDist = ifelse(negDist == -1, NA, negDist))
+
+
+##so there are quite a few overlap peaks, but the assignments are quite clear
+##in disputes, take the gene closest up to a limit of 100Kb upstream
+posNegAssigned = posNeg %>%
+  dplyr::mutate(assignedSymbol = ifelse(posDist < -negDist | is.na(negDist), posSymbol, negSymbol),
+                assignedDist = ifelse(posDist < -negDist | is.na(negDist), posDist, negDist)) %>%
+  dplyr::filter(abs(assignedDist) <= 250000) %>%
+  dplyr::select(assignedSymbol, msat_name, assignedDist) %>%
+  dplyr::rename(symbol = 'assignedSymbol', distanceToGene = 'assignedDist') %>%
+  dplyr::left_join(msatRepeats)
+
+##save these data
+saveRDS(posNegAssigned, paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatsImprovedAssignment.rds',sep=''))
+write.table(posNegAssigned, paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatsImprovedAssignment.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+The next thing we want to do is to overlap the GGAA data with our RNA expression hits. 
 
 ```{r}
 ###########################################################
 ##read in the RNA data
-closestGene = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38Annotated.rds',sep=''))
+closestGene = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatsImprovedAssignment.rds',sep=''))
 rna = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_day0vs7EwsRegulationAssignments.rds', sep = '')) %>%
   dplyr::select(symbol, ewsRnaRegulate, log2FoldChange) %>%
   dplyr::left_join(closestGene)
@@ -169,7 +260,7 @@ Is there any relationship between the number of msats and the level of induction
 ```{r}
 ###########################################################
 ##read in the RNA data
-closestGene = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38Annotated.rds',sep=''))
+closestGene = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatsImprovedAssignment.rds',sep=''))
 rna = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_day0vs7EwsRegulationAssignments.rds', sep = '')) %>%
   dplyr::select(symbol, ewsRnaRegulate, log2FoldChange) %>%
   dplyr::left_join(closestGene)

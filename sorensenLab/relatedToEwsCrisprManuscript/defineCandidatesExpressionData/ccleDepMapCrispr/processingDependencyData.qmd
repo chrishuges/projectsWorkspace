@@ -1,0 +1,87 @@
+---
+title: "CRISPR dependency data"
+author: "Christopher Hughes"
+format: html
+---
+
+This document describes processing dependency data from DepMap for the purpose of excluding essential genes as targets.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('vroom')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+Read the sample annotation detail.
+
+```{r}
+##########################################################################################
+cellAnnotation = read_csv(paste(generalDatasets, '/depmap22Q4/Model.csv', sep = ''), show_col_types = FALSE)
+```
+
+Read in the RNA data and do some basic processing on it.
+
+```{r}
+##########################################################################################
+dep = vroom(paste(generalDatasets, '/depmap22Q4/CRISPRGeneDependency.csv', sep = ''), show_col_types = FALSE) %>%
+  tidyr::pivot_longer(cols = `A1BG (1)`:`ZZZ3 (26009)`, names_to = 'gene', values_to = 'depScore') %>%
+  dplyr::filter(!is.na(depScore)) %>%
+  dplyr::mutate(symbol = sub('(.*) \\(.*$', '\\1', gene)) %>%
+  dplyr::select(ModelID, symbol, depScore) %>%
+  dplyr::left_join(cellAnnotation)
+```
+
+Save the data for use downstream.
+
+```{r}
+##########################################################################################
+saveRDS(dep, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapCrispr/dataset_depmapDependencyParsed.rds', sep = ''))
+```
+
+Read in the previously parsed RNAseq data.
+
+```{r}
+##########################################################################################
+##read the rna data
+dep = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapCrispr/dataset_depmapDependencyParsed.rds', sep = '')) %>%
+  dplyr::filter(grepl('Ewing', OncotreeSubtype)) %>%
+  dplyr::select(symbol, depScore) %>%
+  dplyr::mutate(nCellLines = 1) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(depScore = median(depScore, na.rm = TRUE),
+                   nCellLines = sum(nCellLines))
+```
+
+Save the final data.
+
+```{r}
+##########################################################################################
+saveRDS(dep, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapCrispr/dataset_depmapDependencyEwingOnly.rds', sep = ''))
+```
+
+Done with these data for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+

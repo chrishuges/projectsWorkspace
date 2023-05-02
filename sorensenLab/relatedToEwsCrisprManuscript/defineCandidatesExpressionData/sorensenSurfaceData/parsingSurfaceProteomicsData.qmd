@@ -1,0 +1,58 @@
+---
+title: "Surface proteins"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes using our EwS surface proteomics data to help annotate hits in our own data.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+Read in the scored surface protein data.
+
+```{r}
+###########################################################
+##surface data
+pro = read_tsv(paste(baseRepository,'/defineCandidatesExpressionData/sorensenSurfaceData/sorensenSurfaceProteomeDataEws.txt',sep=''), show_col_types = FALSE) %>%
+  dplyr::select(symbol, Rank, Tier) %>%
+  dplyr::rename(surfaceRank = 'Rank', surfaceTier = 'Tier')
+
+##save these data
+saveRDS(pro, paste(baseRepository,'/defineCandidatesExpressionData/sorensenSurfaceData/datasetOutputs/dataset_surfaceProteinRanks.rds',sep=''))
+write.table(pro, paste(baseRepository,'/defineCandidatesExpressionData/sorensenSurfaceData/datasetOutputs/dataset_surfaceProteinRanks.tsv',sep=''),
+            sep = '\t', col.names = TRUE, row.names = FALSE, quote = FALSE)
+```
+
+Done with these data for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+

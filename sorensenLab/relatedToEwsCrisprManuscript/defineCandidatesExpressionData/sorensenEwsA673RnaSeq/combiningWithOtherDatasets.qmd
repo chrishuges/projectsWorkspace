@@ -55,7 +55,7 @@ Add in information about GGAA sites in proximity and their regulation.
 ```{r}
 ###########################################################
 ##read in the msat data and calculate some metrics
-closestGene = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatRepeatsHg38Annotated.rds',sep='')) %>%
+closestGgaa = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenFindingGgaaRepeats/datasetOutputs/dataset_msatsImprovedAssignment.rds',sep='')) %>%
   dplyr::select(symbol, msat_name, copyNumber) %>%
   dplyr::filter(!is.na(symbol)) %>%
   dplyr::mutate(msatCount = 1) %>%
@@ -71,6 +71,19 @@ ggaaReg = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/takGgaa
   dplyr::select(symbol, ensg, log2FoldChange, padj) %>%
   dplyr::rename(ggaaFc = 'log2FoldChange',
                 ggaaPadj = 'padj')
+```
+
+Get information about FLI1 peaks from ChIP data.
+
+```{r}
+##read in the peak data and calculate some metrics
+fli1Peaks = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_SRR8832674ImprovedAssignment.rds',sep='')) %>%
+  dplyr::select(symbol, peak_name) %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::mutate(fli1PeakCount = 1) %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(fli1PeakCount = sum(fli1PeakCount, na.rm = TRUE)) %>%
+  dplyr::ungroup()
 ```
 
 Get the proteomics data.
@@ -95,6 +108,27 @@ dda = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEws
                 symbol = 'rnaMapSymbol')
 ```
 
+Get the DepMap dependency data.
+
+```{r}
+###########################################################
+##get the depmap data we parsed earlier
+depData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapCrispr/dataset_depmapDependencyEwingOnly.rds', sep = '')) %>%
+  dplyr::select(-nCellLines) %>%
+  dplyr::filter(!is.na(symbol))
+```
+
+Get the surface proteomics data.
+
+```{r}
+###########################################################
+##get the depmap data we parsed earlier
+surfaceData = readRDS(paste(baseRepository,'/defineCandidatesExpressionData/sorensenSurfaceData/datasetOutputs/dataset_surfaceProteinRanks.rds',sep='')) %>%
+  dplyr::filter(!is.na(symbol))
+```
+
+
+
 Combine these with the RNA data.
 
 ```{r}
@@ -106,9 +140,45 @@ rna = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEws
   dplyr::left_join(dda) %>%
   dplyr::left_join(dia) %>%
   dplyr::left_join(ccle) %>%
-  dplyr::left_join(closestGene) %>%
-  dplyr::left_join(ggaaReg)
+  dplyr::left_join(fli1Peaks) %>%
+  dplyr::left_join(closestGgaa) %>%
+  dplyr::left_join(ggaaReg) %>%
+  dplyr::left_join(depData) %>%
+  dplyr::left_join(surfaceData)
 ```
+
+Define a score that allows us to narrow down hits of interest. This score is based on somewhat subjective cutoff criteria, and thus is open to modification. I am going to focus on induced genes as these would be the most ideal for targeting in a CRISPR screen.
+
+```{r}
+###########################################################
+##define an ews score in the rna table
+rnaScored = rna %>%
+  dplyr::mutate(isPro = rowMeans(pick(ddaFc,diaFc),na.rm = TRUE),
+                fli1PeakCount = ifelse(is.na(fli1PeakCount), 0, fli1PeakCount),
+                msatCount = ifelse(is.na(msatCount), 0, msatCount)) %>%
+  dplyr::mutate(log2FoldChangeScore = ifelse(log2FoldChange >= 1, 1, 0),
+                mscFcScore = ifelse(mscFc >= 1, 1, 0),
+                mpcFcScore = ifelse(mpcFc >= 1, 1, 0),
+                ewsRnaSpecificityScore = ifelse(ewsRnaSpecificity >= 1, 1, 0),
+                isProScore = ifelse(isPro >= 1, 1, 0),
+                fli1PeakCountScore = ifelse(fli1PeakCount >= 1, 1, 0),
+                msatCountScore = ifelse(msatCount >= 1, 1, 0),
+                ggaaFcScore = ifelse(ggaaFc >= 1, 1, 0)) %>%
+  dplyr::mutate(ewsSumScore = rowSums(pick(log2FoldChangeScore:ggaaFcScore), na.rm = TRUE)) %>%
+  dplyr::arrange(-ewsSumScore)
+
+##save these data
+saveRDS(rnaScored, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsCrisprTargets.rds',sep=''))
+write.table(rnaScored, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsCrisprTargets.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+
+
+
+
+
+
 
 
 

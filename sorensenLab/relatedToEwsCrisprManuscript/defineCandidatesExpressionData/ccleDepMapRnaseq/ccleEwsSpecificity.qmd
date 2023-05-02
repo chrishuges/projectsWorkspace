@@ -4,6 +4,8 @@ author: "Christopher Hughes"
 format: html
 ---
 
+This document describes processing CCLE RNA expression data in order to define a specificity score for Ewing sarcoma. 
+
 ## Setting up the environment
 
 These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.

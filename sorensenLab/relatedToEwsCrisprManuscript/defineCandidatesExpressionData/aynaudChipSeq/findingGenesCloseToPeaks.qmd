@@ -39,9 +39,228 @@ Read in the run table so we have annotation details if we need them.
 ##get the annotation data
 anno = read_csv(paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/SraRunTable.csv',sep=''), show_col_types = FALSE) %>%
   dplyr::select(sampleName, sampleType, day)
-
-##read in the day 17 peak file (will use this as day 0)
-d0 = read.table(paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/peaks/SRR8832674_peaks.narrowPeak',sep=''))
-
-
 ```
+
+Prepare bed files so we can do bedtools closest analysis.
+
+```{r}
+##########################################################################################
+##make a bed file from peak data
+##read in the day 17 peak file (will use this as day 0)
+d0 = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/peaks/SRR8832674_peaks.xls', sep = ''), 
+                     skip = 30, show_col_types = FALSE,
+                     col_names = c('seqnames','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  dplyr::mutate(peak_name = sub('.*results\\/(.*)', '\\1', name)) %>%
+  dplyr::mutate(seqnames = factor(seqnames, levels = c('chr1','chr2','chr3','chr4','chr5','chr6','chr7',
+                                                       'chr8','chr9','chr10','chr11','chr12','chr13','chr14',
+                                                       'chr15','chr16','chr17','chr18','chr19','chr20','chr21',
+                                                       'chr22','chrX','chrY'))) %>%
+  dplyr::arrange(seqnames, start) %>%
+  dplyr::select(seqnames, start, end, peak_name)
+write.table(d0, paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_SRR8832674Peaks.bed',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+
+##read in our gene data and a list of genes from our GTF
+gtfGenes = as_tibble(as.data.frame(rtracklayer::import('C:/Users/chughes/Documents/bccrc/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf'))) %>%
+  dplyr::filter(type == 'gene' & gene_type == 'protein_coding')
+
+##make a bed file from our gtf of genes
+chromWithPeaks = d0$seqnames
+gtfBed = gtfGenes %>%
+  dplyr::select(seqnames, start, end, gene_name, strand) %>%
+  dplyr::mutate(seqnames = factor(seqnames, levels = c('chr1','chr2','chr3','chr4','chr5','chr6','chr7',
+                                                       'chr8','chr9','chr10','chr11','chr12','chr13','chr14',
+                                                       'chr15','chr16','chr17','chr18','chr19','chr20','chr21',
+                                                       'chr22','chrX','chrY'))) %>%
+  dplyr::arrange(seqnames, start) %>%
+  dplyr::mutate(score = seq(1,19955,1)) %>%
+  dplyr::select(seqnames, start, end, gene_name, score, strand) %>%
+  dplyr::filter(!is.na(seqnames) & seqnames %in% chromWithPeaks)
+write.table(gtfBed, paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_gtfGenesOnly.bed',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+
+
+##run bedtools closest with these files and the command below
+#for unstranded processing
+#/home/chughes/softwareTools/bedtools-2.3.0/bedtools closest -iu -D ref -a /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211110_aynaudScRnaseqPmid32049009/results/dataset_SRR8832674Peaks.bed -b /mnt/Data/chughes/projectsRepository/sorensenLab/relatedToDlg2/sequencing20211110_aynaudScRnaseqPmid32049009/results/dataset_gtfGenesOnly.bed > dataset_SRR8832674_ClosestGenesUnstranded.tsv
+```
+
+Read in the results from bedtools and combine with the original peak data in order to annotate that dataset.  
+
+```{r}
+###########################################################
+##read the results
+closestGene = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_SRR8832674_ClosestGenesUnstranded.tsv',sep=''), show_col_types = FALSE,
+                       col_names = c('seqname_a','start_a','end_a','peak_name',
+                                     'seqname_b','start_b','end_b','gene','index_b','strand_b','distanceAtoB')) %>%
+  left_join(d0) %>%
+  dplyr::rename(symbol = 'gene')
+
+##save these data
+saveRDS(closestGene, paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_SRR8832674Annotated.rds',sep=''))
+write.table(closestGene, paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_SRR8832674Annotated.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Looking at this data, I think we need to go back and do this in a stranded manner. An example gene is POU3F1, which it is giving peaks after the gene because it is a minus strand gene, but it is ignoring strand details. One problem is that these ChIP data don't have strand details. So, I think if we just split the files into positive and negative stranded genes and run each separately, it should be OK. Since the ChIPseq peaks don't have strands, we will just call them all positive or negative, and then sort out later on which one they should actually belong to.
+
+```{r}
+###########################################################
+##read in the GTF 
+gtfGenes = as_tibble(as.data.frame(rtracklayer::import('C:/Users/chughes/Documents/bccrc/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf'))) %>%
+  dplyr::filter(type == 'gene' & gene_type == 'protein_coding')
+
+##read the day17 peak file and make a positive strand input file
+d0 = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/peaks/SRR8832674_peaks.xls', sep = ''), 
+                     skip = 30, show_col_types = FALSE,
+                     col_names = c('seqnames','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  dplyr::mutate(peak_name = sub('.*results\\/(.*)', '\\1', name)) %>%
+  dplyr::mutate(seqnames = factor(seqnames, levels = c('chr1','chr2','chr3','chr4','chr5','chr6','chr7',
+                                                       'chr8','chr9','chr10','chr11','chr12','chr13','chr14',
+                                                       'chr15','chr16','chr17','chr18','chr19','chr20','chr21',
+                                                       'chr22','chrX','chrY'))) %>%
+  dplyr::arrange(seqnames, start) %>%
+  dplyr::mutate(strand = '+') %>%
+  dplyr::select(seqnames, start, end, peak_name, fold_enrichment, strand)
+write.table(d0, paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_SRR8832674PeaksPositive.bed',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##make a positive gene file
+chromWithPeaks = d0$seqnames
+gtfBed = gtfGenes %>%
+  dplyr::select(seqnames, start, end, gene_name, strand) %>%
+  dplyr::mutate(seqnames = factor(seqnames, levels = c('chr1','chr2','chr3','chr4','chr5','chr6','chr7',
+                                                       'chr8','chr9','chr10','chr11','chr12','chr13','chr14',
+                                                       'chr15','chr16','chr17','chr18','chr19','chr20','chr21',
+                                                       'chr22','chrX','chrY'))) %>%
+  dplyr::arrange(seqnames, start) %>%
+  dplyr::mutate(score = seq(1,19955,1)) %>%
+  dplyr::select(seqnames, start, end, gene_name, score, strand) %>%
+  dplyr::filter(!is.na(seqnames) & seqnames %in% chromWithPeaks & strand == '+')
+write.table(gtfBed, paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_gtfGenesOnlyPositive.bed',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##read the day17 peak file and make a negative strand input file
+d0 = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/peaks/SRR8832674_peaks.xls', sep = ''), 
+                     skip = 30, show_col_types = FALSE,
+                     col_names = c('seqnames','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  dplyr::mutate(peak_name = sub('.*results\\/(.*)', '\\1', name)) %>%
+  dplyr::mutate(seqnames = factor(seqnames, levels = c('chr1','chr2','chr3','chr4','chr5','chr6','chr7',
+                                                       'chr8','chr9','chr10','chr11','chr12','chr13','chr14',
+                                                       'chr15','chr16','chr17','chr18','chr19','chr20','chr21',
+                                                       'chr22','chrX','chrY'))) %>%
+  dplyr::arrange(seqnames, start) %>%
+  dplyr::mutate(strand = '-') %>%
+  dplyr::select(seqnames, start, end, peak_name, fold_enrichment, strand)
+write.table(d0, paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_SRR8832674PeaksNegative.bed',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##make a negative gene file
+chromWithPeaks = d0$seqnames
+gtfBed = gtfGenes %>%
+  dplyr::select(seqnames, start, end, gene_name, strand) %>%
+  dplyr::mutate(seqnames = factor(seqnames, levels = c('chr1','chr2','chr3','chr4','chr5','chr6','chr7',
+                                                       'chr8','chr9','chr10','chr11','chr12','chr13','chr14',
+                                                       'chr15','chr16','chr17','chr18','chr19','chr20','chr21',
+                                                       'chr22','chrX','chrY'))) %>%
+  dplyr::arrange(seqnames, start) %>%
+  dplyr::mutate(score = seq(1,19955,1)) %>%
+  dplyr::select(seqnames, start, end, gene_name, score, strand) %>%
+  dplyr::filter(!is.na(seqnames) & seqnames %in% chromWithPeaks & strand == '-')
+write.table(gtfBed, paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_gtfGenesOnlyNegative.bed',sep = ''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Read in these results and check them for validity.
+
+```{r}
+##########################################################################################
+##read in the original peak data
+d0 = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/peaks/SRR8832674_peaks.xls', sep = ''), 
+                     skip = 30, show_col_types = FALSE,
+                     col_names = c('seqnames','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  dplyr::mutate(peak_name = sub('.*results\\/(.*)', '\\1', name)) %>%
+  dplyr::mutate(seqnames = factor(seqnames, levels = c('chr1','chr2','chr3','chr4','chr5','chr6','chr7',
+                                                       'chr8','chr9','chr10','chr11','chr12','chr13','chr14',
+                                                       'chr15','chr16','chr17','chr18','chr19','chr20','chr21',
+                                                       'chr22','chrX','chrY'))) %>%
+  dplyr::arrange(seqnames, start) %>%
+  dplyr::select(seqnames, start, end, peak_name, fold_enrichment)
+
+
+##test out the positive hits first
+posPeaks = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_SRR8832674_ClosestGenesPositive.tsv',sep=''), show_col_types = FALSE,
+                       col_names = c('seqname_a','start_a','end_a','peak_name', 'peakScore','strand',
+                                     'seqname_b','start_b','end_b','gene','index_b','strand_b','distanceAtoB')) %>%
+  dplyr::left_join(d0) %>%
+  dplyr::rename(symbol = 'gene')
+
+
+
+##check the negative hits
+negPeaks = read_tsv(paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_SRR8832674_ClosestGenesNegative.tsv',sep=''), show_col_types = FALSE,
+                       col_names = c('seqname_a','start_a','end_a','peak_name', 'peakScore','strand',
+                                     'seqname_b','start_b','end_b','gene','index_b','strand_b','distanceAtoB')) %>%
+  dplyr::left_join(d0) %>%
+  dplyr::rename(symbol = 'gene')
+
+
+##check whether any peaks are assigned to more than one gene
+posTest = dplyr::select(posPeaks, peak_name, symbol, distanceAtoB) %>%
+  dplyr::rename(posDist = 'distanceAtoB', posSymbol = 'symbol')
+negTest = dplyr::select(negPeaks, peak_name, symbol, distanceAtoB) %>%
+  dplyr::rename(negDist = 'distanceAtoB', negSymbol = 'symbol')
+posNeg = posTest %>%
+  dplyr::full_join(negTest)
+
+
+##so there are quite a few overlap peaks, but the assignments are quite clear
+##in disputes, take the gene closest up to a limit of 100Kb upstream
+posNegAssigned = posNeg %>%
+  dplyr::mutate(assignedSymbol = ifelse(posDist < -negDist, posSymbol, negSymbol),
+                assignedDist = ifelse(posDist < -negDist, posDist, negDist)) %>%
+  dplyr::filter(abs(assignedDist) <= 250000) %>%
+  dplyr::select(assignedSymbol, peak_name, assignedDist) %>%
+  dplyr::rename(symbol = 'assignedSymbol', distanceToGene = 'assignedDist')
+
+##save these data
+saveRDS(posNegAssigned, paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_SRR8832674ImprovedAssignment.rds',sep=''))
+write.table(posNegAssigned, paste(baseRepository, '/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_SRR8832674ImprovedAssignment.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+
+
+
+Done with these data for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
