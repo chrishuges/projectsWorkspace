@@ -72,7 +72,9 @@ Perform differential expression analysis on these data.
 ```{r}
 ##########################################################################################
 ##I am going to do one-by-one comparisons
-processedData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/datasetOutputs/dataset_a673ShEf1TotalProteome.rds', sep = ''))
+processedData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/datasetOutputs/dataset_a673ShEf1TotalProteome.rds', sep = '')) %>%
+  dplyr::arrange(-n_peptides) %>%
+  dplyr::filter(!is.na(symbol) & !duplicated(symbol))
 conditionsToCompare = c('day0')
 controlCondition = 'day7'
 for (i in 1:length(conditionsToCompare)){

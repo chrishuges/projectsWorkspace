@@ -1,0 +1,167 @@
+---
+title: "GREB1 knockdown"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of RNA-seq data derived from NB cells treated with siRNA against GREB1.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('tximport')
+library('GenomicFeatures')
+library('DESeq2')
+library('ggrepel')
+library('org.Hs.eg.db')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+## Data processing
+
+The first thing to do is to make a sample annotation table. We have an annotation table that we made in excel. The code below will get the file paths for the quant files, read in our transcriptome gtf, and using tximport to read in the entire dataset.
+
+```{r}
+##########################################################################################
+#read a table containing the sample information for our RNAseq runs
+samples = read_tsv(paste(baseRepository, '/sequencing20230502_haifengGreb1SirnaNb/sampleInfo.txt', sep = ''), show_col_types = FALSE)
+samples
+
+#use the sample info to build a file list
+files = file.path(baseRepository, 'sequencing20230502_haifengGreb1SirnaNb', 'quants', samples$sampleName, 'quant.sf')
+all(file.exists(files))
+
+##build the transcriptome index...this is based on the same gtf we used in the alignment process
+txdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(txdb, keytype = "TXNAME")
+tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
+
+##read the transcriptome data processed from salmon
+txi = tximport(files, type = 'salmon', tx2gene = tx2gene)
+txiAnnotated = tibble(as.data.frame(txi$abundance)) %>%
+  mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$abundance)))
+
+##add in gene symbols
+geneSymbols = select(org.Hs.eg.db, txiAnnotated$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') 
+geneExpData = txiAnnotated %>%
+  left_join(geneSymbols) %>%
+  mutate(symbol = SYMBOL)
+colnames(geneExpData)[1:6] = samples$sampleName
+
+##write this gene set to a file
+saveRDS(geneExpData, paste(baseRepository, '/sequencing20230502_haifengGreb1SirnaNb/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
+write.table(geneExpData, paste(baseRepository, '/sequencing20230502_haifengGreb1SirnaNb/datasetOutputs/dataset_tpmExpression.tsv', sep = ''), 
+            row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+```
+
+Perform differential expression analysis using DESeq2.
+
+```{r}
+##########################################################################################
+##perform the deseq analysis
+ddsTxi = DESeqDataSetFromTximport(txi,
+                                  colData = samples,
+                                  design = ~ treatment)
+dds = DESeq(ddsTxi)
+
+##filter that the gene must be present in all 3 replicates of at least one treatment
+keep = (rowSums(counts(dds)[,1:3] >= 10) == 3) | 
+  (rowSums(counts(dds)[,4:6] >= 10) == 3)
+dds = dds[keep,]
+```
+
+Extract the DESeq data and plot for the different comparisons of interest.
+
+```{r}
+##########################################################################################
+#parse the deseq data - change the first two values to get different comparisons
+toCompare = c('siGREB1')
+datasetSecond = 'siNC'
+for (i in 1:length(toCompare)){
+  datasetFirst = toCompare[i]
+  res = results(dds, contrast = c('treatment', datasetFirst, datasetSecond))
+  ens.str = substr(rownames(res), 1, 15)
+  res$symbol = mapIds(org.Hs.eg.db,
+                      keys = ens.str,
+                      column = 'SYMBOL',
+                      keytype = 'ENSEMBL',
+                      multiVals = 'first')
+  resOrdered = as.data.frame(res[order(res$pvalue),]) %>%
+    dplyr::mutate(ensg = rownames(.)) %>%
+    dplyr::arrange(-baseMean) %>%
+    dplyr::filter(!is.na(symbol) & !duplicated(symbol)) %>%
+    dplyr::arrange(padj) %>%
+    tibble()
+  
+  #save the data
+  saveRDS(resOrdered, 
+          paste(baseRepository, '/sequencing20230502_haifengGreb1SirnaNb/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.rds', sep = ''))
+  write.table(resOrdered, 
+            file = paste(baseRepository, '/sequencing20230502_haifengGreb1SirnaNb/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+  
+  
+  ##########################################################################################
+  #assign colors based on fold change and p-values
+  rnaExp = as.data.frame(resOrdered)
+  rnaExp$logPValue = -log10(rnaExp$padj)
+  rnaExp$logPValueScaled = ifelse(rnaExp$logPValue > 100, 100, rnaExp$logPValue)
+  rnaExp$pColors = ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange >= 1, brewer.pal(4,'OrRd')[4], 
+                          ifelse(rnaExp$padj <= 0.001 & rnaExp$log2FoldChange <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+  #assign text labels to specific genes of interest
+  targetGenes = c('GREB1','MYCN')
+  rnaExp$pText = ifelse(rnaExp$symbol %in% targetGenes, rnaExp$symbol, '')
+
+  #create the plot and save it
+  #rnaPlot = dplyr::filter(rnaExp, pColors != brewer.pal(3,'Greys')[2])
+  ggplot(rnaExp, aes(log2FoldChange, logPValueScaled)) +
+    geom_point(size = 0.5, color = rnaExp$pColors) +
+    labs(x = paste('log2(',datasetFirst,' - ',datasetSecond,')', sep = ''), y = '-log10(Adjusted p-value)', title = paste(datasetFirst,' vs ',datasetSecond, sep='')) +
+    geom_text_repel(label = rnaExp$pText, nudge_x = 2, nudge_y = -30, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+    scale_x_continuous(limits = c(-6,6), breaks = seq(-20,20,2)) +
+    scale_y_continuous(limits = c(0,100), breaks = seq(0,100,25)) +
+    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+    theme_classic()
+  ggsave(paste(baseRepository, '/sequencing20230502_haifengGreb1SirnaNb/plots/scatter_deseq2_', datasetFirst, '-', datasetSecond, '.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+}
+```
+
+Done with these data for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+
+

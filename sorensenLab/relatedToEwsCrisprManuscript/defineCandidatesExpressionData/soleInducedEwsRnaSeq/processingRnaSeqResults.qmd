@@ -98,12 +98,7 @@ tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
 txi = tximport(quantFiles, type = 'salmon', tx2gene = tx2gene)
 txiAnnotated = tibble(as.data.frame(txi$abundance)) %>%
   mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$abundance)))
-```
 
-Take a quick look at these data for a couple of positive control genes to make sure it is as we expect for each sample. 
-
-```{r}
-##########################################################################################
 ##add in gene symbols
 geneSymbols = select(org.Hs.eg.db, txiAnnotated$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') 
 geneExpData = txiAnnotated %>%
@@ -113,8 +108,14 @@ geneExpData = txiAnnotated %>%
 ##write this gene set to a file
 saveRDS(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
 write.table(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_tpmExpression.tsv', sep = ''), row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+```
 
+Take a quick look at these data for a couple of positive control genes to make sure it is as we expect for each sample. 
+
+```{r}
+##########################################################################################
 ##extract the target gene from the data and set up the data frame for plotting
+geneExpData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
 targetGenes = c('PRKCB')
 targetData = geneExpData %>%
   dplyr::filter(symbol %in% targetGenes) %>%
@@ -189,16 +190,20 @@ for (i in 1:length(toCompare)){
   res = results(dds, contrast = c('sampleNames', datasetFirst, datasetSecond))
   ens.str = substr(rownames(res), 1, 15)
   res$symbol = mapIds(org.Hs.eg.db,
-                      keys=ens.str,
-                      column="SYMBOL",
-                      keytype="ENSEMBL",
-                      multiVals="first")
-  resOrdered = res[order(res$pvalue),]
+                      keys = ens.str,
+                      column = 'SYMBOL',
+                      keytype = 'ENSEMBL',
+                      multiVals = 'first')
+  resOrdered = as.data.frame(res[order(res$pvalue),]) %>%
+    dplyr::mutate(ensg = rownames(.)) %>%
+    dplyr::arrange(-baseMean) %>%
+    dplyr::filter(!is.na(symbol) & !duplicated(symbol)) %>%
+    tibble()
   
   #save the data
-  saveRDS(as.data.frame(resOrdered), 
+  saveRDS(resOrdered, 
           paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.rds', sep = ''))
-  write.csv(as.data.frame(resOrdered), 
+  write.csv(resOrdered, 
             file = paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.csv', sep = ''))
   
   
@@ -234,26 +239,24 @@ There are a ton of differentially expressed transcripts here. We can cross refer
 ```{r}
 ##########################################################################################
 ##read in the differential expression data
-msc = tibble(readRDS(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_EWIma1-MSC_Pat.rds',sep=''))) %>%
+msc = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_EWIma1-MSC_Pat.rds',sep='')) %>%
   dplyr::rename(msc_baseMean = baseMean,
                 msc_log2FoldChange = log2FoldChange,
                 msc_lfcSE = lfcSE,
                 msc_stat = stat,
                 msc_pvalue = pvalue,
-                msc_padj = padj) %>%
-  dplyr::filter(!is.na(symbol))
-mpc = tibble(readRDS(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_EWIma1-hMPC.rds',sep=''))) %>%
+                msc_padj = padj) 
+mpc = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_EWIma1-hMPC.rds',sep='')) %>%
   dplyr::rename(mpc_baseMean = baseMean,
                 mpc_log2FoldChange = log2FoldChange,
                 mpc_lfcSE = lfcSE,
                 mpc_stat = stat,
                 mpc_pvalue = pvalue,
-                mpc_padj = padj) %>%
-  dplyr::filter(!is.na(symbol))
+                mpc_padj = padj)
 
 ##combine the data
 ewsDeData = msc %>%
-  full_join(mpc)
+  dplyr::inner_join(mpc)
 
 ##assign some colors and text labels for the plot
 ewsDeData$pColors = ifelse(ewsDeData$msc_log2FoldChange >= 1 & ewsDeData$mpc_log2FoldChange >= 1, brewer.pal(4,'OrRd')[4], 

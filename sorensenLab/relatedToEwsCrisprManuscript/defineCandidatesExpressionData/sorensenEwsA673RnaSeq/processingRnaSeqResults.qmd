@@ -24,7 +24,6 @@ library('GenomicFeatures')
 library('DESeq2')
 library('ggrepel')
 library('org.Hs.eg.db')
-library('TMixClust')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
@@ -61,12 +60,7 @@ tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
 txi = tximport(files, type = 'salmon', tx2gene = tx2gene)
 txiAnnotated = tibble(as.data.frame(txi$abundance)) %>%
   mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$abundance)))
-```
 
-Take a quick look at these data for a couple of positive control genes to make sure it is as we expect for each sample. 
-
-```{r}
-##########################################################################################
 ##add in gene symbols
 geneSymbols = select(org.Hs.eg.db, txiAnnotated$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') 
 geneExpData = txiAnnotated %>%
@@ -77,8 +71,14 @@ colnames(geneExpData)[1:24] = samples$accession
 ##write this gene set to a file
 saveRDS(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
 write.table(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_tpmExpression.tsv', sep = ''), row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+```
 
+Take a quick look at these data for a couple of positive control genes to make sure it is as we expect for each sample. 
+
+```{r}
+##########################################################################################
 ##extract the target gene from the data and set up the data frame for plotting
+geneExpData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
 targetGenes = c('PRKCB','NR0B1','LOX','UGT3A2','STEAP1','STEAP2','IL1RAP')
 for (i in 1:length(targetGenes)){
   targetData = geneExpData %>%
@@ -109,7 +109,6 @@ for (i in 1:length(targetGenes)){
   ##save the plot in case we want it later
   ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/scatter_',targetGenes[i],'_RnaExpressionLevels.pdf', sep = ''),
         height = 2, width = 2, useDingbats = FALSE)
-  
 }
 ```
 
@@ -161,16 +160,20 @@ for (i in 1:length(toCompare)){
   res = results(dds, contrast = c('sampleName', datasetFirst, datasetSecond))
   ens.str = substr(rownames(res), 1, 15)
   res$symbol = mapIds(org.Hs.eg.db,
-                      keys=ens.str,
-                      column="SYMBOL",
-                      keytype="ENSEMBL",
-                      multiVals="first")
-  resOrdered = res[order(res$pvalue),]
+                      keys = ens.str,
+                      column = 'SYMBOL',
+                      keytype = 'ENSEMBL',
+                      multiVals = 'first')
+  resOrdered = as.data.frame(res[order(res$pvalue),]) %>%
+    dplyr::mutate(ensg = rownames(.)) %>%
+    dplyr::arrange(-baseMean) %>%
+    dplyr::filter(!is.na(symbol) & !duplicated(symbol)) %>%
+    tibble()
   
   #save the data
-  saveRDS(as.data.frame(resOrdered), 
+  saveRDS(resOrdered, 
           paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.rds', sep = ''))
-  write.csv(as.data.frame(resOrdered), 
+  write.csv(resOrdered, 
             file = paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_', datasetFirst, '-', datasetSecond, '.csv', sep = ''))
   
   
@@ -237,10 +240,8 @@ Annotate EWS high and low genes and send them to a file. The assignment criteria
 ##########################################################################################
 ##read in the day 7 and day 0 comparison
 d0 = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day0-day7.rds', sep = '')) %>%
-  dplyr::mutate(ensg = rownames(.)) %>%
   dplyr::mutate(ewsRnaRegulate = ifelse(log2FoldChange >= 0.5 & padj <= 0.001, 'induced',
-                                        ifelse(log2FoldChange <= -0.5 & padj <= 0.001, 'repressed', 'not regulated'))) %>%
-  tibble()
+                                        ifelse(log2FoldChange <= -0.5 & padj <= 0.001, 'repressed', 'not regulated')))
 
 ##save these data
 saveRDS(d0, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_day0vs7EwsRegulationAssignments.rds', sep = ''))

@@ -236,6 +236,64 @@ colVec = c(rep('red',8),rep('blue',8),rep('green',8))
 plotMDS(log2(dataIrs), col = colVec, main = "IRS clusters group by condition")
 ```
 
+Make a nicer PCA plot of these data.
+
+```{r}
+##########################################################################################
+##prepare the data frame for the PCA plot...we are going to make a DESeq object to facilitate this
+prepIrs = dataIrs
+prepIrs[prepIrs == 0] = NA
+row.names(prepIrs) = rawData$accession
+cts = log2(prepIrs[complete.cases(prepIrs),])
+cts = apply(cts, 2, function(x) as.integer(x))
+coldata = data.frame('sampleCol' = colnames(dataIrs),
+                     'sampleName' = rep(c('day0','day7','day9','day10','day11','day14','day17','day22'), 3),
+                     'batch' = rep(c('setA','setB','setC'),each = 8))
+dds = DESeqDataSetFromMatrix(countData = cts,
+                              colData = coldata,
+                              design = ~ sampleName)
+
+##
+mdsPlot = plotPCA(DESeqTransform(dds), intgroup = c('sampleName','batch'), returnData = TRUE)
+mdsPlot$sampleName = factor(mdsPlot$sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22'))
+percentVar = round(100 * attr(mdsPlot, 'percentVar'))
+#make the ggplot
+ggplot(mdsPlot, aes(PC1, PC2, color = sampleName, shape = batch)) +
+  geom_point(size = 3, alpha = 0.75) +
+  scale_color_manual(values = rep(c(brewer.pal(3,'Blues')[3], brewer.pal(3,'OrRd')[3], brewer.pal(7,'Blues')[1:6]),3)) +
+  scale_x_continuous(limits = c(-30,20), breaks = seq(-30,20,10)) +
+  scale_y_continuous(limits = c(-10,16), breaks = seq(-20,20,4)) +
+  labs(x = paste0('PC1: ', percentVar[1], '% variance'), 
+       y = paste0('PC2: ', percentVar[2], '% variance'), 
+       title = 'A673 protein groups') +
+  theme_classic() +
+  theme(legend.position = 'none')
+#save the plot
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/plots/pcaplot_a673ShEwsFli1AbundanceLog.pdf', sep = ''), 
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+##
+mdsPlot = plotPCA(DESeqTransform(dds), intgroup = c('sampleName','batch'), returnData = TRUE)
+mdsPlot$sampleName = factor(mdsPlot$sampleName, levels = c('day0','day7','day9','day10','day11','day14','day17','day22'))
+percentVar = round(100 * attr(mdsPlot, 'percentVar'))
+#make the ggplot
+ggplot(mdsPlot, aes(PC1, PC2, color = sampleName, shape = batch)) +
+  geom_point(size = 3, alpha = 0.75) +
+  geom_text(label = mdsPlot$sampleName) +
+  scale_color_manual(values = rep(c(brewer.pal(3,'Blues')[3], brewer.pal(3,'OrRd')[3], brewer.pal(7,'Blues')[1:6]),3)) +
+  scale_x_continuous(limits = c(-30,20), breaks = seq(-30,20,10)) +
+  scale_y_continuous(limits = c(-10,16), breaks = seq(-20,20,4)) +
+  labs(x = paste0('PC1: ', percentVar[1], '% variance'), 
+       y = paste0('PC2: ', percentVar[2], '% variance'), 
+       title = 'A673 protein groups') +
+  theme_classic() +
+  theme(legend.position = 'none')
+#save the plot
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/plots/pcaplot_a673ShEwsFli1AbundanceLogWithText.pdf', sep = ''), 
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
 Recombine the data with the accessions and save the final file.
 
 ```{r}
@@ -253,8 +311,8 @@ Take a quick look at these data for a couple of positive control genes to make s
 
 ```{r}
 ##########################################################################################
-##add in gene symbols
-geneExpData = finalIrsData
+##read in the normalized data
+geneExpData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_proteinSetABCIrsNormalized.rds', sep = ''))
 
 ##extract the target gene from the data and set up the data frame for plotting
 targetGenes = c('PRKCB')
@@ -290,31 +348,6 @@ ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Pro
 
 This looks as we expect with PRKCB expression to be low in day 7 cells that lack EWS-FLI1 expression. The next thing we can do is to perform a differential expression analysis between the the different time points and see what comes out. We will do this using DEqMS. For filtering, I chose the same criteria as for the RNA data where I specified that something must be present in 3 replicates from at least day 0 or day 7.
 
-```{r}
-##########################################################################################
-##perform the differential abundance analysis
-dataIrsRaw = as.data.frame(finalIrsData[!is.na(finalIrsData$symbol),])
-row.names(dataIrsRaw) = dataIrsRaw$accession
-dataIrs = dataIrsRaw[,c(which(grepl('day0', colnames(dataIrsRaw)) | grepl('day7', colnames(dataIrsRaw))))] #I only keep the two time points I want to compare here
-dataIrsLog = log2(dataIrs)
-#dataIrsLog = na.omit(dataIrsLog)
-
-##make the design table and fit the model
-cond = as.factor(rep(c('day0','day7'),3))
-design = model.matrix(~0+cond) # 0 means no intercept for the linear model
-colnames(design) = gsub('cond','',colnames(design))
-contrast =  makeContrasts(contrasts = 'day0-day7', levels = design)
-fit1 = lmFit(dataIrsLog, design)
-fit2 = contrasts.fit(fit1,contrasts = contrast)
-fit3 = eBayes(fit2)
-
-##DEqMS analysis
-count_columns = seq(3,5,1)
-psm.count.table = data.frame(count = rowMins(as.matrix(dataIrsRaw[,count_columns])), row.names =  dataIrsRaw$accession)
-fit3$count = psm.count.table[rownames(fit3$coefficients),'count']
-fit4 = spectraCounteBayes(fit3)
-```
-
 Outputs of spectraCounteBayes:
 
 * object is augmented form of fit object from eBayes in Limma, with the additions being:
@@ -325,48 +358,86 @@ Outputs of spectraCounteBayes:
 * sca.postvar - DEqMS estimated posterior variance
 * model - fitted model
 
-Output the results.
-
 ```{r}
 ##########################################################################################
-##extract the results
-deqmsResults = tibble(outputResult(fit4, coef_col = 1)) %>%
-  dplyr::rename(accession = gene) %>%
-  left_join(dataIrsRaw[,c('accession','symbol')])
+##read in the normalized data
+geneExpData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_proteinSetABCIrsNormalized.rds', sep = '')) %>%
+  dplyr::mutate(sumPsm = rowSums(pick(psma:psmc),na.rm = TRUE)) %>%
+  dplyr::arrange(-sumPsm) %>%
+  dplyr::select(-sumPsm) %>%
+  dplyr::filter(!is.na(symbol) & !duplicated(symbol) & !duplicated(accession))
 
-##I have to redo the symbols in order to combine with these later data
-deqmsResults$rnaMapSymbol = mapIds(org.Hs.eg.db,
-                    keys=deqmsResults$accession,
-                    column="SYMBOL",
-                    keytype="UNIPROT",
-                    multiVals="first")
+##perform the differential abundance analysis
+toCompare = c('day0','day9','day10','day11','day14','day17','day22')
+for (i in 1:length(toCompare)){
+  datasetFirst = toCompare[i]
+  datasetSecond = 'day7'
+  #
+  dataIrsRaw = as.data.frame(geneExpData)
+  row.names(dataIrsRaw) = dataIrsRaw$accession
+  dataIrs = dataIrsRaw[,c(which(grepl(datasetFirst, colnames(dataIrsRaw)) | grepl(datasetSecond, colnames(dataIrsRaw))))] #I only keep the two time points I want to compare here
+  dataIrsLog = log2(dataIrs)
+  #dataIrsLog = na.omit(dataIrsLog)
+  
+  #make the design table and fit the model
+  cond = as.factor(rep(c(datasetFirst,datasetSecond),3))
+  design = model.matrix(~0+cond) # 0 means no intercept for the linear model
+  colnames(design) = gsub('cond','',colnames(design))
+  contrast =  makeContrasts(contrasts = paste(datasetFirst,'-',datasetSecond,sep=''), levels = design)
+  fit1 = lmFit(dataIrsLog, design)
+  fit2 = contrasts.fit(fit1,contrasts = contrast)
+  fit3 = eBayes(fit2)
+  
+  #DEqMS analysis
+  count_columns = seq(3,5,1)
+  psm.count.table = data.frame(count = rowMins(as.matrix(dataIrsRaw[,count_columns])), row.names =  geneExpData$accession)
+  fit3$count = psm.count.table[rownames(fit3$coefficients),'count']
+  fit4 = spectraCounteBayes(fit3)
+  
+  #extract the results
+  deqmsResults = tibble(outputResult(fit4, coef_col = 1)) %>%
+    dplyr::rename(accession = gene) %>%
+    dplyr::left_join(geneExpData[,c('accession','symbol')])
+  
+  #I have to redo the symbols in order to combine with these later data
+  deqmsResults$rnaMapSymbol = mapIds(org.Hs.eg.db,
+                    keys= deqmsResults$accession,
+                    column = 'SYMBOL',
+                    keytype = 'UNIPROT',
+                    multiVals = 'first')
 
-##write the data
-saveRDS(deqmsResults, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_deqms_day0-day7.rds', sep = ''))
-write.table(deqmsResults, 
-            paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_deqms_day0-day7.csv', sep = ''),
-            sep = ',', row.names = FALSE, quote = FALSE)
+  #write the data
+  saveRDS(deqmsResults, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_deqms_',datasetFirst,'-',datasetSecond,'.rds', sep = ''))
+  write.table(deqmsResults, 
+              paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_deqms_',datasetFirst,'-',datasetSecond,'.csv', sep = ''),
+              sep = ',', row.names = FALSE, quote = FALSE)
+  
+  ##########################################################################################
+  #assign colors based on fold change and p-values
+  proExp = as.data.frame(deqmsResults)
+  proExp$logPValue = -log10(proExp$sca.P.Value)
+  proExp$logPValueScaled = ifelse(proExp$logPValue > 10, 10, proExp$logPValue)
+  proExp$pColors = ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC >= 1, brewer.pal(4,'OrRd')[4], 
+                          ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+  #assign text labels to specific genes of interest
+  targetGenes = c('IL1RAP','STEAP1','PRKCB','LOX','UGT3A2','STEAP2','NR0B1')
+  proExp$pText = ifelse(proExp$symbol %in% targetGenes, proExp$symbol, '')
 
-##filter the data for upregulated candidates
-rnaData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_candidatesPlusSole.rds', sep = ''))
-ewsOutput = deqmsResults %>%
-  dplyr::filter(sca.P.Value <= 0.01 & !is.na(symbol)) %>%
-  dplyr::select(rnaMapSymbol, logFC) %>%
-  dplyr::rename(symbol = rnaMapSymbol, a673_log2FoldChangeProtein = logFC) %>%
-  dplyr::full_join(rnaData)
-#
-saveRDS(ewsOutput, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_candidatesWithProteins.rds', sep = ''))
-write.table(ewsOutput, 
-            paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_candidatesWithProteins.csv', sep = ''),
-            sep = ',', row.names = FALSE, quote = FALSE)
+  #create the plot and save it
+  ggplot(proExp, aes(logFC, logPValueScaled)) +
+    geom_point(size = 0.5, color = proExp$pColors) +
+    labs(x = paste('log2(',datasetFirst,' - ',datasetSecond,')', sep = ''), y = '-log10(Adjusted p-value)', title = paste(datasetFirst,' vs ',datasetSecond, sep='')) +
+    geom_text_repel(label = proExp$pText, nudge_x = 0, nudge_y = -2, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+    scale_x_continuous(limits = c(-6,6), breaks = seq(-20,20,2)) +
+    scale_y_continuous(limits = c(0,10), breaks = seq(0,50,5)) +
+    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+    theme_classic()
+  ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/plots/scatter_deqms_', datasetFirst, '-', datasetSecond, '.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+}
 ```
-
-
-
-Want to do the PCA here and some volcano plots.
-
-
-
 
 Extract the DESeq data and plot for the different comparisons of interest.
 
@@ -449,25 +520,6 @@ ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Rna
 x = counts(dds)[order(dispersions(dds), decreasing=TRUE)[1:1000],]
 ```
 
-I am primarily interested in upregulated transcripts here as these will be the ones we target in the CRISPR screen. So, we can filter our data down and combine them with the Sole data that we prepared before. We will keep transcripts from both sets and we will use other data to filter them down later on.
-
-```{r}
-##########################################################################################
-##read in the Sole data
-sole = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/soleInducedEwsRnaSeq/datasetOutputs/dataset_deseq2_candidates.rds', sep = ''))
-
-##filter our own data focusing on the day 0 versus day 7 comparison
-ews = tibble(readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_day0-day7.rds', sep = ''))) %>%
-  dplyr::filter(log2FoldChange >= 1 & padj <= 0.001 & !is.na(symbol)) %>%
-  dplyr::select(symbol, log2FoldChange) %>%
-  dplyr::rename(a673_log2FoldChange = log2FoldChange) %>%
-  dplyr::full_join(sole)
-
-##write this gene set to a file
-saveRDS(ews, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_candidatesPlusSole.rds', sep = ''))
-write.table(ews, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_candidatesPlusSole.tsv', sep = ''),
-            row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
-```
 
 Done with these data for now.
 

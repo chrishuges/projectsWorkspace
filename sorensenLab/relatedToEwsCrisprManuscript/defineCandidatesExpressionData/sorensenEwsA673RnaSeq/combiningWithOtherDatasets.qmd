@@ -100,12 +100,10 @@ dia = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEws
 
 ##read in the DDA data
 dda = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_deqms_day0-day7.rds',sep='')) %>%
-  dplyr::select(rnaMapSymbol, AveExpr, logFC, adj.P.Val) %>%
-  dplyr::filter(!is.na(rnaMapSymbol)) %>%
+  dplyr::select(symbol, AveExpr, logFC, adj.P.Val) %>%
   dplyr::rename(ddaExpr = 'AveExpr',
                 ddaFc = 'logFC',
-                ddaPadj = 'adj.P.Val',
-                symbol = 'rnaMapSymbol')
+                ddaPadj = 'adj.P.Val')
 ```
 
 Get the DepMap dependency data.
@@ -122,12 +120,18 @@ Get the surface proteomics data.
 
 ```{r}
 ###########################################################
-##get the depmap data we parsed earlier
+##get the surface proteomics data
 surfaceData = readRDS(paste(baseRepository,'/defineCandidatesExpressionData/sorensenSurfaceData/datasetOutputs/dataset_surfaceProteinRanks.rds',sep='')) %>%
   dplyr::filter(!is.na(symbol))
 ```
 
+Get the EwS patient data.
 
+```{r}
+###########################################################
+##get the EwS patient cohort data
+patientData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
+```
 
 Combine these with the RNA data.
 
@@ -135,8 +139,8 @@ Combine these with the RNA data.
 ###########################################################
 ##combine with the RNA data
 rna = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_day0vs7EwsRegulationAssignments.rds', sep = '')) %>%
-  dplyr::filter(!is.na(symbol)) %>%
   dplyr::left_join(sole) %>%
+  dplyr::left_join(patientData) %>%
   dplyr::left_join(dda) %>%
   dplyr::left_join(dia) %>%
   dplyr::left_join(ccle) %>%
@@ -159,6 +163,7 @@ rnaScored = rna %>%
   dplyr::mutate(log2FoldChangeScore = ifelse(log2FoldChange >= 1, 1, 0),
                 mscFcScore = ifelse(mscFc >= 1, 1, 0),
                 mpcFcScore = ifelse(mpcFc >= 1, 1, 0),
+                ewsTumourMedianTpmScore = ifelse(ewsTumourMedianTpm >= median(patientData$ewsTumourMedianTpm), 1, 0),
                 ewsRnaSpecificityScore = ifelse(ewsRnaSpecificity >= 1, 1, 0),
                 isProScore = ifelse(isPro >= 1, 1, 0),
                 fli1PeakCountScore = ifelse(fli1PeakCount >= 1, 1, 0),

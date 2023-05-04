@@ -1,0 +1,224 @@
+---
+title: "EwS patient RNAseq"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of RNA-seq data derived from a couple of different patient cohorts.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('tximport')
+library('GenomicFeatures')
+library('DESeq2')
+library('ggrepel')
+library('org.Hs.eg.db')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+The first thing to do is to make a sample annotation table. This is kind of a mixed bag of samples, so I opted to do this manually.
+
+```{r}
+##########################################################################################
+##set the sample names
+dbgapStudy = tibble('sampleName' = c(paste('SRR5163',seq(665,711,1),sep=''), paste('SRR5163',seq(713,757,1),sep='')),
+                    'study' = 'dbGaP')
+egaStudy = tibble('sampleName' = c(paste('T',seq(1,23,1),sep=''), paste('T',seq(24,50,1),sep=''), paste('B95T',seq(5,11,1),sep='')),
+                    'study' = 'ega')
+
+##combine the sample sets
+samples = rbind(dbgapStudy, egaStudy)
+
+##get the locations of all of the quant files and check they are correct
+quantFiles = file.path(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/quants', sep = ''), samples$sampleName, 'quant.sf')
+names(quantFiles) = samples$sampleName
+all(file.exists(quantFiles))
+```
+
+Now that we have our annotation details, we can start to sort out the quantification data that we obtained from the data reprocessing. The code below will get the file paths for the quant files, read in our transcriptome gtf, and using tximport to read in the entire dataset.
+
+```{r}
+##########################################################################################
+##build the transcriptome index...this is based on the same gtf we used in the alignment process
+txdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(txdb, keytype = "TXNAME")
+tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
+
+##read the transcriptome data processed from salmon
+txi = tximport(quantFiles, type = 'salmon', tx2gene = tx2gene)
+txiAnnotated = tibble(as.data.frame(txi$abundance)) %>%
+  mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$abundance)))
+
+##add in gene symbols
+geneSymbols = select(org.Hs.eg.db, txiAnnotated$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') %>%
+  dplyr::filter(!is.na(SYMBOL))
+geneExpData = txiAnnotated %>%
+  left_join(geneSymbols) %>%
+  mutate(symbol = SYMBOL) %>%
+  dplyr::filter(!is.na(symbol))
+
+##write this gene set to a file
+saveRDS(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
+write.table(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.tsv', sep = ''), row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+```
+
+Take a quick look at these data for a couple of positive control genes to make sure it is as we expect for each sample. 
+
+```{r}
+##########################################################################################
+##extract the target gene from the data and set up the data frame for plotting
+geneExpData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
+targetGenes = c('GARRE1')
+targetData = geneExpData %>%
+  dplyr::filter(symbol %in% targetGenes) %>%
+  tidyr::pivot_longer(cols = SRR5163665:B95T11, names_to = 'sampleName', values_to = 'tpm') %>%
+  dplyr::select(symbol,sampleName,tpm) %>%
+  dplyr::mutate(tpm = log2(tpm + 1)) %>%
+  dplyr::left_join(samples)
+
+##set some colors for the plot
+sampleColors = c(rep(brewer.pal(4,'Blues')[4],92),
+                 rep(brewer.pal(4,'OrRd')[4],57))
+
+##create the plot
+ggplot(targetData, aes(sampleName, tpm, color = study)) +
+  geom_point(aes(x=sampleName, y=tpm), data = targetData, size = 1, position = position_jitter(w = 0.1, h = 0)) +
+  scale_color_manual(values = sampleColors) +
+  labs(y = 'log2(TPM + 1)', title = 'PRKCB in EwS tumours') +
+  #scale_y_continuous(limits = c(0,12), breaks = seq(0,16,2)) +
+  theme_classic() +
+  theme(legend.position = 'none',
+        axis.title.x=element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1)
+        )
+
+##save the plot in case we want it later
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/plots/scatter_PRKCB_RnaExpressionLevels.pdf', sep = ''),
+      height = 2, width = 2, useDingbats = FALSE)
+```
+
+It looks good for the most part. There is evenly high expression across all of the patients. Next we want to calculate a coefficient of variation for each gene.
+
+```{r}
+##########################################################################################
+##read in our processed data
+geneExpData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.rds', sep = '')) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(expSd = sd(pick(SRR5163665:B95T11),na.rm=TRUE),
+                expMean = rowMeans(pick(SRR5163665:B95T11),na.rm=TRUE)) %>%
+  dplyr::mutate(expCv = expSd/expMean)
+
+
+##get only our data of interest
+cvData = geneExpData %>%
+  dplyr::select(symbol,expMean, expSd, expCv) %>%
+  dplyr::filter(!is.na(expCv) & !is.na(symbol))
+
+
+##what do the CV values look like
+ggplot(cvData, aes(log(expCv))) +
+  geom_histogram(bins = 100)
+```
+
+Not sure if this is the best way to do this. I wonder if a correlation would be better.
+
+```{r}
+##########################################################################################
+##there are a ton of non-coding RNAs in this data and I want to only look at protein coding genes
+##I am going to use the gene only GTF from the chipSeq analysis to filter these data
+genesOnly = read_tsv(paste(baseRepository,'/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_gtfGenesOnly.bed',sep=''),
+                     show_col_types = FALSE, col_names = c('chromosome','start','end','symbol','score','strand'))
+  
+
+##
+geneExpData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.rds', sep = '')) %>%
+  dplyr::mutate(avgTpm = rowMeans(pick(SRR5163665:B95T11),na.rm = TRUE)) %>%
+  dplyr::arrange(-avgTpm) %>%
+  dplyr::filter(symbol %in% genesOnly$symbol & !duplicated(symbol)) %>%
+  dplyr::select(-SYMBOL, -avgTpm, -ENSEMBL) %>%
+  tidyr::pivot_longer(cols = SRR5163665:B95T11, names_to = 'ewsSample', values_to = 'tpm') %>%
+  tidyr::pivot_wider(id_cols = 'ewsSample', names_from = 'symbol', values_from = 'tpm')
+
+
+test = geneExpData[,c('FLI1','EWSR1','UGT3A2','DLG2','YBX1','IL1RAP','LOX','NGFR','HMOX1','NOS1','POU3F1')]
+cor(test)
+```
+
+It doesn't seem like a correlation would work either. Maybe the best thing is to just do a simple median expression.
+
+```{r}
+##########################################################################################
+##calculate median expression
+geneExpData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.rds', sep = '')) %>%
+  dplyr::mutate(avgTpm = rowMeans(pick(SRR5163665:B95T11),na.rm = TRUE)) %>%
+  dplyr::arrange(-avgTpm) %>%
+  dplyr::filter(symbol %in% genesOnly$symbol & !duplicated(symbol)) %>%
+  dplyr::select(-SYMBOL, -avgTpm, -ENSEMBL) %>%
+  tidyr::pivot_longer(cols = SRR5163665:B95T11, names_to = 'ewsSample', values_to = 'tpm') %>%
+  dplyr::group_by(symbol) %>%
+  dplyr::summarise(ewsTumourMedianTpm = median(log2(tpm+1), na.rm = TRUE))
+
+##save these data
+saveRDS(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
+write.table(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.tsv', sep = ''), 
+            row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+```
+
+
+
+
+
+
+
+
+But this might be interesting later on to look at genes that correlate with DLG2 expression.
+
+```{r}
+corData = tibble()
+corInput = dplyr::select(geneExpData, -ewsSample)
+for (i in 1:ncol(corInput)) {
+#for (i in 1:200) {
+  dlg2Location = which(grepl('DLG2',colnames(corInput)))
+  corTest = log2(corInput[,c(dlg2Location,i)] + 1)
+  corValue = cor(corTest, method = 'pearson', use = 'pairwise.complete.obs')
+  #
+  corDataOutput = tibble('symbol' = colnames(corValue)[2],
+                         'corValue' = corValue[1,2])
+  #
+  corData = rbind(corData, corDataOutput)
+}
+
+
+##test plot
+plotInput = corInput[,c('DLG2','GLG1')]
+ggplot(plotInput, aes(log2(DLG2+1), log2(GLG1+1))) +
+  geom_point()
+```
+
+
+
+
+
+
+
