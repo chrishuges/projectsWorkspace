@@ -1,0 +1,91 @@
+---
+title: "Comparing with transcriptome data"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes comparison of our DDA-MS proteomics results to the transcriptome data for the same timecourse.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+Compare each timepoint of the transcriptome to the proteome.
+
+```{r}
+###########################################################
+##prepare a loop to do this for us
+daysToCompare = c('day0','day9','day10','day11','day14','day17','day22')
+baseDay = 'day7'
+for (i in 1:length(daysToCompare)){
+  #
+  rna = readRDS(paste(baseRepository,'/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_deseq2_',daysToCompare[i],'-',baseDay,'.rds',sep='')) %>%
+    dplyr::rename(rna_baseMean = 'baseMean',
+                  rna_logFc = 'log2FoldChange',
+                  rna_padj = 'padj') %>%
+    dplyr::select(symbol, rna_baseMean, rna_logFc, rna_padj)
+  #
+  pro = readRDS(paste(baseRepository,'/defineCandidatesExpressionData/sorensenEwsA673Proteomics/datasetOutputs/dataset_deqms_',daysToCompare[i],'-',baseDay,'.rds',sep='')) %>%
+    dplyr::rename(pro_baseMean = 'AveExpr',
+                  pro_logFc = 'logFC',
+                  pro_padj = 'sca.adj.pval') %>%
+    dplyr::select(symbol, pro_baseMean, pro_logFc, pro_padj)
+  #
+  expData = rna %>%
+    dplyr::inner_join(pro)
+  #metrics of the combined data
+  print(paste('Number of proteins for', daysToCompare[i],'=',nrow(expData)))
+  print(paste('Correlation for', daysToCompare[i],'=',cor(expData$rna_logFc, expData$pro_logFc, method = 'pearson', use = 'pairwise.complete.obs')))
+  
+  ##make a plot
+  genesOfInterest = c('PRKCB','LOX')
+  expData$pText = ifelse(expData$symbol %in% genesOfInterest, expData$symbol, '')
+  expData$pColors = ifelse(expData$rna_logFc >= 1 & expData$pro_logFc >= 1, brewer.pal(4,'OrRd')[4],
+                           ifelse(expData$rna_logFc <= -1 & expData$pro_logFc <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(4,'Greys')[3]))
+  ggplot(expData, aes(rna_logFc, pro_logFc)) +
+    geom_point(size = 0.5, color = expData$pColors) +
+    geom_text_repel(label = expData$pText, min.segment.length = unit(0, 'lines'), nudge_x = -1, nudge_y = -1, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+    labs(x = 'log2(RNA)', 
+         y = 'log2(Protein)', 
+         title = paste(daysToCompare[i],' vs ',baseDay, sep='')) +
+    scale_x_continuous(limits = c(-9,9), breaks = seq(-20,20,2)) +
+    scale_y_continuous(limits = c(-4.5,4.5), breaks = seq(-20,20,2)) +
+    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+    theme_classic()
+  ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673Proteomics/plots/scatter_rnaVsPro_', daysToCompare[i], '-', baseDay, '.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+}
+```
+
+Done with these data for now.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+

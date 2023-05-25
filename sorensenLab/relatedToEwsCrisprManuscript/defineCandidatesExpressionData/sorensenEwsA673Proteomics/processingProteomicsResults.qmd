@@ -375,12 +375,19 @@ for (i in 1:length(toCompare)){
   #
   dataIrsRaw = as.data.frame(geneExpData)
   row.names(dataIrsRaw) = dataIrsRaw$accession
-  dataIrs = dataIrsRaw[,c(which(grepl(datasetFirst, colnames(dataIrsRaw)) | grepl(datasetSecond, colnames(dataIrsRaw))))] #I only keep the two time points I want to compare here
+  #dataIrs = dataIrsRaw[,c(which(grepl(datasetFirst, colnames(dataIrsRaw)) | grepl(datasetSecond, colnames(dataIrsRaw))))]
+  dataIrs = dataIrsRaw %>%
+    dplyr::select(paste(datasetFirst,'a',sep=''),
+                  paste(datasetFirst,'b',sep=''),
+                  paste(datasetFirst,'c',sep=''),
+                  paste(datasetSecond,'a',sep=''),
+                  paste(datasetSecond,'b',sep=''),
+                  paste(datasetSecond,'c',sep=''))
   dataIrsLog = log2(dataIrs)
   #dataIrsLog = na.omit(dataIrsLog)
   
   #make the design table and fit the model
-  cond = as.factor(rep(c(datasetFirst,datasetSecond),3))
+  cond = as.factor(c(rep(datasetFirst,3),rep(datasetSecond,3)))
   design = model.matrix(~0+cond) # 0 means no intercept for the linear model
   colnames(design) = gsub('cond','',colnames(design))
   contrast =  makeContrasts(contrasts = paste(datasetFirst,'-',datasetSecond,sep=''), levels = design)

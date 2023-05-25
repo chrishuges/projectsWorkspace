@@ -19,6 +19,7 @@ These are packages you will need for this notebook. For exact versions used, ple
 library('tidyverse')
 library('ggplot2')
 library('RColorBrewer')
+library('Seurat')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
@@ -173,10 +174,203 @@ rnaScored = rna %>%
   dplyr::arrange(-ewsSumScore)
 
 ##save these data
-saveRDS(rnaScored, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsCrisprTargets.rds',sep=''))
-write.table(rnaScored, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsCrisprTargets.tsv',sep=''),
+saveRDS(rnaScored, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsThresholdScore.rds',sep=''))
+write.table(rnaScored, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsThresholdScore.tsv',sep=''),
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
+
+Look through these data to calculate some basic metrics.
+
+```{r}
+###########################################################
+##regulation status
+table(rnaScored$ewsRnaRegulate)
+
+##ggaa regulation
+ggaaReg = dplyr::filter(rnaScored, abs(ggaaFc) >= 1 & ggaaPadj <= 0.01)
+table(ggaaReg$ewsRnaRegulate)
+
+##fli1 peaks
+fliPeaks = dplyr::filter(rnaScored, fli1PeakCount > 0)
+table(fliPeaks$ewsRnaRegulate)
+
+##ccle rna
+summary(rnaScored$ewsRnaSpecificity)
+
+##tiers
+table(rnaScored$ewsSumScore)
+
+
+```
+
+What if we change this score to something that isn't 'tier' based. We can use the rank for each metric to calculate a score rather than using a more subjective cutoff. 
+
+```{r}
+###########################################################
+##this first processing is for induced hits
+rnaScored = rna %>%
+  dplyr::mutate(isPro = rowMeans(pick(ddaFc,diaFc),na.rm = TRUE),
+                fli1PeakCount = ifelse(is.na(fli1PeakCount), 0, fli1PeakCount),
+                msatCount = ifelse(is.na(msatCount), 0, msatCount)) %>%
+  dplyr::arrange(-log2FoldChange) %>%
+  dplyr::mutate(log2FoldChangeRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(log2FoldChangeRank = ifelse(is.na(log2FoldChange), 0, log2FoldChangeRank)) %>%
+  dplyr::arrange(-mscFc) %>%
+  dplyr::mutate(mscFcRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(mscFcRank = ifelse(is.na(mscFc), 0, mscFcRank)) %>%
+  dplyr::arrange(-mpcFc) %>%
+  dplyr::mutate(mpcFcRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(mpcFcRank = ifelse(is.na(mpcFc), 0, mpcFcRank)) %>%
+  dplyr::arrange(-ewsTumourMedianTpm) %>%
+  dplyr::mutate(ewsTumourMedianTpmRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(ewsTumourMedianTpmRank = ifelse(is.na(ewsTumourMedianTpm), 0, ewsTumourMedianTpmRank)) %>%
+  dplyr::arrange(-ddaFc) %>%
+  dplyr::mutate(ddaFcRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(ddaFcRank = ifelse(is.na(ddaFc), 0, ddaFcRank)) %>%
+  dplyr::arrange(-diaFc) %>%
+  dplyr::mutate(diaFcRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(diaFcRank = ifelse(is.na(diaFc), 0, diaFcRank)) %>%
+  dplyr::arrange(-ewsRnaSpecificity) %>%
+  dplyr::mutate(ewsRnaSpecificityRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(ewsRnaSpecificityRank = ifelse(is.na(ewsRnaSpecificity), 0, ewsRnaSpecificityRank)) %>%
+  dplyr::arrange(-ggaaFc) %>%
+  dplyr::mutate(ggaaFcRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(ggaaFcRank = ifelse(is.na(ggaaFc), 0, ggaaFcRank)) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(ewsRankScore = median(c(log2FoldChangeRank,
+                                   mscFcRank,
+                                   mpcFcRank,
+                                   ewsTumourMedianTpmRank,
+                                   ddaFcRank,
+                                   diaFcRank,
+                                   ewsRnaSpecificityRank,
+                                   ggaaFcRank))/1e3) %>%
+  dplyr::mutate(fli1PeakCountScore = ifelse(fli1PeakCount >= 1, 1, 0),
+                msatCountScore = ifelse(msatCount >= 1, 1, 0)) %>%
+  dplyr::mutate(ewsRankScoreDirect = ewsRankScore + fli1PeakCountScore + msatCountScore) %>%
+  dplyr::arrange(-ewsRankScoreDirect)
+
+
+##save these data
+saveRDS(rnaScored, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsInducedRankScore.rds',sep=''))
+write.table(rnaScored, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsInducedRankScore.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+###########################################################
+##now we can do reduced hits
+rnaScored = rna %>%
+  dplyr::mutate(isPro = rowMeans(pick(ddaFc,diaFc),na.rm = TRUE),
+                fli1PeakCount = ifelse(is.na(fli1PeakCount), 0, fli1PeakCount),
+                msatCount = ifelse(is.na(msatCount), 0, msatCount)) %>%
+  dplyr::arrange(log2FoldChange) %>%
+  dplyr::mutate(log2FoldChangeRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(log2FoldChangeRank = ifelse(is.na(log2FoldChange), 0, log2FoldChangeRank)) %>%
+  dplyr::arrange(mscFc) %>%
+  dplyr::mutate(mscFcRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(mscFcRank = ifelse(is.na(mscFc), 0, mscFcRank)) %>%
+  dplyr::arrange(mpcFc) %>%
+  dplyr::mutate(mpcFcRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(mpcFcRank = ifelse(is.na(mpcFc), 0, mpcFcRank)) %>%
+  dplyr::arrange(ewsTumourMedianTpm) %>%
+  dplyr::mutate(ewsTumourMedianTpmRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(ewsTumourMedianTpmRank = ifelse(is.na(ewsTumourMedianTpm), 0, ewsTumourMedianTpmRank)) %>%
+  dplyr::arrange(ddaFc) %>%
+  dplyr::mutate(ddaFcRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(ddaFcRank = ifelse(is.na(ddaFc), 0, ddaFcRank)) %>%
+  dplyr::arrange(diaFc) %>%
+  dplyr::mutate(diaFcRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(diaFcRank = ifelse(is.na(diaFc), 0, diaFcRank)) %>%
+  dplyr::arrange(ewsRnaSpecificity) %>%
+  dplyr::mutate(ewsRnaSpecificityRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(ewsRnaSpecificityRank = ifelse(is.na(ewsRnaSpecificity), 0, ewsRnaSpecificityRank)) %>%
+  dplyr::arrange(ggaaFc) %>%
+  dplyr::mutate(ggaaFcRank = seq(nrow(.),1,-1)) %>%
+  dplyr::mutate(ggaaFcRank = ifelse(is.na(ggaaFc), 0, ggaaFcRank)) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(ewsRankScore = median(c(log2FoldChangeRank,
+                                   mscFcRank,
+                                   mpcFcRank,
+                                   ewsTumourMedianTpmRank,
+                                   ddaFcRank,
+                                   diaFcRank,
+                                   ewsRnaSpecificityRank,
+                                   ggaaFcRank))/1e3) %>%
+  dplyr::mutate(fli1PeakCountScore = ifelse(fli1PeakCount >= 1, 1, 0),
+                msatCountScore = ifelse(msatCount >= 1, 1, 0)) %>%
+  dplyr::mutate(ewsRankScoreDirect = ewsRankScore + fli1PeakCountScore + msatCountScore) %>%
+  dplyr::arrange(-ewsRankScoreDirect)
+
+
+##save these data
+saveRDS(rnaScored, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsReducedRankScore.rds',sep=''))
+write.table(rnaScored, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsReducedRankScore.tsv',sep=''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+I think this rank based score is much nicer. It makes it so things are penalized too heavily if they have a missing value (e.g. dropping a tier because they are missing 1 thing). It is weighted fairly heavily towards 'direct' hits, things that have a FLI1 peak or a GGAA mSat, but I am OK with this for now as direct hits are what we are most interested in. What does this look like on a plot? May a good plot is to have low and high rank hits on the same plot, almost like a volcano. Maybe we just take the top 1000 ranked in either direction and then label the top 30 on either side (negative ranks for repressed hits, positive ranks for induced hits, just so they spread like a volcano). 
+
+```{r}
+###########################################################
+##make a new data frame of just the induced hits that we want
+ind = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsInducedRankScore.rds',sep='')) %>%
+  dplyr::select(symbol, ewsRankScoreDirect) %>%
+  dplyr::mutate(dataset = 'induced')
+ewsHits = ind[1:30,]
+ewsHits$rank = seq(1,30,1)
+
+##make the plot
+ggplot(ewsHits, aes(ewsRankScoreDirect, -rank)) +
+  geom_point(size = 1, color = brewer.pal(4,'OrRd')[4]) +
+  labs(x = 'EwS score', y = 'Rank', title = 'EwS induced') +
+  scale_x_continuous(limits = c(17.25, 17.45), breaks = seq(17,18,0.05)) +
+  geom_text_repel(label = ewsHits$symbol, nudge_x = 0.02, max.overlaps = 100, min.segment.length = unit(0, 'lines'), size = 1, segment.size = 0.25) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank())
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/scatter_ewsInducedHits.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+
+
+
+##now for the repressed hits
+#
+rep = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsReducedRankScore.rds',sep='')) %>%
+  dplyr::select(symbol, ewsRankScoreDirect) %>%
+  dplyr::mutate(dataset = 'repressed')
+ewsHits = rep[1:30,]
+ewsHits$rank = seq(1,30,1)
+
+##make the plot
+ggplot(ewsHits, aes(ewsRankScoreDirect, -rank)) +
+  geom_point(size = 1, color = brewer.pal(4,'GnBu')[4]) +
+  labs(x = 'EwS score', y = 'Rank', title = 'EwS repressed') +
+  scale_x_continuous(limits = c(16.95, 17.3), breaks = seq(16,18,0.05)) +
+  geom_text_repel(label = ewsHits$symbol, nudge_x = 0.02, max.overlaps = 100, min.segment.length = unit(0, 'lines'), size = 1, segment.size = 0.25) +
+  theme_classic() +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_blank())
+ggsave(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/plots/scatter_ewsRepressedHits.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+```
+
+I want to incorporate the IcEWS score from the Aynaud paper, specifically there info on 'direct' and 'indirect' hits.
+
+```{r}
+###########################################################
+##get the aynaud data
+aynaud = read_tsv(paste(generalDatasets, '/aynaudEwsGeneSignaturePmid32049009/aynaudEwsGeneSignatureSet.txt', sep = ''), show_col_types = FALSE)
+
+##get our ranked data
+ind = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsInducedRankScore.rds',sep='')) %>%
+  dplyr::full_join(aynaud) %>%
+  dplyr::rename(aynaudDirect = 'isDirect')
+  
+
+```
+
+
+
 
 
 
