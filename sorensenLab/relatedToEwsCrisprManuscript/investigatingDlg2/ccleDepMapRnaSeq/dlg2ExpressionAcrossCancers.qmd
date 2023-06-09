@@ -1,0 +1,89 @@
+---
+title: "Plotting CCLE data"
+author: "Christopher Hughes"
+format: html
+---
+
+This document describes processing CCLE RNA expression data in order to make some plots.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('ggbeeswarm')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+Read the processed ccle data. I filter the data to select only DLG2 expression and filter out cancer types that don't have enough representative cell lines.
+
+```{r}
+##########################################################################################
+ews = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/datasetOutputs/dataset_ccle22Q4Parsed.rds', sep = '')) %>%
+  dplyr::filter(symbol == 'DLG2')
+
+##
+subtypesToFilter = names(which(table(ews$OncotreeSubtype) >= 6))
+ewsFiltered = ews %>%
+  dplyr::filter(OncotreeSubtype %in% subtypesToFilter)
+```
+
+Make a plot for DLG2 across the OncotreeSubtype column. 
+
+```{r}
+##########################################################################################
+ggplot(ewsFiltered, aes(x = reorder(OncotreeSubtype, log2Tpm, median, na.rm = TRUE), log2Tpm)) +
+  #geom_boxplot(size = 0.5, outlier.shape = NA) +
+  geom_boxplot(size = 0.5, outlier.size = 0.5) +
+  labs(x = 'Oncotree subtype in DepMap', y = 'log2(Transcripts per million)', title = 'DLG2 RNA expression in DepMap') +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
+  geom_hline(yintercept = 2, linetype = 'dashed') +
+  theme_classic() +
+  theme(axis.text.x = element_blank()) +
+  theme(axis.text.x = element_text(angle = 45, size = 6, hjust = 1))
+ggsave(paste(baseRepository, '/investigatingDlg2/ccleDepMapRnaseq/plots/boxplot_dlg2ExpressionOncotreeSubtype.pdf', sep = ''),
+       height = 2, width = 4, useDingbats = FALSE)
+```
+
+Consolidate all low expression cases into a single box.
+
+```{r}
+##########################################################################################
+##assign low expressing cancers to a different category
+tissuesOfInterest = c('Ewing Sarcoma', 'Small Cell Lung Cancer')
+rnaSubset = ewsFiltered %>%
+  dplyr::mutate(tissueClass = ifelse(OncotreeSubtype %in% tissuesOfInterest, OncotreeSubtype, 'Other'))
+
+##
+ggplot(rnaSubset, aes(x = reorder(tissueClass, -log2Tpm, median, na.rm = TRUE), log2Tpm, color = tissueClass)) +
+  geom_violin(size = 0.25, width = 0.75) +
+  geom_boxplot(size = 0.25, outlier.size = 0.25, width = 0.1) +
+  labs(x = 'Tissue Specification in DepMap', y = 'log2(TPM + 1)', title = 'DLG2 in DepMap') +
+  scale_color_manual(values = c(brewer.pal(4,'OrRd')[4], brewer.pal(3,'Greys')[3], brewer.pal(4,'OrRd')[4])) +
+  scale_y_continuous(limits = c(0,8), breaks = seq(0,8,2)) +
+  geom_hline(yintercept = 2, linetype = 'dashed') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/investigatingDlg2/ccleDepMapRnaseq/plots/boxplot_dlg2ExpressionOncotreeSubtypeCombined.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+
+
+

@@ -1,0 +1,85 @@
+---
+title: "Taras STEAP KO Proteome"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of proteomics data from an experiment to look at A673 cells carrying a STEAP1 and/or STEAP2 KO.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('iq')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToOthers'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToOthers'
+```
+
+## Data processing
+
+Read in data from DIA-NN and process with the IQ package.
+
+```{r}
+##########################################################################################
+##first we can filter and parse the report data into a better format for IQ
+raw = read_tsv('D:/msDataTemp/proteomics20230528_tarasA673TotalProteome/report.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(File.Name = sub('.*ch20230528_tarasA673TotalProteome_(.*)_dia_[123]\\.mzML', '\\1', File.Name)) %>%
+  dplyr::filter(Q.Value <= 0.01)
+
+##save the data
+write.table(raw, 'D:/msDataTemp/proteomics20230528_tarasA673TotalProteome/reportParsed.tsv', 
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##run the IQ analysis
+iqResult = process_long_format('D:/msDataTemp/proteomics20230528_tarasA673TotalProteome/reportParsed.tsv', 
+                           output_filename = 'D:/msDataTemp/proteomics20230528_tarasA673TotalProteome/reportParsedIqQuant.tsv',
+                           annotation_col = 'Genes',
+                           normalization = 'median',
+                           filter_double_less = c("Q.Value" = "0.01", "PG.Q.Value" = "0.01"),
+                           peptide_extractor = function(x) gsub("[0-9].*$", "", x))
+
+##parse the IQ result
+proData = read_tsv('D:/msDataTemp/proteomics20230528_tarasA673TotalProteome/reportParsedIqQuant.tsv', show_col_types = FALSE) %>%
+  dplyr::rename(accession = 'Protein.Group',
+                symbol = 'Genes')
+
+
+##save the data
+saveRDS(proData, paste(baseRepository, '/proteomics20230528_tarasA673TotalProteome/dataset_processedSteapKoProteome.rds', sep = ''))
+write.table(proData, paste(baseRepository, '/proteomics20230528_tarasA673TotalProteome/dataset_processedSteapKoProteome.rds.tsv', sep = ''), 
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Finish up.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
+
+
+
+
+
+
+
+
+

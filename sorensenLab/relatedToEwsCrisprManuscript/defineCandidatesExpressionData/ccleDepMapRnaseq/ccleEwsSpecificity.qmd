@@ -95,8 +95,8 @@ ewsRnaScores = ewsRnaScores %>%
   dplyr::rename(ewsRnaScore = medRna)
 
 ##save the data
-saveRDS(ewsRnaScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_ccle22Q4ParsedScored.rds', sep = ''))
-write.table(ewsRnaScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_ccle22Q4ParsedScored.tsv', sep = ''),
+saveRDS(ewsRnaScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/datasetOutputs/dataset_ccle22Q4ParsedScored.rds', sep = ''))
+write.table(ewsRnaScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/datasetOutputs/dataset_ccle22Q4ParsedScored.tsv', sep = ''),
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
 
@@ -142,8 +142,8 @@ ewsProScores = ewsProScores %>%
   dplyr::mutate(ewsProScore = ewsProScore * numCells)
 
 ##save the data
-saveRDS(ewsProScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_proteomicsEwsSpecificity.rds', sep = ''))
-write.table(ewsProScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_proteomicsEwsSpecificity.tsv', sep = ''),
+saveRDS(ewsProScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/datasetOutputs/dataset_proteomicsEwsSpecificity.rds', sep = ''))
+write.table(ewsProScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/datasetOutputs/dataset_proteomicsEwsSpecificity.tsv', sep = ''),
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
 
@@ -152,8 +152,8 @@ Now we can read in both of these sets and combine them.
 ```{r}
 ##########################################################################################
 ##read the data
-rnaScores = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_ccle22Q4ParsedScored.rds', sep = ''))
-proScores = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_proteomicsEwsSpecificity.rds', sep = '')) %>%
+rnaScores = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/datasetOutputs/dataset_ccle22Q4ParsedScored.rds', sep = ''))
+proScores = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/datasetOutputs/dataset_proteomicsEwsSpecificity.rds', sep = '')) %>%
   dplyr::rename(symbol = 'gene')
 
 ##join the data
@@ -162,8 +162,8 @@ ewsScores = rnaScores %>%
   dplyr::select(-numCells)
 
 ##save the data
-saveRDS(ewsScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_rnaAndProteinSpecificityScores.rds', sep = ''))
-write.table(ewsScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_rnaAndProteinSpecificityScores.tsv', sep = ''),
+saveRDS(ewsScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/datasetOutputs/dataset_rnaAndProteinSpecificityScores.rds', sep = ''))
+write.table(ewsScores, paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/datasetOutputs/dataset_rnaAndProteinSpecificityScores.tsv', sep = ''),
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
 

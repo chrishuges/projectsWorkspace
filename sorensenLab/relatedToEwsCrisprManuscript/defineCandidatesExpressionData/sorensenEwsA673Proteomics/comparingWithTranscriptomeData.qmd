@@ -19,6 +19,7 @@ These are packages you will need for this notebook. For exact versions used, ple
 library('tidyverse')
 library('ggplot2')
 library('RColorBrewer')
+library('ggrepel')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
@@ -60,13 +61,13 @@ for (i in 1:length(daysToCompare)){
   print(paste('Correlation for', daysToCompare[i],'=',cor(expData$rna_logFc, expData$pro_logFc, method = 'pearson', use = 'pairwise.complete.obs')))
   
   ##make a plot
-  genesOfInterest = c('PRKCB','LOX')
+  genesOfInterest = c('IL1RAP','STEAP1','PRKCB','LOX','UGT3A2','STEAP2','NR0B1')
   expData$pText = ifelse(expData$symbol %in% genesOfInterest, expData$symbol, '')
   expData$pColors = ifelse(expData$rna_logFc >= 1 & expData$pro_logFc >= 1, brewer.pal(4,'OrRd')[4],
                            ifelse(expData$rna_logFc <= -1 & expData$pro_logFc <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(4,'Greys')[3]))
   ggplot(expData, aes(rna_logFc, pro_logFc)) +
     geom_point(size = 0.5, color = expData$pColors) +
-    geom_text_repel(label = expData$pText, min.segment.length = unit(0, 'lines'), nudge_x = -1, nudge_y = -1, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+    geom_text_repel(label = expData$pText, min.segment.length = unit(0, 'lines'), nudge_x = -1, nudge_y = -2, max.overlaps = 55000, size = 2, segment.size = 0.25) +
     labs(x = 'log2(RNA)', 
          y = 'log2(Protein)', 
          title = paste(daysToCompare[i],' vs ',baseDay, sep='')) +

@@ -1,0 +1,172 @@
+---
+title: "Normal tissue RNA coverage"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes investigating RNAseq results to see what the coverage of DLG2 transcripts looks like. I am using the human protein atlas RNAseq data for this.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('rtracklayer')
+library('wiggleplotr')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+First we will read in the database to use for annotation.
+
+```{r}
+##########################################################################################
+##read in the GTF
+totalGtf = as.data.frame(rtracklayer::import.gff('D:/databases/projectEwsDlg2/refseqFiles/GRCh38_latest_genomic.gtf.gz'))
+```
+
+Subset the GTF and make the coverage plot. The main transcript I am going to use is NM_001300983.1 for the long version of DLG2. 
+
+```{r}
+##########################################################################################
+dlg2Gtf = totalGtf %>%
+  filter(grepl('NM_001300983.1$', transcript_id)) %>%
+  dplyr::rename(gene_name = gene_id, gene_id = seqnames) %>%
+  mutate('seqnames' = 'chr11')
+##
+dlg2Meta = tibble('transcript_id' = 'NM_001300983.1',
+                  'gene_id' = 'NC_000011.10',
+                  'gene_name' = 'DLG2',
+                  'strand' = '-')
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+##
+sampleData = tibble(sample_id = c(paste('ERR315', c(455,477,432), sep = '')), 
+                    condition = factor('brain'),
+                    scaling_factor = 1)
+##
+bigwigFiles = file.path(baseRepository,'investigatingDlg2/humanProteinAtlasRnaSeq/coverageFiles', paste(sampleData$sample_id,'.sorted.bw',sep=''))
+all(file.exists(bigwigFiles))
+
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+#trackData = dplyr::mutate(sampleData, track_id = sample_id, colour_group = condition)
+##
+plotCoverage(dlg2Exons, dlg2Cds, 
+             dlg2Meta, trackData,
+             heights = c(2,1), fill_palette = getGenotypePalette(),
+             rescale_introns = TRUE)
+ggsave(paste(baseRepository, '/investigatingDlg2/humanProteinAtlasRnaSeq/plots/coverage_dlg2CoverageBrainTissue.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+```
+
+Now we want to plot the coverage of the long isoform in the skin samples.
+
+```{r}
+##########################################################################################
+dlg2Gtf = totalGtf %>%
+  filter(grepl('NM_001300983.1$', transcript_id)) %>%
+  dplyr::rename(gene_name = gene_id, gene_id = seqnames) %>%
+  mutate('seqnames' = 'chr11')
+##
+dlg2Meta = tibble('transcript_id' = 'NM_001300983.1',
+                  'gene_id' = 'NC_000011.10',
+                  'gene_name' = 'DLG2',
+                  'strand' = '-')
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+##
+sampleData = tibble(sample_id = c(paste('ERR315', c(339,460,401,464,372,376), sep = '')), 
+                    condition = factor('skin'),
+                    scaling_factor = 1)
+##
+bigwigFiles = file.path(baseRepository,'investigatingDlg2/humanProteinAtlasRnaSeq/coverageFiles', paste(sampleData$sample_id,'.sorted.bw',sep=''))
+all(file.exists(bigwigFiles))
+
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+#trackData = dplyr::mutate(sampleData, track_id = sample_id, colour_group = condition)
+##
+plotCoverage(dlg2Exons, dlg2Cds, 
+             dlg2Meta, trackData,
+             heights = c(2,1), fill_palette = getGenotypePalette(),
+             rescale_introns = TRUE)
+ggsave(paste(baseRepository, '/investigatingDlg2/humanProteinAtlasRnaSeq/plots/coverage_dlg2CoverageSkinTissue.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+```
+
+Now we should plot the short isoform for skin.
+
+```{r}
+##########################################################################################
+dlg2Gtf = totalGtf %>%
+  filter(grepl('NM_001377978.1$', transcript_id)) %>%
+  dplyr::rename(gene_name = gene_id, gene_id = seqnames) %>%
+  mutate('seqnames' = 'chr11')
+##
+dlg2Meta = tibble('transcript_id' = 'NM_001377978.1',
+                  'gene_id' = 'NC_000011.10',
+                  'gene_name' = 'DLG2',
+                  'strand' = '-')
+##
+dlg2Exons = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('exon', type)), split.field = 'transcript_id')
+##
+dlg2Cds = makeGRangesListFromDataFrame(dlg2Gtf %>%
+  filter(grepl('CDS', type)), split.field = 'transcript_id')
+##
+sampleData = tibble(sample_id = c(paste('ERR315', c(339,460,401,464,372,376), sep = '')), 
+                    condition = factor('skin'),
+                    scaling_factor = 1)
+##
+bigwigFiles = file.path(baseRepository,'investigatingDlg2/humanProteinAtlasRnaSeq/coverageFiles', paste(sampleData$sample_id,'.sorted.bw',sep=''))
+all(file.exists(bigwigFiles))
+
+##
+sampleData = sampleData %>%
+  dplyr::mutate(bigWig = bigwigFiles)
+as.data.frame(sampleData)
+##
+trackData = dplyr::mutate(sampleData, track_id = condition, colour_group = condition)
+#trackData = dplyr::mutate(sampleData, track_id = sample_id, colour_group = condition)
+##
+plotCoverage(dlg2Exons, dlg2Cds, 
+             dlg2Meta, trackData,
+             heights = c(2,1), fill_palette = getGenotypePalette(),
+             rescale_introns = TRUE)
+ggsave(paste(baseRepository, '/investigatingDlg2/humanProteinAtlasRnaSeq/plots/coverage_dlg2ShortCoverageSkinTissue.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+```

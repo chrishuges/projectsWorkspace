@@ -1,0 +1,153 @@
+---
+title: "Motif analysis ChIPseq"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing published ChIPseq data in order to monitor FLI1 signal around DLG2.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+library('GenomicRanges')
+library('rtracklayer')
+library('BSgenome.Hsapiens.UCSC.hg38')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+First get the gtf file we used for alignment and will use for annotation below.
+
+```{r}
+##########################################################################################
+#totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/hg38/gencode_gtf/hg38.gtf.gz'))
+totalGtf = as.data.frame(rtracklayer::import.gff('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf'))
+```
+
+Add counts for GGAA and TTCC within the peaks in the MACS output.
+
+```{r}
+##########################################################################################
+macsPeaks = read_tsv(paste(baseRepository, '/investigatingDlg2/aynaudChipSeq/macsOutput/SRR8832674_peaks.xls', sep = ''), 
+                     skip = 30, show_col_types = FALSE,
+                     col_names = c('chr','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name'))
+
+peaksGr = makeGRangesFromDataFrame(macsPeaks)
+peakSequences = getSeq(Hsapiens, peaksGr)
+names(peakSequences) = macsPeaks$name
+macsPeaks$ggaaCounts = vcountPattern('GGAA', peakSequences) + vcountPattern('TTCC', peakSequences)
+saveRDS(macsPeaks, paste(baseRepository, '/investigatingDlg2/aynaudChipSeq/macsOutput/SRR8832674_peaksGgaaAnnotated.rds', sep = ''))
+```
+
+Now we can extract our peaks of interest from the data, all those that fall within DLG2 (+100Kb from the TSS). 
+
+```{r}
+##########################################################################################
+#the transcript with the closest 'exon' is ENST00000426717.6
+dlg2Gtf = totalGtf %>%
+  filter(grepl('DLG2$', gene_name)) %>%
+  filter(grepl('gene', type)) %>%
+  mutate(end = end + 100000) #we add 100kb here to search beyond the annotated TSS
+##
+macsPeaks = read_tsv(paste(baseRepository, '/investigatingDlg2/aynaudChipSeq/macsOutput/SRR8832674_peaks.xls', sep = ''), 
+                     skip = 30, show_col_types = FALSE,
+                     col_names = c('chr','start','end','length','abs_summit','pileup','logPValue','fold_enrichment','logQValue','name')) %>%
+  filter(grepl('chr11', chr)) %>%
+  filter(start > dlg2Gtf$start & end < dlg2Gtf$end) %>%
+  mutate(midPoint = start + round(length / 2, 0)) %>%
+  filter(fold_enrichment >= 10)
+```
+
+Now get the sequences. For this we use BSGenome and getseq.
+
+```{r}
+##########################################################################################
+##expand the peaks on both sides
+macsPeaksExpanded = macsPeaks %>%
+  mutate(start = start - 20) %>%
+  mutate(end = end + 20)
+##
+peaksGr = makeGRangesFromDataFrame(macsPeaksExpanded)
+strand(peaksGr)[] = '-'
+##
+peakSequences = getSeq(Hsapiens, peaksGr)
+names(peakSequences) = macsPeaks$name
+##
+writeXStringSet(peakSequences, 
+                file = paste(baseRepository, '/investigatingDlg2/aynaudChipSeq/macsOutput/SRR8832674_peakSequences.fasta', sep = ''))
+```
+
+Count the number of GGAA mSats in each.
+
+```{r}
+##########################################################################################
+macsPeaksExpanded$mSats = vcountPattern('GGAAGGAA', peakSequences)
+macsPeaksExpanded$mSatsRev = vcountPattern('TTCCTTCC', peakSequences)
+```
+
+Read the FIMO results and add the p-values.
+
+```{r}
+##########################################################################################
+ma0149 = read_tsv(paste(baseRepository, '/investigatingDlg2/aynaudChipSeq/fimo/fimo_MA0149.1/fimo.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::select(sequence_name, `p-value`) %>%
+  group_by(sequence_name) %>%
+  summarise(across(where(is.double), list(min = min))) %>%
+  dplyr::rename('name' = sequence_name, 'ma0149pVal' = `p-value_min`)
+#p < 0.0005 was cutoff in the manuscript
+
+ma0475 = read_tsv(paste(baseRepository, '/investigatingDlg2/aynaudChipSeq/fimo/fimo_MA0475.1/fimo.txt', sep = ''), show_col_types = FALSE) %>%
+  dplyr::select(sequence_name, `p-value`) %>%
+  group_by(sequence_name) %>%
+  summarise(across(where(is.double), list(min = min))) %>%
+  dplyr::rename('name' = sequence_name, 'ma0475pVal' = `p-value_min`)
+#p < 0.1 was the cutoff in the manuscript
+
+##
+motifPeaks = macsPeaksExpanded %>%
+  left_join(ma0149) %>%
+  left_join(ma0475) %>%
+  mutate(peak = factor(seq(5,1,-1), levels = seq(1,5,1)))
+```
+
+Make a plot of the calculated values.
+
+```{r}
+##########################################################################################
+ggplot(motifPeaks, aes(peak, mSats)) +
+  geom_col(width = 0.75) +
+  labs(x = 'Peak index', y = 'Number of GGAA mSats', title = 'Motifs') +
+  scale_y_continuous(limits = c(0,20), breaks = seq(0,20,4)) +
+  theme_classic() +
+  theme(aspect.ratio = 2/1)
+ggsave(paste(baseRepository, '/investigatingDlg2/aynaudChipSeq/plots/barplot_dlg2ChipSeqPeakMotifEnrichment.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+Wrap up.
+
+## Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
