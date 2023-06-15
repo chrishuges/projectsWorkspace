@@ -1,0 +1,76 @@
+---
+title: "HMOX1 repression by EWS-FLI1"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of various datasets to illustrate HMOX1 downregulation by EWS-FLI1.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+Plot the GGAA data against the DIA proteomics data from the A673 cells.
+
+```{r}
+##########################################################################################
+##read in the proteomics data
+dia = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673ProteomicsDia/datasetOutputs/dataset_deqmsMbr_day0-day7.rds',sep='')) %>%
+  dplyr::select(symbol, AveExpr, logFC, adj.P.Val) %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::rename(diaExpr = 'AveExpr',
+                diaFc = 'logFC',
+                diaPadj = 'adj.P.Val')
+
+##read in the GGAA data
+ggaaReg = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/takGgaaTargetingRnaSeq/datasetOutputs/dataset_deseq2_a673_gfp-a673_krab.rds',sep='')) %>%
+  dplyr::mutate(ensg = rownames(.)) %>%
+  dplyr::filter(!is.na(symbol)) %>%
+  dplyr::select(symbol, ensg, log2FoldChange, padj) %>%
+  dplyr::rename(ggaaFc = 'log2FoldChange',
+                ggaaPadj = 'padj')
+
+
+
+##create the plot and save it
+goi = c('HMOX1','DLG2')
+plotData = dia %>%
+  dplyr::left_join(ggaaReg) %>%
+  dplyr::mutate(pColors = ifelse(diaFc > 1 & ggaaFc > 1, brewer.pal(4,'OrRd')[4],
+                                   ifelse(diaFc < -1 & ggaaFc < -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))) %>%
+  dplyr::mutate(pText = ifelse(symbol %in% goi, symbol, ''))
+#
+ggplot(plotData, aes(diaFc, ggaaFc)) +
+  geom_point(size = 0.5, color = plotData$pColors) +
+  geom_text_repel(label = plotData$pText, min.segment.length = unit(0, 'lines'), nudge_x = -1, nudge_y = -2, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  labs(x = 'log2(EWS-FLI1 high vs low)', y = 'log2(GGAA on vs off)', title = 'EwS regulation') +
+  scale_x_continuous(limits = c(-6,6), breaks = seq(-20,20,2)) +
+  scale_y_continuous(limits = c(-6,6), breaks = seq(-20,20,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/investigatingDlg2/hmox1RegulationByEwsFli1/plots/scatter_diaPtxVsGgaaRna.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```

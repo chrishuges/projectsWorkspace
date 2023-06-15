@@ -1,0 +1,144 @@
+---
+title: "DLG2 HiBit IP-MS"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of proteomics data from an experiment to look at DLG2 interactions in cells carrying a DLG2-HiBit fusion.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('iq')
+library('DEqMS')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+Read in data from DIA-NN and process with the IQ package.
+
+```{r}
+##########################################################################################
+##first we can filter and parse the report data into a better format for IQ
+raw = read_tsv('D:/msDataTemp/proteomics20230603_a673p1Dlg2IpMs/report.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(File.Name = sub('.*ch20230603_a673p1Dlg2Ipms_(.*)_dia_[123]\\.mzML', '\\1', File.Name)) %>%
+  dplyr::filter(Q.Value <= 0.01)
+
+##save the data
+write.table(raw, 'D:/msDataTemp/proteomics20230603_a673p1Dlg2IpMs/reportParsed.tsv', 
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##run the IQ analysis
+iqResult = process_long_format('D:/msDataTemp/proteomics20230603_a673p1Dlg2IpMs/reportParsed.tsv', 
+                           output_filename = 'D:/msDataTemp/proteomics20230603_a673p1Dlg2IpMs/reportParsedIqQuant.tsv',
+                           annotation_col = 'Genes',
+                           normalization = 'none',
+                           filter_double_less = c("Q.Value" = "0.01", "PG.Q.Value" = "0.01"),
+                           peptide_extractor = function(x) gsub("[0-9].*$", "", x))
+
+##parse the IQ result
+proData = read_tsv('D:/msDataTemp/proteomics20230603_a673p1Dlg2IpMs/reportParsedIqQuant.tsv', show_col_types = FALSE) %>%
+  dplyr::rename(accession = 'Protein.Group',
+                symbol = 'Genes')
+
+
+##save the data
+saveRDS(proData, paste(baseRepository, '/investigatingDlg2/sorensenDlg2Ipms/datasetOutputs/dataset_processedA673Dlg2HibitIpms.rds', sep = ''))
+write.table(proData, paste(baseRepository, '/investigatingDlg2/sorensenDlg2Ipms/datasetOutputs/dataset_processedA673Dlg2HibitIpms.tsv', sep = ''), 
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Process these data to get ratios relative to the control samples.
+
+```{r}
+##########################################################################################
+##read in the ews Score data
+rep = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsReducedRankScore.rds',sep='')) %>%
+  dplyr::select(symbol, ewsRankScoreDirect) %>%
+  dplyr::rename(repressedRankScore = 'ewsRankScoreDirect')
+rep$repressedRank = seq(1,nrow(rep),1)
+#
+ind = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsInducedRankScore.rds',sep='')) %>%
+  dplyr::select(symbol, ewsRankScoreDirect) %>%
+  dplyr::rename(inducedRankScore = 'ewsRankScoreDirect')
+ind$inducedRank = seq(1,nrow(ind),1)
+
+##read in and filter the ip data
+ipData = readRDS(paste(baseRepository, '/investigatingDlg2/sorensenDlg2Ipms/datasetOutputs/dataset_processedA673Dlg2HibitIpms.rds', sep = '')) %>%
+  dplyr::mutate(naCount_h10 = rowSums(is.na(pick(hibit10_rep1,hibit10_rep2,hibit10_rep3))),
+                naCount_h12 = rowSums(is.na(pick(hibit12_rep1,hibit12_rep2,hibit12_rep3)))) %>%
+  dplyr::filter(naCount_h10 == 0 & naCount_h12 == 0) %>%
+  dplyr::mutate(wildType_rep1 = ifelse(is.na(wildType_rep1), min(wildType_rep1, na.rm = TRUE), wildType_rep1)) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(median_h10 = median(c_across(starts_with('hibit10'))),
+                median_h12 = median(c_across(starts_with('hibit12')))) %>%
+  dplyr::ungroup() %>%
+  dplyr::mutate(ratio_h10 = (median_h10 - wildType_rep1),
+                ratio_h12 = (median_h12 - wildType_rep1)) %>%
+  dplyr::filter(ratio_h10 >= 0.5 & ratio_h12 >= 0.5 & !grepl('KRT',symbol) & !grepl(';',symbol) & n_peptides > 1) %>%
+  dplyr::rowwise() %>%
+  dplyr::mutate(medianEnrich = median(c_across(starts_with('ratio')))) %>%
+  dplyr::arrange(-medianEnrich) %>%
+  dplyr::left_join(ind) %>%
+  dplyr::left_join(rep)
+
+##save these data
+saveRDS(ipData, paste(baseRepository, '/investigatingDlg2/sorensenDlg2Ipms/datasetOutputs/dataset_filteredA673Dlg2HibitIpms.rds', sep = ''))
+write.table(ipData, paste(baseRepository, '/investigatingDlg2/sorensenDlg2Ipms/datasetOutputs/dataset_filteredA673Dlg2HibitIpms.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, sep = '\t', quote = FALSE)
+```
+
+I had done a previous test IP that yielded good data. Include it here to add some additional confidence to hits.
+
+```{r}
+##########################################################################################
+##read in the older ip data
+ipOriginal = readRDS(paste(baseRepository, '/investigatingDlg2/sorensenDlg2Ipms/datasetOutputs/dataset_filteredA673Dlg2HibitIpmsOriginal.rds', sep = '')) %>%
+  dplyr::select(symbol, medianEnrich) %>%
+  dplyr::rename(enrichRound1 = 'medianEnrich')
+
+##combine with new data
+goi = c('DLG2','BLVRA','BLVRB','FTH1','FTL','LOX')
+ipData = readRDS(paste(baseRepository, '/investigatingDlg2/sorensenDlg2Ipms/datasetOutputs/dataset_filteredA673Dlg2HibitIpms.rds', sep = '')) %>%
+  dplyr::select(symbol, inducedRank, medianEnrich) %>%
+  dplyr::rename(enrichRound2 = 'medianEnrich') %>%
+  dplyr::left_join(ipOriginal) %>%
+  dplyr::mutate(pColor = ifelse(enrichRound1 > 1 & enrichRound2 > 1, brewer.pal(4,'OrRd')[4], brewer.pal(4,'Greys')[3]),
+                pText = ifelse(symbol %in% goi, symbol, ''))
+
+##plot the data
+ggplot(ipData, aes(enrichRound1, enrichRound2)) +
+  geom_point(size = 0.5, color = ipData$pColor) +
+  geom_text_repel(label = ipData$pText, min.segment.length = unit(0, 'lines'), nudge_x = 1, nudge_y = -2, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  labs(x = 'log2(Enrichment vs negative)', y = 'log2(Enrichment vs negative)', title = 'DLG2 HiBit IP-MS') +
+  scale_x_continuous(limits = c(0,5), breaks = seq(0,6,1)) +
+  scale_y_continuous(limits = c(0,5), breaks = seq(0,6,1)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/investigatingDlg2/sorensenDlg2Ipms/plots/scatter_Dlg2IpmsAllInteractions.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+```
+
+
+
+
+

@@ -89,7 +89,7 @@ Take a quick look at these data for a couple of positive control genes to make s
 ##########################################################################################
 ##extract the target gene from the data and set up the data frame for plotting
 geneExpData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
-targetGenes = c('GARRE1')
+targetGenes = c('PRKCB')
 targetData = geneExpData %>%
   dplyr::filter(symbol %in% targetGenes) %>%
   tidyr::pivot_longer(cols = SRR5163665:B95T11, names_to = 'sampleName', values_to = 'tpm') %>%
@@ -161,7 +161,7 @@ geneExpData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sor
   tidyr::pivot_wider(id_cols = 'ewsSample', names_from = 'symbol', values_from = 'tpm')
 
 
-test = geneExpData[,c('FLI1','EWSR1','UGT3A2','DLG2','YBX1','IL1RAP','LOX','NGFR','HMOX1','NOS1','POU3F1')]
+test = geneExpData[,c('FLI1','EWSR1','UGT3A2','DLG2','YBX1','IL1RAP','LOX','NGFR','HMOX1','NOS1','POU3F1','STEAP1','STEAP2')]
 cor(test)
 ```
 
@@ -180,16 +180,10 @@ geneExpData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sor
   dplyr::summarise(ewsTumourMedianTpm = median(log2(tpm+1), na.rm = TRUE))
 
 ##save these data
-saveRDS(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
-write.table(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.tsv', sep = ''), 
+saveRDS(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmMedianExpression.rds', sep = ''))
+write.table(geneExpData, paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmMedianExpression.tsv', sep = ''), 
             row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
 ```
-
-
-
-
-
-
 
 
 But this might be interesting later on to look at genes that correlate with DLG2 expression.
@@ -209,10 +203,22 @@ for (i in 1:ncol(corInput)) {
   corData = rbind(corData, corDataOutput)
 }
 
+##read in the EWS-FLI1 hits
+ind = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsInducedRankScore.rds',sep='')) %>%
+  dplyr::select(symbol, ewsRankScoreDirect) %>%
+  dplyr::rename(inducedScore = 'ewsRankScoreDirect')
+rep = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsReducedRankScore.rds',sep='')) %>%
+  dplyr::select(symbol, ewsRankScoreDirect) %>%
+  dplyr::rename(repressedScore = 'ewsRankScoreDirect')
+
+
+corDataJoin = corData %>%
+  dplyr::left_join(ind) %>%
+  dplyr::left_join(rep)
 
 ##test plot
-plotInput = corInput[,c('DLG2','GLG1')]
-ggplot(plotInput, aes(log2(DLG2+1), log2(GLG1+1))) +
+plotInput = corInput[,c('DLG2','CTSC')]
+ggplot(plotInput, aes(log2(DLG2+1), log2(CTSC+1))) +
   geom_point()
 ```
 

@@ -20,6 +20,7 @@ library('tidyverse')
 library('ggplot2')
 library('RColorBrewer')
 library('Seurat')
+library('ggrepel')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
@@ -45,7 +46,7 @@ sole = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/soleInduce
                 mpcFc = 'mpc_log2FoldChange')
 
 ##ccle specificity
-ccle = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/dataset_rnaAndProteinSpecificityScores.rds', sep = '')) %>%
+ccle = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/ccleDepMapRnaseq/datasetOutputs/dataset_rnaAndProteinSpecificityScores.rds', sep = '')) %>%
   dplyr::filter(!is.na(symbol)) %>%
   dplyr::rename(ewsRnaSpecificity = 'ewsRnaScore',
                 ewsProSpecificity = 'ewsProScore')
@@ -131,7 +132,7 @@ Get the EwS patient data.
 ```{r}
 ###########################################################
 ##get the EwS patient cohort data
-patientData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.rds', sep = ''))
+patientData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmMedianExpression.rds', sep = ''))
 ```
 
 Combine these with the RNA data.

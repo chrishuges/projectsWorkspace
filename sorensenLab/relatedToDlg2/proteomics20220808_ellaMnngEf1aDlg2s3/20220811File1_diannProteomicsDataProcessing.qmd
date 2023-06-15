@@ -118,6 +118,7 @@ Perform differential expression analysis.
 ```{r}
 ##########################################################################################
 ##get the expression data and assign the row names with the accession code
+pepData = readRDS(paste(baseRepository, '/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_rawDataProteinLevel_dlg2-empty.rds',sep = ''))
 exprs = as.data.frame(pepData[,3:8])
 rownames(exprs) = pepData$accession
 exprs = na.omit(exprs)
@@ -160,6 +161,30 @@ write.table(deqmsOutput, paste(baseRepository, '/proteomics20220808_ellaMnngEf1a
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
 
+Make a plot of these data.
+
+```{r}
+##########################################################################################
+genesOfInterest = c('DLG2','HMOX1','BLVRA','BLVRB')
+expData = readRDS(paste(baseRepository, '/proteomics20220808_ellaMnngEf1aDlg2s3/dataset_deqmsProteinLevel_dlg2-empty.rds',sep = ''))
+expData$pText = ifelse(expData$symbol %in% genesOfInterest, expData$symbol, '')
+expData$pColors = ifelse(expData$logFC  >= 1 & expData$P.Value <= 0.01, brewer.pal(4,'OrRd')[4],
+                         ifelse(expData$logFC <= -1 & expData$P.Value <= 0.01, brewer.pal(4,'GnBu')[4], brewer.pal(4,'Greys')[3]))
+ggplot(expData, aes(logFC, -log10(P.Value))) +
+  geom_point(size = 0.5, color = expData$pColors) +
+  geom_text_repel(label = expData$pText, min.segment.length = unit(0, 'lines'), nudge_x = -1, nudge_y = -2, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  labs(x = 'log2(DLG2n3 vs empty)', 
+       y = '-log10(adjusted p-value)', 
+       title = 'Osteo proteomics') +
+  scale_x_continuous(limits = c(-4,4), breaks = seq(-20,20,2)) +
+  scale_y_continuous(limits = c(0,7), breaks = seq(-20,20,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.01), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20220808_ellaMnngEf1aDlg2s3/scatter_deqms_mnngDlg2sVsWt.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```       
+       
 We are done here for now. Wrap up below.
 
 ## Session info

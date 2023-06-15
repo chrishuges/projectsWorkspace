@@ -1,0 +1,89 @@
+---
+title: "test"
+format: html
+---
+
+
+```{r}
+hmox1 = tibble('cellName' = rep(rep(c('A673p1','KO8','KO11'), each = 3),2),
+               'treatment' = rep(c('ctrl','siHMOX1'), each = 9),
+               'viability' = c(93,92,96,88,88,83,78,81,83,96,93,94,37,31,30,18,11,17)) %>%
+  dplyr::mutate(cellName = factor(cellName, levels = c('A673p1','KO8','KO11')))
+                
+hmox1Summary = tibble('cellName' = rep(rep(c('A673p1','KO8','KO11'), each = 3),2),
+               'treatment' = rep(c('ctrl','siHMOX1'), each = 9),
+               'viability' = c(93,92,96,88,88,83,78,81,83,96,93,94,37,31,30,18,11,17)) %>%
+  dplyr::mutate(cellName = factor(cellName, levels = c('A673p1','KO8','KO11'))) %>%
+  dplyr::group_by(cellName, treatment) %>%
+  dplyr::summarise(mean = mean(viability), sd = sd(viability))
+
+ggplot(hmox1Summary, aes(cellName, mean, fill = treatment)) +
+  geom_col(position = position_dodge(width = 1)) +
+  geom_point(data = hmox1, aes(cellName, viability, fill = treatment), color = 'red', position = position_dodge(width = 1)) +
+  labs(x = 'Cell type', y = 'Percent viability', title = 'HMOX1 knockdown') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/plateReader20230525_tarasIronMeasurement/barplot_test.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+
+
+
+iron = tibble('cellName' = rep(c('A673p1','KO8','KO11'), each = 3),
+              'nMperMg' = c(20.11, 18.48, 21.86, 15.21, NA, 17.18, 11.22, 11.9, 11.28)) %>%
+  dplyr::mutate(cellName = factor(cellName, levels = c('A673p1','KO8','KO11')))
+
+ironSummary = tibble('cellName' = rep(c('A673p1','KO8','KO11'), each = 3),
+              'nMperMg' = c(20.11, 18.48, 21.86, 15.21, NA, 17.18, 11.22, 11.9, 11.28)) %>%
+  dplyr::mutate(cellName = factor(cellName, levels = c('A673p1','KO8','KO11'))) %>%
+  dplyr::group_by(cellName) %>%
+  dplyr::summarise(mean = mean(nMperMg, na.rm = TRUE), sd = sd(nMperMg, na.rm = TRUE))
+
+ggplot(ironSummary, aes(cellName, mean, fill = cellName)) +
+  geom_col(position = position_dodge(width = 1)) +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.2,position=position_dodge(.9), color = brewer.pal(4,'Greys')[4]) +
+  geom_point(data = iron, aes(cellName, nMperMg), color = brewer.pal(4,'Greys')[4], position = position_jitter(width = 0.15), size = 0.5) +
+  scale_fill_manual(values = c(brewer.pal(4,'GnBu')[4], rep(brewer.pal(4,'OrRd')[4],2))) +
+  labs(x = 'Cell type', y = 'Labile iron pool (nM/mg of protein)', title = 'Iron levels') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/plateReader20230525_tarasIronMeasurement/barplot_freeIronLevels.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+
+cellCycle = tibble('cellName' = rep(c('A673p1','KO8','KO11'), each = 20),
+                   'stage' = factor(rep(c('G0-G1','S','G2-M','Sub-G1'), 15), levels = c('G0-G1','S','G2-M','Sub-G1')),
+                   'proportion' = c(46.6, 25.8, 18.7, 8.59, 49.2, 24.2, 13.6, 12.5, 40.8, 20.8, 23.1, 14.8, 38.3, 23.2, 19.2, 19.4, NA, NA, NA, NA,
+                                    24.6, 11.0, 40.3, 11.9, 23.5, 14.1, 39.4, 12.3, 21.8, 10.7, 42.7, 13.2, 22, 13.1, 36, 13, 21.6, 12.8, 36.2, 14.2,
+                                    32.4, 23.0, 33.5, 7.8, 33.7, 17.5, 35.9, 9.83, 31.4, 16.9, 33.8, 15.5, 33.5, 20.6, 32.6, 8.41, 34.8, 21, 32.5, 6.55)) %>%
+  dplyr::mutate(cellName = factor(cellName, levels = c('A673p1','KO8','KO11')))
+
+
+cellCycleSummary = tibble('cellName' = rep(c('A673p1','KO8','KO11'), each = 20),
+                   'stage' = factor(rep(c('G0-G1','S','G2-M','Sub-G1'), 15), levels = c('G0-G1','S','G2-M','Sub-G1')),
+                   'proportion' = c(46.6, 25.8, 18.7, 8.59, 49.2, 24.2, 13.6, 12.5, 40.8, 20.8, 23.1, 14.8, 38.3, 23.2, 19.2, 19.4, NA, NA, NA, NA,
+                                    24.6, 11.0, 40.3, 11.9, 23.5, 14.1, 39.4, 12.3, 21.8, 10.7, 42.7, 13.2, 22, 13.1, 36, 13, 21.6, 12.8, 36.2, 14.2,
+                                    32.4, 23.0, 33.5, 7.8, 33.7, 17.5, 35.9, 9.83, 31.4, 16.9, 33.8, 15.5, 33.5, 20.6, 32.6, 8.41, 34.8, 21, 32.5, 6.55)) %>%
+  dplyr::mutate(cellName = factor(cellName, levels = c('A673p1','KO8','KO11'))) %>%
+  dplyr::group_by(cellName, stage) %>%
+  dplyr::summarise(mean = mean(proportion, na.rm = TRUE), sd = sd(proportion, na.rm = TRUE))
+
+
+ggplot(cellCycle, aes(stage, proportion, color = cellName)) +
+  geom_boxplot() +
+  #geom_point() +
+  #geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.2, color = brewer.pal(4,'Greys')[4]) +
+  #geom_point(data = iron, aes(cellName, nMperMg), color = brewer.pal(4,'Greys')[4], position = position_jitter(width = 0.15), size = 0.5) +
+  scale_color_manual(values = c(brewer.pal(4,'Greys')[4], rep(brewer.pal(4,'OrRd')[4],2))) +
+  labs(x = 'Cell identity', y = 'Cell cycle stage', title = 'Cell cycle') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/flow20230526_a673p1Dlg2KoCellCycle/boxplot_cellCycleProportion.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+```
+
+

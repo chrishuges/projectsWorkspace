@@ -1,0 +1,74 @@
+---
+title: "HMOX1 in EwS patients"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of RNA-seq data derived from a couple of different patient cohorts in order to compare HMOX1 and DLG2 expression.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('ggplot2')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+Read in our previously processed data and calculate a correlation for a few key genes.
+
+```{r}
+##########################################################################################
+##get the patient data
+pExp = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.rds', sep = '')) %>%
+  dplyr::filter(symbol %in% c('DLG2','HMOX1','BLVRA','STEAP1','STEAP2','FTH1','FTL')) %>%
+  dplyr::select(-SYMBOL,-ENSEMBL) %>%
+  tidyr::pivot_longer(cols = SRR5163665:B95T11, names_to = 'ewsSample', values_to = 'tpm') %>%
+  tidyr::pivot_wider(id_cols = 'ewsSample', names_from = 'symbol', values_from = 'tpm') 
+
+
+ggplot(pExp, aes(log2(HMOX1+1), log2(DLG2+1))) +
+  geom_point()
+
+
+##there are a ton of non-coding RNAs in this data and I want to only look at protein coding genes
+##I am going to use the gene only GTF from the chipSeq analysis to filter these data
+genesOnly = read_tsv(paste(baseRepository,'/defineCandidatesExpressionData/aynaudChipSeq/datasetOutputs/dataset_gtfGenesOnly.bed',sep=''),
+                     show_col_types = FALSE, col_names = c('chromosome','start','end','symbol','score','strand'))
+  
+##
+geneExpData = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsPatientData/datasetOutputs/dataset_tpmExpression.rds', sep = '')) %>%
+  dplyr::mutate(avgTpm = rowMeans(pick(SRR5163665:B95T11),na.rm = TRUE)) %>%
+  dplyr::arrange(-avgTpm) %>%
+  dplyr::filter(symbol %in% genesOnly$symbol & !duplicated(symbol)) %>%
+  dplyr::select(-SYMBOL, -avgTpm, -ENSEMBL) %>%
+  tidyr::pivot_longer(cols = SRR5163665:B95T11, names_to = 'ewsSample', values_to = 'tpm') %>%
+  tidyr::pivot_wider(id_cols = 'ewsSample', names_from = 'symbol', values_from = 'tpm')
+
+
+test = geneExpData[,c('DLG2','LOX','NGFR','HMOX1','BLVRA','BLVRB')]
+cor(log2(test))
+
+ggplot(geneExpData, aes(log2(DLG2),HMOX1)) +
+  geom_point()
+```
+
+Doesn't seem to be much of a relationship. This is tricky though because DLG2 is controlled by the fusion, so low DLG2 expression likely will mean low expression of other things linked to the fusion, and the opposite for repressed things, of which HMOX1 is one of.
+

@@ -1,0 +1,60 @@
+---
+title: "test"
+format: html
+---
+
+
+```{r}
+hmox1 = tibble('cellName' = rep(rep(c('A673p1','KO8','KO11'), each = 3),2),
+               'treatment' = rep(c('ctrl','siHMOX1'), each = 9),
+               'viability' = c(93,92,96,88,88,83,78,81,83,96,93,94,37,31,30,18,11,17)) %>%
+  dplyr::mutate(cellName = factor(cellName, levels = c('A673p1','KO8','KO11')))
+                
+hmox1Summary = tibble('cellName' = rep(rep(c('A673p1','KO8','KO11'), each = 3),2),
+               'treatment' = rep(c('ctrl','siHMOX1'), each = 9),
+               'viability' = c(93,92,96,88,88,83,78,81,83,96,93,94,37,31,30,18,11,17)) %>%
+  dplyr::mutate(cellName = factor(cellName, levels = c('A673p1','KO8','KO11'))) %>%
+  dplyr::group_by(cellName, treatment) %>%
+  dplyr::summarise(mean = mean(viability), sd = sd(viability))
+
+ggplot(hmox1Summary, aes(cellName, mean, fill = treatment)) +
+  geom_col(position = position_dodge(width = 1)) +
+  geom_point(data = hmox1, aes(cellName, viability, fill = treatment), color = 'red', position = position_dodge(width = 1)) +
+  labs(x = 'Cell type', y = 'Percent viability', title = 'HMOX1 knockdown') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/proteomics20220808_ellaMnngEf1aDlg2s3/barplot_test.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+
+
+
+iron = tibble('cellName' = rep(c('A673p1','KO8','KO11'), each = 3),
+              'nMperMg' = c(20.11, 18.48, 21.86, 15.21, NA, 17.18, 11.22, 11.9, 11.28)) %>%
+  dplyr::mutate(cellName = factor(cellName, levels = c('A673p1','KO8','KO11')))
+
+ironSummary = tibble('cellName' = rep(c('A673p1','KO8','KO11'), each = 3),
+              'nMperMg' = c(20.11, 18.48, 21.86, 15.21, NA, 17.18, 11.22, 11.9, 11.28)) %>%
+  dplyr::mutate(cellName = factor(cellName, levels = c('A673p1','KO8','KO11'))) %>%
+  dplyr::group_by(cellName) %>%
+  dplyr::summarise(mean = mean(nMperMg, na.rm = TRUE), sd = sd(nMperMg, na.rm = TRUE))
+
+ggplot(ironSummary, aes(cellName, mean, fill = cellName)) +
+  geom_col(position = position_dodge(width = 1)) +
+  geom_errorbar(aes(ymin=mean-sd, ymax=mean+sd), width=.2,position=position_dodge(.9), color = brewer.pal(4,'Greys')[4]) +
+  geom_point(data = iron, aes(cellName, nMperMg), color = brewer.pal(4,'Greys')[4], position = position_jitter(width = 0.15), size = 0.5) +
+  scale_fill_manual(values = c(brewer.pal(4,'GnBu')[4], rep(brewer.pal(4,'OrRd')[4],2))) +
+  labs(x = 'Cell type', y = 'Labile iron pool (nM/mg of protein)', title = 'Iron levels') +
+  theme_classic() +
+  theme(legend.position = 'none')
+ggsave(paste(baseRepository, '/plateReader20230525_tarasIronMeasurement/barplot_freeIronLevels.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+
+
+
+```
+
+
