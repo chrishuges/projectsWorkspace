@@ -140,19 +140,22 @@ for (i in 1:length(conditionsToCompare)){
   
   ##create a plot of the data
   #create the plot and save it
+  goi = c('DLG2', 'HMOX1', 'GADL1', 'PSAT1', deqmsResults[1:5,'symbol']$symbol)
   plotData = deqmsResults %>%
-    dplyr::filter(logFC > 0.5 | logFC < -0.5) %>%
     dplyr::mutate(pColors = ifelse(logFC > 0.5, brewer.pal(4,'OrRd')[4],
-                                   ifelse(logFC < -0.5, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2])))
+                                   ifelse(logFC < -0.5, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))) %>%
+    dplyr::mutate(pText = ifelse(symbol %in% goi, symbol, ''))
+  #
   ggplot(plotData, aes(logFC, -log10(sca.P.Value))) +
     geom_point(size = 0.5, color = plotData$pColors) +
     labs(x = paste('log2(',conditionsToCompare[i],'-',controlCondition,')',sep=''), y = '-log10(p-value)', title = 'Differential abundance') +
-    #scale_x_continuous(limits = c(-8,8), breaks = seq(-20,20,2)) +
-    #scale_y_continuous(limits = c(0,500), breaks = seq(-20,20,2)) +
-    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_text_repel(label = plotData$pText, min.segment.length = unit(0, 'lines'), nudge_x = 1, nudge_y = 1, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+    scale_x_continuous(limits = c(-6,6), breaks = seq(-20,20,2)) +
+    scale_y_continuous(limits = c(0,20), breaks = seq(0,60,5)) +
+    geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
     geom_hline(yintercept = -log10(0.01), linetype = 'dashed') +
     theme_classic()
-  ggsave(paste(baseRepository, '/investigatingDlg2/sorensenDlg2A673p1KoProteomics/plots/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.pdf', sep = ''),
+  ggsave(paste(baseRepository, '/investigatingDlg2/sorensenDlg2A673p1KoProteomics/plots/scatter_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.pdf', sep = ''),
          height = 2, width = 2, useDingbats = FALSE)
 }
 ```
@@ -203,4 +206,13 @@ ggplot(expData, aes(fcKo8, fcKo11)) +
   theme_classic()
 ggsave(paste(baseRepository, '/investigatingDlg2/sorensenDlg2A673p1KoProteomics/plots/scatter_deqms_a673p1Ko8VsKo11.pdf', sep = ''),
        height = 2, width = 2, useDingbats = FALSE)
+```
+
+Finish up.
+
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
 ```

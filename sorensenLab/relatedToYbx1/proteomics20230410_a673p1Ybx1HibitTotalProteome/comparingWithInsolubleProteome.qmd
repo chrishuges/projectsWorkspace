@@ -1,0 +1,131 @@
+---
+title: "Compare insoluble and total"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of proteomics data to compare the insoluble and total proteome samples.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+## Data processing
+
+Read in and compare the data sets.
+
+```{r}
+##########################################################################################
+##we can do this in a single loop
+firstCondition = 'ms275'
+secondCondition = 'dmso'
+
+##
+totalData = readRDS(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqmsMbr_', firstCondition, '-', secondCondition, '.rds', sep = '')) %>%
+  dplyr::select(symbol, logFC, sca.P.Value) %>%
+  dplyr::rename(firstFc = 'logFC',
+                firstPval = 'sca.P.Value')
+nucData = readRDS(paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_deqmsMbr_', firstCondition, '-', secondCondition, '.rds', sep = '')) %>%
+  dplyr::select(symbol, logFC, sca.P.Value) %>%
+  dplyr::rename(secondFc = 'logFC',
+                secondPval = 'sca.P.Value')
+allData = totalData %>%
+  dplyr::inner_join(nucData)
+
+##plot the data
+goi = c('YBX1','NFE2L2','G3BP1','HIF1A')
+plotData = allData %>%
+  #dplyr::filter(logFC > 0.5 | logFC < -0.5) %>%
+  dplyr::mutate(pColors = ifelse(firstFc > 0.5 & secondFc > 0.5, brewer.pal(4,'OrRd')[4],
+                                 ifelse(firstFc < -0.5 & secondFc < -0.5, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))) %>%
+  dplyr::mutate(pText = ifelse(symbol %in% goi, symbol, ''))
+
+#
+print(dim(plotData))
+#
+ggplot(allData, aes(firstFc, secondFc)) +
+  geom_point(size = 0.5, color = plotData$pColors) +
+  labs(x = paste('log2(Total ',firstCondition,'-',secondCondition,')',sep=''), y = paste('log2(Insoluble ',firstCondition,'-',secondCondition,')',sep=''), title = 'Differential abundance') +
+  geom_text_repel(label = plotData$pText, min.segment.length = unit(0, 'lines'), nudge_x = -1, nudge_y = 1, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  scale_x_continuous(limits = c(-4,6), breaks = seq(-20,20,2)) +
+  scale_y_continuous(limits = c(-4,6), breaks = seq(-20,20,2)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = c(-0.5,0.5), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/scatter_totalVsInsoluble_', firstCondition, 'Vs', secondCondition, '.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+```
+
+What are the things that are up in the insoluble arsenite but not in the total?
+
+```{r}
+##########################################################################################
+##read in the data and combine them
+firstCondition = 'ars'
+secondCondition = 'dmso'
+
+##
+totalData = readRDS(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqmsMbr_', firstCondition, '-', secondCondition, '.rds', sep = '')) %>%
+  dplyr::select(symbol, logFC, sca.P.Value) %>%
+  dplyr::rename(firstFc = 'logFC',
+                firstPval = 'sca.P.Value')
+nucData = readRDS(paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_deqmsMbr_', firstCondition, '-', secondCondition, '.rds', sep = '')) %>%
+  dplyr::select(symbol, logFC, sca.P.Value) %>%
+  dplyr::rename(secondFc = 'logFC',
+                secondPval = 'sca.P.Value')
+allData = totalData %>%
+  dplyr::inner_join(nucData) %>%
+  dplyr::filter(secondPval <= 0.001,
+                secondFc >= 1,
+                firstFc <= 0.5,
+                !grepl(';',symbol))
+
+#save these data
+write.table(allData, paste(baseRepository,'/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_insolubleArseniteIncreasedNotTotal.tsv',sep=''),
+          col.names = TRUE, row.names = FALSE, sep = '\t', quote = FALSE)
+```
+
+Make a gene ontology plot of the gProfiler data for these hits.
+
+```{r}
+##########################################################################################
+##make the plot manually
+goData = tibble('term' = seq(1,5,1),
+                'padj' = c(7.746e-139, 6.186e-7, 5.061e-5, 3.447e-7, 6.249e-17)) %>%
+  dplyr::mutate(padjLog = ifelse(-log10(padj) > 16, 16, -log10(padj)))
+
+##plot the data
+ggplot(goData, aes(term, padjLog)) +
+  geom_point(size = 2) +
+  labs(x = 'term', y = '-log10(adjusted p-value)', title = 'Enrichment') +
+  scale_y_continuous(limits = c(0,18), breaks = seq(0,20,3)) +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/scatter_totalVsInsoluble_geneOntology.pdf', sep = ''),
+         height = 2, width = 2, useDingbats = FALSE)
+```
+
+
+
+
+
+
+

@@ -370,7 +370,14 @@ ind = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEws
 
 ```
 
+Finish up.
 
+### Session info
+
+```{r}
+##########################################################################################
+sessionInfo()
+```
 
 
 

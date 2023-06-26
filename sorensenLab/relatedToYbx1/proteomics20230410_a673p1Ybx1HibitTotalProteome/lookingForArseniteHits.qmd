@@ -1,0 +1,95 @@
+---
+title: "arsenite induced proteins"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of data to highlight aresnite induced genes.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+## Data processing
+
+Read in the arsenite data and plot.
+
+```{r}
+##########################################################################################
+##read in the arsenite proteomics data
+pro = readRDS(paste(baseRepository,'/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqmsMbr_ars-dmso.rds',sep = ''))
+
+
+##make a plot showing the hits
+plotData = pro %>%
+  dplyr::filter(logFC > 0 & !grepl(';', symbol)) %>%
+  dplyr::mutate(pColors = ifelse(logFC > 0.5, brewer.pal(4,'OrRd')[4],
+                                 ifelse(logFC < -0.5, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))) %>%
+  dplyr::mutate(pText = ifelse(logFC >= 2 & sca.P.Value <= 0.001, symbol, ''))
+#
+print(dim(plotData))
+#
+ggplot(plotData, aes(logFC, -log10(sca.P.Value))) +
+  geom_point(size = 0.5, color = plotData$pColors) +
+  labs(x = paste('log2(',conditionsToCompare[i],'-',controlCondition,')',sep=''), y = '-log10(p-value)', title = 'Differential abundance') +
+  geom_text_repel(label = plotData$pText, min.segment.length = unit(0, 'lines'), nudge_x = 1, nudge_y = -2, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  scale_x_continuous(limits = c(0,8), breaks = seq(-20,20,2)) +
+  #scale_y_continuous(limits = c(0,500), breaks = seq(-20,20,2)) +
+  geom_vline(xintercept = 0.5, linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.01), linetype = 'dashed') +
+  theme_classic()
+#
+ggsave(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/scatter_arseniteInducedProteins.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+
+
+
+
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

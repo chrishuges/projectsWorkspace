@@ -1,0 +1,361 @@
+---
+title: "IP-MS data analysis"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of the IP-MS data from A673p1 cells after treatment with MS275 and arsenite.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('iq')
+library('DEqMS')
+library('matrixStats')
+library('RColorBrewer')
+library('ggrepel')
+library('stringr')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+## Data processing
+
+Read in data from DIA-NN and process with the IQ package.
+
+```{r}
+##########################################################################################
+##first we can filter and parse the report data into a better format for IQ
+raw = read_tsv('D:/msDataTemp/proteomics20230420_a673p1Ybx1HibitProteinIp/report.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(File.Name = sub('.*ch20230420_a673p1Ybx1Hibit_proteinIP_(.*)_dia_[123]\\.mzML', '\\1', File.Name)) %>%
+  dplyr::filter(Q.Value <= 0.01)
+
+##save the data
+write.table(raw, 'D:/msDataTemp/proteomics20230420_a673p1Ybx1HibitProteinIp/reportParsed.tsv', 
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+##run the IQ analysis
+iqResult = process_long_format('D:/msDataTemp/proteomics20230420_a673p1Ybx1HibitProteinIp/reportParsed.tsv', 
+                           output_filename = 'D:/msDataTemp/proteomics20230420_a673p1Ybx1HibitProteinIp/reportParsedIqQuant.tsv',
+                           annotation_col = 'Genes',
+                           normalization = 'none',
+                           peptide_extractor = function(x) gsub("[0-9].*$", "", x))
+
+##parse the IQ result
+iqQuantParsed = read_tsv('D:/msDataTemp/proteomics20230420_a673p1Ybx1HibitProteinIp/reportParsedIqQuant.tsv', show_col_types = FALSE) %>%
+  dplyr::rename(accession = 'Protein.Group',
+                symbol = 'Genes') %>%
+  dplyr::select(accession:n_peptides,
+                neg_rep1,
+                dmso_rep1, dmso_rep2, dmso_rep3,
+                ms275_rep1, ms275_rep2, ms275_rep3,
+                ars_rep1, ars_rep2, ars_rep3,
+                combo_rep1, combo_rep2, combo_rep3) %>%
+  dplyr::filter(!grepl(';', accession) & !is.na(symbol))
+#  dplyr::filter(rowSums(is.na(dmso_rep1:dmso_rep3)) == 0 |
+#                  rowSums(is.na(ms275_rep1:ms275_rep3)) == 0 |
+#                  rowSums(is.na(ars_rep1:ars_rep3)) == 0 |
+#                  rowSums(is.na(combo_rep1:combo_rep3)) == 0)
+
+##save the data
+saveRDS(iqQuantParsed, paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_processedIpMsData.rds', sep = ''))
+write.table(iqQuantParsed, paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_processedIpMsData.tsv', sep = ''), 
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+Perform DEqMS analysis.
+
+```{r}
+##########################################################################################
+##extract the data we need into a suitable data frame
+##as part of this we will subtract the negative IP
+processedData = as.data.frame(readRDS(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_processedIpMsData.rds', sep = '')))
+conditionsToCompare = c('ars','combo')
+controlCondition = 'ms275'
+for (i in 1:length(conditionsToCompare)){
+  dat = processedData[,c(1:2, 
+                         which(names(processedData) == 'neg_rep1'),
+                         which(names(processedData) == paste(controlCondition, '_rep1', sep = '')),
+                         which(names(processedData) == paste(controlCondition, '_rep2', sep = '')),
+                         which(names(processedData) == paste(controlCondition, '_rep3', sep = '')),
+                         which(names(processedData) == paste(conditionsToCompare[i], '_rep1', sep = '')),
+                         which(names(processedData) == paste(conditionsToCompare[i], '_rep2', sep = '')),
+                         which(names(processedData) == paste(conditionsToCompare[i], '_rep3', sep = '')))]
+  dat$samples123 = rowSums(is.na(dat[,4:6]))
+  dat$samples456 = rowSums(is.na(dat[,7:9]))
+  colnames(dat)[4:6] = c('cont_rep1','cont_rep2','cont_rep3')
+  colnames(dat)[7:9] = c('treat_rep1','treat_rep2','treat_rep3')
+  #
+  datNegAdjust = dat %>%
+    dplyr::mutate(neg_rep1 = ifelse(is.na(neg_rep1), min(neg_rep1, na.rm = TRUE), neg_rep1)) %>%
+    dplyr::filter(!grepl('KRT', symbol)) %>%
+    dplyr::mutate(across(cont_rep1:treat_rep3, ~ . - neg_rep1)) %>%
+    dplyr::select(-neg_rep1)
+  datNegAdjust[datNegAdjust <= 0.5] = NA #can change this filter if you want
+  datNegAdjust$samples123 = rowSums(is.na(datNegAdjust[,4:6]))
+  datNegAdjust$samples456 = rowSums(is.na(datNegAdjust[,7:9]))
+  #
+  datFiltered = datNegAdjust %>%
+    dplyr::filter(samples123 < 1 | samples456 < 1) %>%
+    dplyr::mutate(cont_rep1 = ifelse(samples123 == 3, min(cont_rep1, na.rm = TRUE), cont_rep1),
+                  cont_rep2 = ifelse(samples123 == 3, min(cont_rep2, na.rm = TRUE), cont_rep2),
+                  cont_rep3 = ifelse(samples123 == 3, min(cont_rep3, na.rm = TRUE), cont_rep3)) %>%
+    dplyr::mutate(treat_rep1 = ifelse(samples456 == 3, min(treat_rep1, na.rm = TRUE), treat_rep1),
+                  treat_rep2 = ifelse(samples456 == 3, min(treat_rep2, na.rm = TRUE), treat_rep2),
+                  treat_rep3 = ifelse(samples456 == 3, min(treat_rep3, na.rm = TRUE), treat_rep3)) %>%
+    dplyr::select(-samples123, -samples456)
+  #
+  rownames(datFiltered) = datFiltered$accession
+  dat.log = datFiltered %>%
+    dplyr::select(-accession, -symbol)
+  #dat.log = na.omit(datFiltered)
+  #boxplot(dat.log, las = 2, main = 'total protein abundance')
+  
+  ##make a design table
+  cond = as.factor(c(rep('cont',3),
+                    rep('treat',3)))
+  design = model.matrix(~0+cond)
+  colnames(design) = gsub('cond', '', colnames(design))
+  
+  ##make the contrasts
+  x = c('treat-cont')
+  contrast = makeContrasts(contrasts = x, levels = design)
+  fit1 = lmFit(dat.log, design)
+  fit2 = contrasts.fit(fit1, contrasts = contrast)
+  fit3 = eBayes(fit2)
+
+  ##add information about PSM counts
+  forPsm = readRDS(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_processedIpMsData.rds', sep = ''))
+  psm.count.table = data.frame(count = forPsm$n_peptides,
+                               row.names = forPsm$accession)
+  fit3$count = psm.count.table[rownames(fit3$coefficients),'count']
+  fit4 = spectraCounteBayes(fit3)
+  #VarianceBoxplot(fit4, n = 30, main = 'total proteome dataset', xlab = 'psm count')
+  #VarianceScatterplot(fit4, main = 'total proteome dataset')
+  
+  ##extract the data
+  #head(fit4$coefficients)
+  toAnnotate = forPsm[,1:4]
+  deqmsResults = tibble(outputResult(fit4, coef_col = 1)) %>%
+    dplyr::rename(accession = 'gene') %>%
+    dplyr::left_join(toAnnotate)
+  #
+  saveRDS(deqmsResults, paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_deqms_ipms_', conditionsToCompare[i], '-', controlCondition,'.rds', sep = ''))
+  write.table(deqmsResults, paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_deqms_ipms_', conditionsToCompare[i], '-', controlCondition,'.tsv', sep = ''),
+              col.names = TRUE, row.names = FALSE, sep = '\t', quote = FALSE)
+}
+```
+
+Read in the comparison data and make a volcano plot.
+
+```{r}
+##########################################################################################
+##read in the data for arsenite and plot
+##assign colors based on fold change and p-value
+proExp = as.data.frame(readRDS(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_deqms_ipms_combo-ars.rds', sep = ''))) %>%
+  dplyr::filter(n_peptides > 1)
+proExp$logPValue = -log10(proExp$sca.P.Value)
+proExp$logPValueScaled = ifelse(proExp$logPValue > 10, 10, proExp$logPValue)
+proExp$pColors = ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC >= 2, brewer.pal(4,'OrRd')[4], 
+                        ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+#assign text labels to specific genes of interest
+#targetGenes = c('DLG2','PRKCB','LOX')
+#proExp$pText = ifelse(proExp$symbol %in% targetGenes, proExp$symbol, '')
+proExp$pText = ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC >= 2, proExp$symbol, 
+                        ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC <= -3, proExp$symbol, ''))
+
+
+#create the plot and save it
+ggplot(proExp, aes(logFC, logPValueScaled)) +
+  geom_point(size = 0.5, color = proExp$pColors) +
+  labs(x = 'log2(arsenite-dmso)', y = '-log10(Adjusted p-value)', title = 'Differential abundance') +
+  #geom_text_repel(label = proExp$pText, nudge_x = 0, nudge_y = -2, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  #scale_x_continuous(limits = c(-6,6), breaks = seq(-20,20,2)) +
+  scale_y_continuous(limits = c(0,10), breaks = seq(0,50,3)) +
+  geom_vline(xintercept = c(-1,2), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/scatter_deqms_ipms_combo-ars.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+
+##read in the data for arsenite and plot
+##assign colors based on fold change and p-value
+proExp = as.data.frame(readRDS(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_deqms_ipms_combo-dmso.rds', sep = ''))) %>%
+  dplyr::filter(n_peptides > 1)
+proExp$logPValue = -log10(proExp$sca.P.Value)
+proExp$logPValueScaled = ifelse(proExp$logPValue > 10, 10, proExp$logPValue)
+proExp$pColors = ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC >= 2, brewer.pal(4,'OrRd')[4], 
+                        ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC <= -3, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+#assign text labels to specific genes of interest
+#targetGenes = c('DLG2','PRKCB','LOX')
+#proExp$pText = ifelse(proExp$symbol %in% targetGenes, proExp$symbol, '')
+proExp$pText = ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC >= 2, proExp$symbol, 
+                        ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC <= -5, proExp$symbol, ''))
+
+
+#create the plot and save it
+ggplot(proExp, aes(logFC, logPValueScaled)) +
+  geom_point(size = 0.5, color = proExp$pColors) +
+  labs(x = 'log2(combo-dmso)', y = '-log10(Adjusted p-value)', title = 'Differential abundance') +
+  geom_text_repel(label = proExp$pText, nudge_x = 0, nudge_y = -2, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  #scale_x_continuous(limits = c(-6,6), breaks = seq(-20,20,2)) +
+  scale_y_continuous(limits = c(0,10), breaks = seq(0,50,3)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/scatter_deqms_ipms_combo-dmso.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+##read in the data for arsenite and plot
+##assign colors based on fold change and p-value
+proExp = as.data.frame(readRDS(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_deqms_ipms_ms275-dmso.rds', sep = ''))) %>%
+  dplyr::filter(n_peptides > 1)
+proExp$logPValue = -log10(proExp$sca.P.Value)
+proExp$logPValueScaled = ifelse(proExp$logPValue > 10, 10, proExp$logPValue)
+proExp$pColors = ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC >= 2, brewer.pal(4,'OrRd')[4], 
+                        ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC <= -3, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+#assign text labels to specific genes of interest
+#targetGenes = c('DLG2','PRKCB','LOX')
+#proExp$pText = ifelse(proExp$symbol %in% targetGenes, proExp$symbol, '')
+proExp$pText = ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC >= 2, proExp$symbol, 
+                        ifelse(proExp$sca.P.Value <= 0.001 & proExp$logFC <= -2, proExp$symbol, ''))
+
+
+#create the plot and save it
+ggplot(proExp, aes(logFC, logPValueScaled)) +
+  geom_point(size = 0.5, color = proExp$pColors) +
+  labs(x = 'log2(ms275-dmso)', y = '-log10(Adjusted p-value)', title = 'Differential abundance') +
+  geom_text_repel(label = proExp$pText, nudge_x = 0, nudge_y = -2, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  #scale_x_continuous(limits = c(-6,6), breaks = seq(-20,20,2)) +
+  scale_y_continuous(limits = c(0,10), breaks = seq(0,50,3)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.001), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/scatter_deqms_ipms_ms275-dmso.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+Make a plot of just the DMSO interactions just to show what the composition is like.
+
+```{r}
+##########################################################################################
+##make the base set of interactions
+datasetOfInterest = 'combo'
+datRaw = as.data.frame(readRDS(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_processedIpMsData.rds', sep = '')))
+datSetup = datRaw[,c('accession','symbol',
+                  'neg_rep1',
+                  paste(datasetOfInterest,'_rep1',sep=''),
+                  paste(datasetOfInterest,'_rep2',sep=''),
+                  paste(datasetOfInterest,'_rep3',sep=''))]
+names(datSetup)[4:6] = c('target_rep1', 'target_rep2', 'target_rep3')
+dat = datSetup %>%  
+  dplyr::filter(!grepl('KRT', symbol)) %>%
+  dplyr::mutate(across(target_rep1:target_rep3, ~ . - neg_rep1)) %>%
+  dplyr::select(-neg_rep1)
+dat[dat <= 0.5] = NA #can change this filter if you want
+dat$samples123 = rowSums(is.na(dat[,3:5]))
+datFiltered = dat %>%
+   dplyr::filter(samples123 < 1)
+
+##save the data
+saveRDS(datFiltered, paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_processedIpMsData',datasetOfInterest,'Only.rds', sep = ''))
+write.table(datFiltered, paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_processedIpMsData',datasetOfInterest,'Only.tsv', sep = ''),
+            col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+##assign some colors
+goi = c('YBX1','YBX3','C1QBP', 'PABPC1', 'G3BP1')
+#CORUM complexes, 315 is small mito, 324 is large mito ribosome
+proComplexes = read_tsv(paste(generalDatasets, '/corumComplexes/coreComplexes.txt',sep = ''), show_col_types = FALSE) %>%
+  dplyr::filter(ComplexID == 315 | ComplexID == 324) %>%
+  dplyr::select(ComplexID, `subunits(Gene name)`) %>%
+  dplyr::rename(symbol = `subunits(Gene name)`)
+mitoRibosome = unlist(str_split(proComplexes$symbol, ';'))
+datPlot = datFiltered %>%
+  dplyr::mutate(pText = ifelse(symbol %in% goi, symbol, '')) %>%
+  dplyr::mutate(pColors = ifelse(symbol %in% goi, brewer.pal(4,'OrRd')[4],
+                                 ifelse(symbol %in% mitoRibosome, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[1]))) %>%
+  dplyr::mutate(targetMean = rowMeans(cbind(target_rep1, target_rep2, target_rep3), na.rm = TRUE)) %>%
+  dplyr::arrange(-targetMean) %>%
+  dplyr::mutate(ipRank = seq(1,nrow(.),1))
+
+##make the plot
+greyPoints = dplyr::filter(datPlot, pColors == brewer.pal(3,'Greys')[1])
+bluePoints = dplyr::filter(datPlot, pColors == brewer.pal(4,'GnBu')[4])
+redPoints = dplyr::filter(datPlot, pColors == brewer.pal(4,'OrRd')[4])
+ggplot(greyPoints, aes(-ipRank, targetMean)) +
+  geom_point(size = 1, color = greyPoints$pColors) +
+  geom_point(data = bluePoints, aes(-ipRank, targetMean), color = bluePoints$pColors, size = 1) +
+  geom_point(data = redPoints, aes(-ipRank, targetMean), color = redPoints$pColors, size = 2) +
+  geom_text_repel(data = redPoints, aes(-ipRank, targetMean), label = redPoints$pText, nudge_x = -500, nudge_y = -1, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  scale_y_continuous(limits = c(0,11), breaks = seq(0,10,2)) +
+  scale_x_continuous(limits = c(-1600,10), breaks = seq(-2000,0,500)) +
+  labs(x = 'IP abundance rank', y = 'IP abundance', title = 'YB-1 HiBit enrichment') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/scatter_ipms_',datasetOfInterest,'Only.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+
+
+
+
+
+
+```{r}
+##last make a plot to compare the the arsenite and combo conditions
+cond1 = as.data.frame(readRDS(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_deqms_ipms_combo-ars.rds', sep = ''))) %>%
+  dplyr::select(accession, symbol, logFC, sca.P.Value) %>%
+  dplyr::rename(cond1_logFC = logFC, cond1_sca.P.Value = sca.P.Value)
+cond2 = as.data.frame(readRDS(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/dataset_deqms_ipms_combo-ms275.rds', sep = ''))) %>%
+  dplyr::select(accession, symbol, logFC, sca.P.Value) %>%
+  dplyr::rename(cond2_logFC = logFC, cond2_sca.P.Value = sca.P.Value)
+proExp = cond1 %>%
+  full_join(cond2)
+proExp$pColors = ifelse(proExp$cond1_logFC >= 1 & proExp$cond2_logFC >= 1, brewer.pal(4,'OrRd')[4], 
+                        ifelse(proExp$cond1_logFC <= -1 & proExp$cond2_logFC <= -1, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))
+  
+#assign text labels to specific genes of interest
+proExp$pText = ifelse(proExp$cond1_logFC >= 2 & proExp$cond2_logFC >= 2, proExp$symbol, 
+                        ifelse(proExp$cond1_logFC <= -3 & proExp$cond2_logFC <= -3, proExp$symbol,
+                               ifelse(proExp$cond1_logFC <= -2 & proExp$cond2_logFC >= -1, proExp$symbol, 
+                                      ifelse(proExp$cond2_logFC <= -3 & proExp$cond1_logFC >= -1, proExp$symbol, ''))))
+
+
+#create the plot and save it
+ggplot(proExp, aes(cond1_logFC, cond2_logFC)) +
+  geom_point(size = 0.5, color = proExp$pColors) +
+  labs(x = 'log2(combo-ars)', y = 'log2(combo-ms275)', title = 'Differential abundance') +
+  #geom_text_repel(label = proExp$pText, nudge_x = 0, nudge_y = -2, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  #scale_x_continuous(limits = c(-6,6), breaks = seq(-20,20,2)) +
+  #scale_y_continuous(limits = c(-6,6), breaks = seq(-20,20,2)) +
+  geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+  geom_hline(yintercept = c(-1,1), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/proteomics20230420_a673p1Ybx1HibitProteinIp/scatter_deqms_ipms_comboComparisons.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+
+
+
+

@@ -1,12 +1,12 @@
 ---
-title: "YBX1 HiBit Nuc Proteome"
+title: "MNNG inducible DLG2n3 proteomics"
 author: "Christopher Hughes"
 format: html
 ---
 
 ## Details
 
-This document describes processing of proteomics data from an experiment to look at A673p1 cells with a HiBit version of YB-1.
+This document describes processing of proteomics data from an experiment to look at MNNG cells with induced expression of DLG2n3.
 
 ## Setting up the environment
 
@@ -20,6 +20,7 @@ library('tidyverse')
 library('iq')
 library('DEqMS')
 library('RColorBrewer')
+library('ggrepel')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
@@ -27,8 +28,8 @@ I want to set a base directory that we can use as a link to the directory where 
 ```{r}
 ##########################################################################################
 generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
-baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
-baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
 ```
 
 ## Data processing
@@ -38,32 +39,32 @@ Read in data from DIA-NN and process with the IQ package.
 ```{r}
 ##########################################################################################
 ##first we can filter and parse the report data into a better format for IQ
-raw = read_tsv('D:/msDataTemp/proteomics20230422_a673p1Ybx1HibitNucProteome/report.tsv', show_col_types = FALSE) %>%
-  dplyr::mutate(File.Name = sub('.*ch20230422_a673p1Ybx1Hibit_nucProteome_(.*)_dia_[123]\\.mzML', '\\1', File.Name)) %>%
+raw = read_tsv('D:/msDataTemp/proteomics20230616_mnngPcwDlg2n3/report.tsv', show_col_types = FALSE) %>%
+  dplyr::mutate(File.Name = sub('.*ch20230616_chrisMnngPcwDlg2n3_(.*)_dia_[123]\\.mzML', '\\1', File.Name)) %>%
   dplyr::filter(Q.Value <= 0.01)
 
 ##save the data
-write.table(raw, 'D:/msDataTemp/proteomics20230422_a673p1Ybx1HibitNucProteome/reportParsed.tsv', 
+write.table(raw, 'D:/msDataTemp/proteomics20230616_mnngPcwDlg2n3/reportParsed.tsv', 
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 
 
 ##run the IQ analysis
-iqResult = process_long_format('D:/msDataTemp/proteomics20230422_a673p1Ybx1HibitNucProteome/reportParsed.tsv', 
-                           output_filename = 'D:/msDataTemp/proteomics20230422_a673p1Ybx1HibitNucProteome/reportParsedIqQuant.tsv',
+iqResult = process_long_format('D:/msDataTemp/proteomics20230616_mnngPcwDlg2n3/reportParsed.tsv', 
+                           output_filename = 'D:/msDataTemp/proteomics20230616_mnngPcwDlg2n3/reportParsedIqQuant.tsv',
                            annotation_col = 'Genes',
                            normalization = 'median',
                            filter_double_less = c("Q.Value" = "0.01", "PG.Q.Value" = "0.01"),
                            peptide_extractor = function(x) gsub("[0-9].*$", "", x))
 
 ##parse the IQ result
-proData = read_tsv('D:/msDataTemp/proteomics20230422_a673p1Ybx1HibitNucProteome/reportParsedIqQuant.tsv', show_col_types = FALSE) %>%
+proData = read_tsv('D:/msDataTemp/proteomics20230616_mnngPcwDlg2n3/reportParsedIqQuant.tsv', show_col_types = FALSE) %>%
   dplyr::rename(accession = 'Protein.Group',
                 symbol = 'Genes')
 
 
 ##save the data
-saveRDS(proData, paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_processedMbrA673p1Ybx1HibitNuclProteome.rds', sep = ''))
-write.table(proData, paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_processedMbrA673p1Ybx1HibitNucProteome.tsv', sep = ''), 
+saveRDS(proData, paste(baseRepository, '/investigatingDlg2/sorensenMnngDlg2InducibleProteomics/datasetOutputs/dataset_processedMnngDlg2n3InducibleTotalProteome.rds', sep = ''))
+write.table(proData, paste(baseRepository, '/investigatingDlg2/sorensenMnngDlg2InducibleProteomics/datasetOutputs/dataset_processedMnngDlg2n3InducibleTotalProteome.tsv', sep = ''), 
             col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
 ```
 
@@ -72,8 +73,8 @@ Perform differential expression analysis on these data.
 ```{r}
 ##########################################################################################
 ##I am going to do one-by-one comparisons
-processedData = readRDS(paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_processedMbrA673p1Ybx1HibitNuclProteome.rds', sep = ''))
-conditionsToCompare = c('ms275','ars','combo')
+processedData = readRDS(paste(baseRepository, '/investigatingDlg2/sorensenMnngDlg2InducibleProteomics/datasetOutputs/dataset_processedMnngDlg2n3InducibleTotalProteome.rds', sep = ''))
+conditionsToCompare = c('dox')
 controlCondition = 'dmso'
 for (i in 1:length(conditionsToCompare)){
   dat = processedData[,c(1:2, 
@@ -118,7 +119,7 @@ for (i in 1:length(conditionsToCompare)){
   fit3 = eBayes(fit2)
 
   ##add information about PSM counts
-  forPsm = readRDS(paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_processedMbrA673p1Ybx1HibitNuclProteome.rds', sep = ''))
+  forPsm = readRDS(paste(baseRepository, '/investigatingDlg2/sorensenMnngDlg2InducibleProteomics/datasetOutputs/dataset_processedMnngDlg2n3InducibleTotalProteome.rds', sep = ''))
   psm.count.table = data.frame(count = forPsm$n_peptides,
                                row.names = forPsm$accession)
   fit3$count = psm.count.table[rownames(fit3$coefficients),'count']
@@ -133,39 +134,30 @@ for (i in 1:length(conditionsToCompare)){
     dplyr::rename(accession = 'gene') %>%
     dplyr::left_join(toAnnotate)
   #
-  saveRDS(deqmsResults, paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.rds', sep = ''))
-  write.table(deqmsResults, paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.tsv', sep = ''),
+  saveRDS(deqmsResults, paste(baseRepository, '/investigatingDlg2/sorensenMnngDlg2InducibleProteomics/datasetOutputs/dataset_deqms_', conditionsToCompare[i], '-', controlCondition, '.rds', sep = ''))
+  write.table(deqmsResults, paste(baseRepository, '/investigatingDlg2/sorensenMnngDlg2InducibleProteomics/datasetOutputs/dataset_deqms_', conditionsToCompare[i], '-', controlCondition, '.tsv', sep = ''),
               col.names = TRUE, row.names = FALSE, sep = '\t', quote = FALSE)
   
   ##create a plot of the data
   #create the plot and save it
-  goi = c('YBX1','NFE2L2','G3BP1','HIF1A')
+  goi = c('DLG2', deqmsResults[1:10,'symbol']$symbol)
   plotData = deqmsResults %>%
-    #dplyr::filter(logFC > 0.5 | logFC < -0.5) %>%
     dplyr::mutate(pColors = ifelse(logFC > 0.5, brewer.pal(4,'OrRd')[4],
                                    ifelse(logFC < -0.5, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))) %>%
     dplyr::mutate(pText = ifelse(symbol %in% goi, symbol, ''))
   #
-  print(dim(plotData))
-  #
   ggplot(plotData, aes(logFC, -log10(sca.P.Value))) +
     geom_point(size = 0.5, color = plotData$pColors) +
     labs(x = paste('log2(',conditionsToCompare[i],'-',controlCondition,')',sep=''), y = '-log10(p-value)', title = 'Differential abundance') +
-    geom_text_repel(label = plotData$pText, min.segment.length = unit(0, 'lines'), nudge_x = -1, nudge_y = 1, max.overlaps = 55000, size = 2, segment.size = 0.25) +
-    scale_x_continuous(limits = c(-6,6), breaks = seq(-20,20,2)) +
-    #scale_y_continuous(limits = c(0,500), breaks = seq(-20,20,2)) +
+    geom_text_repel(label = plotData$pText, min.segment.length = unit(0, 'lines'), nudge_x = 1, nudge_y = 2, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+    scale_x_continuous(limits = c(-6,9), breaks = seq(-20,20,2)) +
+    scale_y_continuous(limits = c(0,20), breaks = seq(0,60,5)) +
     geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
     geom_hline(yintercept = -log10(0.01), linetype = 'dashed') +
     theme_classic()
-  #the above plot command had 'dataset' in the name by mistake, the below command is the correct one
-  ggsave(paste(baseRepository, '/proteomics20230422_a673p1Ybx1HibitNucProteome/scatter_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.pdf', sep = ''),
+  ggsave(paste(baseRepository, '/investigatingDlg2/sorensenMnngDlg2InducibleProteomics/plots/scatter_deqms_', conditionsToCompare[i], '-', controlCondition, '.pdf', sep = ''),
          height = 2, width = 2, useDingbats = FALSE)
 }
 ```
-
-
-
-
-
 
 

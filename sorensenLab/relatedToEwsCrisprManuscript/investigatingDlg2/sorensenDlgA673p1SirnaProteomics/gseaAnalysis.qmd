@@ -1,0 +1,206 @@
+---
+title: "GSEA of siRNA data"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes performing GSEA analysis of the siRNA data for DLG2n3 in A673p1 cells. I am mostly following [this guide](https://stephenturner.github.io/deseq-to-fgsea/).
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('fgsea')
+library('ggplot2')
+library('RColorBrewer')
+library('ggrepel')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+Create a ranked list of gene hits.
+
+```{r}
+##########################################################################################
+##read in the expression data
+siData = readRDS(paste(baseRepository, '/investigatingDlg2/sorensenDlgA673p1SirnaProteomics/datasetOutputs/dataset_deqms_siDlg2-ctrl.rds', sep = '')) %>%
+  dplyr::filter(sca.adj.pval <= 0.001 & abs(logFC) >= 0.5 & !is.na(symbol)) %>%
+  dplyr::mutate(symbol = sub('(.*)\\;.*','\\1',symbol)) %>%
+  dplyr::select(symbol, logFC) %>%
+  deframe()
+```
+
+Get the pathway set you want to analyze against, in this case the hallmark set from MSigDB.
+
+```{r}
+##########################################################################################
+##read in the pathway data
+hmPathways = gmtPathways(paste(generalDatasets,'/msigdbGeneSets/h.all.v2023.1.Hs.symbols.gmt',sep=''))
+hmPathways %>% 
+  head() %>% 
+  lapply(head)
+```
+
+Run the fgsea analysis
+
+```{r}
+##########################################################################################
+##run fgsea with 1000 permutations
+fgseaRes = fgsea(pathways = hmPathways,
+                 stats = siData, 
+                 nperm = 1000)
+
+##clean up these data
+fgseaResTidy = fgseaRes %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+##show in a nice table
+fgseaResTidy %>% 
+  dplyr::select(-leadingEdge, -ES, -nMoreExtreme) %>% 
+  dplyr::arrange(padj) %>% 
+  DT::datatable()
+
+##plot these data
+ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title="Hallmark pathways NES from GSEA") + 
+  theme_minimal()
+```
+
+I see a lot of the HIPPO/YAP pathway genes as part of the UV response, so maybe we should try a more targeted database like Reactome that might have more specific signatures.
+
+```{r}
+##########################################################################################
+##perform gsea again against the Reactome database set
+reactomePathways = gmtPathways(paste(generalDatasets,'/msigdbGeneSets/c2.cp.reactome.v2023.1.Hs.symbols.gmt',sep=''))
+fgseaRes = fgsea(pathways = reactomePathways,
+                 stats = siData, 
+                 nperm = 1000)
+
+##clean up these data
+fgseaResTidy = fgseaRes %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+##plot these data
+ggplot(fgseaResTidy, aes(reorder(pathway, NES), NES)) +
+  geom_col(aes(fill=padj<0.05)) +
+  coord_flip() +
+  labs(x="Pathway", y="Normalized Enrichment Score",
+       title="Hallmark pathways NES from GSEA") + 
+  theme_minimal()
+
+reactomePathways %>% 
+  enframe("pathway", "SYMBOL") %>% 
+  unnest() %>%
+  dplyr::rename(symbol = 'SYMBOL') %>%
+  inner_join(readRDS(paste(baseRepository, '/investigatingDlg2/sorensenDlgA673p1SirnaProteomics/datasetOutputs/dataset_deqms_siDlg2-ctrl.rds', sep = ''))) %>%
+  dplyr::filter(grepl('HIPPO',pathway)) %>%
+  dplyr::arrange(logFC)
+```
+
+What about GO BP?
+
+```{r}
+##########################################################################################
+goPathways = gmtPathways(paste(generalDatasets,'/msigdbGeneSets/c5.go.bp.v2023.1.Hs.symbols.gmt',sep=''))
+fgseaRes = fgsea(pathways = goPathways,
+                 stats = siData)
+
+##clean up these data
+fgseaResTidy = fgseaRes %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+
+goPathways %>% 
+  enframe("pathway", "SYMBOL") %>% 
+  unnest() %>%
+  dplyr::rename(symbol = 'SYMBOL') %>%
+  inner_join(readRDS(paste(baseRepository, '/investigatingDlg2/sorensenDlgA673p1SirnaProteomics/datasetOutputs/dataset_deqms_siDlg2-ctrl.rds', sep = ''))) %>%
+  dplyr::filter(grepl('GOBP_HIPPO_SIGNALING',pathway)) %>%
+  dplyr::arrange(logFC)
+
+plotEnrichment(goPathways[["GOBP_HIPPO_SIGNALING"]], siData) + labs(title="YAP signature")
+```
+
+What about a conserved signature.
+
+```{r}
+##########################################################################################
+goPathways = gmtPathways(paste(generalDatasets,'/msigdbGeneSets/c6.all.v2023.1.Hs.symbols.gmt',sep=''))
+fgseaRes = fgsea(pathways = goPathways,
+                 stats = siData)
+
+##clean up these data
+fgseaResTidy = fgseaRes %>%
+  as_tibble() %>%
+  arrange(desc(NES))
+
+
+goPathways %>% 
+  enframe("pathway", "SYMBOL") %>% 
+  unnest() %>%
+  dplyr::rename(symbol = 'SYMBOL') %>%
+  inner_join(readRDS(paste(baseRepository, '/investigatingDlg2/sorensenDlgA673p1SirnaProteomics/datasetOutputs/dataset_deqms_siDlg2-ctrl.rds', sep = ''))) %>%
+  dplyr::filter(grepl('GOBP_HIPPO_SIGNALING',pathway)) %>%
+  dplyr::arrange(logFC)
+
+
+plotEnrichment(goPathways[["CORDENONSI_YAP_CONSERVED_SIGNATURE"]], siData) + labs(title="YAP signature")
+```
+
+There doesn't seem to be much enriched here based on these tests. But in some online tools, I can see HIPPO signaling as enriched, so it may just be something with how I am doing the analysis. Nevertheless, I would like to plot the hippo signaling candidates. I will have to do this by creating a manual list.
+
+```{r}
+##########################################################################################
+##create your hippo/yap gene set
+goi = c('DLG2', 'YAP1', 'WWTR1', 'STK3', 'STK4', 'MOB1A', 'TEAD1', 'TEAD2', 'TEAD3', 'TEAD4' , 'CCN1', 'CCN2', 'AMOT', 'AXL', 'MPDZ', 'HELLS', 'RASSF1',
+        'LATS1', 'LATS2')
+
+##get the expression data and plot it
+deqmsResults = readRDS(paste(baseRepository, '/investigatingDlg2/sorensenDlgA673p1SirnaProteomics/datasetOutputs/dataset_deqms_siDlg2-ctrl.rds', sep = ''))
+
+#create the plot and save it
+plotData = deqmsResults %>%
+  dplyr::mutate(pColors = ifelse(logFC > 0.5, brewer.pal(4,'OrRd')[4],
+                                 ifelse(logFC < -0.5, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))) %>%
+  dplyr::mutate(pText = ifelse(symbol %in% goi, symbol, ''))
+#
+ggplot(plotData, aes(logFC, -log10(sca.P.Value))) +
+  geom_point(size = 0.5, color = plotData$pColors) +
+  labs(x = 'log2()', y = '-log10(adjusted p-value)', title = 'DLG2n3 siRNA (48h), KO hits') +
+  geom_text_repel(label = plotData$pText, min.segment.length = unit(0, 'lines'), nudge_x = 1, nudge_y = 2, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  scale_x_continuous(limits = c(-6,6), breaks = seq(-20,20,2)) +
+  scale_y_continuous(limits = c(0,20), breaks = seq(0,60,5)) +
+  geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
+  geom_hline(yintercept = -log10(0.01), linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/investigatingDlg2/sorensenDlgA673p1SirnaProteomics/plots/scatter_deqms_siDlg2-ctrl_hippoHits.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+
+```
+
+
+
+
+

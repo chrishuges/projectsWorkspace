@@ -1,0 +1,85 @@
+---
+title: "buildingGeneSets"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of data to build sets of genes specific to each of the different conditions.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('RColorBrewer')
+library('pheatmap')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToYbx1'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToYbx1'
+```
+
+## Data processing
+
+Read in the arsenite data and plot.
+
+```{r}
+##########################################################################################
+##read in the different proteomics data sets
+combo = readRDS(paste(baseRepository,'/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqmsMbr_combo-dmso.rds',sep = '')) %>%
+  dplyr::select(symbol, logFC) %>%
+  dplyr::rename(comboFc = logFC)
+#
+ms275 = readRDS(paste(baseRepository,'/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqmsMbr_ms275-dmso.rds',sep = '')) %>%
+  dplyr::select(symbol, logFC) %>%
+  dplyr::rename(ms275Fc = logFC)
+#
+ars = readRDS(paste(baseRepository,'/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqmsMbr_ars-dmso.rds',sep = '')) %>%
+  dplyr::filter(logFC >= 1 & sca.P.Value <= 0.001 & !grepl(';', symbol)) %>%
+  dplyr::select(symbol, logFC, n_peptides) %>%
+  dplyr::rename(arsFc = logFC) %>%
+  dplyr::left_join(ms275) %>%
+  dplyr::left_join(combo) %>%
+  #dplyr::mutate(ms275Fc = ifelse(is.na(ms275Fc), 0, ms275Fc)) %>%
+  dplyr::mutate(fcDiff = arsFc - comboFc) %>%
+  dplyr::filter(!is.na(comboFc) & is.na(ms275Fc)) %>%
+  dplyr::arrange(-fcDiff)
+
+##plot these data
+plotArs = ars %>%
+  dplyr::select(symbol, arsFc, fcDiff) %>%
+  dplyr::rename(Fc = 'arsFc') %>%
+  dplyr::mutate(dataset = 'ars',
+                symbol = symbol, levels = ars$symbol)
+plotCombo = ars %>%
+  dplyr::select(symbol, comboFc, fcDiff) %>%
+  dplyr::rename(Fc = 'comboFc') %>%
+  dplyr::mutate(dataset = 'combo',
+                symbol = symbol, levels = ars$symbol)
+plotData = rbind(plotArs, plotCombo) 
+  
+
+#
+ggplot(plotData, aes(Fc, fct_reorder(symbol, abs(fcDiff)))) +
+  geom_point(aes(color = dataset)) +
+  geom_line(linetype = 'dashed') +
+  scale_color_manual(values = c(brewer.pal(4,'GnBu')[4], brewer.pal(4,'OrRd')[4])) +
+  labs(x = 'log2(treatment vs dmso)', y = 'Gene', title = 'MS275 candidates') +
+  theme_classic() +
+  theme(legend.position = 'none',
+        axis.title.y = element_blank(),
+        axis.text.y = element_text(size = 3))
+ggsave(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/scatter_ms275CandidateHits.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```

@@ -73,8 +73,8 @@ Perform differential expression analysis on these data.
 ##########################################################################################
 ##I am going to do one-by-one comparisons
 processedData = readRDS(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_processedMbrA673p1Ybx1HibitTotalProteome.rds', sep = ''))
-conditionsToCompare = c('ms275','ars','combo')
-controlCondition = 'dmso'
+conditionsToCompare = c('combo')
+controlCondition = 'ars'
 for (i in 1:length(conditionsToCompare)){
   dat = processedData[,c(1:2, 
                          which(names(processedData) == paste(controlCondition, '_rep1', sep = '')),
@@ -139,22 +139,43 @@ for (i in 1:length(conditionsToCompare)){
   
   ##create a plot of the data
   #create the plot and save it
+  goi = c('YBX1','NFE2L2','G3BP1','HIF1A')
   plotData = deqmsResults %>%
-    dplyr::filter(logFC > 0.5 | logFC < -0.5) %>%
+    #dplyr::filter(logFC > 0.5 | logFC < -0.5) %>%
     dplyr::mutate(pColors = ifelse(logFC > 0.5, brewer.pal(4,'OrRd')[4],
-                                   ifelse(logFC < -0.5, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2])))
+                                   ifelse(logFC < -0.5, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))) %>%
+    dplyr::mutate(pText = ifelse(symbol %in% goi, symbol, ''))
+  #
+  print(dim(plotData))
+  #
   ggplot(plotData, aes(logFC, -log10(sca.P.Value))) +
     geom_point(size = 0.5, color = plotData$pColors) +
     labs(x = paste('log2(',conditionsToCompare[i],'-',controlCondition,')',sep=''), y = '-log10(p-value)', title = 'Differential abundance') +
-    #scale_x_continuous(limits = c(-8,8), breaks = seq(-20,20,2)) +
+    geom_text_repel(label = plotData$pText, min.segment.length = unit(0, 'lines'), nudge_x = -1, nudge_y = -2, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+    scale_x_continuous(limits = c(-6,6), breaks = seq(-20,20,2)) +
     #scale_y_continuous(limits = c(0,500), breaks = seq(-20,20,2)) +
-    geom_vline(xintercept = c(-1,1), linetype = 'dashed') +
+    geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
     geom_hline(yintercept = -log10(0.01), linetype = 'dashed') +
     theme_classic()
   ggsave(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/dataset_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.pdf', sep = ''),
          height = 2, width = 2, useDingbats = FALSE)
+  #the above plot command had 'dataset' in the name by mistake, the below command is the correct one
+  #ggsave(paste(baseRepository, '/proteomics20230410_a673p1Ybx1HibitTotalProteome/scatter_deqmsMbr_', conditionsToCompare[i], '-', controlCondition, '.pdf', sep = ''),
+        # height = 2, width = 2, useDingbats = FALSE)
 }
 ```
+
+I am interested in comparisons between the stress conditions to see things that are specifically regulated in a manner similar to NRF2 as these are potential targets of YB-1. 
+
+```{r}
+##########################################################################################
+
+
+
+```
+
+
+
 
 
 

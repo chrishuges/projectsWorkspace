@@ -1,0 +1,404 @@
+---
+title: "Exon scoring"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes looking at the DepMap RNAseq data to see if there are any other cell lines expressing DLG2n3.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('recount3')
+library('megadepth')
+library('pheatmap')
+library('tximport')
+library('GenomicFeatures')
+library('org.Hs.eg.db')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+I am going to start out using [recount3](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8628444/) for this. I will use the CCLE data as a test study.
+
+```{r}
+###########################################################
+## Find all available human projects
+human_projects = available_projects()
+dim(human_projects)
+
+## Select a study of interest, in this case CCLE
+project_info = subset(
+    human_projects,
+    project == 'SRP186687' & project_type == 'data_sources'
+)
+project_info
+
+##
+annotation_options("human")
+ccleRse = create_rse(project_info,
+                     type = 'gene',
+                     annotation = 'refseq')
+#rowRanges(ccleRse)
+#metadata(ccleRse)
+```
+
+The main problem with this is that we are pulling in way more data than we need. If we could instead just pull in cell lines that have any DLG2 expression above a certain threshold, it would narrow this down for us a lot. We did generate our own bigwig files for this originally, so maybe we can just use those for now. In order to use them, we need to first generate a bed file of DLG2 regions.
+
+```{r}
+###########################################################
+##read in the GTF
+totalGtf = as.data.frame(rtracklayer::import.gff('D:/databases/projectEwsDlg2/refseqFiles/GRCh38_latest_genomic.gtf.gz'))
+```
+
+Next we can parse this GTF to get our regions.
+
+```{r}
+###########################################################
+##parse the GTF
+dlg2Gtf = totalGtf %>%
+  dplyr::filter(grepl('NM_001300983.1$', transcript_id) & type == 'exon') %>% 
+  dplyr::rename(symbol = 'gene_id', ensg = 'seqnames') %>%
+  dplyr::mutate('seqnames' = 'chr11')
+
+##make the bed file of the regions
+dlg2Bed = dlg2Gtf %>%
+  dplyr::select(seqnames, start, end) %>%
+  dplyr::arrange(start)
+write.table(dlg2Bed, paste(baseRepository,'/lookingForIsoforms/ccleRnaSeqDlg2Scoring/datasetOutputs/dlg2LongIsoformExons.bed',sep=''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+I was getting errors with megadepth in R, so I went and used the command line version on the server (see the rna seq data processing file for details). Next I will read in the results and work on developing a score.
+
+```{r}
+###########################################################
+##read in the megadepth results
+mdDataList = list.files(paste(baseRepository,'/lookingForIsoforms/ccleRnaSeqDlg2Scoring/coverageFiles',sep=''), pattern = 'Dlg2Megadepth.tsv', full.names = TRUE)
+mdData = tibble()
+for (i in 1:length(mdDataList)){
+  mdDataTemp = read_tsv(mdDataList[i], show_col_types = FALSE, col_names = c('seqnames','start','end','coverage')) %>%
+    dplyr::mutate(accession = sub('.*coverageFiles\\/(.*)_Dlg2Megadepth\\.tsv','\\1',mdDataList[i]),
+                  coverage = as.numeric(coverage),
+                  logCov = log2(coverage+1))
+  #
+  mdData = rbind(mdData, mdDataTemp)
+}
+mdData$exon = rep(paste('exon',seq(1,23,1),sep=''),87)
+
+#annotate these files
+anno = read_csv(paste(baseRepository,'/lookingForIsoforms/ccleRnaSeqDlg2Scoring/SraRunTable.csv',sep=''),show_col_types = FALSE) %>%
+  dplyr::select(Run, Cell_Line, Tissue, disease) %>%
+  dplyr::rename(accession = 'Run',
+                cellLine = 'Cell_Line',
+                tissue = 'Tissue')
+
+##save the data
+saveRDS(mdData, paste(baseRepository,'/lookingForIsoforms/ccleRnaSeqDlg2Scoring/datasetOutputs/dataset_megadepthCompiledDataDlg2.rds',sep=''))
+
+##calculate a simple score from these data
+#exon10 is the first coding exon of dlg2n3, so we can use this to fish out hits
+exonCov = mdData %>%
+  #dplyr::filter(exon == 'exon10') %>%
+  dplyr::left_join(anno)
+
+##I don't think a score is as good as just showing the heatmap
+##make a heatmap of these values
+exonHeat = mdData %>%
+  dplyr::left_join(anno) %>%
+  dplyr::filter(!is.na(cellLine)) %>%
+  dplyr::select(exon, cellLine, logCov) %>%
+  tidyr::pivot_wider(id_cols = 'exon', names_from = 'cellLine', values_from = 'logCov')
+exonHeatMatrix = as.matrix(exonHeat[,2:ncol(exonHeat)])
+rownames(exonHeatMatrix) = paste('exon',seq(1,23,1),sep='')
+exonHeatAnno = mdData %>%
+  dplyr::left_join(anno) %>%
+  dplyr::filter(!is.na(cellLine)) %>%
+  dplyr::mutate(ewing = ifelse(grepl('Ewing', disease),'yes','no')) %>%
+  dplyr::select(cellLine, tissue, ewing) %>%
+  unique() %>%
+  as.data.frame()
+rownames(exonHeatAnno) = exonHeatAnno$cellLine
+exonHeatAnno = exonHeatAnno[,2:3]
+exonHeatAnnoColors = list(
+  tissue = c(autonomic_ganglia = brewer.pal(12,'Set3')[1],
+             bone = brewer.pal(4,'OrRd')[4],
+             breast = brewer.pal(12,'Set3')[2],
+             central_nervous_system = brewer.pal(12,'Set3')[3],
+             endometrium = brewer.pal(12,'Set3')[4],
+             haematopoietic_and_lymphoid_tissue = brewer.pal(12,'Set3')[5],
+             large_intestine = brewer.pal(12,'Set3')[6],
+             lung = brewer.pal(12,'Set3')[7],
+             oesophagus = brewer.pal(12,'Set3')[8],
+             ovary = brewer.pal(12,'Set3')[9],
+             pancreas = brewer.pal(12,'Set3')[10],
+             prostate = brewer.pal(12,'Set3')[11],
+             skin = brewer.pal(12,'Set3')[12],
+             soft_tissue = brewer.pal(4,'GnBu')[4],
+             thyroid = brewer.pal(4,'Greys')[3]),
+  ewing = c(yes = brewer.pal(4,'OrRd')[4],
+            no = brewer.pal(4,'Greys')[3])
+)
+
+##make the heatmap
+pheatmap(exonHeatMatrix, 
+         scale = 'none',
+         cellwidth = 3,
+         cellheight = 3,
+         treeheight_col = 6,
+         cluster_rows = FALSE,
+         annotation_col = exonHeatAnno,
+         annotation_colors = exonHeatAnnoColors,
+         show_rownames = FALSE,
+         #show_colnames = FALSE,
+         border_color = NA,
+         fontsize = 6,
+         height = 6,
+         width = 8,
+         filename = paste(baseRepository,'/lookingForIsoforms/ccleRnaSeqDlg2Scoring/plots/heatmap_dlg2LongIsoformCcle.pdf',sep=''))
+
+##extract the clusters
+heatData = pheatmap(exonHeatMatrix, 
+         scale = 'column',
+         cluster_rows = FALSE)
+
+sort(cutree(heatData$tree_col, k = 4))
+##it seems like the DLG2n3 cluster is number 2
+dlg2Cells = names(cutree(heatData$tree_col, k = 5))[which(cutree(heatData$tree_col, k = 5) == 2)]
+```
+
+Next we can redo the coverage maps against DLG2n3 for these isolated cells.
+
+```{r}
+###########################################################
+##parse the GTF
+dlg2Gtf = totalGtf %>%
+  dplyr::filter(grepl('NM_001377978.1$', transcript_id) & type == 'exon') %>%
+  dplyr::rename(symbol = 'gene_id', ensg = 'seqnames') %>%
+  dplyr::mutate('seqnames' = 'chr11')
+
+##make the bed file of the regions
+dlg2Bed = dlg2Gtf %>%
+  dplyr::select(seqnames, start, end) %>%
+  dplyr::arrange(start)
+#
+write.table(dlg2Bed, paste(baseRepository,'/lookingForIsoforms/ccleRnaSeqDlg2Scoring/datasetOutputs/dlg2n3IsoformExons.bed',sep=''),
+            col.names = FALSE, row.names = FALSE, quote = FALSE, sep = '\t')
+```
+
+```{r}
+###########################################################
+##read in the megadepth results
+mdDataList = list.files(paste(baseRepository,'/lookingForIsoforms/ccleRnaSeqDlg2Scoring/coverageFiles',sep=''), pattern = 'Dlg2n3Megadepth.tsv', full.names = TRUE)
+mdData = tibble()
+for (i in 1:length(mdDataList)){
+  mdDataTemp = read_tsv(mdDataList[i], show_col_types = FALSE, col_names = c('seqnames','start','end','coverage')) %>%
+    dplyr::mutate(accession = sub('.*coverageFiles\\/(.*)_Dlg2n3Megadepth\\.tsv','\\1',mdDataList[i]),
+                  coverage = as.numeric(coverage),
+                  logCov = log2(coverage+1))
+  #
+  mdData = rbind(mdData, mdDataTemp)
+}
+mdData$exon = rep(paste('exon',seq(1,11,1),sep=''),87)
+
+#annotate these files
+anno = read_csv(paste(baseRepository,'/lookingForIsoforms/ccleRnaSeqDlg2Scoring/SraRunTable.csv',sep=''),show_col_types = FALSE) %>%
+  dplyr::select(Run, Cell_Line, Tissue, disease) %>%
+  dplyr::rename(accession = 'Run',
+                cellLine = 'Cell_Line',
+                tissue = 'Tissue')
+
+##save the data
+saveRDS(mdData, paste(baseRepository,'/lookingForIsoforms/ccleRnaSeqDlg2Scoring/datasetOutputs/dataset_megadepthCompiledDataDlg2n3.rds',sep=''))
+
+##make a heatmap of these values
+exonHeat = mdData %>%
+  dplyr::left_join(anno) %>%
+  dplyr::filter(!is.na(cellLine) & cellLine %in% dlg2Cells) %>%
+  dplyr::select(exon, cellLine, logCov) %>%
+  tidyr::pivot_wider(id_cols = 'exon', names_from = 'cellLine', values_from = 'logCov')
+exonHeatMatrix = as.matrix(exonHeat[,2:ncol(exonHeat)])
+rownames(exonHeatMatrix) = paste('exon',seq(1,11,1),sep='')
+exonHeatAnno = mdData %>%
+  dplyr::left_join(anno) %>%
+  dplyr::filter(!is.na(cellLine) & cellLine %in% dlg2Cells) %>%
+  dplyr::mutate(ewing = ifelse(grepl('Ewing', disease),'yes','no')) %>%
+  dplyr::select(cellLine, tissue, ewing) %>%
+  unique() %>%
+  as.data.frame()
+rownames(exonHeatAnno) = exonHeatAnno$cellLine
+exonHeatAnno = exonHeatAnno[,2:3]
+exonHeatAnnoColors = list(
+  tissue = c(bone = brewer.pal(4,'OrRd')[4],
+             breast = brewer.pal(12,'Set3')[2],
+             central_nervous_system = brewer.pal(12,'Set3')[3],
+             endometrium = brewer.pal(12,'Set3')[4],
+             haematopoietic_and_lymphoid_tissue = brewer.pal(12,'Set3')[5],
+             large_intestine = brewer.pal(12,'Set3')[6],
+             lung = brewer.pal(12,'Set3')[7],
+             ovary = brewer.pal(12,'Set3')[9],
+             prostate = brewer.pal(12,'Set3')[11],
+             soft_tissue = brewer.pal(4,'GnBu')[4]),
+  ewing = c(yes = brewer.pal(4,'OrRd')[4],
+            no = brewer.pal(4,'Greys')[3])
+)
+
+##make the heatmap
+pheatmap(exonHeatMatrix, 
+         scale = 'none',
+         cellwidth = 3,
+         cellheight = 3,
+         treeheight_col = 6,
+         cluster_rows = FALSE,
+         annotation_col = exonHeatAnno,
+         annotation_colors = exonHeatAnnoColors,
+         show_rownames = FALSE,
+         #show_colnames = FALSE,
+         border_color = NA,
+         fontsize = 6,
+         height = 6,
+         width = 8,
+         filename = paste(baseRepository,'/lookingForIsoforms/ccleRnaSeqDlg2Scoring/plots/heatmap_dlg2n3IsoformCcle.pdf',sep=''))
+
+##extract the clusters
+heatData = pheatmap(exonHeatMatrix, 
+         scale = 'none',
+         cluster_rows = FALSE)
+
+sort(cutree(heatData$tree_col, k = 3))
+##it seems like the DLG2n3 cluster is number 2
+dlg2n3Cells = names(cutree(heatData$tree_col, k = 3))[which(cutree(heatData$tree_col, k = 3) == 2)]
+```
+
+Using these cells, I am wondering if there are any other 'ewing specific' transcripts that are being expressed in them. This may link DLG2n3 to the expression of other EwS targets. We can use the RNA expression data we have compiled for this.
+
+```{r}
+###########################################################
+##get the SRA accessions for our cells of interest
+samples = read_csv(paste(baseRepository,'/lookingForIsoforms/ccleRnaSeqDlg2Scoring/SraRunTable.csv',sep=''),show_col_types = FALSE) %>%
+  dplyr::select(Run, Cell_Line, Tissue, disease) %>%
+  dplyr::rename(accession = 'Run',
+                cellLine = 'Cell_Line',
+                tissue = 'Tissue') %>%
+  dplyr::filter(cellLine %in% dlg2n3Cells)
+
+#use the sample info to build a file list
+files = file.path(baseRepository, 'lookingForIsoforms/ccleRnaSeqDlg2Scoring', 'quants', samples$accession, 'quant.sf')
+all(file.exists(files))
+
+##build the transcriptome index...this is based on the same gtf we used in the alignment process
+txdb = makeTxDbFromGFF('D:/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf')
+k = keys(txdb, keytype = "TXNAME")
+tx2gene = select(txdb, k, c("GENEID", "TXSTART", "TXEND"), "TXNAME")
+
+##read the transcriptome data processed from salmon
+txi = tximport(files, type = 'salmon', tx2gene = tx2gene)
+txiAnnotated = tibble(as.data.frame(txi$abundance)) %>%
+  mutate('ENSEMBL' = sub('(.*)\\.[0-9]+$', '\\1', row.names(txi$abundance)))
+
+##add in gene symbols
+geneSymbols = select(org.Hs.eg.db, txiAnnotated$ENSEMBL, c('ENSEMBL','SYMBOL'), 'ENSEMBL') 
+geneExpData = txiAnnotated %>%
+  left_join(geneSymbols) %>%
+  mutate(symbol = SYMBOL)
+colnames(geneExpData)[1:13] = samples$accession
+
+##write this gene set to a file
+saveRDS(geneExpData, paste(baseRepository, '/lookingForIsoforms/ccleRnaSeqDlg2Scoring/datasetOutputs/dataset_tpmExpressionDlg2n3CellLines.rds', sep = ''))
+write.table(geneExpData, paste(baseRepository, '/lookingForIsoforms/ccleRnaSeqDlg2Scoring/datasetOutputs/dataset_tpmExpressionDlg2n3CellLines.tsv', sep = ''), row.names = FALSE, col.names = TRUE, quote = FALSE, sep = '\t')
+```
+
+Next we want to read in our induced and repressed EwS hits and see if there are any of our hits that show uncharacteristically high or low expression in these cells. 
+
+```{r}
+###########################################################
+##read in the induced and repressed scoring data
+ind = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsInducedRankScore.rds',sep='')) %>%
+  dplyr::select(symbol, ewsRankScoreDirect) %>%
+  dplyr::rename(indScore = 'ewsRankScoreDirect')
+rep = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsReducedRankScore.rds',sep='')) %>%
+  dplyr::select(symbol, ewsRankScoreDirect) %>%
+  dplyr::rename(repScore = 'ewsRankScoreDirect')
+
+##get the expression data
+expData = readRDS(paste(baseRepository, '/lookingForIsoforms/ccleRnaSeqDlg2Scoring/datasetOutputs/dataset_tpmExpressionDlg2n3CellLines.rds', sep = '')) %>%
+  dplyr::select(-SYMBOL, -ENSEMBL) %>%
+  dplyr::left_join(ind) %>%
+  dplyr::arrange(-indScore)
+expData$indRank = seq(1,nrow(expData),1)
+
+##calculate a correlation between DLG2 and the other genes
+corInput = expData[1:1000,] %>%
+  dplyr::select(-indScore) %>%
+  tidyr::pivot_longer(cols = SRR8615378:SRR8616214, names_to = 'accession', values_to = 'logTpm') %>%
+  dplyr::filter(!is.na(symbol))
+#
+#corInputSymbols = unique(corInput$symbol)
+#dlg2Cor = tibble()
+#for (i in 1:length(corInputSymbols)){
+#  dlg2CorTemp = cor(corInput[grepl('DLG2',corInput$symbol),'logTpm'], 
+#                    corInput[which(corInput$symbol == corInputSymbols[i]),'logTpm'][1:13,], 
+#                    method = 'pearson', use = 'pairwise.complete.obs')
+#  #
+#  dlg2Cor = rbind(dlg2Cor, tibble('symbol' = corInputSymbols[i], 'cor' = dlg2CorTemp))
+#}
+
+##count log2Tpm values for EwS specific genes
+i = log2(10)
+expCount = expData %>%
+  dplyr::mutate(cell1 = ifelse(log2(SRR8615378 + 1) > i, 1, 0),
+                cell2 = ifelse(log2(SRR8615423 + 1) > i, 1, 0),
+                cell3 = ifelse(log2(SRR8615521 + 1) > i, 1, 0),
+                cell4 = ifelse(log2(SRR8615592 + 1) > i, 1, 0),
+                cell5 = ifelse(log2(SRR8615679 + 1) > i, 1, 0),
+                cell6 = ifelse(log2(SRR8615747 + 1) > i, 1, 0),
+                cell7 = ifelse(log2(SRR8615810 + 1) > i, 1, 0),
+                cell8 = ifelse(log2(SRR8615832 + 1) > i, 1, 0),
+                cell9 = ifelse(log2(SRR8616012 + 1) > i, 1, 0),
+                cell10 = ifelse(log2(SRR8616151 + 1) > i, 1, 0),
+                cell11 = ifelse(log2(SRR8616152 + 1) > i, 1, 0),
+                cell12 = ifelse(log2(SRR8616213 + 1) > i, 1, 0),
+                cell13 = ifelse(log2(SRR8616214 + 1) > i, 1, 0)) %>%
+  dplyr::mutate(totalCounts = rowSums(pick(cell1, cell2, cell3, cell4, cell5,
+                                           cell6, cell7, cell8, cell9, cell10,
+                                           cell11, cell12, cell13)))
+
+##plot these data
+plotData = expCount %>%
+  dplyr::filter(indRank <= 1000) %>%
+  dplyr::mutate(pColors = ifelse(totalCounts > 10 & indRank <= 125, brewer.pal(4,'OrRd')[4], brewer.pal(4,'Greys')[3]),
+                pText = ifelse(totalCounts > 10 & indRank <= 125, symbol, ''))
+ggplot(plotData, aes(log2(totalCounts + 1), indScore)) +
+  geom_point(size = 0.5, color = plotData$pColors) +
+  labs(x = 'log2(cell line counts + 1)', y = 'EwS induced score', title = 'DLG2n3 co-expression') +
+  geom_text_repel(label = plotData$pText, min.segment.length = unit(0, 'lines'), nudge_x = 0.5, nudge_y = -1, max.overlaps = 55000, size = 2, segment.size = 0.25) +
+  scale_x_continuous(limits = c(3,4.5), breaks = seq(-0,20,1)) +
+  #scale_y_continuous(limits = c(-7,7), breaks = seq(-20,20,2)) +
+  geom_vline(xintercept = log2(11.5), linetype = 'dashed') +
+  geom_hline(yintercept = 16.4, linetype = 'dashed') +
+  theme_classic()
+ggsave(paste(baseRepository, '/lookingForIsoforms/ccleRnaSeqDlg2Scoring/plots/scatter_dlg2n3CoregulatedHits.pdf', sep = ''),
+       height = 2, width = 2, useDingbats = FALSE)
+```
+
+
+
+
+
