@@ -23,6 +23,9 @@ library('pheatmap')
 library('tximport')
 library('GenomicFeatures')
 library('org.Hs.eg.db')
+library('RColorBrewer')
+library('ggplot2')
+library('ggrepel')
 ```
 
 I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
@@ -285,6 +288,7 @@ heatData = pheatmap(exonHeatMatrix,
 sort(cutree(heatData$tree_col, k = 3))
 ##it seems like the DLG2n3 cluster is number 2
 dlg2n3Cells = names(cutree(heatData$tree_col, k = 3))[which(cutree(heatData$tree_col, k = 3) == 2)]
+dlg2n3CellsBroad = names(cutree(heatData$tree_col, k = 3))[which(cutree(heatData$tree_col, k = 3) != 3)]
 ```
 
 Using these cells, I am wondering if there are any other 'ewing specific' transcripts that are being expressed in them. This may link DLG2n3 to the expression of other EwS targets. We can use the RNA expression data we have compiled for this.
@@ -397,6 +401,19 @@ ggplot(plotData, aes(log2(totalCounts + 1), indScore)) +
 ggsave(paste(baseRepository, '/lookingForIsoforms/ccleRnaSeqDlg2Scoring/plots/scatter_dlg2n3CoregulatedHits.pdf', sep = ''),
        height = 2, width = 2, useDingbats = FALSE)
 ```
+
+Next I want to expand this to include the other cells in the cluster and just do a simple scatter comparing some of these top hits with DLG2n3.
+
+```{r}
+###########################################################
+##
+
+
+```
+
+
+
+
 
 
 

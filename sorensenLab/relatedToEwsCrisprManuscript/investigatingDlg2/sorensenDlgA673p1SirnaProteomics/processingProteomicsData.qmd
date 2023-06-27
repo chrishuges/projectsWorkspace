@@ -200,7 +200,7 @@ deqmsResults = readRDS(paste(baseRepository, '/investigatingDlg2/sorensenDlgA673
 
 #create the plot and save it
 goi = c('DLG2', 'YAP1', 'WWTR1', 'STK3', 'STK4', 'MOB1A', 'TEAD1', 'TEAD2', 'TEAD3', 'TEAD4' , 'CCN1', 'CCN2', 'AMOT', 'AXL', 'MPDZ', 'HELLS', 'RASSF1',
-        'LATS1', 'LATS2','LOX')
+        'LATS1', 'LATS2','LOX','TGFB1','TGFB2','TGFBR2')
 plotData = deqmsResults %>%
   dplyr::mutate(pColors = ifelse(logFC > 0.5 & log2FoldChange > 0.5, brewer.pal(4,'OrRd')[4],
                                  ifelse(logFC < -0.5 & log2FoldChange < -0.5, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))) %>%
@@ -221,19 +221,19 @@ ggsave(paste(baseRepository, '/investigatingDlg2/sorensenDlgA673p1SirnaProteomic
 
 #create the plot and save it
 inverseHigh = deqmsResults %>%
-  dplyr::filter(logFC < -1 & log2FoldChange > 1) %>%
+  dplyr::filter(logFC < -1 & log2FoldChange > 2 & count > 1) %>%
   dplyr::arrange(logFC)
 inverseLow = deqmsResults %>%
-  dplyr::filter(logFC > 1 & log2FoldChange < -1) %>%
-  dplyr::arrange(logFC)
+  dplyr::filter(logFC > 1 & log2FoldChange < -2 & count > 1) %>%
+  dplyr::arrange(-logFC)
 bothDown = deqmsResults %>%
-  dplyr::filter(logFC < -1 & log2FoldChange < -1) %>%
+  dplyr::filter(logFC < -1 & log2FoldChange < -2 & count > 1) %>%
   dplyr::arrange(logFC)
 bothUp = deqmsResults %>%
-  dplyr::filter(logFC > 1 & log2FoldChange > 1) %>%
-  dplyr::arrange(logFC)
+  dplyr::filter(logFC > 1 & log2FoldChange > 2 & count > 1) %>%
+  dplyr::arrange(-logFC)
 #
-goi = c('DLG2', )
+goi = c('DLG2', 'TGFBR2', inverseHigh[1:5,'symbol']$symbol, inverseLow[1:5,'symbol']$symbol, bothDown[1:5,'symbol']$symbol, bothUp[1:5,'symbol']$symbol)
 plotData = deqmsResults %>%
   dplyr::mutate(pColors = ifelse(logFC > 0.5 & log2FoldChange > 0.5, brewer.pal(4,'OrRd')[4],
                                  ifelse(logFC < -0.5 & log2FoldChange < -0.5, brewer.pal(4,'GnBu')[4], brewer.pal(3,'Greys')[2]))) %>%
@@ -248,7 +248,7 @@ ggplot(plotData, aes(logFC, log2FoldChange)) +
   geom_vline(xintercept = c(-0.5,0.5), linetype = 'dashed') +
   geom_hline(yintercept = c(-0.5,0.5), linetype = 'dashed') +
   theme_classic()
-ggsave(paste(baseRepository, '/investigatingDlg2/sorensenDlgA673p1SirnaProteomics/plots/scatter_deqms_siDlg2-ctrl_fusionHits.pdf', sep = ''),
+ggsave(paste(baseRepository, '/investigatingDlg2/sorensenDlgA673p1SirnaProteomics/plots/scatter_deqms_siDlg2-ctrl_fusionHitsLabeled.pdf', sep = ''),
        height = 2, width = 2, useDingbats = FALSE)
 
 ```
