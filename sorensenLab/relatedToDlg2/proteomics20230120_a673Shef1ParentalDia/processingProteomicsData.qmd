@@ -1,0 +1,101 @@
+---
+title: "Multi-enzyme proteomics of DLG2"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes processing of proteomics data from an experiment on A673a shEF1 cells to look at isoform expression.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('iq')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToDlg2'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToDlg2'
+```
+
+## Data processing
+
+Read in data from DIA-NN and process with the IQ package.
+
+```{r}
+##########################################################################################
+##do this in a loop for each enzyme
+enzymes = c('trypsin','argc','lysc','gluc')
+for (i in 1:length(enzymes)){
+  ##first we can filter and parse the report data into a better format for IQ
+  raw = read_tsv(paste('D:/proteomics20230120_a673Shef1ParentalDia/',enzymes[i],'/report.tsv',sep=''), show_col_types = FALSE) %>%
+    dplyr::mutate(File.Name = sub('.*ch20230120_a673Shef1Parental_20cm150um19um_(.*)_dia.*\\.mzML', '\\1', File.Name)) %>%
+    dplyr::filter(Q.Value <= 0.01)
+
+  ##save the data
+  write.table(raw, paste('D:/proteomics20230120_a673Shef1ParentalDia/',enzymes[i],'reportParsed.tsv',sep=''), 
+              col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+
+
+  ##run the IQ analysis
+  iqResult = process_long_format(paste('D:/proteomics20230120_a673Shef1ParentalDia/',enzymes[i],'reportParsed.tsv',sep=''), 
+                             output_filename = paste('D:/proteomics20230120_a673Shef1ParentalDia/',enzymes[i],'reportParsedIqQuant.tsv'),
+                             annotation_col = 'Genes',
+                             normalization = 'median',
+                             filter_double_less = c("Q.Value" = "0.01", "PG.Q.Value" = "0.01"),
+                             peptide_extractor = function(x) gsub("[0-9].*$", "", x))
+
+  ##parse the IQ result
+  proData = read_tsv(paste('D:/proteomics20230120_a673Shef1ParentalDia/',enzymes[i],'reportParsedIqQuant.tsv'), show_col_types = FALSE) %>%
+    dplyr::rename(accession = 'Protein.Group',
+                  symbol = 'Genes')
+
+
+  ##save the data
+  saveRDS(proData, paste(baseRepository, '/proteomics20230120_a673Shef1ParentalDia/datasetOutputs/dataset_processed',enzymes[i],'TotalProteome.rds', sep = ''))
+  write.table(proData, paste(baseRepository, '/proteomics20230120_a673Shef1ParentalDia/datasetOutputs/dataset_processed',enzymes[i],'TotalProteome.tsv', sep = ''), 
+              col.names = TRUE, row.names = FALSE, quote = FALSE, sep = '\t')
+}
+```
+
+Now we can combine these results.
+
+```{r}
+##########################################################################################
+##read in the data files
+trypsin = readRDS(paste(baseRepository, '/proteomics20230120_a673Shef1ParentalDia/datasetOutputs/dataset_processedtrypsinTotalProteome.rds', sep = '')) %>%
+  dplyr::rename(logIntensity = 'trypsin') %>%
+  dplyr::mutate(dataset = 'trypsin')
+argc = readRDS(paste(baseRepository, '/proteomics20230120_a673Shef1ParentalDia/datasetOutputs/dataset_processedargcTotalProteome.rds', sep = '')) %>%
+  dplyr::rename(logIntensity = 'argc') %>%
+  dplyr::mutate(dataset = 'argc')
+lysc = readRDS(paste(baseRepository, '/proteomics20230120_a673Shef1ParentalDia/datasetOutputs/dataset_processedlyscTotalProteome.rds', sep = '')) %>%
+  dplyr::rename(logIntensity = 'lysc') %>%
+  dplyr::mutate(dataset = 'lysc')
+gluc = readRDS(paste(baseRepository, '/proteomics20230120_a673Shef1ParentalDia/datasetOutputs/dataset_processedglucTotalProteome.rds', sep = '')) %>%
+  dplyr::rename(logIntensity = 'gluc') %>%
+  dplyr::mutate(dataset = 'gluc')
+
+
+##combine
+allData = rbind(trypsin, argc, lysc, gluc) %>%
+  tidyr::pivot_wider(id_cols = c('accession','symbol'), names_from = 'dataset', values_from = c('n_fragments','n_peptides','logIntensity'))
+```
+
+
+
+
+
+
+

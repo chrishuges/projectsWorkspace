@@ -1,0 +1,53 @@
+---
+title: "Using LIQA"
+author: "Christopher Hughes"
+format: html
+---
+
+## Details
+
+This document describes looking at the our own nanopore RNAseq data to see if any ews induced genes are showing isoform diversity.
+
+## Setting up the environment
+
+These are packages you will need for this notebook. For exact versions used, please refer to the session info at the bottom of this notebook.
+
+```{r}
+#| message: false
+#| warning: false
+##########################################################################################
+library('tidyverse')
+library('GenomicFeatures')
+```
+
+I want to set a base directory that we can use as a link to the directory where we will do most of the work. I use two directories here because the Workspace is what is pushed to GitHub and contains scripts and plot files, but the Repository is where more of the big data is stored that does not get pushed.
+
+```{r}
+##########################################################################################
+generalDatasets = 'C:/Users/chughes/Documents/bccrc/projectsRepository/generalDatasets'
+baseWorkspace = 'C:/Users/chughes/Documents/bccrc/projectsWorkspace/sorensenLab/relatedToEwsCrisprManuscript'
+baseRepository = 'C:/Users/chughes/Documents/bccrc/projectsRepository/sorensenLab/relatedToEwsCrisprManuscript'
+```
+
+## Data processing
+
+Parse out our GTF to only contain our induced hits.
+
+```{r}
+###########################################################
+##read in the induced hits
+ind = readRDS(paste(baseRepository, '/defineCandidatesExpressionData/sorensenEwsA673RnaSeq/datasetOutputs/dataset_ewsTargetsReducedRankScore.rds',sep='')) %>%
+  dplyr::select(ensg, symbol, ewsRankScoreDirect)
+write.table(ind[1:10, 'symbol'], paste(baseRepository,'/lookingForIsoforms/sorensenNanoporeSequencing/datasetOutputs/dataset_targetGeneList.txt',sep = ''),
+            row.names = FALSE, col.names = FALSE, quote = FALSE)
+
+#this didn't work, there was an issue with line breaks...so I did it manually with vim.
+
+##read in the GTF
+totalGtf = as.data.frame(rtracklayer::import.gff('C:/Users/chughes/Documents/bccrc/databases/projectEwsDlg2/baseGenomeFiles/genome.gtf'))
+
+
+
+
+
+```
