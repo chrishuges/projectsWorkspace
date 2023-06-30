@@ -192,4 +192,3 @@ do
 done 
 ```
 
-test git logout
