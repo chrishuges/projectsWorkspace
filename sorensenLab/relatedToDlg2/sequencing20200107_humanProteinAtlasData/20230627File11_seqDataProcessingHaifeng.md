@@ -189,5 +189,7 @@ do
   eval rm -r ${workingDirectory}/*STAR*
   eval rm ${workingDirectory}/results/${i}*.bam
   eval rm ${workingDirectory}/results/${i}*.bai
-done
+done 
 ```
+
+test git logout
